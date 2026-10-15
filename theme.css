@@ -1,0 +1,462 @@
+html {
+    --bg:#05080f; --board:#0a1120; --panel:#0c1424; --panel2:#101b30;
+    --line:rgba(150,175,210,.10); --line2:rgba(150,175,210,.18);
+    --txt:#eef3fb; --txt2:#c7d4e6; --mut:#8294ad; --mut2:#5c6b82;
+    --blue:#4d9dff; --blued:#2f6fd0; --grn:#46d39a; --amb:#e7b15a;
+    --red:#f2708a; --red2:#c33a52; --redsoft:#e9b8c1; --teal:#38cdb8;
+    --inset:rgba(8,14,24,.5); --sidebar:linear-gradient(180deg,#0a1222,#070c16);
+    --lbl:#dbe6f5; --lbl2:#7a90ad; --cap:rgba(150,180,215,.6); --cap2:rgba(150,180,215,.7);
+    --hdb:#9fd0ff; --hdb2:#7fc0e5; --hdb3:#a8dcf6; --hda:#f0c574; --hdg:#cdd8e8;
+    --accb:#7fb4ff; --accb3:#5fb0ff; --accb4:#8fd0ff; --btnt:#cfe0fb; --chipt:#c3d2e6;
+    --accg:#46d39a; --acca:#f0913f; --acca2:#e7b15a; --accw:#5aa6d8;
+    --dis:#5c6b82; --chipbg:rgba(15,24,40,.6); --onacc:#06121f;
+    --icard:rgba(15,24,40,.85); --strip:rgba(6,11,20,.72); --track:rgba(160,190,230,.10); --rail:#070c16; --fgdone:#cfe6dc; --ringpend:#2b3a52; --tagpend:#55637a;
+  
+    /* ---- formation / geological section (dark) ---- */
+    --sky1:#0a1220; --sky2:#0b1524; --fm-ground:#25324a;
+    --fm-soil:#3a3428;
+    --fm-shale:#2b3648; --fm-shale2:#212c3d;
+    --fm-silt:#333a44; --fm-silt2:#2a313b;
+    --fm-seal:#3d4450; --fm-seal-line:rgba(200,215,235,.14); --fm-seal-edge:rgba(150,180,215,.35);
+    --fm-sand:#4a4033; --fm-sand2:#3e352a;
+    --fm-pay:rgba(224,160,70,.30); --fm-pay2:rgba(190,120,45,.22); --fm-pay-edge:rgba(120,185,255,.45);
+    --fm-owc:rgba(103,182,255,.55); --fm-owc-label:rgba(140,195,250,.80);
+    --fm-water:rgba(60,120,200,.30);
+    --fm-grain:rgba(200,215,235,.06); --fm-base:#242a33;
+    --fm-line:rgba(160,190,225,.16);
+    --fm-label:rgba(190,215,240,.60); --fm-label-pay:rgba(165,205,250,.85);
+  
+    /* ---- splash (dark) ---- */
+    --sp1:#0d1626; --sp2:#080f1c; --sp3:#04070d;
+    --sp-grid:rgba(150,180,220,.035); --sp-glow:rgba(77,157,255,.10);
+    --sp-ring:rgba(120,175,255,.10); --sp-ring2:rgba(120,175,255,.06);
+    --sp-title:#eef3fb; --sp-sub:#c7d4e6; --sp-mono:#7fb4ff; --sp-foot:rgba(199,212,230,.72);
+    --sp-logo-shadow:rgba(77,157,255,.28); --sp-divider:#4d9dff;
+    --wb-wall:#0a1119; --wb-edge:rgba(90,120,160,.30); --wb-bore:#05090f;
+    --wb-shadow:rgba(0,0,0,.55); --wb-tube:#0c2a2c; --wb-tube-edge:#1d4044;
+  }
+  html[data-theme="light"] {
+    --bg:#eef1f6; --board:#ffffff; --panel:#ffffff; --panel2:#f4f6fa;
+    --line:rgba(40,60,90,.12); --line2:rgba(40,60,90,.20);
+    --txt:#16202f; --txt2:#3a4759; --mut:#566578; --mut2:#8492a4;
+    --blue:#2f6fd0; --blued:#2f6fd0; --grn:#1d8a5a; --amb:#b9831f;
+    --red:#c33a52; --red2:#9d2338; --redsoft:#8d4553; --teal:#0e8f7a;
+    --inset:#eef2f8; --sidebar:linear-gradient(180deg,#ffffff,#eef2f7);
+    --lbl:#1d2836; --lbl2:#5c6c80; --cap:rgba(38,56,80,.68); --cap2:rgba(38,56,80,.78);
+    --hdb:#1461ae; --hdb2:#14638f; --hdb3:#186a92; --hda:#8a6112; --hdg:#3a475a;
+    --accb:#2762bd; --accb3:#1f74c4; --accb4:#15669f; --btnt:#15406f; --chipt:#3f4f63;
+    --accg:#0e7a4f; --acca:#a2540b; --acca2:#8d6210; --accw:#1a6690;
+    --dis:#7b8797; --chipbg:rgba(228,234,243,.9); --onacc:#ffffff;
+    --icard:#f1f4f9; --strip:#f7f9fc; --track:rgba(40,60,90,.14); --rail:#ffffff; --fgdone:#1a6b49; --ringpend:#c6cfdb; --tagpend:#8a95a6;
+  
+    /* ---- formation / geological section (light) ---- */
+    --sky1:#eef3fa; --sky2:#f5f7fb; --fm-ground:#cdd3dc;
+    --fm-soil:#c9b291;
+    --fm-shale:#c2ccd9; --fm-shale2:#aeb9c8;
+    --fm-silt:#cdcec8; --fm-silt2:#bcbdb6;
+    --fm-seal:#a7b0bb; --fm-seal-line:rgba(60,80,105,.28); --fm-seal-edge:rgba(60,85,120,.55);
+    --fm-sand:#e8d9b6; --fm-sand2:#dcc99f;
+    --fm-pay:rgba(190,120,40,.30); --fm-pay2:rgba(160,95,30,.22); --fm-pay-edge:rgba(50,95,150,.50);
+    --fm-owc:rgba(45,110,180,.65); --fm-owc-label:rgba(40,85,135,.85);
+    --fm-water:rgba(90,150,215,.34);
+    --fm-grain:rgba(110,85,55,.16); --fm-base:#b0b6bd;
+    --fm-line:rgba(70,90,115,.28);
+    --fm-label:rgba(45,65,90,.70); --fm-label-pay:rgba(35,70,110,.90);
+  
+    /* ---- splash (light) ---- */
+    --sp1:#ffffff; --sp2:#eef2f8; --sp3:#e0e8f5;
+    --sp-grid:rgba(40,70,110,.02); --sp-glow:rgba(47,111,208,.09);
+    --sp-ring:rgba(47,111,208,.06); --sp-ring2:rgba(47,111,208,.04);
+    --sp-title:#101a2c; --sp-sub:#14202e; --sp-mono:#4a77b8; --sp-foot:rgba(20,28,40,.82);
+    --sp-logo-shadow:rgba(47,111,208,.16); --sp-divider:#2f6fd0;
+    --wb-wall:#9aa6b5; --wb-edge:rgba(45,65,95,.55); --wb-bore:#6f7d8f;
+    --wb-shadow:rgba(35,50,70,.28); --wb-tube:#7d93a6; --wb-tube-edge:#4d6376;
+  }
+  html {
+    --font-main:'IBM Plex Sans',system-ui,sans-serif; --font-mono:'IBM Plex Mono',ui-monospace,monospace;
+    /* 1 page title */ --fs-page-title:32px; --fw-page-title:700; --lh-page-title:1.15; --ls-page-title:-0.5px;
+    /* 2 page subtitle */ --fs-page-subtitle:14.5px; --fw-page-subtitle:400; --lh-page-subtitle:1.5; --ls-page-subtitle:0.1px;
+    /* 3 section heading */ --fs-section-heading:16px; --fw-section-heading:600; --lh-section-heading:1.3; --ls-section-heading:0.2px;
+    /* 4 card title */ --fs-card-title:17.5px; --fw-card-title:700; --lh-card-title:1.3; --ls-card-title:-0.2px;
+    /* 5 body text */ --fs-body:14px; --fw-body:400; --lh-body:1.55; --ls-body:0px;
+    /* 6 equipment label */ --fs-equip-label:11.5px; --fw-equip-label:600; --lh-equip-label:1.3; --ls-equip-label:0.3px;
+    /* 7 technical caption */ --fs-tech-caption:10px; --fw-tech-caption:500; --lh-tech-caption:1.3; --ls-tech-caption:0.5px;
+    /* 8 live-value label */ --fs-live-label:11px; --fw-live-label:600; --lh-live-label:1.3; --ls-live-label:0.8px;
+    /* 9 live-value number */ --fs-live-value:22px; --fw-live-value:600; --lh-live-value:1.1; --ls-live-value:0px;
+    /* 10 button text */ --fs-button:13.5px; --fw-button:600; --lh-button:1; --ls-button:0.2px;
+    /* 11 table header */ --fs-table-header:11px; --fw-table-header:600; --lh-table-header:1.3; --ls-table-header:0.6px;
+    /* 12 table content */ --fs-table-content:13px; --fw-table-content:400; --lh-table-content:1.4; --ls-table-content:0px;
+    /* 13 status badge */ --fs-status-badge:11px; --fw-status-badge:600; --lh-status-badge:1; --ls-status-badge:0.4px;
+    /* 14 footer text */ --fs-footer:11.5px; --fw-footer:400; --lh-footer:1.4; --ls-footer:0.2px;
+  }
+  html, body { margin:0; padding:0; background:var(--bg); transition:background .25s ease; }
+  * { box-sizing:border-box; }
+  @keyframes dashflow { to { stroke-dashoffset:-32; } }
+  @keyframes pvtpulse { 0%,100% { opacity:.35; } 50% { opacity:1; } }
+  @keyframes streamflow { to { stroke-dashoffset:-18; } }
+  @keyframes flowup { to { stroke-dashoffset:-28; } }
+  @keyframes toolspin { to { transform:rotate(360deg); } }
+  @keyframes ringpulse { 0%{ transform:scale(1); opacity:.75; } 70%{ transform:scale(2.6); opacity:0; } 100%{ opacity:0; } }
+  @keyframes blink { 0%,100%{ opacity:1; } 50%{ opacity:.3; } }
+  @keyframes glowpulse { 0%,100%{ opacity:.4; } 50%{ opacity:.95; } }
+  @keyframes qcRock { 0%{ transform:rotate(-7deg); } 50%{ transform:rotate(7deg); } 100%{ transform:rotate(-7deg); } }
+  @keyframes qcRock80 { 0%,100%{ transform:rotate(0deg); } 25%{ transform:rotate(-40deg); } 75%{ transform:rotate(40deg); } }
+  @keyframes qcTilt80 { 0%,100%{ transform:perspective(1200px) rotateX(0deg); } 25%{ transform:perspective(1200px) rotateX(40deg); } 75%{ transform:perspective(1200px) rotateX(-40deg); } }
+  @keyframes qcMixA { 0%,100%{ transform:translate(0,0); } 25%{ transform:translate(-15px,32px); } 50%{ transform:translate(7px,72px); } 75%{ transform:translate(17px,28px); } }
+  @keyframes qcMixB { 0%,100%{ transform:translate(0,0); } 30%{ transform:translate(13px,50px); } 60%{ transform:translate(-17px,86px); } 85%{ transform:translate(-6px,22px); } }
+  @keyframes qcMixC { 0%,100%{ transform:translate(0,0); } 20%{ transform:translate(9px,18px); } 55%{ transform:translate(-11px,62px); } 80%{ transform:translate(15px,38px); } }
+  @keyframes qcSloshA { 0%,100%{ transform:translate(-7px,3px); } 50%{ transform:translate(7px,-3px); } }
+  @keyframes qcSloshB { 0%,100%{ transform:translate(6px,-4px); } 50%{ transform:translate(-6px,4px); } }
+  @keyframes qcArrowPulse { 0%,100%{ opacity:.45; } 50%{ opacity:1; } }
+  @keyframes gaugeSweep { 0%,100%{ transform:rotate(-6deg); } 50%{ transform:rotate(6deg); } }
+  @keyframes rise { 0%{ transform:translateY(0); opacity:0; } 12%{ opacity:.85; } 86%{ opacity:.85; } 100%{ transform:translateY(-238px); opacity:0; } }
+  @keyframes rise2 { 0%{ transform:translateY(0); opacity:0; } 18%{ opacity:.75; } 100%{ transform:translateY(-26px); opacity:0; } }
+  @keyframes rock { 0%,100%{ transform:rotate(-6deg); } 50%{ transform:rotate(6deg); } }
+  @keyframes heatwave { 0%,100%{ opacity:.2; } 50%{ opacity:.65; } }
+  @keyframes plunge { 0%,100%{ transform:translateY(0); } 50%{ transform:translateY(7px); } }
+  @keyframes work { 0%,100%{ transform:translateY(0) rotate(0deg); } 50%{ transform:translateY(-2px) rotate(-3deg); } }
+  @keyframes workarm { 0%,100%{ transform:rotate(0deg); } 50%{ transform:rotate(-16deg); } }
+  @keyframes pumpstroke { 0%,100%{ transform:translateX(0); } 50%{ transform:translateX(8px); } }
+  @keyframes sensorflow { to { stroke-dashoffset:-20; } }
+  @keyframes splashUp { from { opacity:0; transform:translateY(18px); } to { opacity:1; transform:translateY(0); } }
+  @keyframes splashRing { 0%,100%{ opacity:.35; } 50%{ opacity:.7; } }
+  @keyframes monFade { from { opacity:0; } to { opacity:1; } }
+
+/* ==========================================================================
+   Shared control styling — one look for every screen.
+   .ui-btn is the base; add .ui-btn-primary / -ghost / -sub for the variant.
+   ========================================================================== */
+.ui-btn { font-family:inherit; font-size:12px; font-weight:500; line-height:1; white-space:nowrap;
+          display:inline-flex; align-items:center; justify-content:center; gap:7px;
+          height:34px; padding:0 14px; border-radius:9px; cursor:pointer; box-sizing:border-box;
+          transition:border-color .15s ease, color .15s ease, background .15s ease, filter .15s ease; }
+.ui-btn-ghost { background:var(--panel); border:1px solid var(--line2); color:var(--txt2); }
+.ui-btn-ghost:hover { border-color:var(--blue); color:var(--txt); }
+.ui-btn-sub { background:var(--icard); border:1px solid var(--line2); color:var(--mut); }
+.ui-btn-sub:hover { border-color:var(--blue); color:var(--txt2); }
+.ui-btn-primary { background:linear-gradient(180deg,var(--blue),var(--blued)); border:1px solid var(--blued);
+                  color:#ffffff; font-weight:600; box-shadow:0 4px 12px rgba(47,111,208,.20); }
+.ui-btn-primary:hover { filter:brightness(1.06); }
+.ui-btn[disabled], .ui-btn.is-off { opacity:.5; cursor:not-allowed; filter:none; }
+/* ==========================================================================
+   Validation procedure card — same visual language as the Detailed PVT
+   Analysis cards. Geometry lives here so it can compact on short screens;
+   only the tint / status colours come in from Main.js as inline style.
+   ========================================================================== */
+.val-card { width:100%; height:100%; min-width:0; min-height:0; box-sizing:border-box;
+            text-align:left; cursor:pointer; font-family:inherit; color:var(--txt);
+            background:var(--panel); border:1px solid var(--line); border-bottom-width:2.5px;
+            border-radius:14px; padding:26px 26px 20px; overflow:hidden;
+            display:flex; flex-direction:column; align-items:stretch; gap:0;
+            transition:transform .18s cubic-bezier(.2,.7,.3,1), box-shadow .18s ease, border-color .18s ease;
+            box-shadow:0 1px 2px rgba(10,20,40,.04), 0 8px 20px rgba(10,20,40,.03); }
+.val-card:hover { transform:translateY(-3px);
+                  box-shadow:0 2px 4px rgba(10,20,40,.05), 0 14px 28px rgba(10,20,40,.08); }
+.val-card .vc-head { display:flex; align-items:center; gap:12px; min-width:0; flex:0 0 auto; }
+.val-card .vc-icon { width:50px; height:50px; flex:0 0 auto; border-radius:50%;
+                     display:flex; align-items:center; justify-content:center; }
+.val-card .vc-icon svg { width:24px; height:24px; }
+.val-card .vc-title { display:block; flex:0 0 auto; font-size:17px; font-weight:700;
+                      letter-spacing:-.3px; margin-top:16px; color:var(--txt); }
+.val-card .vc-desc { flex:0 0 auto; font-size:12.5px; color:var(--txt2);
+                     line-height:1.55; font-weight:400; margin-top:8px; }
+.val-card .vc-foot { margin-top:auto; padding-top:16px; flex:0 0 auto;
+                     display:flex; align-items:center; justify-content:flex-end; }
+.val-card .vc-open { width:36px; height:36px; flex:0 0 auto; border-radius:50%;
+                     border:1.5px solid currentColor; display:flex; align-items:center; justify-content:center; }
+.val-card .vc-open svg { width:14px; height:14px; }
+
+/* Same card, tightened when three rows have to share a short viewport.
+   .is-3row is the 9-procedure bottom-hole path, which needs more height
+   before it can use the full-size metrics. */
+@media (max-height:820px) {
+  .val-card { padding:16px 18px 12px; }
+  .val-card .vc-icon { width:40px; height:40px; }
+  .val-card .vc-icon svg { width:20px; height:20px; }
+  .val-card .vc-title { font-size:15.5px; margin-top:10px; }
+  .val-card .vc-desc { font-size:12px; line-height:1.45; margin-top:5px; }
+  .val-card .vc-foot { padding-top:8px; }
+  .val-card .vc-open { width:28px; height:28px; }
+  .val-card .vc-open svg { width:13px; height:13px; }
+}
+@media (max-height:1010px) {
+  .val-card.is-3row { padding:16px 18px 12px; }
+  .val-card.is-3row .vc-icon { width:40px; height:40px; }
+  .val-card.is-3row .vc-icon svg { width:20px; height:20px; }
+  .val-card.is-3row .vc-title { font-size:15.5px; margin-top:10px; }
+  .val-card.is-3row .vc-desc { font-size:12px; line-height:1.45; margin-top:5px; -webkit-line-clamp:1; }
+  .val-card.is-3row .vc-foot { padding-top:8px; }
+  .val-card.is-3row .vc-open { width:28px; height:28px; }
+  .val-card.is-3row .vc-open svg { width:13px; height:13px; }
+}
+
+/* very short viewports (720p): one more notch down so the description still shows */
+@media (max-height:760px) {
+  .val-card { padding:13px 16px 10px; }
+  .val-card .vc-icon { width:34px; height:34px; }
+  .val-card .vc-icon svg { width:18px; height:18px; }
+  .val-card .vc-title { font-size:14.5px; margin-top:8px; }
+  .val-card .vc-desc { font-size:11.5px; line-height:1.4; margin-top:4px; }
+  .val-card .vc-foot { padding-top:6px; }
+  .val-card .vc-open { width:26px; height:26px; }
+  .val-card .vc-open svg { width:12px; height:12px; }
+  .val-card.is-3row { padding:10px 14px 8px; }
+  .val-card.is-3row .vc-icon { width:30px; height:30px; }
+  .val-card.is-3row .vc-icon svg { width:16px; height:16px; }
+  .val-card.is-3row .vc-title { font-size:14px; margin-top:6px; }
+  .val-card.is-3row .vc-desc { font-size:11px; line-height:1.35; margin-top:3px; }
+  .val-card.is-3row .vc-foot { padding-top:5px; }
+  .val-card.is-3row .vc-open { width:24px; height:24px; }
+  .val-card.is-3row .vc-open svg { width:11px; height:11px; }
+}
+
+/* card description: clamps to whole lines, one line less on short screens
+   so a description is never cut through the middle of a line */
+.card-desc { display:-webkit-box; -webkit-box-orient:vertical; -webkit-line-clamp:2; overflow:hidden; }
+@media (max-height:820px) { .card-desc { -webkit-line-clamp:1; } }
+
+/* bottom action bar shared by the stage screens */
+.ui-actionbar { flex:0 0 auto; display:flex; align-items:center; gap:9px; flex-wrap:wrap; }
+.ui-actionbar-end { margin-left:auto; display:flex; align-items:center; gap:9px; }
+
+/* ---- module navigation tabs + action buttons: one hover behaviour ---- */
+.nav-btn, .act-btn { transition: border-color .15s ease, filter .15s ease; }
+.nav-btn:hover { border-color: var(--blue) !important; }
+.act-btn:hover { border-color: var(--blue) !important; filter: brightness(1.08); }
+.act-btn[style*="not-allowed"]:hover { filter: none; }
+
+/* ==========================================================================
+   PVT calculators (components/OilCalc.js, components/GasCalc.js)
+   Shared .oc-* styling. Accent: amber for oil, blue for .oc.is-gas.
+   ========================================================================== */
+.oc { display:flex; flex-direction:column; min-height:0; flex:1; gap:12px; font-family:var(--font-main); color:var(--txt);
+       --oc-acc:var(--amb); --oc-rgb:231,177,90; --oc-btn1:#e7b15a; --oc-btn2:#c98f34; --oc-btnt:#2a1c05; }
+.oc.is-gas { --oc-acc:var(--blue); --oc-rgb:77,157,255; --oc-btn1:#4d9dff; --oc-btn2:#2f6fd0; --oc-btnt:#04162e; }
+
+.oc-bar { flex:0 0 auto; display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
+.oc-tabs { display:flex; gap:4px; padding:4px; border-radius:11px; background:var(--panel); border:1px solid var(--line); }
+.oc-tab { font-family:inherit; font-size:12.5px; font-weight:600; letter-spacing:.2px; padding:8px 15px; border-radius:8px;
+          border:1px solid transparent; background:transparent; color:var(--mut); cursor:pointer; transition:color .15s ease, background .15s ease, border-color .15s ease; }
+.oc-tab:hover { color:var(--txt); }
+.oc-tab.is-on { color:var(--oc-acc); background:rgba(var(--oc-rgb),.10); border-color:rgba(var(--oc-rgb),.35); }
+.oc-bar-actions { margin-left:auto; display:flex; align-items:center; gap:9px; flex-wrap:wrap; }
+
+.oc-btn { font-family:inherit; font-size:var(--fs-button); font-weight:var(--fw-button); letter-spacing:var(--ls-button);
+          height:36px; padding:0 17px; border-radius:10px; cursor:pointer; white-space:nowrap;
+          transition:border-color .15s ease, filter .15s ease; }
+.oc-btn-ghost { background:var(--panel); border:1px solid var(--line2); color:var(--txt2); }
+.oc-btn-ghost:hover { border-color:var(--oc-acc); color:var(--txt); }
+.oc-btn-amber, .oc-btn-acc { background:linear-gradient(180deg,var(--oc-btn1),var(--oc-btn2)); border:1px solid var(--oc-btn2);
+                             color:var(--oc-btnt); box-shadow:0 5px 14px rgba(var(--oc-rgb),.22); }
+.oc-btn-amber:hover, .oc-btn-acc:hover { filter:brightness(1.06); }
+
+.oc-view { flex:1; min-height:0; display:flex; flex-direction:column; }
+.oc-view[hidden] { display:none; }
+
+.oc-grid { flex:1; min-height:0; display:grid; grid-template-columns:minmax(0,1.05fr) minmax(0,1fr); gap:14px; }
+.oc-col { min-height:0; display:flex; flex-direction:column; gap:14px; overflow-y:auto; overflow-x:hidden; padding-right:2px; }
+
+.oc-card { background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:14px 16px 16px;
+           box-shadow:0 1px 2px rgba(10,20,40,.04); }
+.oc-card > h3 { margin:0 0 12px; font-size:var(--fs-section-heading); font-weight:var(--fw-section-heading);
+                letter-spacing:var(--ls-section-heading); color:var(--txt); display:flex; align-items:center; gap:9px; }
+.oc-card > h3::before { content:""; width:3px; height:14px; border-radius:2px; background:var(--oc-acc); flex:0 0 auto; }
+.oc-card-res { flex:1; min-height:0; display:flex; flex-direction:column; }
+
+.oc-fields { display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:10px 12px; }
+.oc-field { display:flex; flex-direction:column; gap:5px; min-width:0; }
+.oc-field > span { font-size:11px; font-weight:600; letter-spacing:.3px; color:var(--lbl2); display:flex; align-items:baseline; gap:5px; }
+.oc-field > span em { font-style:normal; font-weight:400; font-size:10px; color:var(--mut2); }
+.oc-field.is-manual > span { color:var(--oc-acc); }
+.oc-field-wide { flex:1; min-width:0; }
+
+.oc input[type="number"], .oc input[type="text"], .oc select, .oc textarea {
+  font-family:inherit; font-size:13px; color:var(--txt); background:var(--inset);
+  border:1px solid var(--line2); border-radius:9px; padding:8px 10px; width:100%; min-width:0;
+  transition:border-color .15s ease, box-shadow .15s ease; }
+.oc textarea { font-family:var(--font-mono); font-size:11.5px; line-height:1.5; resize:vertical; }
+.oc input:focus, .oc select:focus, .oc textarea:focus {
+  outline:none; border-color:var(--oc-acc); box-shadow:0 0 0 3px rgba(var(--oc-rgb),.14); }
+.oc select { cursor:pointer; }
+.oc-field.is-manual input { border-color:rgba(var(--oc-rgb),.45); }
+
+.oc-props { display:flex; flex-direction:column; gap:9px; }
+.oc-prop { border:1px solid var(--line); border-radius:11px; padding:9px 12px; background:var(--icard);
+           display:flex; align-items:center; gap:10px 14px; flex-wrap:wrap; }
+.oc-prop-head { flex:1 1 230px; min-width:0; display:flex; align-items:center; gap:10px; }
+.oc-prop-n { flex:0 0 auto; width:20px; height:20px; border-radius:6px; background:rgba(var(--oc-rgb),.13);
+             color:var(--oc-acc); font-family:var(--font-mono); font-size:10.5px; font-weight:600;
+             display:flex; align-items:center; justify-content:center; margin-top:1px; }
+.oc-prop-meta { flex:1; min-width:0; display:flex; flex-direction:column; gap:2px; }
+.oc-prop-title { font-size:13.5px; font-weight:600; color:var(--txt); }
+.oc-prop-sub { font-size:10.5px; color:var(--mut); font-weight:400; line-height:1.35;
+               white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.oc-chk { flex:0 0 auto; display:flex; align-items:center; gap:6px; font-size:11px; color:var(--mut); cursor:pointer; user-select:none; }
+.oc-chk input { accent-color:var(--oc-acc); width:14px; height:14px; cursor:pointer; }
+.oc-prop-ctl { flex:2 1 280px; min-width:0; display:flex; flex-wrap:wrap; gap:7px; }
+.oc-prop-ctl select { flex:1 1 180px; }
+.oc-prop-n { align-self:center; }
+
+.oc-tiles { display:grid; grid-template-columns:repeat(auto-fit,minmax(120px,1fr)); gap:9px; margin-bottom:11px; }
+.oc-tile { border:1px solid var(--line); border-bottom:2px solid rgba(var(--oc-rgb),.55); border-radius:10px;
+           background:var(--icard); padding:9px 11px; display:flex; flex-direction:column; gap:2px; min-width:0; }
+.oc-tile-lbl { font-size:var(--fs-live-label); font-weight:var(--fw-live-label); letter-spacing:var(--ls-live-label);
+               color:var(--mut); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.oc-tile-val { font-family:var(--font-mono); font-size:19px; font-weight:600; color:var(--txt); line-height:1.15; }
+.oc-tile-unit { font-size:10.5px; color:var(--mut2); }
+
+.oc-meta { font-size:11.5px; color:var(--mut); margin:0 0 9px; }
+.oc-tablewrap { overflow-x:auto; border:1px solid var(--line); border-radius:10px; background:var(--icard); }
+.oc-res-table { flex:1; min-height:0; overflow-y:auto; }
+.oc table { width:100%; border-collapse:collapse; font-size:var(--fs-table-content); }
+.oc thead th { position:sticky; top:0; z-index:1; background:var(--strip); color:var(--mut);
+               font-size:var(--fs-table-header); font-weight:var(--fw-table-header); letter-spacing:var(--ls-table-header);
+               text-align:left; padding:8px 10px; white-space:nowrap;
+               border-bottom:1px solid var(--line2); }
+.oc tbody td { padding:7px 10px; border-bottom:1px solid var(--line); color:var(--txt2); white-space:nowrap; }
+.oc tbody tr:last-child td { border-bottom:none; }
+.oc tbody tr.is-key td { color:var(--txt); font-weight:500; }
+.oc tbody tr.oc-empty td { color:var(--mut2); font-style:italic; text-align:center; padding:14px 10px; white-space:normal; }
+.oc td.oc-num { font-family:var(--font-mono); color:var(--txt); }
+.oc td.oc-unit { color:var(--mut); }
+.oc td.oc-method { color:var(--mut); white-space:normal; }
+.oc tfoot td { padding:8px 10px; background:var(--strip); color:var(--txt2); font-size:11.5px;
+               border-top:1px solid var(--line2); white-space:normal; }
+
+.oc-subtabs { flex:0 0 auto; display:flex; gap:6px; flex-wrap:wrap; margin-bottom:12px; }
+.oc-subtab { font-family:inherit; font-size:12px; font-weight:500; padding:7px 13px; border-radius:9px;
+             background:var(--panel); border:1px solid var(--line); color:var(--mut); cursor:pointer;
+             transition:border-color .15s ease, color .15s ease; }
+.oc-subtab:hover { border-color:var(--oc-acc); color:var(--txt); }
+.oc-subtab.is-on { color:var(--oc-acc); border-color:rgba(var(--oc-rgb),.45); background:rgba(var(--oc-rgb),.09); }
+.oc-subtab.is-off { opacity:.45; }
+.oc-card-batch { flex:1; min-height:0; overflow-y:auto; }
+.oc-batch[hidden] { display:none; }
+.oc-paste { display:flex; align-items:flex-end; gap:10px; margin-bottom:12px; flex-wrap:wrap; }
+.oc-detail { margin-top:14px; }
+.oc-detail[hidden] { display:none; }
+.oc-detail > h4 { margin:0 0 8px; font-size:12.5px; font-weight:600; color:var(--txt2); }
+
+@media (max-width:1100px) {
+  .oc-grid { grid-template-columns:minmax(0,1fr); overflow-y:auto; }
+  .oc-col { overflow:visible; }
+}
+
+/* ---- gas-only pieces: Z sub-panels, composition table, notes, chart ---- */
+.oc-subpanel { flex:1 1 100%; min-width:0; border:1px solid var(--line); border-radius:10px;
+               background:var(--panel); padding:10px 12px; display:flex; flex-direction:column; gap:9px; }
+.oc-subpanel[hidden] { display:none; }
+.oc-subpanel .oc-meta { margin:0; }
+.oc-eqs { display:flex; flex-direction:column; gap:3px; font-family:var(--font-mono); font-size:11px; color:var(--txt2);
+          border-left:2px solid rgba(var(--oc-rgb),.45); padding-left:10px; }
+.oc-eqs strong { font-family:var(--font-main); font-size:11px; color:var(--oc-acc); letter-spacing:.3px; }
+
+.oc-card-notes { flex:0 0 auto; max-height:210px; display:flex; flex-direction:column; }
+.oc-notes { overflow-y:auto; font-size:11.5px; line-height:1.5; color:var(--txt2); }
+.oc-notes p { margin:0 0 7px; }
+.oc-notes p:last-child { margin-bottom:0; }
+
+.oc-comp-table { max-height:none; }
+.oc-comp-table input { padding:5px 7px; font-size:12px; border-radius:7px; min-width:88px; }
+.oc-comp-table input[readonly] { background:var(--strip); color:var(--mut); border-color:var(--line); }
+.oc-comp-table tbody td { padding:3px 5px; }
+.oc-qc { display:flex; align-items:center; gap:8px; }
+.oc-badge { font-family:var(--font-mono); font-size:10px; font-weight:600; letter-spacing:.6px; padding:3px 8px;
+            border-radius:999px; white-space:nowrap; }
+.oc-badge.is-pass { background:rgba(70,211,154,.14); color:var(--grn); border:1px solid rgba(70,211,154,.4); }
+.oc-badge.is-fail { background:rgba(240,145,63,.12); color:var(--acca); border:1px solid rgba(240,145,63,.35); }
+
+.oc-chart { margin-top:12px; border:1px dashed var(--line2); border-radius:10px; background:var(--icard);
+            min-height:80px; display:flex; align-items:center; justify-content:center; padding:10px; }
+.oc-chart img { max-width:100%; max-height:420px; border-radius:8px; display:block; }
+.oc-chart:has(img[hidden]) { display:none; }
+.oc input[type="file"] { padding:6px 8px; font-size:12px; }
+.oc select:disabled { opacity:.5; cursor:not-allowed; }
+
+/* ==========================================================================
+   PAGE LAYOUT SYSTEM (2026-09-28) — one frame for every module / stage.
+   --page-h   : the working height under the top bar. It never goes below
+                --page-min-h, so on very short windows / high zoom the page
+                scrolls instead of clipping or squashing the schematic.
+   .pg        : page frame (full width, compact padding, column flow)
+   .pg-head   : ONE compact header row — title · short description · status ·
+                page actions on the right. Same height on every module.
+   .lab-body  : schematic | side-panel grid used by the laboratory stages.
+   ========================================================================== */
+html { --topbar-h:52px; --page-min-h:600px;
+       --page-h:max(var(--page-min-h), calc(100vh - var(--topbar-h)));
+       --page-pad-x:clamp(12px,1.25vw,22px); --page-pad-y:10px; --page-gap:10px; }
+#app { min-width:768px; }
+main { min-width:0; }
+
+.pg { height:var(--page-h); width:100%; min-width:0; box-sizing:border-box; overflow:hidden;
+      padding:var(--page-pad-y) var(--page-pad-x) 12px; display:flex; flex-direction:column;
+      gap:var(--page-gap); background:var(--bg); }
+.pg-head { flex:0 0 auto; display:flex; align-items:center; gap:10px 14px; min-height:36px; min-width:0; }
+.pg-head .pg-icon { width:32px; height:32px; flex:0 0 auto; border-radius:50%; display:flex; align-items:center; justify-content:center; }
+.pg-head .pg-icon svg { width:17px; height:17px; }
+.pg-titles { flex:1 1 auto; min-width:0; display:flex; align-items:baseline; gap:6px 12px; flex-wrap:nowrap; overflow:hidden; }
+.pg-eyebrow { font-family:var(--font-mono); font-size:9.5px; letter-spacing:1.4px; text-transform:uppercase; color:var(--blue); font-weight:600; white-space:nowrap; flex:0 0 auto; }
+.pg-title { margin:0; font-size:18px; font-weight:700; letter-spacing:-.3px; line-height:1.2; color:var(--txt); white-space:nowrap; flex:0 0 auto; }
+.pg-desc { margin:0; font-size:12.5px; line-height:1.3; color:var(--mut); font-weight:400; min-width:0; flex:0 1 auto;
+           white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.pg-end { margin-left:auto; flex:0 0 auto; display:flex; align-items:center; gap:8px; }
+.pg-work { flex:1 1 auto; min-height:0; min-width:0; display:flex; flex-direction:column; }
+
+.lab-body { flex:1 1 auto; min-height:0; min-width:0; display:grid; gap:10px;
+            grid-template-columns:minmax(0,1fr) clamp(280px,21vw,330px); grid-template-rows:minmax(0,1fr); }
+.lab-schem { min-width:0; min-height:0; display:flex; flex-direction:column; position:relative; }
+.lab-side { min-width:0; min-height:0; display:flex; flex-direction:column; gap:8px; overflow-y:auto; overflow-x:hidden; }
+
+/* stable numeric readouts: digits never change width, so values don't make the layout jump */
+.num, [style*="IBM Plex Mono"] { font-variant-numeric:tabular-nums; }
+
+/* narrow windows / high zoom: stack schematic above the side panel and let the page scroll */
+@media (max-width:1100px) {
+  .pg.pg-stack { height:auto; min-height:var(--page-h); overflow:visible; }
+  .pg-stack .lab-body { grid-template-columns:minmax(0,1fr); grid-template-rows:auto; }
+  .pg-stack .lab-schem { height:max(380px, calc(var(--page-h) - 150px)); flex:0 0 auto; }
+  .pg-stack .lab-side { overflow:visible; }
+  .pg-desc { display:none; }
+}
+@media (max-height:640px) {
+  .pg-desc { display:none; }
+}
+
+/* one geometry for every page action button (main action, next/back, reset). Colours stay
+   with each page's state logic; only size / padding / type are unified here. */
+.ui-btn { font-size:12.5px; }
+.act { height:34px !important; min-height:34px; padding:0 16px !important; font-size:12.5px !important; line-height:1 !important;
+       border-radius:9px !important; display:inline-flex !important; align-items:center; justify-content:center; gap:7px;
+       white-space:nowrap; box-sizing:border-box; flex:0 0 auto; font-family:inherit; }
+.act-bar { flex:0 0 auto; display:flex; align-items:center; gap:8px; flex-wrap:wrap; min-height:34px; }
+.act-bar .act-sp { flex:1 1 16px; min-width:0; }
+
+
+/* ---------- Sampling section (module01) side panel, shared by Wellhead / Separator / Bottom Hole (2026-09-28) ---------- */
+.m01-panel{display:flex;flex-direction:column;gap:9px;min-width:0;min-height:0;overflow:hidden;padding:12px;background:var(--rail);border-left:1px solid var(--line);box-sizing:border-box;}
+.m01-card{background:var(--icard);border:1px solid var(--line2);border-radius:10px;box-sizing:border-box;}
+.m01-fig{flex:1 1 auto;min-height:0;padding:8px;display:flex;align-items:stretch;justify-content:center;}
+.m01-fig > svg{flex:1 1 auto;min-width:0;min-height:0;}
+.m01-note{flex:0 0 auto;padding:9px 11px;}
+.m01-k{font-family:'IBM Plex Mono',monospace;font-size:8.5px;letter-spacing:.9px;color:var(--mut);margin-bottom:4px;}
+.m01-t{font-size:11px;line-height:1.45;color:var(--txt2);text-wrap:pretty;}
+:root{--m01-side:clamp(336px, 21vw, 400px);}
+
+/* Module 01 Overview (2026-09-29): secondary equipment details shown on hover / keyboard focus (tap) */
+.ovh { cursor:help; outline:none; }
+.ovh .ovhit { fill:transparent; stroke:none; }
+.ovh:hover .ovhit, .ovh:focus .ovhit { fill:rgba(95,168,255,.10); stroke:#5fa8ff; stroke-width:1; stroke-dasharray:3 2; }
+.ovh .ovtip { opacity:0; pointer-events:none; transition:opacity .15s ease; filter:drop-shadow(0 4px 10px rgba(10,20,40,.18)); }
+.ovh:hover .ovtip, .ovh:focus .ovtip { opacity:1; }
+.ovs:hover rect { stroke-width:2; }
+
+/* ===== Sampling module · one field system (components/FieldSketch.js), 2026-09-30 =====
+   Sampling pages keep the whole system visible but dim the equipment that is not being
+   sampled. Dimming is a visual focus only - flows in dimmed equipment keep moving. */
+.fz-g{transition:opacity .45s ease, filter .45s ease;}
+.fz-dim{opacity:.4;filter:grayscale(.55);transition:opacity .45s ease, filter .45s ease;}
+.fz-dim .fz-minor{display:none;}
+html[data-theme="light"] .fz-dim{opacity:.36;}
+/* step card on sampling pages: number, short title and progress only (details in Explain This Stage) */
+.m01-pc .pc-q,.bhs-pc .pc-q{display:none;}

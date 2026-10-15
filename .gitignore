@@ -1,0 +1,6 @@
+*.bak*
+_backup*/
+_tmp/
+.openai/
+.DS_Store
+Thumbs.db
