@@ -1,0 +1,588 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>VAPS PVT Nexus — Project Overview</title>
+<meta name="description" content="VAPS PVT Nexus: an interactive engineering simulator of the complete reservoir-fluid workflow, from field sampling and laboratory quality control to PVT testing, calculations and reporting.">
+<meta name="author" content="Mohammed Hilal Al Awaisi">
+<meta property="og:title" content="VAPS PVT Nexus — Digital PVT Laboratory">
+<meta property="og:description" content="An integrated digital reservoir-fluid workflow — from sampling to results.">
+<meta property="og:image" content="assets/logo.png">
+<link rel="icon" href="assets/logo.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script>
+  /* Shares the simulator's theme setting (localStorage.pvtTheme, default light) */
+  (function () {
+    var t = 'light';
+    try { t = localStorage.getItem('pvtTheme') || 'light'; } catch (e) {}
+    if (t === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
+  })();
+</script>
+<style>
+  /* ---------- Tokens (same palette as the simulator's theme.css) ---------- */
+  :root {
+    --bg:#eef1f6; --panel:#ffffff; --panel2:#f4f6fa; --inset:#eef2f8;
+    --line:rgba(40,60,90,.12); --line2:rgba(40,60,90,.20);
+    --txt:#16202f; --txt2:#3a4759; --mut:#566578; --mut2:#8492a4;
+    --blue:#2f6fd0; --grn:#1d8a5a; --amb:#b9831f; --teal:#0e8f7a; --red:#c33a52;
+    --accb:#2762bd; --onacc:#ffffff;
+    --hero1:#ffffff; --hero2:#e6edf8; --grid:rgba(40,70,110,.05); --glow:rgba(47,111,208,.10);
+    --oil:#d79a3c; --oil2:#b9772a; --gas:rgba(190,215,245,.85); --steel:#9aa6b5; --steel2:#6f7d8f;
+    --shadow:0 1px 2px rgba(20,35,60,.06), 0 8px 24px rgba(20,35,60,.06);
+    --font:'IBM Plex Sans',system-ui,-apple-system,'Segoe UI',sans-serif;
+    --mono:'IBM Plex Mono',ui-monospace,Consolas,monospace;
+    color-scheme: light;
+  }
+  :root[data-theme="dark"] {
+    --bg:#05080f; --panel:#0c1424; --panel2:#101b30; --inset:rgba(8,14,24,.6);
+    --line:rgba(150,175,210,.10); --line2:rgba(150,175,210,.18);
+    --txt:#eef3fb; --txt2:#c7d4e6; --mut:#8294ad; --mut2:#5c6b82;
+    --blue:#4d9dff; --grn:#46d39a; --amb:#e7b15a; --teal:#38cdb8; --red:#f2708a;
+    --accb:#7fb4ff; --onacc:#06121f;
+    --hero1:#0d1626; --hero2:#05080f; --grid:rgba(150,180,220,.04); --glow:rgba(77,157,255,.14);
+    --gas:rgba(150,190,240,.35); --steel:#5d6b80; --steel2:#3d4a5c;
+    --shadow:0 1px 2px rgba(0,0,0,.3), 0 10px 30px rgba(0,0,0,.25);
+    color-scheme: dark;
+  }
+
+  /* ---------- Base ---------- */
+  *, *::before, *::after { box-sizing: border-box; }
+  html { scroll-behavior: smooth; scroll-padding-top: 72px; }
+  body { margin:0; background:var(--bg); color:var(--txt); font-family:var(--font); font-size:15px; line-height:1.6; -webkit-font-smoothing:antialiased; }
+  a { color:var(--blue); text-decoration:none; }
+  a:hover { text-decoration:underline; }
+  h1,h2,h3,h4 { margin:0; line-height:1.2; letter-spacing:-.01em; }
+  p { margin:0; }
+  code, .mono { font-family:var(--mono); }
+  .wrap { max-width:1180px; margin:0 auto; padding:0 24px; }
+  .eyebrow { font-family:var(--mono); font-size:11.5px; letter-spacing:.16em; text-transform:uppercase; color:var(--blue); font-weight:500; }
+  section { padding:84px 0; border-top:1px solid var(--line); }
+  .sec-head { max-width:720px; margin-bottom:40px; }
+  .sec-head h2 { font-size:30px; font-weight:600; margin-top:10px; }
+  .sec-head p { color:var(--txt2); margin-top:12px; font-size:16px; }
+
+  /* ---------- Top bar ---------- */
+  .topbar { position:sticky; top:0; z-index:20; background:color-mix(in srgb, var(--bg) 86%, transparent); backdrop-filter:blur(10px); border-bottom:1px solid var(--line); }
+  .topbar .wrap { display:flex; align-items:center; gap:24px; height:60px; }
+  .brand { display:flex; align-items:center; gap:10px; color:var(--txt); font-weight:600; white-space:nowrap; }
+  .brand:hover { text-decoration:none; }
+  .logo-chip { background:#fff; border-radius:7px; padding:3px 6px; display:flex; border:1px solid var(--line); }
+  .logo-chip img { height:22px; display:block; }
+  .nav { display:flex; gap:22px; margin-left:auto; }
+  .nav a { color:var(--txt2); font-size:13.5px; font-weight:500; }
+  .nav a:hover { color:var(--txt); text-decoration:none; }
+  .icon-btn { width:36px; height:36px; border-radius:8px; border:1px solid var(--line2); background:var(--panel); color:var(--txt2); display:grid; place-items:center; cursor:pointer; }
+  .icon-btn:hover { color:var(--txt); }
+  .btn { display:inline-flex; align-items:center; gap:8px; padding:10px 18px; border-radius:8px; font-weight:600; font-size:14px; border:1px solid transparent; white-space:nowrap; }
+  .btn:hover { text-decoration:none; }
+  .btn-primary { background:var(--blue); color:var(--onacc); }
+  .btn-primary:hover { filter:brightness(1.08); }
+  .btn-ghost { border-color:var(--line2); color:var(--txt); background:var(--panel); }
+  .btn-ghost:hover { border-color:var(--blue); }
+  .btn-sm { padding:7px 14px; font-size:13px; }
+
+  /* ---------- Hero ---------- */
+  .hero { position:relative; overflow:hidden; border-top:0; padding:72px 0 64px;
+    background:
+      radial-gradient(60% 80% at 85% 10%, var(--glow), transparent 70%),
+      linear-gradient(var(--grid) 1px, transparent 1px) 0 0 / 32px 32px,
+      linear-gradient(90deg, var(--grid) 1px, transparent 1px) 0 0 / 32px 32px,
+      linear-gradient(180deg, var(--hero1), var(--hero2)); }
+  .hero-grid { display:grid; grid-template-columns: 1.15fr .85fr; gap:48px; align-items:center; }
+  .hero h1 { font-size:52px; font-weight:700; margin-top:14px; letter-spacing:-.025em; }
+  .hero .tagline { font-size:20px; color:var(--txt2); margin-top:10px; font-weight:500; }
+  .hero .lead { color:var(--txt2); margin-top:20px; font-size:16px; max-width:600px; }
+  .hero .ctas { display:flex; gap:12px; margin-top:28px; flex-wrap:wrap; }
+  .facts { display:grid; grid-template-columns:repeat(4,1fr); gap:1px; margin-top:44px; background:var(--line); border:1px solid var(--line); border-radius:12px; overflow:hidden; }
+  .fact { background:var(--panel); padding:16px 18px; }
+  .fact b { display:block; font-size:24px; font-weight:600; font-family:var(--mono); color:var(--txt); }
+  .fact span { font-size:12.5px; color:var(--mut); }
+
+  /* PVT cell schematic */
+  .cell-card { background:var(--panel); border:1px solid var(--line); border-radius:16px; box-shadow:var(--shadow); padding:22px 22px 18px; }
+  .cell-card .cap { display:flex; justify-content:space-between; align-items:baseline; margin-bottom:10px; }
+  .cell-card .cap b { font-size:14px; }
+  .cell-card .cap span { font-family:var(--mono); font-size:11px; color:var(--mut); letter-spacing:.08em; text-transform:uppercase; }
+  .cell-card svg { width:100%; height:auto; display:block; }
+  .cell-card .note { font-size:12.5px; color:var(--mut); margin-top:10px; line-height:1.5; }
+  .svg-txt { font-family:var(--mono); font-size:10.5px; fill:var(--mut); }
+  .svg-lbl { font-family:var(--font); font-size:11.5px; fill:var(--txt2); font-weight:500; }
+  .svg-line { stroke:var(--line2); stroke-width:1; }
+  /* CCE animation: piston withdraws, volume expands, gas cap forms below Pb */
+  /* small expansion above Pb (liquid is nearly incompressible -> steep pressure drop), large expansion below Pb */
+  @keyframes piston { 0%,12% { transform:translateY(0); } 30% { transform:translateY(8px); } 55%,78% { transform:translateY(56px); } 100% { transform:translateY(0); } }
+  @keyframes gascap { 0%,30% { transform:scaleY(0); opacity:0; } 34% { opacity:1; } 55%,78% { transform:scaleY(1); opacity:1; } 96% { transform:scaleY(0); opacity:0; } 100% { transform:scaleY(0); opacity:0; } }
+  @keyframes bubble { 0%,28% { opacity:0; transform:translateY(0); } 36% { opacity:.9; } 52% { opacity:0; transform:translateY(-40px); } 100% { opacity:0; } }
+  @keyframes gauge  { 0%,12% { transform:rotate(60deg); } 30% { transform:rotate(-5deg); } 55%,78% { transform:rotate(-35deg); } 100% { transform:rotate(60deg); } }
+  @keyframes phase1 { 0%,30% { opacity:1; } 34%,96% { opacity:0; } 100% { opacity:1; } }
+  @keyframes phase2 { 0%,30% { opacity:0; } 34%,96% { opacity:1; } 100% { opacity:0; } }
+  .an-piston { animation:piston 9s ease-in-out infinite; }
+  .an-gas    { transform-origin:50% 0; transform-box:fill-box; animation:gascap 9s ease-in-out infinite; }
+  .an-bub    { animation:bubble 9s ease-out infinite; }
+  .an-bub.b2 { animation-delay:.5s; } .an-bub.b3 { animation-delay:1s; }
+  .an-needle { transform-origin:258px 74px; animation:gauge 9s ease-in-out infinite; }
+  .an-p1 { animation:phase1 9s linear infinite; } .an-p2 { animation:phase2 9s linear infinite; }
+  @media (prefers-reduced-motion: reduce) { .an-piston,.an-gas,.an-bub,.an-needle,.an-p1,.an-p2 { animation:none; } .an-p2 { opacity:0; } }
+
+  /* ---------- Workflow chain ---------- */
+  .chain { display:grid; grid-template-columns:repeat(6,1fr); gap:0; position:relative; counter-reset:st; }
+  .chain::before { content:""; position:absolute; left:8%; right:8%; top:27px; height:2px; background:linear-gradient(90deg, var(--blue), var(--teal), var(--amb)); opacity:.5; }
+  .st { position:relative; text-align:center; padding:0 10px; }
+  .st .dot { width:56px; height:56px; margin:0 auto; border-radius:50%; background:var(--panel); border:2px solid var(--blue); display:grid; place-items:center; font-family:var(--mono); font-weight:600; color:var(--blue); position:relative; z-index:1; }
+  .st:nth-child(3) .dot, .st:nth-child(4) .dot { border-color:var(--teal); color:var(--teal); }
+  .st:nth-child(5) .dot, .st:nth-child(6) .dot { border-color:var(--amb); color:var(--amb); }
+  .st h4 { font-size:14.5px; font-weight:600; margin-top:14px; }
+  .st p { font-size:12.5px; color:var(--mut); margin-top:6px; line-height:1.5; }
+
+  /* ---------- Module blocks ---------- */
+  .mod { display:grid; grid-template-columns:280px 1fr; gap:40px; padding:36px 0; border-top:1px solid var(--line); }
+  .mod:first-of-type { border-top:0; padding-top:0; }
+  .mod .tag { font-family:var(--mono); font-size:12px; color:var(--blue); letter-spacing:.08em; }
+  .mod h3 { font-size:22px; font-weight:600; margin-top:8px; }
+  .mod .intro { color:var(--txt2); margin-top:10px; font-size:14.5px; }
+  .cards { display:grid; grid-template-columns:repeat(2,1fr); gap:14px; }
+  .cards.c3 { grid-template-columns:repeat(3,1fr); }
+  .card { background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:18px 18px 16px; box-shadow:var(--shadow); }
+  .card h4 { font-size:15px; font-weight:600; display:flex; align-items:center; gap:8px; }
+  .card h4 i { width:8px; height:8px; border-radius:2px; background:var(--blue); flex:none; }
+  .card.t h4 i { background:var(--teal); } .card.a h4 i { background:var(--amb); } .card.g h4 i { background:var(--grn); }
+  .card p { color:var(--txt2); font-size:13.5px; margin-top:8px; line-height:1.55; }
+  .card ul { margin:10px 0 0; padding-left:18px; color:var(--txt2); font-size:13.5px; }
+  .card li { margin:3px 0; }
+  .steps { display:flex; flex-wrap:wrap; gap:6px; margin-top:16px; }
+  .steps span { font-family:var(--mono); font-size:11.5px; color:var(--txt2); background:var(--inset); border:1px solid var(--line); padding:4px 9px; border-radius:6px; }
+
+  /* ---------- Principles ---------- */
+  .principles { display:grid; grid-template-columns:repeat(4,1fr); gap:14px; }
+  .pr { background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:22px 20px; box-shadow:var(--shadow); }
+  .pr .n { font-family:var(--mono); font-size:12px; color:var(--mut); }
+  .pr h4 { font-size:16px; font-weight:600; margin-top:12px; }
+  .pr p { color:var(--txt2); font-size:13.5px; margin-top:8px; }
+  .pr .bar { height:3px; width:36px; border-radius:2px; background:var(--blue); margin-top:14px; }
+
+  /* ---------- Tables ---------- */
+  .tbl { width:100%; border-collapse:collapse; background:var(--panel); border:1px solid var(--line); border-radius:12px; overflow:hidden; box-shadow:var(--shadow); font-size:13.5px; }
+  .tbl th, .tbl td { text-align:left; padding:13px 16px; border-bottom:1px solid var(--line); vertical-align:top; }
+  .tbl th { font-family:var(--mono); font-size:11px; text-transform:uppercase; letter-spacing:.1em; color:var(--mut); font-weight:500; background:var(--panel2); }
+  .tbl tr:last-child td { border-bottom:0; }
+  .tbl td:first-child { font-weight:600; white-space:nowrap; }
+  .tbl td { color:var(--txt2); } .tbl td:first-child { color:var(--txt); }
+  .tbl-scroll { overflow-x:auto; border-radius:12px; }
+
+  /* ---------- Callout ---------- */
+  .callout { display:flex; gap:14px; background:color-mix(in srgb, var(--amb) 10%, var(--panel)); border:1px solid color-mix(in srgb, var(--amb) 35%, transparent); border-radius:12px; padding:16px 18px; margin-top:28px; font-size:14px; color:var(--txt2); }
+  .callout b { color:var(--txt); }
+  .callout .ic { flex:none; width:22px; height:22px; border-radius:50%; background:var(--amb); color:#fff; display:grid; place-items:center; font-weight:700; font-size:13px; font-family:var(--mono); }
+
+  /* ---------- Architecture ---------- */
+  .arch { display:grid; grid-template-columns:1fr 1fr; gap:20px; }
+  .tree { background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:20px 22px; font-family:var(--mono); font-size:12.5px; line-height:1.85; color:var(--txt2); white-space:pre; overflow-x:auto; box-shadow:var(--shadow); }
+  .tree b { color:var(--txt); font-weight:600; } .tree em { color:var(--mut); font-style:normal; }
+  .stack { display:grid; gap:12px; align-content:start; }
+  .stack .row { display:flex; gap:14px; align-items:flex-start; background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:14px 16px; box-shadow:var(--shadow); }
+  .stack .row .k { font-family:var(--mono); font-size:11px; letter-spacing:.08em; text-transform:uppercase; color:var(--blue); min-width:110px; padding-top:2px; }
+  .stack .row p { font-size:13.5px; color:var(--txt2); }
+
+  /* ---------- Get started ---------- */
+  .start { display:grid; grid-template-columns:repeat(3,1fr); gap:14px; }
+  pre.cmd { background:var(--inset); border:1px solid var(--line); border-radius:8px; padding:12px 14px; font-family:var(--mono); font-size:12.5px; color:var(--txt); overflow-x:auto; margin:12px 0 0; }
+
+  /* ---------- Credits / footer ---------- */
+  .credits { display:grid; grid-template-columns:1.2fr 1fr; gap:40px; align-items:center; }
+  .credit-list { display:grid; gap:0; background:var(--panel); border:1px solid var(--line); border-radius:12px; overflow:hidden; box-shadow:var(--shadow); }
+  .credit-list div { display:flex; justify-content:space-between; gap:20px; padding:13px 18px; border-bottom:1px solid var(--line); font-size:13.5px; }
+  .credit-list div:last-child { border-bottom:0; }
+  .credit-list span { font-family:var(--mono); font-size:11px; text-transform:uppercase; letter-spacing:.08em; color:var(--mut); padding-top:2px; }
+  .credit-list b { font-weight:500; text-align:right; }
+  footer { border-top:1px solid var(--line); padding:28px 0; color:var(--mut); font-size:13px; }
+  footer .wrap { display:flex; justify-content:space-between; gap:16px; flex-wrap:wrap; }
+
+  .start > *, .cards > *, .arch > *, .hero-grid > *, .credits > * { min-width:0; }
+
+  /* ---------- Responsive ---------- */
+  @media (max-width: 1000px) {
+    .hero-grid, .arch, .credits { grid-template-columns:1fr; }
+    .mod { grid-template-columns:1fr; gap:20px; }
+    .principles { grid-template-columns:repeat(2,1fr); }
+    .cards.c3 { grid-template-columns:repeat(2,1fr); }
+    .chain { grid-template-columns:repeat(3,1fr); row-gap:32px; }
+    .chain::before { display:none; }
+    .nav { display:none; }
+    .topbar .actions { margin-left:auto; }
+  }
+  @media (max-width: 640px) {
+    .wrap { padding:0 16px; }
+    section { padding:56px 0; }
+    .hero h1 { font-size:36px; }
+    .hero .tagline { font-size:17px; }
+    .facts { grid-template-columns:repeat(2,1fr); }
+    .cards, .cards.c3, .principles, .start { grid-template-columns:1fr; }
+    .chain { grid-template-columns:repeat(2,1fr); }
+    .sec-head h2 { font-size:24px; }
+    .topbar .launch-top { display:none; }
+  }
+  @media print {
+    .topbar, .hero .ctas, .icon-btn { display:none; }
+    section { padding:32px 0; break-inside:avoid; }
+    body { background:#fff; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ================= Top bar ================= -->
+<header class="topbar">
+  <div class="wrap">
+    <a class="brand" href="#top">
+      <span class="logo-chip"><img src="assets/logo.png" alt="VAPS"></span>
+      PVT Nexus
+    </a>
+    <nav class="nav" aria-label="Sections">
+      <a href="#workflow">Workflow</a>
+      <a href="#modules">Modules</a>
+      <a href="#calculators">Calculators</a>
+      <a href="#report">Report</a>
+      <a href="#architecture">Architecture</a>
+      <a href="#start">Get started</a>
+    </nav>
+    <div class="actions" style="display:flex; gap:10px; align-items:center;">
+      <button class="icon-btn" id="themeBtn" type="button" aria-label="Toggle light / dark theme" title="Toggle theme">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
+      </button>
+      <a class="btn btn-primary btn-sm launch-top" href="index.html">Launch simulator</a>
+    </div>
+  </div>
+</header>
+
+<main id="top">
+
+<!-- ================= Hero ================= -->
+<section class="hero">
+  <div class="wrap hero-grid">
+    <div>
+      <div class="eyebrow">VAPS · Digital PVT Laboratory · v2.4</div>
+      <h1>VAPS PVT Nexus</h1>
+      <p class="tagline">An Integrated Digital Reservoir Fluid Workflow — from sampling to results.</p>
+      <p class="lead">An interactive engineering simulator that shows the complete reservoir-fluid journey: field sampling, laboratory quality control, the PVT test programme, property calculations and the final report. Every module follows the real order of operations, so the whole workflow can be followed end to end without touching a live sample.</p>
+      <div class="ctas">
+        <a class="btn btn-primary" href="index.html">
+          Launch simulator
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+        </a>
+        <a class="btn btn-ghost" href="https://github.com/m7wais-byte/PVT-Nexus-">View on GitHub</a>
+      </div>
+      <div class="facts">
+        <div class="fact"><b>3</b><span>Field sampling routes</span></div>
+        <div class="fact"><b>6</b><span>Sample QC procedures</span></div>
+        <div class="fact"><b>5</b><span>PVT analysis tests</span></div>
+        <div class="fact"><b>2</b><span>Live property calculators</span></div>
+      </div>
+    </div>
+
+    <!-- PVT cell schematic: constant-composition expansion -->
+    <figure class="cell-card" style="margin:0;">
+      <div class="cap"><b>PVT cell — constant-composition expansion</b><span>schematic</span></div>
+      <svg viewBox="-28 0 352 300" role="img" aria-label="PVT cell: the piston withdraws, cell volume increases, pressure falls below the bubble point and a free-gas phase forms at the top of the cell.">
+        <defs>
+          <linearGradient id="oilG" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="var(--oil)"/><stop offset="1" stop-color="var(--oil2)"/></linearGradient>
+          <linearGradient id="steelG" x1="0" x2="1"><stop offset="0" stop-color="var(--steel2)"/><stop offset=".5" stop-color="var(--steel)"/><stop offset="1" stop-color="var(--steel2)"/></linearGradient>
+          <clipPath id="bore"><rect x="92" y="40" width="76" height="220" rx="3"/></clipPath>
+        </defs>
+        <!-- cell body -->
+        <rect x="80" y="28" width="100" height="244" rx="10" fill="url(#steelG)"/>
+        <rect x="92" y="40" width="76" height="220" rx="3" fill="var(--inset)" stroke="var(--line2)"/>
+        <g clip-path="url(#bore)">
+          <!-- oil always fills the cell down to the piston face -->
+          <rect x="92" y="40" width="76" height="240" fill="url(#oilG)"/>
+          <!-- gas cap (forms below Pb, grows as the cell expands) -->
+          <rect class="an-gas" x="92" y="40" width="76" height="44" fill="var(--gas)"/>
+          <circle class="an-bub"    cx="112" cy="150" r="3" fill="#fff" opacity="0"/>
+          <circle class="an-bub b2" cx="134" cy="170" r="2.5" fill="#fff" opacity="0"/>
+          <circle class="an-bub b3" cx="152" cy="140" r="2" fill="#fff" opacity="0"/>
+          <!-- piston -->
+          <g class="an-piston">
+            <rect x="92" y="216" width="76" height="120" fill="var(--panel2)"/>
+            <rect x="92" y="200" width="76" height="16" fill="var(--steel)" stroke="var(--steel2)"/>
+            <rect x="124" y="216" width="12" height="80" fill="var(--steel2)"/>
+          </g>
+        </g>
+        <!-- top port + gauge -->
+        <rect x="126" y="14" width="8" height="16" fill="var(--steel2)"/>
+        <path d="M130 14 V8 H240 V58" fill="none" stroke="var(--steel)" stroke-width="3"/>
+        <circle cx="258" cy="74" r="28" fill="var(--panel)" stroke="var(--line2)" stroke-width="2"/>
+        <path d="M238 88 A24 24 0 1 1 278 88" fill="none" stroke="var(--line2)" stroke-width="5" stroke-linecap="round"/>
+        <line class="an-needle" x1="258" y1="74" x2="258" y2="54" stroke="var(--red)" stroke-width="2.5" stroke-linecap="round"/>
+        <circle cx="258" cy="74" r="3.5" fill="var(--txt2)"/>
+        <text x="258" y="118" text-anchor="middle" class="svg-txt">PRESSURE</text>
+        <!-- labels -->
+        <line x1="168" y1="70" x2="206" y2="150" class="svg-line"/>
+        <text x="200" y="164" class="svg-lbl">Free gas</text>
+        <text x="200" y="178" class="svg-txt">appears below Pb</text>
+        <line x1="92" y1="130" x2="44" y2="130" class="svg-line"/>
+        <text x="40" y="126" text-anchor="end" class="svg-lbl">Oil</text>
+        <text x="40" y="140" text-anchor="end" class="svg-txt">sample</text>
+        <line x1="92" y1="236" x2="44" y2="236" class="svg-line"/>
+        <text x="40" y="232" text-anchor="end" class="svg-lbl">Piston</text>
+        <text x="40" y="246" text-anchor="end" class="svg-txt">withdraws</text>
+        <!-- phase status -->
+        <g class="an-p1"><rect x="190" y="214" width="132" height="26" rx="6" fill="var(--panel2)" stroke="var(--line2)"/><text x="256" y="231" text-anchor="middle" class="svg-txt" style="fill:var(--blue)">P &gt; Pb · SINGLE PHASE</text></g>
+        <g class="an-p2"><rect x="190" y="214" width="132" height="26" rx="6" fill="var(--panel2)" stroke="var(--line2)"/><text x="256" y="231" text-anchor="middle" class="svg-txt" style="fill:var(--amb)">P &lt; Pb · TWO PHASE</text></g>
+      </svg>
+      <figcaption class="note">As the piston withdraws, cell volume increases and pressure falls. Above the bubble point (Pb) the oil stays single-phase. Below Pb, free gas comes out of solution and collects at the top of the cell. The simulator's PV / CCE test plots these points and takes Pb from where the two trends intersect.</figcaption>
+    </figure>
+  </div>
+</section>
+
+<!-- ================= Workflow ================= -->
+<section id="workflow">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="eyebrow">End-to-end workflow</div>
+      <h2>One sample, followed from the reservoir to the report</h2>
+      <p>The same sample carries through every stage. What it produces in sampling, validation and testing is what the final report is assembled from.</p>
+    </div>
+    <div class="chain">
+      <div class="st"><div class="dot">1</div><h4>Field Sampling</h4><p>Bottom hole, wellhead and separator routes</p></div>
+      <div class="st"><div class="dot">2</div><h4>Sample Transfer</h4><p>MPSR tool to SPS/PDS laboratory bottle</p></div>
+      <div class="st"><div class="dot">3</div><h4>Validation</h4><p>Quality control and preparation of the sample</p></div>
+      <div class="st"><div class="dot">4</div><h4>PVT Analysis</h4><p>Charging, flash, CCE, DL, separator, GC, viscosity</p></div>
+      <div class="st"><div class="dot">5</div><h4>Calculations</h4><p>Oil and gas property correlations</p></div>
+      <div class="st"><div class="dot">6</div><h4>Final Report</h4><p>Tables, figures and appendices; PDF and Word export</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= Modules ================= -->
+<section id="modules">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="eyebrow">Modules</div>
+      <h2>What each module simulates</h2>
+      <p>Each module is a guided procedure with live equipment, procedure controls (play, pause, replay, step selection) and an <b>Explain</b> panel describing what is happening physically at each step.</p>
+    </div>
+
+    <div class="mod">
+      <div>
+        <div class="tag">MODULE 01</div>
+        <h3>PVT Sampling</h3>
+        <p class="intro">Acquiring representative reservoir samples. Three field routes, each with live tool, bottle and flow behaviour.</p>
+      </div>
+      <div>
+        <div class="cards">
+          <div class="card"><h4><i></i>Bottom hole — open hole</h4><p>Wireline truck and drilling-rig mast with BOP. A formation-tester string with probe, fluid analyser and pump-out, filling piston sample bottles (MPSR).</p></div>
+          <div class="card"><h4><i></i>Bottom hole — cased hole</h4><p>Wireline unit, lubricator and pressure-control stack, tubing and packer. A single-phase reservoir sampler (SRS) with clock trigger, piston chamber and N₂ compensation.</p></div>
+          <div class="card"><h4><i></i>Wellhead</h4><p>A dedicated sampling line from the wellhead into a piston bottle, then straight to laboratory QC.</p></div>
+          <div class="card"><h4><i></i>Separator</h4><p>Independent oil and gas paths. Separator oil goes into a piston bottle and separator gas into a pressurised gas bottle.</p></div>
+        </div>
+        <div class="steps">
+          <span>Run in hole</span><span>Set tool</span><span>Formation communication</span><span>Pump-out clean-up</span><span>Fill chambers</span><span>Seal</span><span>Pull out of hole</span><span>Transfer to SPS/PDS</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="mod">
+      <div>
+        <div class="tag">MODULE 02</div>
+        <h3>Validation</h3>
+        <p class="intro">Sample receipt and quality control before testing. Run any procedure directly, or the full validation sequence.</p>
+      </div>
+      <div class="cards c3">
+        <div class="card t"><h4><i></i>Opening Pressure</h4><p>Record cylinder opening pressure and confirm sample integrity.</p></div>
+        <div class="card t"><h4><i></i>Restoration</h4><p>Restore the sample to its restoration pressure and temperature.</p></div>
+        <div class="card t"><h4><i></i>Water Check</h4><p>Check and quantify free water and drain it while the oil is retained.</p></div>
+        <div class="card t"><h4><i></i>Agitation</h4><p>Homogenise the sample by slow 180° inversion at restored conditions.</p></div>
+        <div class="card t"><h4><i></i>Direct Density</h4><p>Determine density from measured mass and transferred volume.</p></div>
+        <div class="card t"><h4><i></i>Recombination</h4><p>Measure separator gas and oil, then combine and mix them in one bottle.</p></div>
+      </div>
+    </div>
+
+    <div class="mod">
+      <div>
+        <div class="tag">MODULE 03 · ANALYSIS</div>
+        <h3>Detailed PVT Analysis</h3>
+        <p class="intro">Charging the PVT cell and running the analysis programme on the restored sample.</p>
+      </div>
+      <div class="cards">
+        <div class="card a"><h4><i></i>Charging and Flash</h4><p>Charge the validated sample into the PVT cell. Then run a single-stage flash to standard conditions, with flash-unit evacuation, helium charge from the gasometer and gas collection into the balloon.</p></div>
+        <div class="card a"><h4><i></i>PV / CCE</h4><p>Pressure–volume relation at constant composition. A two-pump agitation cycle and stabilisation give the P–V points, and the bubble point comes from the intersection of the two trends.</p></div>
+        <div class="card a"><h4><i></i>Differential Liberation</h4><p>Reservoir-fluid behaviour as pressure is reduced in stages, with the liberated gas removed at each stage.</p></div>
+        <div class="card a"><h4><i></i>Separator Test</h4><p>Fluid behaviour under separator conditions.</p></div>
+        <div class="card a"><h4><i></i>Gas Chromatography</h4><p>Gas and oil composition. Shows the carrier gas, gas sample inlet and injection valve, oil autosampler, oven and column, detector, and chromatogram.</p></div>
+        <div class="card a"><h4><i></i>Viscosity — four methods</h4>
+          <ul>
+            <li>Oscillating-piston viscometer</li>
+            <li>Kinematic U-tube viscometer (ν = C × t)</li>
+            <li>Single-phase falling-body viscosity vs pressure</li>
+            <li>Two-phase viscosity from the PVT cell</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <div class="callout">
+      <div class="ic">i</div>
+      <div><b>Representative values.</b> Readings in the sampling, validation and test modules are illustrative values chosen to represent a realistic run. The simulator does not derive PVT properties from measured data. The oil and gas calculators are the exception: they compute live from published industry correlations.</div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= How it works ================= -->
+<section id="principles">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="eyebrow">How it works</div>
+      <h2>Simple on screen, detailed underneath</h2>
+      <p>Panels use everyday laboratory language. Behind each label sits the engineering model: the operational order, tool and bottle geometry, phase behaviour, pressure and volume bookkeeping, and the checks that decide whether a step can proceed.</p>
+    </div>
+    <div class="principles">
+      <div class="pr"><div class="n">01</div><h4>Guided procedure</h4><p>Each screen runs the real sequence of operations. One action unlocks the next, so the order itself teaches the procedure.</p><div class="bar"></div></div>
+      <div class="pr"><div class="n">02</div><h4>Linked process model</h4><p>Valves, pistons, fluid levels, pressures and volumes are driven by one shared sample state, so everything on screen moves together.</p><div class="bar" style="background:var(--teal)"></div></div>
+      <div class="pr"><div class="n">03</div><h4>Explain panel</h4><p>A step-by-step guide that stays in sync with the animation and describes what is happening physically, and why.</p><div class="bar" style="background:var(--amb)"></div></div>
+      <div class="pr"><div class="n">04</div><h4>Continuous record</h4><p>Results from sampling, validation and testing feed the final report, so the workflow ends in a complete deliverable.</p><div class="bar" style="background:var(--grn)"></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= Calculators ================= -->
+<section id="calculators">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="eyebrow">Module 05</div>
+      <h2>PVT Calculator</h2>
+      <p>Native oil and gas property calculators that run beside the workflow and compute live from standard industry correlations.</p>
+    </div>
+    <div class="tbl-scroll">
+      <table class="tbl">
+        <thead><tr><th>Calculator</th><th>Properties</th><th>Correlations and methods</th><th>Tools</th></tr></thead>
+        <tbody>
+          <tr>
+            <td>Oil</td>
+            <td>Rs, Pb, Bo, API gravity, oil viscosity, compressibility</td>
+            <td>Standing, Vasquez-Beggs, Glasø, Al-Marhoun, Petrosky-Farshad, material balance. Dead-oil viscosity: Beal, Beggs-Robinson, Glasø. Beggs-Robinson saturated and Vasquez-Beggs undersaturated viscosity.</td>
+            <td>Calculator tab; batch evaluation with AAE tables (Rs, Pb, Bo, μo)</td>
+          </tr>
+          <tr>
+            <td>Gas</td>
+            <td>Z-factor, Bg, Eg, density, specific volume, cg, viscosity, pseudo-criticals</td>
+            <td>Gas-gravity and Kay mixing pseudo-criticals, Brown (1948). Wichert-Aziz and Carr-Kobayashi-Burrows sour-gas corrections. Papay and Beggs-Brill Z-factor. Lee-Gonzalez-Eakin viscosity.</td>
+            <td>Calculator, composition table (20 rows, automatic component lookup), Standing chart</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- ================= Report ================= -->
+<section id="report">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="eyebrow">Module 04</div>
+      <h2>Final Report</h2>
+      <p>A structured PVT report assembled from the sampling, QC and test records, laid out in a professional client report format.</p>
+    </div>
+    <div class="cards c3">
+      <div class="card g"><h4><i></i>Contents</h4><ul><li>Cover and summary</li><li>Tables 1–14</li><li>Figures 1–10 (vector graphics)</li><li>Appendices</li></ul></div>
+      <div class="card g"><h4><i></i>Traceable data</h4><p>Every number comes from one data set built from the simulator's own stage values. Derived columns, the correlations used and every assumption are listed in Appendix B.</p></div>
+      <div class="card g"><h4><i></i>Export</h4><p><b>Print / PDF</b> with a dedicated print layout, and <b>Export Word</b> for editing the report further.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= Architecture ================= -->
+<section id="architecture">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="eyebrow">Architecture</div>
+      <h2>Lightweight, offline, no build step</h2>
+      <p>Plain HTML, CSS and JavaScript. It opens directly from <code>index.html</code>, with no installation, framework, server or internet connection needed (apart from web fonts).</p>
+    </div>
+    <div class="arch">
+<div class="tree"><b>PVT-Nexus-/</b>
+├── <b>index.html</b>        <em>simulator entry point</em>
+├── <b>overview.html</b>     <em>this page</em>
+├── theme.css         <em>styles · light / dark tokens</em>
+├── timing.js         <em>global animation speed</em>
+├── runtime.js        <em>template / component engine</em>
+├── assets/           <em>logo</em>
+├── data/
+│   ├── pure-components.js  <em>MW, Pc, Tc table</em>
+│   └── report-data.js      <em>report data set</em>
+├── components/       <em>process logic + stages</em>
+│   ├── Main.js · StepGuide.js · ProcCtl.js
+│   ├── BottomHoleSim.js · RecombSim.js
+│   ├── StagePVTest.js · StageDiffLib.js
+│   ├── StageSeparator.js · StageGC.js
+│   ├── StageVisc*.js · StageDensity.js
+│   ├── StageReport.js
+│   └── OilCalc.js · GasCalc.js
+├── screens/          <em>one file per screen</em>
+└── PROJECT.md        <em>developer notes</em></div>
+      <div class="stack">
+        <div class="row"><div class="k">Front end</div><p>Vanilla JavaScript with a small in-house template / component engine (<code>runtime.js</code>). No external libraries.</p></div>
+        <div class="row"><div class="k">Graphics</div><p>All equipment, schematics, charts and report figures are drawn as inline SVG, so they stay sharp at any size and in print.</p></div>
+        <div class="row"><div class="k">State</div><p>One shared sample state per process drives every element on screen. Procedure clocks can be paused, resumed and replayed exactly.</p></div>
+        <div class="row"><div class="k">Theming</div><p>Light and dark themes from one set of CSS variables. The setting is shared between the simulator and this page.</p></div>
+        <div class="row"><div class="k">Timing</div><p>A single <code>PROCESS_SPEED_MULTIPLIER</code> in <code>timing.js</code> scales every process animation.</p></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= Get started ================= -->
+<section id="start">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="eyebrow">Get started</div>
+      <h2>Run the simulator</h2>
+      <p>Recommended: Chrome or Edge on a desktop screen of 1366 × 768 or larger.</p>
+    </div>
+    <div class="start">
+      <div class="card"><h4><i></i>Online</h4><p>Open the live version hosted on GitHub Pages.</p><p style="margin-top:14px;"><a class="btn btn-primary btn-sm" href="index.html">Launch simulator</a></p></div>
+      <div class="card"><h4><i></i>Locally</h4><p>Clone or download the repository, then open <code>index.html</code>.</p><pre class="cmd">git clone https://github.com/m7wais-byte/PVT-Nexus-.git</pre></div>
+      <div class="card"><h4><i></i>Publish</h4><p>Repository → Settings → Pages → Deploy from branch <code>main</code>, folder <code>/ (root)</code>.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= Credits ================= -->
+<section id="credits">
+  <div class="wrap credits">
+    <div>
+      <div class="eyebrow">Project</div>
+      <h2 style="font-size:30px; font-weight:600; margin-top:10px;">Purpose</h2>
+      <p style="color:var(--txt2); margin-top:12px; font-size:16px;">To make complex PVT workflows easier to understand, practise and review, for engineers, laboratory personnel, trainees and technical learners. It started as an idea for showing how PVT laboratory work is actually carried out. It then grew through a first draft and technical corrections against laboratory practice into a connected workflow and training simulator.</p>
+      <p style="color:var(--mut); margin-top:14px; font-size:13.5px;">Data: all client, field and well names in the report (<code>Demonstration Client</code>, <code>Demonstration Field</code>, <code>DEMO-1</code>) are placeholders. No company or client data is included.</p>
+    </div>
+    <div class="credit-list">
+      <div><span>Developed by</span><b>Mohammed Hilal Al Awaisi</b></div>
+      <div><span>Organisation</span><b>Vision Advanced Petroleum Solutions (VAPS)</b></div>
+      <div><span>Calculators</span><b>Logic by Khalid, integrated into PVT Nexus</b></div>
+      <div><span>Version</span><b>v2.4 · 2026</b></div>
+      <div><span>Status</span><b>Interactive prototype · active development</b></div>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<footer>
+  <div class="wrap">
+    <span>VAPS PVT Nexus · Digital PVT Laboratory · 2026</span>
+    <span><a href="index.html">Simulator</a> · <a href="https://github.com/m7wais-byte/PVT-Nexus-">GitHub</a> · <a href="PROJECT.md">Developer notes</a></span>
+  </div>
+</footer>
+
+<script>
+  document.getElementById('themeBtn').addEventListener('click', function () {
+    var root = document.documentElement;
+    var dark = root.getAttribute('data-theme') === 'dark';
+    if (dark) root.removeAttribute('data-theme'); else root.setAttribute('data-theme', 'dark');
+    try { localStorage.setItem('pvtTheme', dark ? 'light' : 'dark'); } catch (e) {}
+  });
+</script>
+</body>
+</html>
