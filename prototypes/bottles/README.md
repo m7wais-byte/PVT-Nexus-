@@ -1,67 +1,71 @@
-# Bottle design prototype (PVT Nexus)
+# Sample bottle designs (PVT Nexus prototype)
 
-A standalone design study of the sampling bottles and cylinders used in PVT Nexus. It is **not linked to the simulator**: no simulator file, navigation, data file or workflow was changed. The animation is **illustrative only, not a validated physical simulation**.
+A standalone design review page for the two general bottle designs: the **Oil Sample Bottle** and the **Gas Sample Bottle**. It covers appearance and internal construction only. There are no procedures, capacities, pressures, temperatures or animations. The page is not linked to the simulator.
 
 ## Preview
 
-Serve the repository root over HTTP and open the prototype:
+Serve the repository root over HTTP:
 
 ```bash
-python3 -m http.server 8000      # from the repository root
-# http://localhost:8000/prototypes/bottles/
+git fetch origin claude/awesome-goodall-e0qp90
+git checkout claude/awesome-goodall-e0qp90
+python3 -m http.server 8000          # from the repository root
+# open http://localhost:8000/prototypes/bottles/
 ```
 
-Plain HTML, CSS and JavaScript. No build step and no packages. The only external request is the IBM Plex font link the simulator already uses; system fonts are used when offline. The logo comes from `../../assets/logo.png`.
+Opening `prototypes/bottles/index.html` directly from disk also works. There is no build step and no package to install.
 
-You can open a specific view straight from the URL, which is useful for reviews:
-`?cfg=wh|sep|bh|rc|gspField|gspLab|ti` · `&t=<seconds>` · `&view=exterior|cutaway` · `&orient=upright|horizontal` · `&labels=0|1`
+URL options for review links: `?show=both|oil|gas` · `&view=exterior|cutaway|pair` · `&orient=upright|horizontal` · `&labels=0` · `&theme=light|dark`
+
+## Controls
+
+- **Bottle:** Compare both · Oil Sample Bottle · Gas Sample Bottle
+- **View:** Exterior · Cutaway · Exterior + cutaway (side by side)
+- **Orientation:** Upright · Horizontal
+- **Labels:** on / off
+- **Background:** light / dark
+
+Both bottles are drawn at the same scale, and the exterior and cutaway views use identical geometry.
 
 ## Files
 
 | File | Purpose |
 |---|---|
 | `index.html` | Page shell |
-| `bottles.css` | Styles; light and dark tokens copied from `theme.css` |
-| `bottle-draw.js` | `PBDraw`: SVG generators for the 3 vessel designs. Uses local coordinates and namespaced ids |
-| `bottle-configs.js` | `PBConfig`: bottle types, configurations, values and timelines (each frame is a pure function of time) |
-| `app.js` | Controls, instrument panel, one `requestAnimationFrame` loop |
-| `screenshots/` | Preview captures at 1366×768 and 1920×1080 |
+| `bottles.css` | Styles; light and dark tokens from `theme.css` |
+| `bottle-draw.js` | `PBDraw.oil()` / `PBDraw.gas()` editable SVG generators, label anchors, namespaced ids |
+| `app.js` | View controls and label layout |
+| `screenshots/` | Captures at 1366×768 and 1920×1080 |
 
-## Bottle types found in the repository
+## References
 
-Only 3 physical designs are supported by the code. Uses that share one physical bottle are configurations of that design.
+| Reference | Access from the build environment |
+|---|---|
+| Leutert PDC datasheet (PDF) | **Not accessible.** Download and fetch were both blocked. Used the Leutert PDC product-page description returned by web search: a floating piston with a **mixing ball**, **valve protectors on both ends**, **right-angle needle valves** with **¼" NPT female** ports, and a **special fitting on the sample side for evacuation**. |
+| Swagelok MS-01-177 catalogue (PDF) | **Not accessible.** Used general Swagelok information returned by web search: **double-ended**, **seamless** construction, heavy-duty ends with **¼" FNPT** at both ends, 304L / 316L stainless steel. |
 
-1. **Piston sample bottle (SPS/PDS type)** (`SampleBottle.js`). A barrel with screwed end caps, a floating piston with 2 O-rings, and a needle valve at each end. It has 4 configurations:
-   - **Wellhead, N₂ back-pressure** (the constant-pressure sampling bottle): 600 cc, N₂ at 2,000 psig behind the piston, line at 1,450 psig and 60 °C. Sequence: fill, then close and seal.
-   - **Separator oil, water buffer**: 600 cc at 200 psig and 35 °C. Oil fills from the top and displaces water out of the bottom. In the lab the bottle is pressurised from 315 to 3,000 psig (1.4 cc of water), then delivers 180 cc to the PVT cell (taken from RecombSim stage 6).
-   - **Bottom hole, SPS/PDS lab bottle**: 800 cc. Receives the 450 cc MPSR transfer at 5,000 psi and 114 °C, then charges 82 cc to the PVT cell.
-   - **Recombination bottle**: 275 cc with 30 cc of water. It receives 40 cc of gas (measured at 5,000 psig), then 179 cc of oil. It is pressurised to 5,000 psig and inverted 3 × 180° until single phase.
-2. **Separator gas bottle (GSP)**: a rounded-shoulder gas bottle with no piston and no water. It has 2 configurations: the **field fill** at the separator gas outlet (to 200 psig), and the **lab GSP source** feeding the booster (315 → 296 psig).
-3. **Titanium transfer cylinder**: 330 cc with bolted end flanges and a floating piston. Sequence: vacuum, boost to 1,000 psig, compress to 5,000 psig with water, then deliver 60 cc at constant 5,000 psig, leaving 9 cc.
+Because neither PDF could be read, no catalogue dimension tables were used. Proportions are representative.
 
-The MPSR and SRS downhole tool chambers are left out. The project describes them as tool modules, not transport bottles.
+## Construction details assumed (please review)
 
-## Operating logic used
+### Oil Sample Bottle
 
-- Each port connects only to its own chamber. Flow is drawn only through open valves, and nothing crosses the piston.
-- The piston position and the chamber volumes come from the same cc values: sample side + buffer side = capacity.
-- Gas inventory is drawn as dots. Compression packs the same dots into less space. Liquid is drawn as a solid fill that moves by transfer.
-- Pressure is shown only from project values, from linear ramps between project end points (labelled), or from the project's RecombSim model P·Vⁿ = const (titanium cylinder, recombination bottle). Every other pressure shows "not modelled".
-- When the bottle is tilted or inverted, the liquid surface stays level and the free gas stays on top. Internal parts rotate with the vessel.
+1. Proportions: a long, slim barrel with bore length to diameter of about 10:1.
+2. End caps screw over the barrel. Each has a spigot into the bore with an O-ring and back-up ring.
+3. The valve protector is drawn as a tube with a front window, an open top ring and a side slot for the outlet. Its exact form is assumed.
+4. The right-angle needle valve stands on the cap axis: inlet from the cylinder, outlet to the side, vertical stem with a T-handle. Valves are drawn closed (needle seated).
+5. Evacuation fitting: drawn as a radial plugged port on the sample-side cap, drilled into the sample chamber. Its position and form are assumed; the reference only says a special fitting on the sample side.
+6. Piston: two seal grooves (O-ring plus back-up rings) with a guide ring (wear band) between them. The piston is shown at a fixed, representative position.
+7. Mixing ball size is assumed. It rests on the piston upright, or on the lower wall when the bottle is horizontal.
+8. The driving-fluid colour is generic. The fluid type is not specified.
 
-## Assumptions to review
+### Gas Sample Bottle
 
-1. **Wellhead N₂ side**: the project says N₂ is "displaced in a controlled way". I have drawn this as a bleed through the bottom valve. The valve opening and closing order is also assumed. Discharge is disabled because changing over from N₂ to water is not described.
-2. **Valve closing order** for the separator oil bottle: water side first, then sample side (assumed).
-3. **Capacity conflicts** in the project: the separator oil bottle is 600 cc in Sampling but 200 cc in RecombSim, and Validation's `bottleModel` uses 800 cc for every source. The fill volume here is 200 cc (RecombSim). The wellhead fill of 490 cc comes from the drawing fraction (0.82 × 600).
-4. **Separator gas pressure**: 200 psig at the separator but 315 psig as the GSP in Recombination. That is why they are 2 separate configurations.
-5. **Gas bottle**: the capacity and the state before filling are not defined (it is drawn empty). There are two drawings in the project: Sampling has 2 valves, Recombination has 1. I kept both valves and plugged the bottom one. The green service band is a design choice.
-6. **Titanium vacuum step** (repository logic): the piston rises to 12 cc and leaves an empty gap above the 30 cc of water. Please confirm this is physically intended.
-7. **Recombination**: the two oil strokes (99 + 80 cc) are drawn as one. Gas shrinkage while mixing (`MIX_SHRINK`) is visual only, as in RecombSim. No heating-jacket set point is defined in the project.
-8. **Dimensions and construction** are representative, not a manufacturer's design. All piston-bottle configurations are drawn at the same size, as `SampleBottle.js` does. No bottle has a gauge in the project, so readings are in the instrument panel.
-9. **Fluid colours**: the project uses pale blue for gas in `SampleBottle.js` but green in `RecombSim.js`. The prototype uses the green "Separator gas" colour throughout.
-10. **Manual titanium slider**: limited to between the volume at 5,000 psig and 300 cc. Pressure readings below 1,000 psig are marked as extrapolated.
+9. Body proportions: length about 4× diameter. The shoulder curve, wall thickness and neck length are assumed (no catalogue table was available).
+10. The valve assembly at each end is representative, not a specific Swagelok part: hex nipple (¼" NPT male), inline needle valve with a side handle, and a male connector with a tube stub.
+11. The marking band and engraved text are decorative placeholders.
+12. Gas fills the whole chamber, shown as a uniform tint with scattered dots. There is no level.
 
-## Note before integration
+## Scope
 
-The Pages workflow publishes the repository root on pushes to `main`. If this folder is merged, it becomes publicly reachable at `/prototypes/bottles/`.
+All changes are inside `prototypes/bottles/`. The simulator and the deployment workflow are untouched. The Pages workflow publishes `main` only, so this branch is not deployed.

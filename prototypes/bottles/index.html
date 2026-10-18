@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>PVT Nexus — Bottle Design Prototype</title>
+<title>PVT Nexus — Sample Bottle Designs</title>
 <!-- same font link as the simulator (index.html); system fonts are used offline -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -15,95 +15,33 @@
   <header class="top">
     <img class="logo" src="../../assets/logo.png" alt="VAPS">
     <div class="ttl">
-      <div class="eyebrow">PVT NEXUS · DESIGN EXPLORATION</div>
-      <h1>Sampling Bottle Prototype</h1>
+      <div class="eyebrow">PVT NEXUS · DESIGN REVIEW</div>
+      <h1>Sample Bottle Designs</h1>
     </div>
-    <span class="pill warn" title="This page is not linked to the simulator">Isolated prototype · not the simulator</span>
-    <span class="pill">Illustrative animation · not a validated physical simulation</span>
-    <button class="btn ghost" id="themeBtn" type="button" aria-label="Toggle light / dark theme">Light theme</button>
+    <div class="ctl" role="group" aria-label="Bottle">
+      <span class="cl">Bottle</span>
+      <div class="seg" id="showSeg"><button type="button" data-v="both">Compare both</button><button type="button" data-v="oil">Oil Sample Bottle</button><button type="button" data-v="gas">Gas Sample Bottle</button></div>
+    </div>
+    <div class="ctl" role="group" aria-label="View">
+      <span class="cl">View</span>
+      <div class="seg" id="viewSeg"><button type="button" data-v="exterior">Exterior</button><button type="button" data-v="cutaway">Cutaway</button><button type="button" data-v="pair">Exterior + cutaway</button></div>
+    </div>
+    <div class="ctl" role="group" aria-label="Orientation">
+      <span class="cl">Orientation</span>
+      <div class="seg" id="oriSeg"><button type="button" data-v="upright">Upright</button><button type="button" data-v="horizontal">Horizontal</button></div>
+    </div>
+    <label class="sw"><input type="checkbox" id="lblChk" checked><span></span><em>Labels</em></label>
+    <button class="btn" id="themeBtn" type="button">Light background</button>
   </header>
 
-  <aside class="side left" aria-label="Equipment and view controls">
-    <section>
-      <h2>Equipment</h2>
-      <div id="typeList" class="types" role="radiogroup" aria-label="Bottle type"></div>
-    </section>
-    <section>
-      <h2>Configuration</h2>
-      <div id="cfgList" class="cfgs" role="radiogroup" aria-label="Configuration"></div>
-      <p id="typeAbout" class="hint"></p>
-    </section>
-    <section>
-      <h2>View</h2>
-      <div class="row"><span class="rl">Drawing</span>
-        <div class="seg" id="viewSeg"><button type="button" data-v="exterior">Exterior</button><button type="button" data-v="cutaway">Cutaway</button></div></div>
-      <div class="row"><span class="rl">Orientation</span>
-        <div class="seg" id="oriSeg"><button type="button" data-v="upright">Upright</button><button type="button" data-v="horizontal">Horizontal</button></div></div>
-      <div class="row"><span class="rl">Labels</span>
-        <label class="sw"><input type="checkbox" id="lblChk" checked><span></span><em id="lblTxt">On</em></label></div>
-      <p id="viewNote" class="hint"></p>
-    </section>
-    <section>
-      <h2>Valves</h2>
-      <div id="valveList"></div>
-    </section>
-    <section>
-      <h2>Sample volume</h2>
-      <div class="vol">
-        <input type="range" id="volRange" min="0" max="600" step="1" aria-describedby="volHint">
-        <output id="volOut">0 cc</output>
-      </div>
-      <p id="volHint" class="hint"></p>
-    </section>
-  </aside>
+  <main id="grid" class="grid" aria-live="polite"></main>
 
-  <main class="stage-wrap">
-    <div class="stage" id="stage">
-      <div class="badges">
-        <span class="badge" id="viewBadge">CUTAWAY</span>
-        <span class="badge mode" id="modeBadge">DEMONSTRATION</span>
-      </div>
-      <svg id="svg" viewBox="0 0 1000 700" preserveAspectRatio="xMidYMid meet" role="img" aria-labelledby="svgTitle">
-        <title id="svgTitle">Bottle drawing</title>
-      </svg>
-    </div>
-    <div class="transport">
-      <div class="tbtns">
-        <button class="btn primary" id="playBtn" type="button">Play</button>
-        <button class="btn ghost" id="resetBtn" type="button">Reset</button>
-        <button class="btn ghost" id="replayBtn" type="button">Replay</button>
-        <span class="clock" id="clock">0:00 / 0:00</span>
-      </div>
-      <div class="prog" id="prog" title="Click to seek"><i id="progBar"></i></div>
-      <div class="chips" id="chips"></div>
-      <div class="step"><b id="stepName"></b><span id="stepDesc"></span></div>
-      <div class="caption" id="caption"></div>
-    </div>
-  </main>
-
-  <aside class="side right" aria-label="Instrument panel">
-    <section>
-      <h2 id="panelTitle">Instrument panel</h2>
-      <p id="panelSub" class="hint"></p>
-      <div id="readings" class="kv"></div>
-    </section>
-    <section>
-      <h2>Chamber contents</h2>
-      <div id="chambers" class="kv"></div>
-    </section>
-    <section>
-      <h2>Valves &amp; flow</h2>
-      <div id="flows" class="kv"></div>
-      <div id="proc" class="proc"></div>
-    </section>
-    <section>
-      <h2>Fluid legend</h2>
-      <div id="legend" class="legend"></div>
-    </section>
-  </aside>
+  <footer class="foot">
+    <span>Representative technical illustrations based on manufacturer references, not replicas of a specific product. Not to scale between manufacturers; no process or operating data shown.</span>
+    <span class="legend" id="legend"></span>
+  </footer>
 </div>
 <script src="bottle-draw.js"></script>
-<script src="bottle-configs.js"></script>
 <script src="app.js"></script>
 </body>
 </html>

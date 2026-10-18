@@ -1,363 +1,324 @@
 /* ==========================================================================
    PVT Nexus — bottle design prototype · drawing library (PBDraw)
 
-   Editable SVG generators for the three physical vessel designs found in the
-   project. Everything is drawn in LOCAL coordinates: vessel axis vertical,
-   origin at the body centre, sample (top) port at negative y. The caller wraps
-   the markup in one transform (translate + rotate), so every internal part
-   stays aligned with the vessel in any orientation.
+   Two representative designs, drawn as editable SVG in LOCAL coordinates:
+   vessel axis vertical, origin at the body centre, "top" end at negative y.
+   The caller wraps the markup in one transform (translate + rotate), so the
+   internal parts always stay aligned with the vessel.
 
-   Every gradient / pattern / clip id is prefixed with a namespace (ns), so
-   several bottles can share one page without id collisions.
+     oil(ns, o)  Oil Sample Bottle — floating-piston sample cylinder
+                 (after the Leutert PDC description: floating piston, mixing
+                 ball, right-angle needle valves, valve protectors at both
+                 ends, evacuation fitting on the sample side)
+     gas(ns, o)  Gas Sample Bottle — double-ended seamless sample cylinder
+                 with tapered shoulders and an isolation valve at each end
+                 (after the Swagelok double-ended cylinder; valves representative)
 
-   Fluid colours are the project's own (SampleBottle.js / RecombSim.js FL),
-   fixed in both themes like every fluid in the simulator.
+   o = { view:'exterior'|'cutaway', g:[gx,gy] gravity in local coords }
+   Exterior and cutaway share every dimension; the cutaway is a section
+   through the vessel axis. All ids are prefixed with ns.
    ========================================================================== */
 (function () {
   'use strict';
 
-  /* ---------------------------------------------------------------- fluids */
-  var FLUID = {
-    oil:    { name: 'Sample oil',        a: '#e7b15a', b: '#c07f2e', line: '#d8973a', dash: '#fff1cf' },
-    gas:    { name: 'Sample gas',        a: '#e3f8ee', b: '#8fd6b4', line: '#5cc79a', dash: '#e9fff4', dot: '#2f9d72' },
-    n2:     { name: 'Nitrogen (N₂)',     a: '#8fb6c9', b: '#3d6577', line: '#7fa6ba', dash: '#e8f4fb', dot: '#e8f4fb' },
-    water:  { name: 'Hydraulic water',   a: '#5aa6d8', b: '#2f6f9c', line: '#4a93c9', dash: '#dff1ff' },
-    recomb: { name: 'Recombined fluid',  a: '#ecc377', b: '#cf9442', line: '#d8973a', dash: '#fff1cf' },
-    vac:    { name: 'Vacuum / empty',    a: '#0a1420', b: '#0a1420', line: '#56637a', dash: '#dfe6f0', dot: '#56637a' }
+  var COL = {
+    oil:   { name: 'Oil sample',     a: '#cfa060', b: '#9a6a2e' },
+    drive: { name: 'Driving fluid',  a: '#6f9cc0', b: '#3d6688' },
+    gas:   { name: 'Gas sample',     a: '#d5ebe0', b: '#a3cbb8', dot: '#4f8f74' }
   };
 
-  /* -------------------------------------------------------------- geometry
-     R  barrel outer half-width   rb bore half-width     body*  barrel span
-     end 'cap' screwed end cap | 'flange' bolted flange | 'dome' rounded shoulder
-     ch* internal chamber span    pist piston thickness (0 = no piston)       */
-  var GEOM = {
-    piston: { R: 44, rb: 33, bodyT: -152, bodyB: 152, end: 'cap', capR: 50, capH: 24,
-              chT: -140, chB: 140, pist: 24, body: 'Cyl', collars: [-104, 96] },
-    ti:     { R: 32, rb: 22, bodyT: -172, bodyB: 172, end: 'flange', capR: 41, capH: 14,
-              chT: -165, chB: 165, pist: 14, body: 'Ti', collars: [] },
-    gas:    { R: 48, rb: 40, bodyT: -178, bodyB: 178, end: 'dome', domeR: 46,
-              chT: -170, chB: 170, pist: 0, body: 'Cyl', collars: [], band: [-118, -100] }
-  };
-  var STACK = { neckHW: 10, neckH: 16, valveHW: 19, valveH: 30, fitHW: 6, fitH: 18, nutHW: 10, nutH: 9 };
-  Object.keys(GEOM).forEach(function (k) {
-    var g = GEOM[k], s = STACK;
-    g.endTop = g.end === 'dome' ? g.bodyT : g.bodyT - g.capH;   // outer face of the end closure
-    g.neckT = g.endTop - s.neckH;
-    g.yv = g.neckT - s.valveH / 2;                                // valve centre
-    g.fitT = g.neckT - s.valveH - s.fitH;
-    g.conn = g.fitT - s.nutH;                                     // connection point (tube end)
-    g.halfW = Math.max(g.capR || g.R, s.valveHW + 37);            // incl. handwheel
-  });
-
-  /* ------------------------------------------------------------- helpers */
   function r1(v) { return Math.round(v * 10) / 10; }
-  function clamp(v, a, b) { return v < a ? a : v > b ? b : v; }
-  function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
-  function rect(x, y, w, h, a) { return '<rect x="' + r1(x) + '" y="' + r1(y) + '" width="' + r1(Math.max(0, w)) + '" height="' + r1(Math.max(0, h)) + '" ' + (a || '') + '/>'; }
-  function poly(p) { return p.length < 3 ? '' : 'M' + p.map(function (q) { return r1(q[0]) + ',' + r1(q[1]); }).join(' L') + ' Z'; }
+  function R(x, y, w, h, a) { return '<rect x="' + r1(x) + '" y="' + r1(y) + '" width="' + r1(w) + '" height="' + r1(h) + '" ' + (a || '') + '/>'; }
+  function C(x, y, r, a) { return '<circle cx="' + r1(x) + '" cy="' + r1(y) + '" r="' + r1(r) + '" ' + (a || '') + '/>'; }
+  function P(d, a) { return '<path d="' + d + '" ' + (a || '') + '/>'; }
+  var K = 'stroke="#0a0e16"';
 
-  // convex polygon clip: keep the part with dot(p, n) <= c
-  function clipHalf(P, n, c) {
-    var out = [];
-    for (var i = 0; i < P.length; i++) {
-      var a = P[i], b = P[(i + 1) % P.length];
-      var da = a[0] * n[0] + a[1] * n[1] - c, db = b[0] * n[0] + b[1] * n[1] - c;
-      if (da <= 0) out.push(a);
-      if ((da < 0 && db > 0) || (da > 0 && db < 0)) { var k = da / (da - db); out.push([a[0] + (b[0] - a[0]) * k, a[1] + (b[1] - a[1]) * k]); }
-    }
-    return out;
-  }
-  function area(P) { var s = 0; for (var i = 0; i < P.length; i++) { var a = P[i], b = P[(i + 1) % P.length]; s += a[0] * b[1] - b[0] * a[1]; } return Math.abs(s) / 2; }
-  function inside(P, x, y) {               // convex polygon, either winding
-    var sgn = 0;
-    for (var i = 0; i < P.length; i++) {
-      var a = P[i], b = P[(i + 1) % P.length], c = (b[0] - a[0]) * (y - a[1]) - (b[1] - a[1]) * (x - a[0]);
-      if (c !== 0) { if (sgn === 0) sgn = c > 0 ? 1 : -1; else if ((c > 0 ? 1 : -1) !== sgn) return false; }
-    }
-    return true;
-  }
-  /* Liquid of a given area inside a convex region, lying on the side that is DOWN.
-     g = gravity in local coordinates. Its free surface stays perpendicular to gravity. */
-  function settle(R, liqArea, g) {
-    var up = [-g[0], -g[1]], tot = area(R);
-    if (liqArea <= .01) return { liq: [], rest: R };
-    if (liqArea >= tot - .01) return { liq: R, rest: [] };
-    var ds = R.map(function (q) { return q[0] * up[0] + q[1] * up[1]; });
-    var lo = Math.min.apply(null, ds), hi = Math.max.apply(null, ds), c = lo;
-    for (var it = 0; it < 34; it++) { c = (lo + hi) / 2; if (area(clipHalf(R, up, c)) < liqArea) lo = c; else hi = c; }
-    return { liq: clipHalf(R, up, c), rest: clipHalf(R, [-up[0], -up[1]], -c) };
-  }
-  function bbox(P) {
-    var x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9;
-    P.forEach(function (q) { x0 = Math.min(x0, q[0]); y0 = Math.min(y0, q[1]); x1 = Math.max(x1, q[0]); y1 = Math.max(y1, q[1]); });
-    return [x0, y0, x1, y1];
-  }
-  function halton(i, b) { var f = 1, r = 0; while (i > 0) { f /= b; r += f * (i % b); i = Math.floor(i / b); } return r; }
-  /* gas inventory drawn as n dots spread through the region: the same n in a smaller
-     region reads denser (compression), fewer dots = less gas (discharge) */
-  function dots(P, n, col, rad, t, motion, seed) {
-    if (!P.length || n < 1) return '';
-    var b = bbox(P), o = '', k = 0, i = 1 + (seed || 0) * 97;
-    while (k < n && i < 4000) {
-      var x = b[0] + 2.5 + (b[2] - b[0] - 5) * halton(i, 2), y = b[1] + 2.5 + (b[3] - b[1] - 5) * halton(i, 3);
-      if (motion) { x += 1.1 * Math.sin(t * 2.1 + i * 1.7); y += 1.1 * Math.cos(t * 1.7 + i * 2.3); }
-      if (inside(P, x, y)) { o += '<circle cx="' + r1(x) + '" cy="' + r1(y) + '" r="' + rad + '"/>'; k++; }
-      i++;
-    }
-    return '<g fill="' + col + '" opacity=".75">' + o + '</g>';
-  }
-
-  /* ----------------------------------------------------------------- defs */
+  /* ------------------------------------------------------------------ defs */
   function defs(ns) {
     var lg = function (id, stops, vert) {
       return '<linearGradient id="' + ns + id + '" x1="0" y1="0" x2="' + (vert ? 0 : 1) + '" y2="' + (vert ? 1 : 0) + '">' +
         stops.map(function (s) { return '<stop offset="' + s[0] + '" stop-color="' + s[1] + '"' + (s[2] != null ? ' stop-opacity="' + s[2] + '"' : '') + '/>'; }).join('') + '</linearGradient>';
     };
     var o = '';
-    o += lg('Cyl', [[0, '#3a485f'], [.2, '#8094b2'], [.5, '#aebcd2'], [.8, '#54657f'], [1, '#222c3e']]);
-    o += lg('Metal', [[0, '#283750'], [.15, '#6377a0'], [.42, '#b3c1d8'], [.58, '#7e90b0'], [.8, '#41506e'], [1, '#1f2a3e']]);
-    o += lg('Ti', [[0, '#474b52'], [.22, '#8e929a'], [.5, '#c9ccd2'], [.78, '#6f737b'], [1, '#2e3238']]);
-    o += lg('Pipe', [[0, '#6e82a4'], [.4, '#9cb0cd'], [.55, '#41526c'], [1, '#232f44']]);
-    o += lg('PipeV', [[0, '#41526c'], [.45, '#9cb0cd'], [.6, '#6e82a4'], [1, '#232f44']]);
-    o += lg('Plate', [[0, '#d7dee8'], [1, '#a9b5c6']], true);
-    Object.keys(FLUID).forEach(function (k) {
-      var f = FLUID[k];
-      o += lg('F_' + k, k === 'n2' ? [[0, f.a, .9], [1, f.b, .95]] : [[0, f.a], [1, f.b]], true);
-    });
-    o += '<pattern id="' + ns + 'Hatch" width="7" height="7" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="7" height="7" fill="#9aa8bd"/><line x1="0" y1="0" x2="0" y2="7" stroke="#3b475b" stroke-width="2.2"/></pattern>';
-    o += '<pattern id="' + ns + 'HatchTi" width="7" height="7" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="7" height="7" fill="#b3b6bc"/><line x1="0" y1="0" x2="0" y2="7" stroke="#55585f" stroke-width="2.2"/></pattern>';
-    o += '<symbol id="' + ns + 'Hw" viewBox="0 0 30 30" overflow="visible"><circle cx="15" cy="15" r="12.5" fill="none" stroke="#0a0e16" stroke-width="4.5"/><circle cx="15" cy="15" r="12.5" fill="none" stroke="#aebccf" stroke-width="2.6"/><g stroke="#9fb0c8" stroke-width="2.2" stroke-linecap="round"><line x1="15" y1="15" x2="15" y2="3.5"/><line x1="15" y1="15" x2="15" y2="26.5"/><line x1="15" y1="15" x2="3.5" y2="15"/><line x1="15" y1="15" x2="26.5" y2="15"/></g><circle cx="15" cy="15" r="4" fill="url(#' + ns + 'Metal)" stroke="#0a0e16" stroke-width="1"/></symbol>';
-    Object.keys(GEOM).forEach(function (k) {
-      var g = GEOM[k];
-      o += '<clipPath id="' + ns + 'Bore_' + k + '">' + boreShape(g) + '</clipPath>';
-      o += '<clipPath id="' + ns + 'Body_' + k + '">' + bodyShape(g) + '</clipPath>';
-    });
+    // brushed stainless: dark edge, soft key light left of centre, narrow specular, dark far edge
+    o += lg('Steel', [[0, '#3b4656'], [.12, '#7d8a9c'], [.3, '#c3ccd8'], [.38, '#e6ebf1'], [.46, '#b5bfcc'], [.7, '#7a8698'], [.9, '#4c5768'], [1, '#2c3442']]);
+    o += lg('SteelD', [[0, '#2f3846'], [.3, '#8e9aab'], [.42, '#c9d1dc'], [.6, '#7c889a'], [1, '#262e3a']]);   // fittings / caps
+    o += lg('SteelV', [[0, '#c9d1dc'], [.45, '#8a96a8'], [1, '#3c4656']], true);                               // horizontal parts
+    o += lg('Brass', [[0, '#5b4a2a'], [.35, '#b39a5f'], [.5, '#dcc690'], [.75, '#8e7843'], [1, '#463818']]);
+    o += lg('Inner', [[0, '#1a212c'], [.5, '#3a4452'], [1, '#141a23']]);
+    o += lg('Knob', [[0, '#1d222b'], [.4, '#4a5260'], [.55, '#5e6775'], [1, '#161a21']]);
+    o += lg('Oil', [[0, COL.oil.a], [1, COL.oil.b]], true);
+    o += lg('Drive', [[0, COL.drive.a], [1, COL.drive.b]], true);
+    o += lg('Gas', [[0, COL.gas.a, .92], [1, COL.gas.b, .92]], true);
+    o += '<radialGradient id="' + ns + 'Ball" cx=".35" cy=".32" r=".7"><stop offset="0" stop-color="#ffffff"/><stop offset=".25" stop-color="#d4dbe4"/><stop offset=".7" stop-color="#6c7788"/><stop offset="1" stop-color="#2b323d"/></radialGradient>';
+    o += '<pattern id="' + ns + 'Hatch" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="6" height="6" fill="#aab4c2"/><line x1="0" y1="0" x2="0" y2="6" stroke="#4a5566" stroke-width="1.6"/></pattern>';
+    o += '<pattern id="' + ns + 'Thread" width="4" height="4" patternUnits="userSpaceOnUse"><rect width="4" height="4" fill="#7f8b9c"/><line x1="0" y1="0" x2="4" y2="4" stroke="#2c3442" stroke-width="1.1"/></pattern>';
+    o += '<clipPath id="' + ns + 'OilBore">' + R(-OIL.rb, OIL.chT, 2 * OIL.rb, OIL.chB - OIL.chT) + '</clipPath>';
+    o += '<clipPath id="' + ns + 'GasIn"><path d="' + gasInner() + '"/></clipPath>';
     return o;
   }
-  function boreShape(g, a) {
-    if (g.end === 'dome') return rect(-g.rb, g.chT, 2 * g.rb, g.chB - g.chT, 'rx="' + (g.rb - 2) + '" ry="' + (g.domeR - 8) + '" ' + (a || ''));
-    return rect(-g.rb, g.chT, 2 * g.rb, g.chB - g.chT, a || '');
-  }
-  function bodyShape(g, a) {
-    if (g.end === 'dome') return rect(-g.R, g.bodyT, 2 * g.R, g.bodyB - g.bodyT, 'rx="' + g.R + '" ry="' + g.domeR + '" ' + (a || ''));
-    return rect(-g.R, g.bodyT, 2 * g.R, g.bodyB - g.bodyT, a || '');
-  }
 
-  /* --------------------------------------------------------- end fittings
-     Drawn for the TOP end; the bottom end is the same group mirrored in y.
-     e = { open, capped, lineFluid, chamberFluid, flow (+1 into bottle), cut } */
-  function endStack(ns, g, e, t, motion) {
-    var s = STACK, o = '', cut = e.cut, hatch = 'url(#' + ns + (g.body === 'Ti' ? 'HatchTi' : 'Hatch') + ')';
-    var vT = g.neckT - s.valveH, ring = e.open ? '#46d39a' : '#8fa3c2';
-    // neck / port boss
-    o += rect(-s.neckHW, g.neckT, 2 * s.neckHW, s.neckH + (g.end === 'dome' ? 4 : 1), 'fill="url(#' + ns + 'Metal)" stroke="#0a0e16" stroke-width=".8"');
-    // tube fitting + nut (or blanking plug when the port is capped)
-    o += rect(-s.fitHW, g.fitT, 2 * s.fitHW, s.fitH, 'fill="url(#' + ns + 'Pipe)" stroke="#0a0e16" stroke-width=".7"');
-    if (e.capped) {
-      o += '<path d="M' + (-s.nutHW) + ' ' + r1(g.fitT) + ' V' + r1(g.conn + 4) + ' Q' + (-s.nutHW) + ' ' + r1(g.conn - 2) + ' 0 ' + r1(g.conn - 2) + ' Q' + s.nutHW + ' ' + r1(g.conn - 2) + ' ' + s.nutHW + ' ' + r1(g.conn + 4) + ' V' + r1(g.fitT) + ' Z" fill="url(#' + ns + 'Metal)" stroke="#0a0e16" stroke-width=".8"/>';
-    } else {
-      o += rect(-s.nutHW, g.conn, 2 * s.nutHW, s.nutH, 'rx="1.5" fill="url(#' + ns + 'Metal)" stroke="#0a0e16" stroke-width=".8"');
-      o += '<line x1="-3.5" y1="' + r1(g.conn + 1) + '" x2="-3.5" y2="' + r1(g.conn + s.nutH - 1) + '" stroke="#0a0e16" stroke-width=".6" opacity=".6"/><line x1="3.5" y1="' + r1(g.conn + 1) + '" x2="3.5" y2="' + r1(g.conn + s.nutH - 1) + '" stroke="#0a0e16" stroke-width=".6" opacity=".6"/>';
+  /* ============================================================ OIL BOTTLE
+     barrel  x ±34, y ±236 (threaded ends under the caps)
+     caps    x ±39, outer face y ±250, skirt over the barrel to y ±214
+     bore    x ±22, chamber y ±226 (cap spigots close the bore)
+     piston  46 long, sample share of the stroke = OIL.split               */
+  var OIL = { R: 34, rb: 22, capR: 39, capFace: 250, capIn: 236, skirt: 214, chT: -226, chB: 226, pist: 46, split: .55, ball: 9.5 };
+  OIL.pistY = OIL.chT + (OIL.chB - OIL.chT - OIL.pist) * OIL.split;   // piston top face
+
+  /* valve protector + right-angle needle valve, drawn for the TOP end in end
+     coordinates (origin = cap outer face centre, outward = negative y)       */
+  function oilEnd(ns, cut, back) {
+    var o = '', hatch = 'url(#' + ns + 'Hatch)';
+    var cageR = 38, cageT = -104, win = { x0: -25, x1: 25, y0: -90, y1: -12 };
+    if (back) {                                       // inside of the protector seen through its window
+      o += R(-cageR + 3, cageT + 8, 2 * cageR - 6, -cageT - 8, 'fill="url(#' + ns + 'Inner)"');
+      return o;
     }
-    // valve body (needle valve) + bonnet + handwheel
-    o += rect(-s.valveHW, vT, 2 * s.valveHW, s.valveH, 'rx="4" fill="url(#' + ns + 'Metal)" stroke="#0a0e16" stroke-width=".9"');
-    o += rect(-s.valveHW + 3, vT + 3, 2 * s.valveHW - 6, 3, 'rx="1.5" fill="#ffffff" opacity=".16"');
-    o += rect(s.valveHW, g.yv - 6, 7, 12, 'rx="1.5" fill="url(#' + ns + 'PipeV)" stroke="#0a0e16" stroke-width=".7"');   // packing nut
-    o += rect(s.valveHW + 7, g.yv - 2.5, 9, 5, 'fill="url(#' + ns + 'PipeV)" stroke="#0a0e16" stroke-width=".6"');       // stem
-    o += '<circle cx="' + (s.valveHW + 26) + '" cy="' + g.yv + '" r="13.5" fill="none" stroke="' + ring + '" stroke-width="1.8"/>';
-    o += '<use href="#' + ns + 'Hw" x="' + (s.valveHW + 15) + '" y="' + (g.yv - 11) + '" width="22" height="22"/>';
+    // adaptor hex
+    o += R(-11, -8, 22, 8, 'fill="url(#' + ns + 'SteelD)" ' + K + ' stroke-width=".8"');
+    o += '<line x1="-4" y1="-8" x2="-4" y2="0" stroke="#0a0e16" stroke-width=".5" opacity=".5"/><line x1="4" y1="-8" x2="4" y2="0" stroke="#0a0e16" stroke-width=".5" opacity=".5"/>';
+    // valve body (right-angle needle valve): inlet from the cylinder, outlet to the side
+    o += R(-15, -50, 30, 42, 'rx="3" fill="url(#' + ns + 'SteelD)" ' + K + ' stroke-width=".9"');
+    o += R(-12, -47, 5, 36, 'rx="2" fill="#fff" opacity=".18"');
+    o += R(15, -40, 10, 18, 'fill="url(#' + ns + 'SteelD)" ' + K + ' stroke-width=".8"');             // outlet boss (female port)
+    o += R(25, -38, 8, 14, 'rx="1" fill="url(#' + ns + 'SteelV)" ' + K + ' stroke-width=".7"');         // male connector hex
+    o += R(33, -34.5, 15, 7, 'fill="url(#' + ns + 'SteelV)" ' + K + ' stroke-width=".7"');              // connection stub
+    // bonnet, packing nut, stem, T-handle
+    o += R(-10, -64, 20, 14, 'fill="url(#' + ns + 'SteelD)" ' + K + ' stroke-width=".8"');
+    o += R(-12, -60, 24, 6, 'rx="1" fill="url(#' + ns + 'SteelD)" ' + K + ' stroke-width=".7"');
+    o += R(-3, -84, 6, 20, 'fill="url(#' + ns + 'SteelD)" ' + K + ' stroke-width=".6"');
+    o += R(-6, -89, 12, 7, 'rx="1.5" fill="url(#' + ns + 'Knob)" ' + K + ' stroke-width=".6"');
+    o += R(-19, -93, 38, 6, 'rx="3" fill="url(#' + ns + 'Knob)" ' + K + ' stroke-width=".7"');
     if (cut) {
-      // section: hatched metal, drilled passage, needle seat
-      [[-s.neckHW, g.neckT, 2 * s.neckHW, s.neckH], [-s.valveHW, vT, 2 * s.valveHW, s.valveH], [-s.fitHW, g.fitT, 2 * s.fitHW, s.fitH]].forEach(function (r) {
-        o += rect(r[0] + .6, r[1] + .6, r[2] - 1.2, r[3] - 1.2, 'fill="' + hatch + '" opacity=".55"');
-      });
-      var pTop = e.capped ? g.fitT + 2 : g.conn, pBot = g.end === 'dome' ? g.chT + 6 : g.chT;
-      o += rect(-2.6, pTop, 5.2, pBot - pTop, 'fill="#0a1420"');
-      var fIn = e.chamberFluid, fOut = e.lineFluid;
-      if (fIn && fIn !== 'vac') o += rect(-2.6, g.yv + 3, 5.2, pBot - g.yv - 3, 'fill="' + FLUID[fIn].line + '"');
-      if (fOut && fOut !== 'vac' && (e.open || !e.capped)) o += rect(-2.6, pTop, 5.2, g.yv - 3 - pTop, 'fill="' + FLUID[fOut].line + '"');
-      if (e.open && fIn && fIn !== 'vac' && fOut === fIn) o += rect(-2.6, g.yv - 3.2, 5.2, 6.4, 'fill="' + FLUID[fIn].line + '"');
-      // needle: seated across the passage when closed, withdrawn when open
-      var nx = e.open ? 6.5 : -3.4;
-      o += '<path d="M' + r1(nx) + ' ' + g.yv + ' L' + r1(nx + 5) + ' ' + (g.yv - 3.4) + ' H' + (s.valveHW + 1) + ' V' + (g.yv + 3.4) + ' H' + r1(nx + 5) + ' Z" fill="url(#' + ns + 'PipeV)" stroke="#0a0e16" stroke-width=".6"/>';
-      // flow chevrons travelling through the open passage
-      if (e.flow && e.open) {
-        var dir = e.flow > 0 ? 1 : -1, span = pBot - pTop, ph = motion ? (t * 0.9) % 1 : .5;
-        for (var i = 0; i < 3; i++) {
-          var f = (ph + i / 3) % 1, y = dir > 0 ? pTop + span * f : pBot - span * f;
-          if (Math.abs(y - g.yv) < 5) continue;
-          o += '<path d="M-2.4 ' + r1(y - 2 * dir) + ' L0 ' + r1(y + 1.6 * dir) + ' L2.4 ' + r1(y - 2 * dir) + '" fill="none" stroke="#ffffff" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round" opacity=".9"/>';
-        }
-      }
+      // section through valve: hatched metal, inlet + outlet passages, needle seated (valve closed)
+      o += R(-14.4, -49.4, 28.8, 40.8, 'fill="' + hatch + '" opacity=".55"');
+      o += R(15.6, -39.4, 9, 16.8, 'fill="' + hatch + '" opacity=".55"');
+      o += R(-2, -33, 4, 33, 'fill="#0b1018"');                 // inlet bore
+      o += R(0, -33, 48, 4, 'fill="#0b1018"');                  // outlet bore
+      o += R(25, -36, 8, 10, 'fill="url(#' + ns + 'Thread)"');   // NPT thread engagement
+      o += P('M-2.2 -64 V-37 L0 -32 L2.2 -37 V-64 Z', 'fill="url(#' + ns + 'SteelD)" ' + K + ' stroke-width=".5"');   // needle on its seat
+      o += R(-10, -58, 20, 3, 'fill="#20262f"');                 // stem packing
+      // protector in section: side walls + top ring only, so the valve stays in view
+      [-cageR, cageR - 3].forEach(function (x) { o += R(x, cageT, 3, -cageT, 'fill="' + hatch + '" ' + K + ' stroke-width=".6"'); });
+      o += R(-cageR, cageT, 2 * cageR, 6, 'fill="' + hatch + '" ' + K + ' stroke-width=".6"');
+      o += R(cageR - 3.2, -40, 3.6, 18, 'fill="url(#' + ns + 'Inner)"');   // side slot for the outlet
+      return o;
     }
+    // protector front: tube with a large window, a side slot for the outlet and an open top ring
+    var d = 'M' + (-cageR) + ' ' + cageT + ' H' + cageR + ' V0 H' + (-cageR) + ' Z ' +
+      'M' + win.x0 + ' ' + win.y0 + ' V' + win.y1 + ' H' + win.x1 + ' V' + win.y0 + ' Z ' +
+      'M' + (cageR - 4) + ' -40 V-22 H' + (cageR + 1) + ' V-40 Z';
+    o += P(d, 'fill="url(#' + ns + 'Steel)" fill-rule="evenodd" ' + K + ' stroke-width="1"');
+    o += P('M' + win.x0 + ' ' + win.y0 + ' H' + win.x1, 'stroke="#0a0e16" stroke-width="1.6" opacity=".55"');   // window edge shadow
+    o += R(-cageR - 1, cageT - 1, 2 * cageR + 2, 7, 'rx="2" fill="url(#' + ns + 'SteelD)" ' + K + ' stroke-width=".8"');
+    o += R(-cageR - 1, -6, 2 * cageR + 2, 6, 'rx="1.5" fill="url(#' + ns + 'SteelD)" ' + K + ' stroke-width=".8"');
+    [-31, 31].forEach(function (x) { o += C(x, -52, 2.2, 'fill="#1f2630" stroke="#8b97a8" stroke-width=".5"'); });   // retaining screws
     return o;
   }
 
-  /* ------------------------------------------------------------ the vessel
-     S = { geom, view:'exterior'|'cutaway', cap, regions…, valves, flow, line,
-           g (gravity, local), t, motion, plate:[l1,l2], bandCol, capBot }          */
-  function vessel(ns, S) {
-    var g = GEOM[S.geom], cut = S.view === 'cutaway', o = '';
-    var bodyFill = 'url(#' + ns + g.body + ')', hatch = 'url(#' + ns + (g.body === 'Ti' ? 'HatchTi' : 'Hatch') + ')';
-    var ends = [
-      { open: S.valves.top, capped: !!S.capTop, lineFluid: S.line.top, chamberFluid: S.portFluid.top, flow: S.flow.top, cut: cut },
-      { open: S.valves.bot, capped: !!S.capBot, lineFluid: S.line.bot, chamberFluid: S.portFluid.bot, flow: S.flow.bot, cut: cut }
-    ];
-    o += '<g>' + endStack(ns, g, ends[0], S.t, S.motion) + '</g>';
-    o += '<g transform="scale(1,-1)">' + endStack(ns, g, ends[1], S.t, S.motion) + '</g>';
-
-    // ---- end closures + barrel
-    if (g.end === 'cap') {
-      [-1, 1].forEach(function (sg) {
-        var y = sg < 0 ? g.bodyT - g.capH : g.bodyB - 4;
-        o += rect(-g.capR, y, 2 * g.capR, g.capH + 4, 'rx="6" fill="url(#' + ns + 'Metal)" stroke="#0a0e16" stroke-width="1.1"');
-        for (var i = -4; i <= 4; i++) o += '<line x1="' + (i * 10) + '" y1="' + r1(y + 4) + '" x2="' + (i * 10) + '" y2="' + r1(y + g.capH) + '" stroke="#0a0e16" stroke-width=".7" opacity=".35"/>';
-      });
-      o += bodyShape(g, 'fill="' + bodyFill + '" stroke="#0a0e16" stroke-width="1.2"');
-    } else if (g.end === 'flange') {
-      o += bodyShape(g, 'fill="' + bodyFill + '" stroke="#0a0e16" stroke-width="1.2"');
-      [-1, 1].forEach(function (sg) {
-        var y = sg < 0 ? g.bodyT - g.capH : g.bodyB;
-        o += rect(-g.capR, y, 2 * g.capR, g.capH, 'rx="2" fill="url(#' + ns + 'Metal)" stroke="#0a0e16" stroke-width="1.1"');
-        [-31, 31].forEach(function (bx) {         // bolt heads on the outer flange face
-          var by = sg < 0 ? y - 5 : y + g.capH;
-          o += rect(bx - 4.5, by, 9, 5, 'rx="1" fill="url(#' + ns + 'PipeV)" stroke="#0a0e16" stroke-width=".6"');
-        });
-      });
-    } else {
-      o += bodyShape(g, 'fill="' + bodyFill + '" stroke="#0a0e16" stroke-width="1.2"');
-      o += rect(-14, g.bodyT - 3, 28, 7, 'rx="2" fill="url(#' + ns + 'Metal)" stroke="#0a0e16" stroke-width=".8"');   // neck collar
-      o += rect(-14, g.bodyB - 4, 28, 7, 'rx="2" fill="url(#' + ns + 'Metal)" stroke="#0a0e16" stroke-width=".8"');
-    }
-    // clamp / handling collars (piston bottle)
-    g.collars.forEach(function (y) { o += rect(-g.R - 2, y, 2 * g.R + 4, 8, 'rx="2" fill="url(#' + ns + 'Metal)" stroke="#0a0e16" stroke-width=".8"'); });
-
+  function oilCap(ns, cut) {
+    var o = '', y0 = -OIL.capFace, h = OIL.capFace - OIL.skirt, hatch = 'url(#' + ns + 'Hatch)';
+    o += R(-OIL.capR, y0, 2 * OIL.capR, h, 'rx="4" fill="url(#' + ns + 'SteelD)" ' + K + ' stroke-width="1"');
     if (!cut) {
-      // ---- exterior: opaque, lighting strips, identification band, nameplate
-      o += rect(-g.R + 7, g.bodyT + (g.end === 'dome' ? 26 : 6), 6, g.bodyB - g.bodyT - (g.end === 'dome' ? 52 : 12), 'rx="3" fill="#ffffff" opacity=".18"');
-      o += rect(g.R - 9, g.bodyT + (g.end === 'dome' ? 30 : 8), 3, g.bodyB - g.bodyT - (g.end === 'dome' ? 60 : 16), 'fill="#ffffff" opacity=".08"');
-      if (g.band) o += '<g clip-path="url(#' + ns + 'Body_' + S.geom + ')">' + rect(-g.R, g.band[0], 2 * g.R, g.band[1] - g.band[0], 'fill="' + (S.bandCol || '#2f9d72') + '" opacity=".9"') + '</g>';
-      if (S.plate) {
-        var py = g.end === 'dome' ? -62 : -58;
-        o += rect(-12, py, 24, 120, 'rx="2" fill="url(#' + ns + 'Plate)" stroke="#0a0e16" stroke-width=".7"');
-        o += '<circle cx="0" cy="' + (py + 5) + '" r="1.4" fill="#4b5a70"/><circle cx="0" cy="' + (py + 115) + '" r="1.4" fill="#4b5a70"/>';
-        o += '<g transform="rotate(' + (S.plateRot || -90) + ')" font-family="IBM Plex Mono, monospace" font-weight="600" fill="#26324a" text-anchor="middle">' +
-          '<text x="0" y="-1.5" font-size="7.6" letter-spacing=".6">' + esc(S.plate[0]) + '</text>' +
-          '<text x="0" y="7.5" font-size="6.6" letter-spacing=".4">' + esc(S.plate[1]) + '</text></g>';
-      }
+      for (var i = -3; i <= 3; i++) o += '<line x1="' + (i * 11) + '" y1="' + (y0 + 5) + '" x2="' + (i * 11) + '" y2="' + (y0 + h - 5) + '" stroke="#0a0e16" stroke-width=".6" opacity=".25"/>';
+      o += C(-24, y0 + h / 2, 3, 'fill="#1b2029" stroke="#0a0e16" stroke-width=".5"') + C(24, y0 + h / 2, 3, 'fill="#1b2029" stroke="#0a0e16" stroke-width=".5"');   // spanner holes
       return o;
     }
-
-    // ---- cutaway: section through the vessel axis
-    o += '<g clip-path="url(#' + ns + 'Body_' + S.geom + ')">' + bodyShape(g, 'fill="' + hatch + '" opacity=".5"') + '</g>';
-    if (g.end !== 'dome') [-1, 1].forEach(function (sg) {
-      var y = sg < 0 ? g.bodyT - g.capH : (g.end === 'cap' ? g.bodyB - 4 : g.bodyB);
-      o += rect(-g.capR + 1, y + 1, 2 * g.capR - 2, g.capH + (g.end === 'cap' ? 2 : -2), 'rx="5" fill="' + hatch + '" opacity=".5"');
-      // closure plug reaching the bore + its seal
-      var yp = sg < 0 ? g.chT - 6 : g.chB;
-      o += rect(-g.rb, yp, 2 * g.rb, 6, 'fill="url(#' + ns + 'Metal)" stroke="#0a0e16" stroke-width=".6"');
-      o += '<circle cx="' + (-g.rb + 2.4) + '" cy="' + (yp + 3) + '" r="2.2" fill="#10151f"/><circle cx="' + (g.rb - 2.4) + '" cy="' + (yp + 3) + '" r="2.2" fill="#10151f"/>';
+    o += R(-OIL.capR + .6, y0 + .6, 2 * OIL.capR - 1.2, h - 1.2, 'rx="3.5" fill="' + hatch + '" opacity=".6"');
+    // spigot closing the bore with its O-ring + back-up ring
+    o += R(-OIL.rb, -OIL.capIn, 2 * OIL.rb, OIL.capIn + OIL.chT, 'fill="' + hatch + '" ' + K + ' stroke-width=".5"');
+    [-1, 1].forEach(function (s) {
+      o += C(s * (OIL.rb - 2.4), -231, 2.4, 'fill="#141920" stroke="#5e6878" stroke-width=".5"');
+      o += R(s > 0 ? OIL.rb - 1.4 : -OIL.rb, -228.6, 1.4, 2.4, 'fill="#e8e2d0"');
     });
-    o += boreShape(g, 'fill="#0a1420" stroke="#33445e" stroke-width="1"');
-    o += '<g clip-path="url(#' + ns + 'Bore_' + S.geom + ')">' + contents(ns, g, S) + '</g>';
-    o += boreShape(g, 'fill="none" stroke="rgba(150,175,210,.35)" stroke-width="1"');
-    o += rect(-g.rb + 4, g.chT + 8, 4, g.chB - g.chT - 16, 'rx="2" fill="#ffffff" opacity=".1"');
-    // cut-plane edges
-    var cy0 = g.end === 'dome' ? g.bodyT + g.domeR : g.bodyT, cy1 = g.end === 'dome' ? g.bodyB - g.domeR : g.bodyB;
-    [-g.R, g.R].forEach(function (x) { o += '<line x1="' + x + '" y1="' + cy0 + '" x2="' + x + '" y2="' + cy1 + '" stroke="#e7752e" stroke-width="1" stroke-dasharray="5 4" opacity=".55"/>'; });
+    // thread engagement cap skirt / barrel end
+    [-1, 1].forEach(function (s) { o += R(s > 0 ? OIL.R : -OIL.R - 2.5, -OIL.capIn, 2.5, OIL.capIn - OIL.skirt, 'fill="url(#' + ns + 'Thread)"'); });
+    o += R(-2, -OIL.capFace, 4, OIL.capFace + OIL.chT, 'fill="#0b1018"');      // central port
     return o;
   }
 
-  /* chamber contents (cutaway). Volumes in cc are mapped linearly onto the usable stroke. */
-  function contents(ns, g, S) {
-    var o = '', X0 = -g.rb, X1 = g.rb, gv = S.g || [0, 1];
-    var fill = function (P, k) { return P.length > 2 ? '<path d="' + poly(P) + '" fill="url(#' + ns + 'F_' + k + ')"/>' : ''; };
-    var R = function (y0, y1) { return [[X0, y0], [X1, y0], [X1, y1], [X0, y1]]; };
-    if (!g.pist) {                                    // gas bottle: one chamber
-      var gc = S.gasFrac || 0;
-      o += rect(X0, g.chT, 2 * g.rb, g.chB - g.chT, 'fill="url(#' + ns + 'F_gas)" opacity="' + r1((.12 + .8 * gc) * 100) / 100 + '"');
-      o += dots(R(g.chT + 10, g.chB - 10), Math.round(70 * gc), FLUID.gas.dot, 1.6, S.t, S.motion, 1);
-      return o;
-    }
-    var px = (g.chB - g.chT - g.pist) / S.cap;
-    var pY = g.chT + S.sample * px, hT = pY + g.pist;
-    // ---- sample side
-    var sR = R(g.chT, pY);
-    if (S.sampleKind === 'oil') o += fill(sR, 'oil');
-    else if (S.sampleKind === 'gas') {
-      o += '<path d="' + poly(sR) + '" fill="url(#' + ns + 'F_gas)" opacity="' + r1((.35 + .6 * clamp(S.gasDens || 0, 0, 1)) * 100) / 100 + '"/>';
-      o += dots(sR, S.gasDots || 0, FLUID.gas.dot, 1.5, S.t, S.motion, 2);
-    } else if (S.sampleKind === 'vac') o += dots(sR, Math.round(sR.length ? (pY - g.chT) / 9 : 0), FLUID.vac.dot, 1, 0, false, 3);
-    else if (S.sampleKind === 'recomb') {
-      var sp = settle(sR, (S.liquid || 0) * px * (X1 - X0), gv);
-      var mix = clamp(S.mix || 0, 0, 1);
-      o += fill(sp.liq, 'oil');
-      if (mix > 0 && sp.liq.length > 2) o += '<path d="' + poly(sp.liq) + '" fill="url(#' + ns + 'F_recomb)" opacity="' + r1(mix * 100) / 100 + '"/>';
-      if (sp.rest.length > 2 && area(sp.rest) > 6 && (S.gasDots || 0) > 0) {
-        o += '<path d="' + poly(sp.rest) + '" fill="url(#' + ns + 'F_gas)" opacity="' + r1((.35 + .6 * clamp(S.gasDens || 0, 0, 1)) * 100) / 100 + '"/>';
-        o += dots(sp.rest, S.gasDots, FLUID.gas.dot, 1.5, S.t, S.motion, 4);
-      }
-      // dispersed bubbles while the bottle is being inverted (inside the liquid only)
-      if (S.bubbles && sp.liq.length > 2) {
-        var nb = Math.round(26 * S.bubbles), bb = bbox(sp.liq), bo = '';
-        for (var i = 1, k = 0; k < nb && i < 600; i++) {
-          var bx = bb[0] + 3 + (bb[2] - bb[0] - 6) * halton(i + 40, 2), by = bb[1] + 3 + (bb[3] - bb[1] - 6) * halton(i + 40, 3);
-          if (S.motion) { bx += 1.6 * Math.sin(S.t * 2.6 + i); by += 1.6 * Math.cos(S.t * 2.2 + i * 1.3); }
-          if (inside(sp.liq, bx, by)) { bo += '<circle cx="' + r1(bx) + '" cy="' + r1(by) + '" r="' + r1(1.1 + (i % 3) * .55) + '"/>'; k++; }
-        }
-        o += '<g fill="#e9fff4" stroke="#2f9d72" stroke-width=".5" opacity=".85">' + bo + '</g>';
-      }
-      // oil entering at the top port falls through the free gas onto the oil (axis vertical only)
-      if (S.drops && sp.rest.length > 2 && Math.abs(gv[0]) < .02 && gv[1] > 0) {
-        var sb = bbox(sp.rest), gh = sb[3] - g.chT;
-        o += rect(-2.5, g.chT, 5, gh, 'fill="' + FLUID.oil.line + '" opacity=".35"');
-        for (var j = 0; j < 4; j++) {
-          var yd = g.chT + (((S.motion ? S.t * 70 : 0) + j * gh / 4) % Math.max(4, gh));
-          o += '<ellipse cx="0" cy="' + r1(yd) + '" rx="2.4" ry="3.4" fill="' + FLUID.oil.line + '" stroke="#8a5a1a" stroke-width=".5"/>';
-        }
-      }
-    }
-    // ---- hydraulic / buffer side (may hold an empty gap: titanium cylinder under vacuum)
-    var hR = R(hT, g.chB), bufCC = S.cap - S.sample, liqCC = S.bufKind === 'n2' ? 0 : Math.min(bufCC, S.bufLiquid == null ? bufCC : S.bufLiquid);
-    if (S.bufKind === 'n2') {
-      o += fill(hR, 'n2');
-      o += dots(hR, Math.round(bufCC / 15), FLUID.n2.dot, 1.4, S.t, S.motion, 5);
-    } else {
-      var hp = settle(hR, liqCC * px * (X1 - X0), gv);
-      o += fill(hp.liq, 'water');
-      if (hp.rest.length > 2 && area(hp.rest) > 10) o += '<path d="' + poly(hp.rest) + '" fill="none" stroke="#33445e" stroke-dasharray="3 3"/>';
-    }
-    // ---- floating piston with two O-ring seals
-    o += rect(X0, pY, X1 - X0, g.pist, 'fill="url(#' + ns + 'Metal)" stroke="#05080f" stroke-width="1"');
-    o += rect(X0, pY + 1.5, X1 - X0, 2, 'fill="#eef4fb" opacity=".4"');
-    [.3, .7].forEach(function (f) {
-      var y = pY + g.pist * f;
-      o += rect(X0, y - 2.6, 5, 5.2, 'fill="#0a1420"') + rect(X1 - 5, y - 2.6, 5, 5.2, 'fill="#0a1420"');
-      o += '<circle cx="' + (X0 + 2.5) + '" cy="' + r1(y) + '" r="2.3" fill="#141a24" stroke="#5a6478" stroke-width=".5"/><circle cx="' + (X1 - 2.5) + '" cy="' + r1(y) + '" r="2.3" fill="#141a24" stroke="#5a6478" stroke-width=".5"/>';
-    });
-    return o;
-  }
-
-  /* label anchors in local coordinates. side: +1 = handwheel side (+x), -1 = opposite */
-  function anchors(S) {
-    var g = GEOM[S.geom], cut = S.view === 'cutaway', A = [], s = STACK;
-    var add = function (id, x, y, side, internal) { if (!internal || cut) A.push({ id: id, x: x, y: y, side: side }); };
-    add('valveTop', -s.valveHW, g.yv, -1);
-    add('valveBot', -s.valveHW, -g.yv, -1);
-    if (g.end === 'cap') { add('capTop', -g.capR, g.bodyT - g.capH / 2, -1); add('capBot', -g.capR, g.bodyB + g.capH / 2 - 2, -1); }
-    if (g.end === 'flange') { add('capTop', -g.capR, g.bodyT - g.capH / 2, -1); add('capBot', -g.capR, g.bodyB + g.capH / 2, -1); }
-    add('body', -g.R, g.end === 'dome' ? 40 : 30, -1);
-    if (!cut) { add('fitTop', -s.nutHW, g.conn + s.nutH / 2, -1); add('fitBot', -s.nutHW, -g.conn - s.nutH / 2, -1); if (S.plate) add('plate', 12, 0, 1); if (g.band) add('band', g.R, (g.band[0] + g.band[1]) / 2, 1); }
+  /* evacuation fitting on the sample-side cap (radial port + sealing plug) */
+  function oilEvac(ns, cut) {
+    var y = -243, o = '';
+    o += R(-48, y - 6, 9, 12, 'fill="url(#' + ns + 'SteelD)" ' + K + ' stroke-width=".8"');
+    o += R(-57, y - 7.5, 9, 15, 'rx="1.2" fill="url(#' + ns + 'SteelV)" ' + K + ' stroke-width=".7"');
+    o += '<line x1="-52.5" y1="' + (y - 7.5) + '" x2="-52.5" y2="' + (y + 7.5) + '" stroke="#0a0e16" stroke-width=".5" opacity=".5"/>';
+    o += R(-61, y - 4, 4, 8, 'rx="1" fill="url(#' + ns + 'SteelD)" ' + K + ' stroke-width=".6"');
     if (cut) {
-      if (!g.pist) { add('chamber', g.rb - 8, 20, 1, true); add('passTop', 2.6, g.chT - 14, 1, true); return A; }
-      var px = (g.chB - g.chT - g.pist) / S.cap, pY = g.chT + S.sample * px, hT = pY + g.pist;
-      if (pY - g.chT > 10) add('sample', g.rb - 8, (g.chT + pY) / 2, 1, true);
-      add('piston', g.rb, pY + g.pist * .3, 1, true);
-      if (g.chB - hT > 10) add('buffer', g.rb - 8, (hT + g.chB) / 2, 1, true);
-      add('passTop', 2.6, g.chT - 14, 1, true);
+      o += R(-48, y - 1.6, 36, 3.2, 'fill="#0b1018"');                 // radial passage through the cap
+      o += R(-14.6, y - 1.6, 3.2, OIL.chT - y + 1.6, 'fill="#0b1018"');  // down into the sample chamber
+      o += R(-48, y - 4, 7, 8, 'fill="url(#' + ns + 'Thread)"');
     }
-    return A;
+    return o;
   }
 
-  window.PBDraw = { FLUID: FLUID, GEOM: GEOM, STACK: STACK, defs: defs, vessel: vessel, anchors: anchors };
+  function oil(ns, op) {
+    var cut = op.view === 'cutaway', g = op.g || [0, 1], o = '', hatch = 'url(#' + ns + 'Hatch)';
+    var top = 'translate(0 ' + (-OIL.capFace) + ')', bot = 'translate(0 ' + OIL.capFace + ') scale(1,-1)';
+    if (!cut) { o += '<g transform="' + top + '">' + oilEnd(ns, false, true) + '</g><g transform="' + bot + '">' + oilEnd(ns, false, true) + '</g>'; }
+    // barrel
+    o += R(-OIL.R, -OIL.capIn, 2 * OIL.R, 2 * OIL.capIn, 'fill="url(#' + ns + 'Steel)" ' + K + ' stroke-width="1.2"');
+    if (!cut) {
+      o += R(-OIL.R + 6, -OIL.skirt + 4, 4, 2 * OIL.skirt - 8, 'rx="2" fill="#fff" opacity=".22"');
+      o += R(-9, -60, 18, 120, 'rx="1.5" fill="none" stroke="#2c3442" stroke-width=".7" opacity=".55"');                  // engraved marking field
+      o += '<g transform="rotate(' + (op.textRot || -90) + ')" font-family="IBM Plex Mono, monospace" font-size="6.6" font-weight="600" letter-spacing=".7" fill="#2c3442" text-anchor="middle" opacity=".75"><text x="0" y="2.4">PISTON SAMPLE CYLINDER</text></g>';
+    } else {
+      o += R(-OIL.R + .6, -OIL.capIn + .6, 2 * OIL.R - 1.2, 2 * OIL.capIn - 1.2, 'fill="' + hatch + '" opacity=".6"');
+      o += R(-OIL.rb, -OIL.capIn, 2 * OIL.rb, 2 * OIL.capIn, 'fill="#0b1018"');
+      o += '<g clip-path="url(#' + ns + 'OilBore)">' + oilInside(ns, g) + '</g>';
+      o += R(-OIL.rb, OIL.chT, 2 * OIL.rb, OIL.chB - OIL.chT, 'fill="none" stroke="rgba(170,190,215,.45)" stroke-width=".8"');
+      o += R(-OIL.rb + 3, OIL.chT + 6, 3, OIL.chB - OIL.chT - 12, 'rx="1.5" fill="#fff" opacity=".12"');
+    }
+    o += '<g>' + oilCap(ns, cut) + '</g><g transform="scale(1,-1)">' + oilCap(ns, cut) + '</g>';
+    o += oilEvac(ns, cut);
+    o += '<g transform="' + top + '">' + oilEnd(ns, cut) + '</g><g transform="' + bot + '">' + oilEnd(ns, cut) + '</g>';
+    if (cut) o += cutEdges(-OIL.R, OIL.R, -OIL.capIn, OIL.capIn);
+    return o;
+  }
+
+  function oilInside(ns, g) {
+    var o = '', rb = OIL.rb, pt = OIL.pistY, pb = pt + OIL.pist;
+    o += R(-rb, OIL.chT, 2 * rb, pt - OIL.chT, 'fill="url(#' + ns + 'Oil)"');
+    o += R(-rb, pb, 2 * rb, OIL.chB - pb, 'fill="url(#' + ns + 'Drive)"');
+    // floating piston: body, two seal grooves (O-ring + back-up rings), guide ring between them
+    o += R(-rb, pt, 2 * rb, OIL.pist, 'fill="url(#' + ns + 'SteelD)" ' + K + ' stroke-width=".9"');
+    o += R(-rb + 3, pt + 2, 2 * rb - 6, 2, 'fill="#fff" opacity=".35"');
+    [pt + 9, pb - 9].forEach(function (y) {
+      [-1, 1].forEach(function (s) {
+        var x = s > 0 ? rb - 5 : -rb;
+        o += R(x, y - 3.2, 5, 6.4, 'fill="#0b1018"');
+        o += C(s * (rb - 2.6), y, 2.5, 'fill="#141920" stroke="#5e6878" stroke-width=".5"');
+        o += R(s > 0 ? rb - 1.2 : -rb, y - 3.2, 1.2, 1.1, 'fill="#e8e2d0"') + R(s > 0 ? rb - 1.2 : -rb, y + 2.1, 1.2, 1.1, 'fill="#e8e2d0"');
+      });
+    });
+    var gy = pt + OIL.pist / 2;
+    [-1, 1].forEach(function (s) { o += R(s > 0 ? rb - 2.2 : -rb, gy - 6, 2.2, 12, 'fill="#d9cfae" stroke="#6c6244" stroke-width=".4"'); });   // guide ring (wear band)
+    // mixing ball: rests on the piston face, or on the lower wall when the bottle lies down
+    var r = OIL.ball, bp = ballPos(g), bx = bp[0], by = bp[1];
+    o += C(bx + 1.5, by + 1.5, r, 'fill="#000" opacity=".25"');
+    o += C(bx, by, r, 'fill="url(#' + ns + 'Ball)" stroke="#20262f" stroke-width=".6"');
+    return o;
+  }
+
+  function ballPos(g) {
+    var r = OIL.ball, rb = OIL.rb, pt = OIL.pistY;
+    if (Math.abs(g[0]) > .5) return [g[0] > 0 ? rb - r - .5 : -rb + r + .5, OIL.chT + (pt - OIL.chT) * .55];
+    return g[1] > 0 ? [7, pt - r - .5] : [-7, OIL.chT + r + .5];
+  }
+
+  /* ============================================================ GAS BOTTLE
+     seamless shell: barrel R 42 (y ±118), tapered shoulders to necks R 12
+     (y ±160 .. ±172); wall 5; female NPT ports in the necks               */
+  var GAS = { R: 42, y: 118, neck: 160, end: 172, rn: 12, wall: 5 };
+  function gasOuter() {
+    return 'M-12,-172 L12,-172 L12,-160 C30,-157 42,-146 42,-118 L42,118 C42,146 30,157 12,160 L12,172 L-12,172 L-12,160 C-30,157 -42,146 -42,118 L-42,-118 C-42,-146 -30,-157 -12,-160 Z';
+  }
+  function gasInner() {
+    return 'M-6,-172 L6,-172 L6,-156 C24,-152 37,-142 37,-118 L37,118 C37,142 24,152 6,156 L6,172 L-6,172 L-6,156 C-24,152 -37,142 -37,118 L-37,-118 C-37,-142 -24,-152 -6,-156 Z';
+  }
+  /* hex nipple + inline needle valve + outlet connector, TOP end, origin = neck face */
+  function gasEnd(ns, cut) {
+    var o = '', hatch = 'url(#' + ns + 'Hatch)';
+    o += R(-11, -14, 22, 12, 'rx="1" fill="url(#' + ns + 'SteelD)" ' + K + ' stroke-width=".8"');      // nipple hex
+    o += '<line x1="-4" y1="-14" x2="-4" y2="-2" stroke="#0a0e16" stroke-width=".5" opacity=".5"/><line x1="4" y1="-14" x2="4" y2="-2" stroke="#0a0e16" stroke-width=".5" opacity=".5"/>';
+    o += R(-6, -2, 12, 2, 'fill="url(#' + ns + 'Thread)"') + R(-6, -20, 12, 6, 'fill="url(#' + ns + 'Thread)"');
+    o += R(-14, -50, 28, 30, 'rx="3" fill="url(#' + ns + 'SteelD)" ' + K + ' stroke-width=".9"');      // valve body
+    o += R(-11, -47, 4, 24, 'rx="2" fill="#fff" opacity=".18"');
+    o += R(14, -41, 8, 12, 'fill="url(#' + ns + 'SteelV)" ' + K + ' stroke-width=".7"');              // bonnet
+    o += R(22, -37, 8, 4, 'fill="url(#' + ns + 'SteelV)" ' + K + ' stroke-width=".5"');               // stem
+    o += R(30, -46, 12, 22, 'rx="3" fill="url(#' + ns + 'Knob)" ' + K + ' stroke-width=".7"');        // handle
+    for (var i = 0; i < 4; i++) o += '<line x1="' + (32 + i * 2.6) + '" y1="-44" x2="' + (32 + i * 2.6) + '" y2="-26" stroke="#9aa3b0" stroke-width=".5" opacity=".5"/>';
+    o += R(-10, -60, 20, 10, 'rx="1" fill="url(#' + ns + 'SteelD)" ' + K + ' stroke-width=".8"');      // male connector hex
+    o += R(-3.5, -76, 7, 16, 'fill="url(#' + ns + 'SteelV)" ' + K + ' stroke-width=".7"');            // connection stub
+    if (cut) {
+      o += R(-13.4, -49.4, 26.8, 28.8, 'fill="' + hatch + '" opacity=".55"');
+      o += R(-10.4, -13.4, 20.8, 10.8, 'fill="' + hatch + '" opacity=".55"');
+      o += R(-2, -76, 4, 88, 'fill="#0b1018"');                                  // through bore (axial)
+      o += P('M22 -36.6 H3.5 L-.5 -35 L3.5 -33.4 H22 Z', 'fill="url(#' + ns + 'SteelV)" ' + K + ' stroke-width=".4"');   // needle seated across the bore
+    }
+    return o;
+  }
+  function gas(ns, op) {
+    var cut = op.view === 'cutaway', o = '', hatch = 'url(#' + ns + 'Hatch)';
+    o += P(gasOuter(), 'fill="url(#' + ns + 'Steel)" ' + K + ' stroke-width="1.2"');
+    if (!cut) {
+      // shoulder shading + highlight + stamped marking band
+      o += P('M-42,-118 C-42,-146 -30,-157 -12,-160 L12,-160 C30,-157 42,-146 42,-118 Z', 'fill="#0a0e16" opacity=".12"');
+      o += P('M-42,118 C-42,146 -30,157 -12,160 L12,160 C30,157 42,146 42,118 Z', 'fill="#0a0e16" opacity=".18"');
+      o += R(-35, -112, 5, 224, 'rx="2.5" fill="#fff" opacity=".24"');
+      o += R(-42, -96, 84, 12, 'fill="#0a0e16" opacity=".08"');
+      o += '<g transform="rotate(' + (op.textRot || -90) + ')" font-family="IBM Plex Mono, monospace" font-size="6.4" font-weight="600" letter-spacing=".8" fill="#2c3442" text-anchor="middle" opacity=".7"><text x="0" y="2.3">DOUBLE-ENDED SAMPLE CYLINDER</text></g>';
+    } else {
+      o += P(gasOuter(), 'fill="' + hatch + '" opacity=".6"');
+      o += P(gasInner(), 'fill="#0b1018"');
+      o += '<g clip-path="url(#' + ns + 'GasIn)">' + P(gasInner(), 'fill="url(#' + ns + 'Gas)"') + gasDots() + '</g>';
+      o += P(gasInner(), 'fill="none" stroke="rgba(170,190,215,.45)" stroke-width=".8"');
+      [-1, 1].forEach(function (s) { o += R(-6, s < 0 ? -172 : 160, 12, 12, 'fill="url(#' + ns + 'Thread)"') + R(-2, s < 0 ? -172 : 160, 4, 12, 'fill="#0b1018"'); });   // female NPT + nipple
+      o += cutEdges(-GAS.R, GAS.R, -GAS.y, GAS.y);
+    }
+    o += '<g transform="translate(0 -172)">' + gasEnd(ns, cut) + '</g><g transform="translate(0 172) scale(1,-1)">' + gasEnd(ns, cut) + '</g>';
+    return o;
+  }
+  // gas fills the whole chamber: uniform, evenly scattered molecules (no level)
+  function gasDots() {
+    var o = '';
+    for (var i = 1; i < 260; i++) {
+      var x = -36 + 72 * hal(i, 2), y = -170 + 340 * hal(i, 3);
+      o += '<circle cx="' + r1(x) + '" cy="' + r1(y) + '" r="1.25"/>';
+    }
+    return '<g fill="' + COL.gas.dot + '" opacity=".55">' + o + '</g>';
+  }
+  function hal(i, b) { var f = 1, r = 0; while (i > 0) { f /= b; r += f * (i % b); i = Math.floor(i / b); } return r; }
+  function cutEdges(x0, x1, y0, y1) {
+    return [x0, x1].map(function (x) { return '<line x1="' + x + '" y1="' + y0 + '" x2="' + x + '" y2="' + y1 + '" stroke="#e7752e" stroke-width=".9" stroke-dasharray="5 4" opacity=".6"/>'; }).join('');
+  }
+
+  /* ------------------------------------------------------- label anchors
+     side +1 = valve-handle / outlet side (+x), -1 = opposite; cut = cutaway only, ext = exterior only */
+  var ANCHORS = {
+    oil: [
+      { id: 'handleT', x: -19, y: -340, s: -1, n: 'Needle-valve handle', d: 'sample side' },
+      { id: 'cageT', x: -38, y: -300, s: -1, n: 'Valve protector', d: 'guards the valve in transport' },
+      { id: 'valveT', x: 15, y: -290, s: 1, n: 'Sample valve', d: 'right-angle needle valve' },
+      { id: 'portT', x: 48, y: -281, s: 1, n: 'Sample connection', d: '¼" NPT female port' },
+      { id: 'evac', x: -61, y: -243, s: -1, n: 'Evacuation fitting', d: 'sample side · plugged' },
+      { id: 'capT', x: 39, y: -224, s: 1, n: 'End cap', d: 'screwed · sample side' },
+      { id: 'capSeal', x: 20, y: -231, s: 1, cut: 1, n: 'Cap seal', d: 'O-ring + back-up ring' },
+      { id: 'body', x: -34, y: 40, s: -1, n: 'Pressure vessel', d: 'stainless barrel' },
+      { id: 'oil', x: 12, y: (OIL.chT + OIL.pistY) / 2 - 30, s: 1, cut: 1, n: 'Sample chamber', d: 'oil sample' },
+      { id: 'ball', x: 7, y: OIL.pistY - OIL.ball, s: -1, cut: 1, n: 'Mixing ball', d: 'free in the sample chamber' },
+      { id: 'piston', x: -12, y: OIL.pistY + OIL.pist / 2 + 12, s: -1, cut: 1, n: 'Floating piston', d: 'separates the two fluids' },
+      { id: 'seal', x: 20, y: OIL.pistY + 9, s: 1, cut: 1, n: 'Piston seals', d: 'O-ring + back-up rings (×2)' },
+      { id: 'guide', x: 21, y: OIL.pistY + OIL.pist / 2, s: 1, cut: 1, n: 'Guide ring', d: 'wear band' },
+      { id: 'drive', x: 12, y: (OIL.pistY + OIL.pist + OIL.chB) / 2, s: 1, cut: 1, n: 'Driving-fluid chamber', d: 'hydraulic side' },
+      { id: 'capB', x: 39, y: 232, s: 1, n: 'End cap', d: 'screwed · driving side' },
+      { id: 'portB', x: 48, y: 281, s: 1, n: 'Driving-fluid connection', d: '¼" NPT female port' },
+      { id: 'valveB', x: -15, y: 290, s: -1, n: 'Driving-fluid valve', d: 'right-angle needle valve' },
+      { id: 'cageB', x: -38, y: 322, s: -1, n: 'Valve protector', d: 'driving side' }
+    ],
+    gas: [
+      { id: 'portT', x: 3.5, y: -240, s: 1, n: 'Connection', d: 'top end' },
+      { id: 'valveT', x: 42, y: -207, s: 1, n: 'Isolation valve', d: 'representative needle valve' },
+      { id: 'nipT', x: -11, y: -180, s: -1, n: 'Hex nipple', d: '¼" NPT male' },
+      { id: 'neck', x: -12, y: -166, s: -1, n: 'Neck', d: '¼" NPT female port' },
+      { id: 'shoulder', x: 30, y: -146, s: 1, n: 'Tapered shoulder', d: 'seamless, formed' },
+      { id: 'body', x: -42, y: 30, s: -1, n: 'Cylinder body', d: 'seamless stainless steel' },
+      { id: 'mark', x: 42, y: -90, s: 1, ext: 1, n: 'Marking band', d: 'stamped data area' },
+      { id: 'chamber', x: 18, y: 10, s: 1, cut: 1, n: 'Gas chamber', d: 'one continuous volume' },
+      { id: 'wall', x: 40, y: 70, s: 1, cut: 1, n: 'Wall section', d: 'uniform thickness' },
+      { id: 'valveB', x: 42, y: 207, s: 1, n: 'Isolation valve', d: 'bottom end' },
+      { id: 'portB', x: -3.5, y: 240, s: -1, n: 'Connection', d: 'bottom end' }
+    ]
+  };
+  function anchors(kind, view, g) {
+    return ANCHORS[kind].filter(function (a) { return view === 'cutaway' ? !a.ext : !a.cut; }).map(function (a) {
+      if (a.id !== 'ball') return a;
+      var p = ballPos(g || [0, 1]);                       // the label follows the ball
+      return { id: a.id, x: p[0], y: p[1] + (Math.abs((g || [0, 1])[0]) > .5 ? 0 : -OIL.ball), s: a.s, n: a.n, d: a.d };
+    });
+  }
+  var EXTENT = { oil: { hl: 362, hw: 62 }, gas: { hl: 248, hw: 46 } };
+
+  window.PBDraw = { COL: COL, defs: defs, oil: oil, gas: gas, anchors: anchors, EXTENT: EXTENT };
 })();
