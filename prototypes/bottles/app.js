@@ -24,6 +24,10 @@
   if (q.get('labels') === '0') st.labels = false;
   if (/^(light|dark)$/.test(q.get('theme'))) document.documentElement.setAttribute('data-theme', q.get('theme'));
 
+  function isLight() {
+    var t = document.documentElement.getAttribute('data-theme');
+    return t ? t === 'light' : !!(window.matchMedia && matchMedia('(prefers-color-scheme: light)').matches);
+  }
   function vb() {
     return st.orient === 'horizontal' ? { w: 1200, h: 420, cx: 600, cy: 210, ang: -90, s: 1.25 } : { w: 640, h: 790, cx: 320, cy: 395, ang: 0, s: 1 };
   }
@@ -98,7 +102,7 @@
       $(s[0]).querySelectorAll('button').forEach(function (b) { b.setAttribute('aria-pressed', b.getAttribute('data-v') === s[1] ? 'true' : 'false'); });
     });
     $('lblChk').checked = st.labels;
-    var light = document.documentElement.getAttribute('data-theme') === 'light';
+    var light = isLight();
     $('themeBtn').textContent = light ? 'Dark background' : 'Light background';
     var cut = st.view !== 'exterior', C = D.COL;
     $('legend').innerHTML = cut ? ['oil', 'drive', 'gas'].map(function (k) {
@@ -112,7 +116,7 @@
   seg('showSeg', 'show'); seg('viewSeg', 'view'); seg('oriSeg', 'orient');
   $('lblChk').addEventListener('change', function () { st.labels = this.checked; render(); });
   $('themeBtn').addEventListener('click', function () {
-    var h = document.documentElement, l = h.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
+    var h = document.documentElement, l = isLight() ? 'dark' : 'light';
     h.setAttribute('data-theme', l);
     try { localStorage.setItem('pbTheme', l); } catch (e) {}
     render();

@@ -15,6 +15,12 @@ python3 -m http.server 8000          # from the repository root
 
 Opening `prototypes/bottles/index.html` directly from disk also works. There is no build step and no package to install.
 
+### Hosted preview (separate from GitHub Pages)
+
+A self-contained copy is published as a private claude.ai artifact: https://claude.ai/artifact/53yB3HqmbRZohdoryFoRvK. Only the owner can open it until it is shared from its Share menu. It is separate from the PVT Nexus GitHub Pages site, and the Pages workflow is unchanged.
+
+To refresh that copy after a design change, run `python3 prototypes/bottles/build-preview.py OUT.html`. The script inlines the CSS, JS and logo into one file, which is then republished to the same artifact.
+
 URL options for review links: `?show=both|oil|gas` · `&view=exterior|cutaway|pair` · `&orient=upright|horizontal` · `&labels=0` · `&theme=light|dark`
 
 ## Controls
@@ -35,13 +41,14 @@ Both bottles are drawn at the same scale, and the exterior and cutaway views use
 | `bottles.css` | Styles; light and dark tokens from `theme.css` |
 | `bottle-draw.js` | `PBDraw.oil()` / `PBDraw.gas()` editable SVG generators, label anchors, namespaced ids |
 | `app.js` | View controls and label layout |
+| `build-preview.py` | Bundles the page into one HTML file for the hosted preview |
 | `screenshots/` | Captures at 1366×768 and 1920×1080 |
 
 ## References
 
 | Reference | Access from the build environment |
 |---|---|
-| Leutert PDC datasheet (PDF) | **Not accessible.** Download and fetch were both blocked. Used the Leutert PDC product-page description returned by web search: a floating piston with a **mixing ball**, **valve protectors on both ends**, **right-angle needle valves** with **¼" NPT female** ports, and a **special fitting on the sample side for evacuation**. |
+| Leutert PDC datasheet (PDF) | **Not accessible.** Download and fetch were both blocked. Used the Leutert PDC product-page description returned by web search: a floating piston with a **mixing ball** (replaced in this prototype by a **mixing ring**, at your request), **valve protectors on both ends**, **right-angle needle valves** with **¼" NPT female** ports, and a **special fitting on the sample side for evacuation**. |
 | Swagelok MS-01-177 catalogue (PDF) | **Not accessible.** Used general Swagelok information returned by web search: **double-ended**, **seamless** construction, heavy-duty ends with **¼" FNPT** at both ends, 304L / 316L stainless steel. |
 
 Because neither PDF could be read, no catalogue dimension tables were used. Proportions are representative.
@@ -56,7 +63,7 @@ Because neither PDF could be read, no catalogue dimension tables were used. Prop
 4. The right-angle needle valve stands on the cap axis: inlet from the cylinder, outlet to the side, vertical stem with a T-handle. Valves are drawn closed (needle seated).
 5. Evacuation fitting: drawn as a radial plugged port on the sample-side cap, drilled into the sample chamber. Its position and form are assumed; the reference only says a special fitting on the sample side.
 6. Piston: two seal grooves (O-ring plus back-up rings) with a guide ring (wear band) between them. The piston is shown at a fixed, representative position.
-7. Mixing ball size is assumed. It rests on the piston upright, or on the lower wall when the bottle is horizontal.
+7. **Mixing ring** (replaces the mixing ball shown in the reference description): a loose metal ring, about 89 % of the bore diameter, with a centre hole of about 60 % of its outside diameter. It is drawn seen slightly from above so it reads as a ring. Its axis stays along the bore. It rests on the piston face when upright, and on the lower wall when horizontal. It is separate from the piston seals and guide ring. Its size, thickness and clearance are assumed.
 8. The driving-fluid colour is generic. The fluid type is not specified.
 
 ### Gas Sample Bottle

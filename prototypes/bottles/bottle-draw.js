@@ -8,7 +8,7 @@
 
      oil(ns, o)  Oil Sample Bottle — floating-piston sample cylinder
                  (after the Leutert PDC description: floating piston, mixing
-                 ball, right-angle needle valves, valve protectors at both
+                 ring, right-angle needle valves, valve protectors at both
                  ends, evacuation fitting on the sample side)
      gas(ns, o)  Gas Sample Bottle — double-ended seamless sample cylinder
                  with tapered shoulders and an isolation valve at each end
@@ -50,7 +50,7 @@
     o += lg('Oil', [[0, COL.oil.a], [1, COL.oil.b]], true);
     o += lg('Drive', [[0, COL.drive.a], [1, COL.drive.b]], true);
     o += lg('Gas', [[0, COL.gas.a, .92], [1, COL.gas.b, .92]], true);
-    o += '<radialGradient id="' + ns + 'Ball" cx=".35" cy=".32" r=".7"><stop offset="0" stop-color="#ffffff"/><stop offset=".25" stop-color="#d4dbe4"/><stop offset=".7" stop-color="#6c7788"/><stop offset="1" stop-color="#2b323d"/></radialGradient>';
+    o += lg('RingTop', [[0, '#e9eef4'], [.55, '#a9b4c3'], [1, '#5d6879']], true);
     o += '<pattern id="' + ns + 'Hatch" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="6" height="6" fill="#aab4c2"/><line x1="0" y1="0" x2="0" y2="6" stroke="#4a5566" stroke-width="1.6"/></pattern>';
     o += '<pattern id="' + ns + 'Thread" width="4" height="4" patternUnits="userSpaceOnUse"><rect width="4" height="4" fill="#7f8b9c"/><line x1="0" y1="0" x2="4" y2="4" stroke="#2c3442" stroke-width="1.1"/></pattern>';
     o += '<clipPath id="' + ns + 'OilBore">' + R(-OIL.rb, OIL.chT, 2 * OIL.rb, OIL.chB - OIL.chT) + '</clipPath>';
@@ -63,7 +63,7 @@
      caps    x ±39, outer face y ±250, skirt over the barrel to y ±214
      bore    x ±22, chamber y ±226 (cap spigots close the bore)
      piston  46 long, sample share of the stroke = OIL.split               */
-  var OIL = { R: 34, rb: 22, capR: 39, capFace: 250, capIn: 236, skirt: 214, chT: -226, chB: 226, pist: 46, split: .55, ball: 9.5 };
+  var OIL = { R: 34, rb: 22, capR: 39, capFace: 250, capIn: 236, skirt: 214, chT: -226, chB: 226, pist: 46, split: .55, ring: { ro: 19.5, ri: 12, t: 6, ry: 5, iy: 3 } };
   OIL.pistY = OIL.chT + (OIL.chB - OIL.chT - OIL.pist) * OIL.split;   // piston top face
 
   /* valve protector + right-angle needle valve, drawn for the TOP end in end
@@ -194,17 +194,29 @@
     });
     var gy = pt + OIL.pist / 2;
     [-1, 1].forEach(function (s) { o += R(s > 0 ? rb - 2.2 : -rb, gy - 6, 2.2, 12, 'fill="#d9cfae" stroke="#6c6244" stroke-width=".4"'); });   // guide ring (wear band)
-    // mixing ball: rests on the piston face, or on the lower wall when the bottle lies down
-    var r = OIL.ball, bp = ballPos(g), bx = bp[0], by = bp[1];
-    o += C(bx + 1.5, by + 1.5, r, 'fill="#000" opacity=".25"');
-    o += C(bx, by, r, 'fill="url(#' + ns + 'Ball)" stroke="#20262f" stroke-width=".6"');
+    // mixing ring: loose ring, its axis kept along the bore by the small wall clearance
+    var rp = ringPos(g);
+    o += mixRing(ns, rp[0], rp[1]);
     return o;
   }
 
-  function ballPos(g) {
-    var r = OIL.ball, rb = OIL.rb, pt = OIL.pistY;
-    if (Math.abs(g[0]) > .5) return [g[0] > 0 ? rb - r - .5 : -rb + r + .5, OIL.chT + (pt - OIL.chT) * .55];
-    return g[1] > 0 ? [7, pt - r - .5] : [-7, OIL.chT + r + .5];
+  /* ring seen slightly obliquely (elliptical faces) so it reads as a ring, not a plate:
+     lower face, outer band, upper face, centre hole showing the oil through it */
+  function mixRing(ns, cx, cy) {
+    var m = OIL.ring, h = m.t / 2, E = function (y, rx, ry, a) { return '<ellipse cx="' + r1(cx) + '" cy="' + r1(y) + '" rx="' + rx + '" ry="' + ry + '" ' + a + '/>'; };
+    var o = E(cy + h + 1.2, m.ro, m.ry, 'fill="#000" opacity=".22"');
+    o += E(cy + h, m.ro, m.ry, 'fill="#4a5466" stroke="#141920" stroke-width=".6"');
+    o += R(cx - m.ro, cy - h, 2 * m.ro, m.t, 'fill="url(#' + ns + 'SteelD)"');
+    o += '<line x1="' + r1(cx - m.ro) + '" y1="' + r1(cy - h) + '" x2="' + r1(cx - m.ro) + '" y2="' + r1(cy + h) + '" stroke="#141920" stroke-width=".6"/><line x1="' + r1(cx + m.ro) + '" y1="' + r1(cy - h) + '" x2="' + r1(cx + m.ro) + '" y2="' + r1(cy + h) + '" stroke="#141920" stroke-width=".6"/>';
+    o += E(cy - h, m.ro, m.ry, 'fill="url(#' + ns + 'RingTop)" stroke="#141920" stroke-width=".6"');
+    o += E(cy - h, m.ri, m.iy, 'fill="url(#' + ns + 'Oil)" stroke="#141920" stroke-width=".6"');
+    o += E(cy - h + .9, m.ri, m.iy - .9, 'fill="#000" opacity=".28"');                 // bore of the ring
+    return o;
+  }
+  function ringPos(g) {
+    var m = OIL.ring, pt = OIL.pistY, dy = m.t / 2 + m.ry + .5;
+    if (Math.abs(g[0]) > .5) return [g[0] > 0 ? 1.8 : -1.8, OIL.chT + (pt - OIL.chT) * .5];   // lying down: rests on the lower wall
+    return g[1] > 0 ? [0, pt - dy] : [0, OIL.chT + dy];                                       // upright: on the piston face
   }
 
   /* ============================================================ GAS BOTTLE
@@ -287,7 +299,7 @@
       { id: 'capSeal', x: 20, y: -231, s: 1, cut: 1, n: 'Cap seal', d: 'O-ring + back-up ring' },
       { id: 'body', x: -34, y: 40, s: -1, n: 'Pressure vessel', d: 'stainless barrel' },
       { id: 'oil', x: 12, y: (OIL.chT + OIL.pistY) / 2 - 30, s: 1, cut: 1, n: 'Sample chamber', d: 'oil sample' },
-      { id: 'ball', x: 7, y: OIL.pistY - OIL.ball, s: -1, cut: 1, n: 'Mixing ball', d: 'free in the sample chamber' },
+      { id: 'ring', x: -19.5, y: 0, s: -1, cut: 1, n: 'Mixing ring', d: 'loose ring in the sample chamber' },
       { id: 'piston', x: -12, y: OIL.pistY + OIL.pist / 2 + 12, s: -1, cut: 1, n: 'Floating piston', d: 'separates the two fluids' },
       { id: 'seal', x: 20, y: OIL.pistY + 9, s: 1, cut: 1, n: 'Piston seals', d: 'O-ring + back-up rings (×2)' },
       { id: 'guide', x: 21, y: OIL.pistY + OIL.pist / 2, s: 1, cut: 1, n: 'Guide ring', d: 'wear band' },
@@ -313,9 +325,9 @@
   };
   function anchors(kind, view, g) {
     return ANCHORS[kind].filter(function (a) { return view === 'cutaway' ? !a.ext : !a.cut; }).map(function (a) {
-      if (a.id !== 'ball') return a;
-      var p = ballPos(g || [0, 1]);                       // the label follows the ball
-      return { id: a.id, x: p[0], y: p[1] + (Math.abs((g || [0, 1])[0]) > .5 ? 0 : -OIL.ball), s: a.s, n: a.n, d: a.d };
+      if (a.id !== 'ring') return a;
+      var p = ringPos(g || [0, 1]);                       // the label follows the ring
+      return { id: a.id, x: p[0] - OIL.ring.ro, y: p[1], s: a.s, n: a.n, d: a.d };
     });
   }
   var EXTENT = { oil: { hl: 362, hw: 62 }, gas: { hl: 248, hw: 46 } };
