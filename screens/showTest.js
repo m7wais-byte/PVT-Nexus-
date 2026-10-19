@@ -77,7 +77,7 @@ DC.slot('showTest', `<sc-if value="{{ showTest }}" hint-placeholder-val="{{ fals
                 <linearGradient id="c-water" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#5aa6d8"></stop><stop offset="1" stop-color="#2f6f9c"></stop></linearGradient>
                 <pattern id="c-hatch" width="8" height="8" sc-camel-pattern-transform="rotate(45)" sc-camel-pattern-units="userSpaceOnUse"><line x1="0" y1="0" x2="0" y2="8" stroke="#e7b15a" stroke-width="2"></line></pattern>
                 <mask id="c-fluid-mask" sc-camel-mask-units="userSpaceOnUse" x="0" y="0" width="1200" height="700">
-                  <path d="M585 185 V60" fill="none" stroke="#fff" stroke-width="14" style="{{ chargeLineFluidStyle }}"></path>
+                  <path d="M585 214.8 V60" fill="none" stroke="#fff" stroke-width="14" style="{{ chargeLineFluidStyle }}"></path>
                   <path d="M585 60 H770 V190 H1030 V215" sc-camel-path-length="600" fill="none" stroke="#fff" stroke-width="14" stroke-dasharray="600" style="{{ chargeRevealStyle }}"></path>
                 </mask>
                 <pattern id="c-sample" width="9" height="9" sc-camel-pattern-units="userSpaceOnUse"><rect width="9" height="9" fill="#c7a233"></rect><circle cx="4.5" cy="4.5" r="1.15" fill="#f2d879" opacity=".7"></circle></pattern>
@@ -132,29 +132,27 @@ DC.slot('showTest', `<sc-if value="{{ showTest }}" hint-placeholder-val="{{ fals
               <ellipse cx="585" cy="566" rx="90" ry="6" fill="rgba(0,0,0,.3)"></ellipse>
 
               <!-- SPS/PDS bottle : technical cutaway, enlarged focal point -->
-              <path d="M585 185 V60" fill="none" stroke="#0a0e16" stroke-width="8" stroke-linecap="round"></path>
-              <path d="M585 185 V60" fill="none" stroke="#ffcf3f" stroke-width="2.4" stroke-linecap="round" style="{{ chargeLineFluidStyle }}"></path>
-              <path d="M585 185 V60" fill="none" stroke="#fff2c0" stroke-width="2" stroke-linecap="round" stroke-dasharray="2 10" mask="url(#c-fluid-mask)" style="{{ seg1FlowStyle }}"></path>
-              <g transform="translate(585,474) scale(0.6,0.74) translate(-585,-474)">
-                <clipPath id="c-clip"><rect x="508" y="152" width="154" height="254"></rect></clipPath>
-                <!-- approved Oil Sample Bottle design (components/BottleArt.js); bore, piston travel and ports unchanged -->
-                ${BottleArt.rigBottle('c', { clip: 'c-clip', fill: `<rect x="508" y="152" width="154" height="{{ chargeOilH }}" fill="url(#c-sample)" opacity="1" style="transition:height .12s linear;"></rect>
-                  <rect x="508" y="{{ chargeWaterY }}" width="154" height="{{ chargeWaterH }}" fill="url(#c-water)" opacity=".9" style="transition:y .12s linear,height .12s linear;"></rect>`, pistonOpen: '<g style="{{ chargePistonStyle }}">', pistonY: 254, ctx: 'SPS/PDS sample bottle · charging the PVT cell' })}
-              </g>
+              <path d="M585 214.8 V60" fill="none" stroke="#0a0e16" stroke-width="8" stroke-linecap="round"></path>
+              <path d="M585 214.8 V60" fill="none" stroke="#ffcf3f" stroke-width="2.4" stroke-linecap="round" style="{{ chargeLineFluidStyle }}"></path>
+              <path d="M585 214.8 V60" fill="none" stroke="#fff2c0" stroke-width="2" stroke-linecap="round" stroke-dasharray="2 10" mask="url(#c-fluid-mask)" style="{{ seg1FlowStyle }}"></path>
+              <!-- approved Oil Sample Bottle, centre (565.3, 330), scale 0.41: the sample-valve side port ends on the riser (585, 214.8),
+                   the driving-side port at (585, 445.2). Fills / piston in bore units from Main.js -->
+              ${BottleArt.oil('c', { x: 565.3, y: 330, s: 0.41, bd: 'oil', ctx: 'SPS/PDS sample bottle · charging the PVT cell',
+                inner: `<rect x="-22" y="-226" width="44" height="{{ chargeOilH }}" fill="url(#cOil)" style="transition:height .12s linear;"></rect>
+                <rect x="-22" y="{{ chargeWaterY }}" width="44" height="{{ chargeWaterH }}" fill="url(#cDrive)" style="transition:y .12s linear,height .12s linear;"></rect>
+                <g style="{{ chargePistonStyle }}">${PBDraw.mixRing('c', 0, -226 - 8.5)}${PBDraw.piston('c', -226)}</g>`,
+                ringT: '{{ chargeBtlRing }}', needleT: '{{ chargeBtlNeedle }}', ringB: '{{ chargePumpRing }}', needleB: '{{ chargePumpNeedle }}' })}
 
               <text x="596" y="150" font-family="IBM Plex Sans" font-size="14" font-weight="600" fill="var(--txt)">SPS/PDS</text>
               <!-- left-side callout labels -->
-              <circle cx="530" cy="258" r="4.5" fill="url(#c-metal)" stroke="#0a0e16" stroke-width="0.8"></circle>
-              <line x1="526" y1="258" x2="474" y2="258" stroke="var(--line2)" stroke-width="1"></line>
+              <line x1="549" y1="258" x2="474" y2="258" stroke="var(--line2)" stroke-width="1"></line>
               <text x="470" y="255" text-anchor="end" font-family="IBM Plex Sans" font-size="12" fill="var(--txt2)">Sample side</text>
               <text x="470" y="267" text-anchor="end" font-family="IBM Plex Sans" font-size="10" fill="var(--mut)">approximate / unknown</text>
               <g style="{{ chargePistonLabelStyle }}">
-                <circle cx="530" cy="319" r="4.5" fill="url(#c-metal)" stroke="#0a0e16" stroke-width="0.8"></circle>
-                <line x1="668" y1="319" x2="706" y2="319" stroke="var(--line2)" stroke-width="1"></line>
-                <text x="710" y="322" text-anchor="start" font-family="IBM Plex Sans" font-size="12" fill="var(--txt2)">Floating Piston</text>
+                <line x1="582" y1="246.8" x2="706" y2="246.8" stroke="var(--line2)" stroke-width="1"></line>
+                <text x="710" y="249.8" text-anchor="start" font-family="IBM Plex Sans" font-size="12" fill="var(--txt2)">Floating Piston</text>
               </g>
-              <circle cx="530" cy="388" r="4.5" fill="url(#c-metal)" stroke="#0a0e16" stroke-width="0.8"></circle>
-              <line x1="526" y1="388" x2="474" y2="388" stroke="var(--line2)" stroke-width="1"></line>
+              <line x1="549" y1="398" x2="474" y2="388" stroke="var(--line2)" stroke-width="1"></line>
               <text x="470" y="385" text-anchor="end" font-family="IBM Plex Sans" font-size="12" fill="var(--txt2)">Water side</text>
               <text x="470" y="397" text-anchor="end" font-family="IBM Plex Sans" font-size="10" fill="var(--mut)">pressurized by pump</text>
 
@@ -182,14 +180,13 @@ DC.slot('showTest', `<sc-if value="{{ showTest }}" hint-placeholder-val="{{ fals
 
               <!-- pump -> bottle support side (physical, solid bright tubing) -->
               <circle cx="458" cy="458" r="5" fill="url(#c-metal)" stroke="#0a0e16" stroke-width="0.8"></circle>
-              <circle cx="585" cy="474" r="5" fill="url(#c-metal)" stroke="#0a0e16" stroke-width="0.8"></circle>
-              <circle cx="585" cy="458" r="4" fill="url(#c-metal)" stroke="#0a0e16" stroke-width="0.7"></circle>
-              <path d="M458 458 H585 V474" fill="none" stroke="#0a0e16" stroke-width="8" stroke-linecap="round"></path>
-              <path d="M458 458 H585 V474" fill="none" stroke="url(#c-metal)" stroke-width="4" stroke-linecap="round"></path>
-              <path d="M458 458 H585 V474" fill="none" stroke="#46e0ff" stroke-width="2.4" stroke-linecap="round" style="{{ pumpLineFluidStyle }}"></path>
-              <path d="M458 458 H585 V474" fill="none" stroke="#eaf9ff" stroke-width="2" stroke-linecap="round" stroke-dasharray="2 10" style="{{ chargePumpFlowStyle }}"></path>
-              <path d="M514 452 l12 6 l-12 6 Z" fill="#46e0ff" style="{{ pumpLineFluidStyle }}"></path>
-              <text x="500" y="478" text-anchor="middle" font-family="IBM Plex Mono" font-size="11" letter-spacing=".5" fill="var(--cap2)">Pump Line</text>
+
+              <path d="M458 458 H470 V496 H600 V445.2 H585" fill="none" stroke="#0a0e16" stroke-width="8" stroke-linecap="round"></path>
+              <path d="M458 458 H470 V496 H600 V445.2 H585" fill="none" stroke="url(#c-metal)" stroke-width="4" stroke-linecap="round"></path>
+              <path d="M458 458 H470 V496 H600 V445.2 H585" fill="none" stroke="#46e0ff" stroke-width="2.4" stroke-linecap="round" style="{{ pumpLineFluidStyle }}"></path>
+              <path d="M458 458 H470 V496 H600 V445.2 H585" fill="none" stroke="#eaf9ff" stroke-width="2" stroke-linecap="round" stroke-dasharray="2 10" style="{{ chargePumpFlowStyle }}"></path>
+              <path d="M514 490 l12 6 l-12 6 Z" fill="#46e0ff" style="{{ pumpLineFluidStyle }}"></path>
+              <text x="520" y="516" text-anchor="middle" font-family="IBM Plex Mono" font-size="11" letter-spacing=".5" fill="var(--cap2)">Pump Line</text>
 
               <!-- bottle valve on the bottle outlet riser (drives vBottle; same look as the cell valve) -->
               <line x1="563" y1="120" x2="573" y2="120" stroke="#8fa3c2" stroke-width="2.4"></line>

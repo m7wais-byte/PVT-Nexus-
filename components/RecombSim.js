@@ -160,12 +160,16 @@
   var CELL_IN = CW(790, 190);               // manifold end outside the frame (world)
   var CELL_VALVE_X = 748;
   var PXC = 182 / CFG.CELL_CAP;             // px per cc in the cell pump bore (local): 182 px = 105 cc
-  var BOT_S = 1.1;                          // sample bottle scale
-  var BOT_PX = 192 / CFG.BOTTLE_CAP;        // bottle: px per cc (192 px usable stroke)
+  /* sample bottle = approved Oil Sample Bottle (equipment/bottle-draw.js, local units: bore -226..226, 46-unit
+     piston -> 406-unit stroke). (b.x, b.y) is the side outlet of its sample valve, where the line connects;
+     the driving-side outlet is 562 units below it, the bottle axis 48 units to its left */
+  var BOT_S = 0.67;                         // sample bottle scale
+  var BOT_PX = 406 / CFG.BOTTLE_CAP;        // bottle: local units per cc (406-unit piston stroke)
+  var PIV_DX = 48 * BOT_S;                  // sample-valve outlet -> bottle axis
   var TI = { top: 190, ch0: 246, ch1: 554, pist: 10 };
   var TI_PX = (TI.ch1 - TI.ch0 - TI.pist) / CFG.TI_CAP;
   var STAND = { x: 500, py: 372 };          // inversion stand pivot (stage 9) = bottle body centre
-  var PIV_DY = (236 - 74) * BOT_S;          // top port -> body centre of the bottle
+  var PIV_DY = 281 * BOT_S;                 // sample-valve outlet -> body centre of the bottle
   var VACP = {                              // vacuum pump placements
     ti: { x: 880, y: 127, pts: [[880, 152], [A_TI_X, 152]], vx: 852, vy: 152, h: true },
     cell: { x: 612, y: 252, pts: null, vx: 667, vy: 222, h: false }
@@ -543,7 +547,7 @@
       var m = smooth(mt);
       w.cell.a = clamp(1 - mt * 2, 0, 1); w.L.cellL.a = clamp(1 - mt * 3, 0, 1); w.xfCard = clamp(1 - mt * 2.5, 0, 1);
       w.stand = clamp(mt * 1.6 - .2, 0, 1); w.rockCard = clamp(mt * 2 - 1, 0, 1);
-      w.bot.x = lerp(SLOT_X, STAND.x, m); w.bot.y = lerp(PORT_Y, STAND.py - PIV_DY, m);
+      w.bot.x = lerp(SLOT_X, STAND.x + PIV_DX, m); w.bot.y = lerp(PORT_Y, STAND.py - PIV_DY, m);
       w.pump.a = 1; w.pump.x = B_PUMP_X; w.hose = true; w.bot.bv = true; w.bot.top = false;   // pump stays put, line stays on
       w.L.hyd.part = 1; w.L.hyd.to = 'bot';
       w.jacket = 1; w.heat = true;                                   // jacket fitted and heating from the start of the stage
@@ -646,17 +650,9 @@
     var o = '<g opacity="' + r1(g.a * 100) / 100 + '">' + glow(hl(w, 'gsp'), x - 62, 146, 124, 420);
     o += '<rect x="' + (x - 5) + '" y="160" width="10" height="14" fill="url(#rcPipe)" stroke="#0a0e16" stroke-width=".7"/>';
     o += valveV(x, 184, g.open);
-    o += '<rect x="' + (x - 9) + '" y="194" width="18" height="22" rx="2" fill="url(#rcbBkStD)" stroke="#0a0e16"/>';
-    // approved Gas Sample Bottle design (components/BottleArt.js): seamless shell, tapered shoulders, one gas volume.
-    // The lower end valve is not part of this procedure: shown closed with a plug.
-    var GG = { cx: x, R: 40, y0: 214, y1: 548, rn: 9, sh: 52, wall: 5 };
-    o += '<g class="bd-hit" data-bd-open="gas" data-bd-ctx="Separator gas sample bottle (GSP) · gas source for recombination">';
-    o += BottleArt.raw(BottleArt.gasBody('rcb', GG));
-    o += '<clipPath id="rcGspIn"><path d="' + BottleArt.gasPaths(GG).inner + '"/></clipPath><g clip-path="url(#rcGspIn)">';
-    o += '<rect x="' + (x - 40) + '" y="214" width="80" height="334" fill="url(#rcGasG)" opacity="' + r1(fillA * 100) / 100 + '"/>';
-    o += '<rect x="' + (x - 40) + '" y="214" width="80" height="334" fill="url(#rcGasDots)" opacity=".7"/></g>';
-    o += '<rect x="' + (x - 24) + '" y="262" width="6" height="238" rx="3" fill="#fff" opacity=".18"/></g>';
-    o += BottleArt.raw(BottleArt.gasNipple('rcb', x, 548, 9, 1, 9)) + '<rect x="' + (x - 6) + '" y="557" width="12" height="5" rx="1.5" fill="url(#rcbBkStD)" stroke="#0a0e16" stroke-width=".7"/>';
+    // approved Gas Sample Bottle (components/BottleArt.js): its top connection on the line valve (x, 196);
+    // the gas shade follows the cylinder pressure
+    o += BottleArt.gas('rcb', { x: x, y: 377, s: 0.73, fillStyle: 'opacity:' + r1(fillA * 100) / 100, bd: 'gas', ctx: 'Separator gas sample bottle (GSP) · gas source for recombination' });
     o += T(x, 392, 'G', { a: 'middle', m: 1, s: 20, w: 700, c: '#0d3b28' });
     o += vtag(x - 30, 187, g.open, 'end');
     o += T(x, 574, 'GSP Gas Cylinder', { a: 'middle', s: 14, w: 600, c: 'var(--txt)' });
@@ -914,7 +910,7 @@
     return o + '</g>';
   }
 
-  /* bottle interior (SampleBottle local coordinates). Sample side = CAP - water, from the top cap down to the
+  /* bottle interior (approved bore, local units). Sample side = CAP - water, from the top cap down to the
      piston; water always stays below the piston. The liquid lies on the side that is currently DOWN: its free
      surface is kept level (perpendicular to gravity) whatever the bottle angle, and the free gas / empty space
      fills the rest of the sample side. */
@@ -932,7 +928,7 @@
   function pcen(p) { var x = 0, y = 0; p.forEach(function (q) { x += q[0]; y += q[1]; }); return [x / p.length, y / p.length]; }
   function ppath(p) { return p.length < 3 ? '' : 'M' + p.map(function (q) { return r1(q[0]) + ',' + r1(q[1]); }).join(' L') + ' Z'; }
   function bottleLayers(w, b) {
-    var y0 = 134, yb = 338, PX = BOT_PX, X0 = 263, X1 = 337;
+    var y0 = -226, yb = 226, PX = BOT_PX, X0 = -22, X1 = 22, PS = 46;
     var samp = Math.max(0, CFG.BOTTLE_CAP - b.water), pistY = y0 + samp * PX;
     var liq = clamp(b.oil, 0, samp), mix = b.mix || 0, tt = w.tt;
     var a = (b.ang || 0) * Math.PI / 180, n = [-Math.sin(a), -Math.cos(a)];     // local "up"
@@ -940,8 +936,7 @@
     var ds = R.map(function (q) { return q[0] * n[0] + q[1] * n[1]; }), lo = Math.min.apply(null, ds), hi = Math.max.apply(null, ds), c = lo;
     if (target >= parea(R) - .01) c = hi; else if (target > .01) { for (var it = 0; it < 32; it++) { c = (lo + hi) / 2; if (parea(clipHalf(R, n, c)) < target) lo = c; else hi = c; } }
     var liqP = target > .01 ? clipHalf(R, n, c) : [], topP = target >= parea(R) - .01 ? [] : clipHalf(R, [-n[0], -n[1]], -c);
-    var o = '<g clip-path="url(#rcbChm)">';
-    o += '<rect x="263" y="' + r1(pistY + 12) + '" width="74" height="' + r1(Math.max(0, yb - pistY - 12)) + '" fill="url(#rcWaterG)"/>';
+    var o = '<rect x="' + X0 + '" y="' + r1(pistY + PS) + '" width="44" height="' + r1(Math.max(0, yb - pistY - PS)) + '" fill="url(#rcWaterG)"/>';
     if (liqP.length > 2) {
       o += '<path d="' + ppath(liqP) + '" fill="url(#' + (b.kind === 'oil' || mix < .02 ? 'rcOilG' : 'rcMixG') + ')"/>';
       if (b.kind !== 'oil' && mix >= .02 && mix < 1) o += '<path d="' + ppath(liqP) + '" fill="url(#rcOilG)" opacity="' + r1((1 - mix) * 100) / 100 + '"/>';
@@ -958,51 +953,50 @@
         var sx = X0 + 4 + (X1 - X0 - 8) * ((i * .7548776 + .31) % 1), sy = y0 + 3 + (pistY - y0 - 6) * ((i * .5698403 + .17) % 1);
         var d0 = sx * n[0] + sy * n[1]; if (d0 >= c - 2) continue;
         var ph = (tt * (.32 + (i % 5) * .07) + i * .37) % 1, L = c - d0;
-        var rr = (1.3 + (i % 3) * .9) * (1 - .7 * mix);
-        o += '<circle cx="' + r1(sx + n[0] * L * ph + 1.5 * Math.sin(tt * 3 + i)) + '" cy="' + r1(sy + n[1] * L * ph) + '" r="' + r1(rr) + '" fill="#e9fff4" stroke="#2f9d72" stroke-width=".5" opacity="' + r1((1 - ph * .45) * 90) / 100 + '"/>';
+        var rr = (1.6 + (i % 3) * 1.1) * (1 - .7 * mix);
+        o += '<circle cx="' + r1(sx + n[0] * L * ph + 1.5 * Math.sin(tt * 3 + i)) + '" cy="' + r1(sy + n[1] * L * ph) + '" r="' + r1(rr) + '" fill="#e9fff4" stroke="#2f9d72" stroke-width=".6" opacity="' + r1((1 - ph * .45) * 90) / 100 + '"/>';
       }
     }
     // oil entering at the top port and falling through the gas onto the oil (upright only)
     var gasH = b.q > 0 ? (samp - liq) * PX : 0;
     if (b.drops && gasOn && !b.ang) {
-      o += '<rect x="297" y="' + y0 + '" width="6" height="' + r1(Math.max(0, gasH)) + '" fill="#d8973a" opacity=".35"/>';
+      o += '<rect x="-4" y="' + y0 + '" width="8" height="' + r1(Math.max(0, gasH)) + '" fill="#d8973a" opacity=".35"/>';
       for (var j = 0; j < 5; j++) {
-        var yd = y0 + ((tt * 60 + j * gasH / 5) % Math.max(4, gasH));
-        o += '<ellipse cx="300" cy="' + r1(yd) + '" rx="2.6" ry="3.6" fill="#d8973a" stroke="#8a5a1a" stroke-width=".5"/>';
+        var yd = y0 + ((tt * 100 + j * gasH / 5) % Math.max(6, gasH));
+        o += '<ellipse cx="0" cy="' + r1(yd) + '" rx="4" ry="5.6" fill="#d8973a" stroke="#8a5a1a" stroke-width=".6"/>';
       }
     }
-    // loose mixing ring (approved Oil Sample Bottle): lies on the lower end of the sample side - on the piston face
-    // when upright, on the top cap when inverted - and travels through the sample as the bottle turns
-    var hr = BottleArt.ringHalf(37), tr = smooth((1 - Math.cos(a)) / 2);
-    o += BottleArt.raw(BottleArt.ring('rcb', 300, 37, lerp(pistY - hr, y0 + hr, tr)));
-    o += BottleArt.raw(BottleArt.piston('rcb', 263, 74, pistY, 12));
-    o += '</g>';
-    // phase letters (counter-rotated so they stay readable)
-    var lab = function (p, s, sz, col) {
+    // loose mixing ring: lies on the lower end of the sample side - on the piston face when upright, on the
+    // sample-side cap when inverted - and travels through the sample as the bottle turns
+    var hr = 8.5, tr = smooth((1 - Math.cos(a)) / 2);
+    o += PBDraw.mixRing('rcb', 0, lerp(pistY - hr, y0 + hr, tr));
+    o += PBDraw.piston('rcb', pistY);
+    // phase letters (counter-rotated so they stay readable); long labels run along the bore
+    var lab = function (p, s, sz, col, along) {
+      var rot = along ? -90 : -(b.ang || 0);
       return '<text x="' + r1(p[0]) + '" y="' + r1(p[1] + sz * .35) + '" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="' + sz + '" font-weight="700" fill="' + col + '"' +
-        (b.ang ? ' transform="rotate(' + r1(-b.ang) + ' ' + r1(p[0]) + ' ' + r1(p[1]) + ')"' : '') + '>' + esc(s) + '</text>';
+        (rot ? ' transform="rotate(' + r1(rot) + ' ' + r1(p[0]) + ' ' + r1(p[1]) + ')"' : '') + '>' + esc(s) + '</text>';
     };
-    if (topP.length > 2 && parea(topP) > 74 * 20) o += lab(pcen(topP), gasOn ? 'G' : 'EMPTY', gasOn ? 16 : 10, gasOn ? '#0d3b28' : '#7f93b3');
-    if (liqP.length > 2 && parea(liqP) > 74 * 20) o += lab(pcen(liqP), mix >= 1 ? 'SINGLE PHASE' : 'O', mix >= 1 ? 8.5 : 16, '#3d2606');
-    var wh = yb - pistY - 12;
-    if (wh > 18) o += lab([300, pistY + 12 + wh / 2], 'W', 16, '#e6f3ff');
-    o += '<rect x="268" y="138" width="6" height="196" rx="3" fill="#fff" opacity=".16"/>';
+    if (topP.length > 2 && parea(topP) > 44 * 40) o += gasOn ? lab(pcen(topP), 'G', 24, '#0d3b28') : lab(pcen(topP), 'EMPTY', 13, '#7f93b3', 1);
+    if (liqP.length > 2 && parea(liqP) > 44 * 40) o += mix >= 1 ? lab(pcen(liqP), 'SINGLE PHASE', 13, '#3d2606', 1) : lab(pcen(liqP), 'O', 24, '#3d2606');
+    var wh = yb - pistY - PS;
+    if (wh > 40) o += lab([0, pistY + PS + wh / 2], 'W', 24, '#e6f3ff');
     return o;
   }
-  /* heating jacket (stage 9), SampleBottle local coordinates. Cutaway: only the two side shells, the end
-     collars and dashed cut edges are drawn, so the bore (sample, piston, water, mixing) stays in view.
+  /* heating jacket (stage 9), bottle local units. Cutaway: only the two side shells, the end collars and
+     dashed cut edges are drawn, so the bore (sample, piston, water, mixing) stays in view.
      Drawn inside the bottle's rotation group, so it turns with the bottle. */
   function jacketMarkup(w) {
     var on = !!w.heat, pul = on ? .5 + .35 * Math.sin(w.tt * 3.2) : .25;
     var o = '<g opacity="' + r1(w.jacket * 100) / 100 + '">';
-    [244, 342].forEach(function (x) {
-      o += '<rect x="' + x + '" y="122" width="14" height="230" rx="5" fill="url(#rcJacket)" stroke="#0a0e16" stroke-width="1"/>';
-      for (var y = 132; y <= 342; y += 13) o += '<line x1="' + (x + 3) + '" y1="' + y + '" x2="' + (x + 11) + '" y2="' + y + '" stroke="#ffb070" stroke-width="1.6" stroke-linecap="round" opacity="' + r1(pul * 100) / 100 + '"/>';
+    [-63, 41].forEach(function (x) {
+      o += '<rect x="' + x + '" y="-206" width="22" height="412" rx="7" fill="url(#rcJacket)" stroke="#0a0e16" stroke-width="1.4"/>';
+      for (var y = -190; y <= 190; y += 20) o += '<line x1="' + (x + 5) + '" y1="' + y + '" x2="' + (x + 17) + '" y2="' + y + '" stroke="#ffb070" stroke-width="2.4" stroke-linecap="round" opacity="' + r1(pul * 100) / 100 + '"/>';
     });
-    o += '<rect x="244" y="117" width="112" height="9" rx="3" fill="url(#rcJacket)" stroke="#0a0e16" stroke-width="1"/>';
-    o += '<rect x="244" y="348" width="112" height="9" rx="3" fill="url(#rcJacket)" stroke="#0a0e16" stroke-width="1"/>';
-    o += '<line x1="258.5" y1="126" x2="258.5" y2="348" stroke="#e7752e" stroke-width="1.2" stroke-dasharray="4 3"/>';
-    o += '<line x1="341.5" y1="126" x2="341.5" y2="348" stroke="#e7752e" stroke-width="1.2" stroke-dasharray="4 3"/>';
+    o += '<rect x="-63" y="-214" width="126" height="12" rx="4" fill="url(#rcJacket)" stroke="#0a0e16" stroke-width="1.4"/>';
+    o += '<rect x="-63" y="202" width="126" height="12" rx="4" fill="url(#rcJacket)" stroke="#0a0e16" stroke-width="1.4"/>';
+    o += '<line x1="41.5" y1="-202" x2="41.5" y2="202" stroke="#e7752e" stroke-width="1.8" stroke-dasharray="6 4"/>';
+    o += '<line x1="-41.5" y1="-202" x2="-41.5" y2="202" stroke="#e7752e" stroke-width="1.8" stroke-dasharray="6 4"/>';
     return o + '</g>';
   }
   function drawJacketLabel(w) {
@@ -1018,21 +1012,22 @@
     o += T(x + pw / 2, y + 29.5, pill, { a: 'middle', m: 1, s: 8.5, w: 600, ls: .5, c: on ? '#f0913f' : 'var(--mut)' });
     return o + '</g>';
   }
-  function bottlePorts(b, x, y) { return { top: [x, y], bot: [x, y + (417 - 74) * BOT_S] }; }
+  function bottlePorts(b, x, y) { return { top: [x, y], bot: [x, y + 562 * BOT_S] }; }
   function drawBottle(w) {
     var b = w.bot; if (!b.kind || b.a <= .01) return '';
-    var x = b.x, y = b.y, tr = SampleBottle.place(x, y, BOT_S);
-    var shell = SampleBottle.markup({ p: 'rcb', x: x, y: y, s: BOT_S, sample: 'opacity:0', buffer: 'opacity:0', piston: 'display:none', ring: b.top ? '#46d39a' : '#8fa3c2', shadow: !b.ang && w.stand <= .01,
-      bd: 'oil', bdCtx: b.kind === 'oil' ? 'Separator oil sample bottle (conventional, water driving side)' : 'Recombination bottle · Oil Sample Bottle holding the recombined gas and oil' });
-    var body = shell + '<g transform="' + tr + '">' + bottleLayers(w, b) + (w.jacket > .01 ? jacketMarkup(w) : '') + '</g>';
-    var o = '<g opacity="' + r1(b.a * 100) / 100 + '">' + glow(hl(w, 'bot'), x - 60, y - 14, 120, 410);
-    if (b.ang) o += '<g transform="rotate(' + r1(b.ang) + ' ' + r1(x) + ' ' + r1(y + PIV_DY) + ')">' + body + '</g>';
+    var x = b.x, y = b.y, cx = x - PIV_DX, cy = y + PIV_DY;
+    var body = BottleArt.oil('rcb', { x: cx, y: cy, s: BOT_S, inner: bottleLayers(w, b), bd: 'oil',
+      ctx: b.kind === 'oil' ? 'Separator oil sample bottle' : 'Recombination bottle · Oil Sample Bottle holding the recombined gas and oil',
+      ringT: b.top ? '#46d39a' : '#8fa3c2', needleT: BottleArt.needle(b.top ? 1 : 0), ringB: b.bv ? '#46d39a' : '#8fa3c2', needleB: BottleArt.needle(b.bv ? 1 : 0) });
+    if (w.jacket > .01) body += '<g transform="translate(' + r1(cx) + ' ' + r1(cy) + ') scale(' + BOT_S + ')">' + jacketMarkup(w) + '</g>';
+    var o = '<g opacity="' + r1(b.a * 100) / 100 + '">' + glow(hl(w, 'bot'), cx - 50, y - 60, 100, 490);
+    if (b.ang) o += '<g transform="rotate(' + r1(b.ang) + ' ' + r1(cx) + ' ' + r1(cy) + ')">' + body + '</g>';
     else o += body;
     var name = b.kind === 'oil' ? 'Separator Oil Bottle' : 'Recombination Bottle';
     if (w.stand <= 0) {
-      var ty = y + (97 - 74) * BOT_S, by = y + (384 - 74) * BOT_S;
-      o += vtag(x - 50, ty + 3, b.top, 'end') + T(x - 50, ty - 8, 'SAMPLE VALVE', { a: 'end', m: 1, s: 8, c: 'var(--mut)' });
-      o += vtag(x - 50, by + 3, b.bv, 'end') + T(x - 50, by - 8, 'HYDRAULIC VALVE', { a: 'end', m: 1, s: 8, c: 'var(--mut)' });
+      var ty = y + 10, by = y + 562 * BOT_S - 6;
+      o += vtag(x - 64, ty + 3, b.top, 'end') + T(x - 64, ty - 8, 'SAMPLE VALVE', { a: 'end', m: 1, s: 8, c: 'var(--mut)' });
+      o += vtag(x - 64, by + 3, b.bv, 'end') + T(x - 64, by - 8, 'HYDRAULIC VALVE', { a: 'end', m: 1, s: 8, c: 'var(--mut)' });
       var lx = x + 58;
       o += T(lx, 256, name, { s: 14, w: 600, c: 'var(--txt)' });
       o += T(lx, 271, 'floating piston · ' + CFG.BOTTLE_CAP + ' cc', { s: 10.5, c: 'var(--mut)' });
@@ -1073,7 +1068,7 @@
   }
   function drawHose(w) {
     var b = w.bot, port = bottlePorts(b, b.x, b.y).bot;
-    if (b.ang) port = rotPt(port, b.ang, [b.x, b.y + PIV_DY]);
+    if (b.ang) port = rotPt(port, b.ang, [b.x - PIV_DX, b.y + PIV_DY]);
     var px = w.pump.x + PUMP_W + 10, py = PUMP_PORT_Y;
     var dir = rotPt([0, 1], b.ang || 0, [0, 0]);
     var c1 = [port[0] + dir[0] * 80, port[1] + dir[1] * 80];
@@ -1202,7 +1197,7 @@
 
   function hydPts(w) {
     var b = w.L.hyd.to === 'bot' && w.bot.kind, x = b ? w.bot.x : w.ti.x;
-    var yb = b ? w.bot.y + (417 - 74) * BOT_S : 604;
+    var yb = b ? w.bot.y + 562 * BOT_S : 604;
     var pp = w.pump.x + PUMP_W + 10;
     return [[x, yb], [x, 626], [pp + 30, 626], [pp + 30, PUMP_PORT_Y], [pp, PUMP_PORT_Y]];
   }

@@ -7,12 +7,11 @@
    then a short stabilizing hold upright. Mixing progress uses the same curve as
    Recombination: mix = 0.9 · smooth(rk) while rotating, 0.9 -> 1 while stabilizing.
 
-   The bottle is the Validation SPS/PDS bottle (showRestore.js restoration coordinates,
-   bore x 263..337 / y 134..338, 12 px floating piston). Step 4 starts and ends with the
-   bottle turned so the OIL sample is above the piston and the hydraulic WATER below it; the
-   pump line is on the lower water-side port. Screen angle = 180 - ang (the drawing is
-   Restoration-inverted, so +180 flips it; turning counter-clockwise swings the water port
-   toward the pump). Local fills never change: water / piston / oil stay in their own
+   The bottle is the approved Oil Sample Bottle (equipment/bottle-draw.js frame, bore
+   x -22..22 / y -226..226, 46-unit floating piston, scale 0.5 about the pivot). Step 4 starts
+   and ends upright: the OIL sample above the piston and the hydraulic WATER below it; the
+   pump hose is on the side outlet of the lower (driving-side) right-angle valve.
+   Screen angle = -ang. Local fills never change: water / piston / oil stay in their own
    compartments at every angle. Piston position = the
    shared bottleModel() split (passed in as waterFrac) — pressure and temperature are
    held at the restoration values, so the split does not change during agitation.
@@ -29,11 +28,9 @@
     STAB_MS: 3000,     // process ms stabilizing upright after the last cycle
     N: 3,              // 180° inversion cycles (same as Recombination)
     PX: 360, PY: 266,  // pivot on the inversion stand (screen coords, viewBox 0 22 900 492)
-    S: 1.0,            // bottle drawing scale (clears the base at 180°: bottom valve at y 438 < 456)
     NB: 28             // free-gas bubbles drawn (visual only, no gas volume is modelled)
   };
   var TOT = CFG.ROCK_MS + CFG.STAB_MS;
-  var X0 = 263, X1 = 337, Y0 = 134, YB = 338, PIST = 12, USE = 204 - 12, CX = 300, CY = 245.5;
   var PUMP_PX = 688, PUMP_PY = 420;   // pump outlet on its left face (hose end)
 
   function clamp(v, a, b) { return v < a ? a : v > b ? b : v; }
@@ -46,7 +43,7 @@
   // axial position of "up" inside the oil side: 0 = piston face, 1 = far (sample-valve) end
   // start orientation (ang 0) = oil above the piston, so the far (sample-valve) end is up
   function upEnd(u) { return (1 + Math.cos(angAt(u) * Math.PI / 180)) / 2; }
-  function scrAng(a) { return 180 - a; }
+  function scrAng(a) { return -a; }                 // approved bottle: upright (sample above the piston) at angle 0
 
   /* timeline state from progress k (0..1) */
   function info(k) {
@@ -61,99 +58,75 @@
       gas: gas, elapsed: u * (typeof PSM === 'function' ? PSM() : 1) / 1000, total: TOT * (typeof PSM === 'function' ? PSM() : 1) / 1000 };
   }
 
-  /* ---------------- bottle interior (local restoration coordinates) ---------------- */
+  /* ---------------- bottle interior (approved Oil Sample Bottle frame) ----------------
+     Local frame = equipment/bottle-draw.js: bore x -22..22, y -226 (sample end) .. 226 (driving end),
+     piston 46 long. At angle 0 the sample (oil) is above the piston and the hydraulic water below it. */
+  var BX0 = -22, BX1 = 22, BT = -226, BB = 226, BP = 46, BUSE = 452 - 46, S2 = 0.5;
   function interior(st, wf) {
-    var pistTop = Y0 + USE * clamp(wf, 0, 1), oilTop = pistTop + PIST, L = YB - oilTop, u = st.u, mix = st.mix;
+    var wh = BUSE * clamp(wf, 0, 1), pistBot = BB - wh, pt = pistBot - BP, L = pt - BT, u = st.u, mix = st.mix;
+    var Y = function (sv, pad) { return pt - pad - sv * (L - 2 * pad); };      // axial: 0 = piston face, 1 = far (sample-valve) end
     var run = st.phase === 'agitating' || st.phase === 'stabilizing';
-    var o = '<g clip-path="url(#qAgChm)">';
-    o += '<rect x="' + X0 + '" y="' + Y0 + '" width="74" height="' + r1(pistTop - Y0) + '" fill="url(#qWater)" opacity="0.9"/>';
-    o += '<rect x="' + X0 + '" y="' + r1(oilTop) + '" width="74" height="' + r1(L) + '" fill="url(#qSample)" opacity="0.94"/>';
+    var o = '';
+    o += '<rect x="' + BX0 + '" y="' + r1(pistBot) + '" width="44" height="' + r1(wh) + '" fill="url(#qDrive)"/>';
+    o += '<rect x="' + BX0 + '" y="' + BT + '" width="44" height="' + r1(L) + '" fill="url(#qOil)"/>';
     // compositional layering: heavier (darker) oil lies toward the lower end, lighter toward the upper end.
     // Each band follows gravity with a lag behind the bottle angle and fades as the sample becomes uniform.
     var lay = 1 - mix;
     if (lay > 0.01) {
       var hb = 0.44 * L, sh = (u > 0 && u < CFG.ROCK_MS) ? 7 * Math.sin(2 * Math.PI * CFG.N * (u - 500) / CFG.ROCK_MS) * lay : 0;
-      var band = function (s, id, op) {
-        var yc = oilTop + hb / 2 + s * (L - hb), a = yc - hb / 2, b = yc + hb / 2;
-        return '<path d="M' + X0 + ',' + r1(a - sh) + ' L' + X1 + ',' + r1(a + sh) + ' L' + X1 + ',' + r1(b + sh) + ' L' + X0 + ',' + r1(b - sh) + ' Z" fill="url(#' + id + ')" opacity="' + r1(op * 100) / 100 + '"/>';
+      var band = function (sv, id, op) {
+        var yc = Y(sv, hb / 2), a = yc - hb / 2, b = yc + hb / 2;
+        return '<path d="M' + BX0 + ',' + r1(a - sh) + ' L' + BX1 + ',' + r1(a + sh) + ' L' + BX1 + ',' + r1(b + sh) + ' L' + BX0 + ',' + r1(b - sh) + ' Z" fill="url(#' + id + ')" opacity="' + r1(op * 100) / 100 + '"/>';
       };
       o += band(1 - upEnd(u - 650), 'qAgHeavy', 0.55 * lay);
       o += band(upEnd(u - 900), 'qAgLight', 0.45 * lay);
     }
     // free gas: collected under the piston at rest; during inversion each bubble rises toward whichever
     // end of the oil side is up (lagging the rotation), spreads through the oil and shrinks as it dissolves.
-    // Bubbles are confined to the oil side (oilTop..YB) - they never reach the piston or the water.
+    // Bubbles are confined to the oil side - they never reach the piston or the water.
     var disp = smooth(u / (CFG.ROCK_MS * 0.35)) * (1 - smooth(st.se));
     for (var i = 0; i < CFG.NB; i++) {
-      var mi = 0.22 + 0.76 * h(i, 6);                       // mixing level at which this bubble has dissolved
+      var mi = 0.22 + 0.76 * h(i, 6);
       var rr = (1.5 + 2.3 * h(i, 7)) * Math.pow(clamp(1 - mix / mi, 0, 1), 0.55);
       if (st.phase === 'done' || rr < 0.35) continue;
       var tau = 350 + 950 * h(i, 1), ul = u - tau;
       var e = Math.max(h(i, 3) * 0.07, h(i, 2) * 0.42 * disp);
-      var s = e + (1 - 2 * e) * upEnd(ul);
-      var hz = Math.sin(angAt(ul) * Math.PI / 180);          // horizontal: bubbles ride the upper wall (local -x)
-      var bx = X0 + 6 + (X1 - X0 - 12) * h(i, 4);
-      var x = bx + (X0 + 5 + 7 * h(i, 5) - bx) * 0.75 * hz * (1 - e * 1.4);
-      if (run) x += 1.3 * Math.sin(u * 0.004 + i * 1.7);
-      var y = oilTop + 3 + rr + s * (L - 6 - 2 * rr);
-      o += '<circle cx="' + r1(clamp(x, X0 + rr + 1, X1 - rr - 1)) + '" cy="' + r1(y) + '" r="' + r1(rr) + '" fill="#fff3d0" opacity="' + (0.55 + 0.25 * h(i, 8)).toFixed(2) + '" stroke="rgba(70,45,12,.35)" stroke-width="0.5"/>';
+      var sv = e + (1 - 2 * e) * upEnd(ul);
+      var hz = Math.sin(angAt(ul) * Math.PI / 180);          // horizontal: bubbles ride the upper wall
+      var bx = BX0 + 4 + (BX1 - BX0 - 8) * h(i, 4);
+      var x = bx + (BX1 - 4 - 4 * h(i, 5) - bx) * 0.75 * hz * (1 - e * 1.4);
+      if (run) x += 1.0 * Math.sin(u * 0.004 + i * 1.7);
+      o += '<circle cx="' + r1(clamp(x, BX0 + rr + 1, BX1 - rr - 1)) + '" cy="' + r1(Y(sv, 3 + rr)) + '" r="' + r1(rr) + '" fill="#fff3d0" opacity="' + (0.55 + 0.25 * h(i, 8)).toFixed(2) + '" stroke="rgba(70,45,12,.35)" stroke-width="0.5"/>';
     }
     // loose mixing ring (oil side): lies on whichever end of the oil side is down and travels through
     // the sample as the bottle turns, lagging the rotation like the heavier oil
-    var hr = BottleArt.ringHalf(37), rs = 1 - upEnd(u - 600);
-    o += BottleArt.raw(BottleArt.ring('q', CX, 37, oilTop + hr + rs * (L - 2 * hr)));
+    var m = PBDraw.OIL.ring, hr = m.t / 2 + m.ry + .5;
+    o += PBDraw.mixRing('q', 0, Y(1 - upEnd(u - 600), hr));
     // floating piston (fixed: P and T held, so the bottleModel split does not change)
-    o += BottleArt.raw(BottleArt.piston('q', X0, 74, pistTop, PIST));
-    o += '</g>';
-    // phase letters, counter-rotated so they stay upright on screen
-    var lab = function (x, y, s, sz, col, w) {
-      return '<text x="' + x + '" y="' + r1(y) + '" text-anchor="middle" dominant-baseline="central" font-family="IBM Plex Mono, monospace" font-size="' + sz + '" font-weight="' + (w || 600) + '" fill="' + col + '"' +
-        ' transform="rotate(' + r1(-scrAng(st.ang)) + ' ' + x + ' ' + r1(y) + ')"' + '>' + s + '</text>';
-    };
-    if (pistTop - Y0 > 22) o += lab(CX, (Y0 + pistTop) / 2, 'W', 17, '#e6f3ff');
-    if (st.phase === 'done') { o += lab(CX, oilTop + L / 2 - 7, 'O', 17, '#3d2606'); o += lab(CX, oilTop + L / 2 + 10, 'SINGLE PHASE', 7.5, '#3d2606', 700); }
-    else o += lab(CX, oilTop + L / 2, 'O', 17, '#3d2606');
-    return { svg: o, pistTop: pistTop, oilTop: oilTop };
+    o += PBDraw.piston('q', pt);
+    return o;
   }
 
-  /* SPS/PDS shell (same drawing as Restoration), clamps and heating jacket - all rotate together */
-  var BODY = { cx: 300, rb: 37, y0: 134, y1: 338, R: 42, capR: 46, capH: 18 };
+  /* approved Oil Sample Bottle on its cradle, clamps and heating jacket - all rotate together (bottle frame) */
   function bottle(st, wf) {
     var o = '';
     // rotating cradle: back plate + arm to the pivot hub (behind the bottle)
-    o += '<rect x="232" y="239" width="36" height="13" rx="3" fill="url(#qPipe)" stroke="#0a0e16" stroke-width="0.8"/>';
-    o += '<rect x="220" y="122" width="13" height="248" rx="3" fill="url(#qCyl)" stroke="#0a0e16" stroke-width="1"/>';
-    // heating jacket (holds the restoration temperature)
-    o += '<rect x="244" y="112" width="112" height="246" rx="13" fill="rgba(231,117,46,.10)" stroke="#e7752e" stroke-width="1.6"/>';
-    // approved Oil Sample Bottle design (components/BottleArt.js) on the unchanged bore window: valve protectors
-    o += BottleArt.raw(BottleArt.cage('q', 300, 116, 78, 43) + BottleArt.cage('q', 300, 356, 404, 43));
-    // water-side valve (pump connection, open) on top
-    o += '<rect x="294" y="74" width="12" height="15" rx="1.5" fill="url(#qPipe)" stroke="#0a0e16" stroke-width="0.7"/>';
-    o += '<rect x="284" y="89" width="32" height="17" rx="3" fill="url(#qBkStD)" stroke="#0a0e16" stroke-width="0.9"/>';
-    o += '<circle cx="327.5" cy="97.5" r="11.5" fill="none" stroke="#46d39a" stroke-width="1.6"/>';
-    o += '<use href="#qhw" x="318" y="88" width="19" height="19"/>';
-    o += '<rect x="291" y="106" width="18" height="13" rx="2" fill="url(#qBkStD)" stroke="#0a0e16" stroke-width="0.8"/>';
-    o += '<rect x="294" y="356" width="12" height="20" rx="1.5" fill="url(#qPipe)" stroke="#0a0e16" stroke-width="0.7"/>';
-    o += '<g class="bd-hit" data-bd-open="oil" data-bd-ctx="SPS/PDS sample bottle · inversion agitation">';
-    o += BottleArt.raw(BottleArt.oilBody('q', BODY));
-    o += interior(st, wf).svg;
-    o += BottleArt.raw(BottleArt.oilFront('q', BODY)) + '</g>';
-    // oil-side sample valve (closed)
-    o += '<rect x="284" y="376" width="32" height="17" rx="3" fill="url(#qBkStD)" stroke="#0a0e16" stroke-width="0.9"/>';
-    o += '<use href="#qhw" x="318" y="375" width="19" height="19"/>';
-    o += '<rect x="294" y="393" width="12" height="17" rx="1.5" fill="url(#qPipe)" stroke="#0a0e16" stroke-width="0.7"/>';
-    o += '<rect x="290" y="410" width="20" height="7" rx="2" fill="url(#qMetal)" stroke="#0a0e16" stroke-width="0.7"/>';
-    // two clamp straps from the cradle around the bottle
-    // clamp brackets: cradle plate -> bottle wall only (nothing crosses in front of the bore)
-    [170, 318].forEach(function (y) {
-      o += '<rect x="231" y="' + (y - 5) + '" width="29" height="10" rx="2.5" fill="url(#qPipe)" stroke="#0a0e16" stroke-width="0.8"/>';
-      o += '<rect x="254" y="' + (y - 8) + '" width="7" height="16" rx="2" fill="url(#qMetal)" stroke="#0a0e16" stroke-width="0.8"/>';
+    o += '<rect x="-52" y="-12" width="52" height="24" rx="5" fill="url(#qPipe)" stroke="#0a0e16" stroke-width="1.4"/>';
+    o += '<rect x="-74" y="-196" width="22" height="392" rx="5" fill="url(#qCyl)" stroke="#0a0e16" stroke-width="1.6"/>';
+    // heating jacket (holds the restoration temperature), between the end caps
+    o += '<rect x="-44" y="-212" width="88" height="424" rx="14" fill="rgba(231,117,46,.10)" stroke="#e7752e" stroke-width="2.6"/>';
+    o += '<g class="bd-hit" data-bd-open="oil" data-bd-ctx="SPS/PDS sample bottle · inversion agitation">' +
+      BottleArt.raw(BottleArt.oil('q', { x: 0, y: 0, s: 1, inner: interior(st, wf), ringB: '#46d39a', needleB: BottleArt.needle(1) })) + '</g>';
+    // two clamp brackets from the cradle plate to the bottle wall (nothing crosses in front of the bore)
+    [-110, 110].forEach(function (y) {
+      o += '<rect x="-54" y="' + (y - 8) + '" width="22" height="16" rx="4" fill="url(#qPipe)" stroke="#0a0e16" stroke-width="1.2"/>';
+      o += '<rect x="-40" y="' + (y - 13) + '" width="8" height="26" rx="3" fill="url(#qMetal)" stroke="#0a0e16" stroke-width="1.2"/>';
     });
     return o;
   }
 
-  function rot(p, a) {   // local restoration coords -> screen
-    var t = a * Math.PI / 180, dx = (p[0] - CX) * CFG.S, dy = (p[1] - CY) * CFG.S;
+  function rot(p, a) {   // local bottle coords -> screen
+    var t = a * Math.PI / 180, dx = p[0] * S2, dy = p[1] * S2;
     return [CFG.PX + dx * Math.cos(t) - dy * Math.sin(t), CFG.PY + dx * Math.sin(t) + dy * Math.cos(t)];
   }
 
@@ -167,7 +140,6 @@
   function svg(o) {
     var st = info(o.k), a = st.ang, sa = scrAng(a), P = o.P || 0, Tc = o.T || 0;
     var s = '<defs>' +
-      '<clipPath id="qAgChm"><rect x="263" y="134" width="74" height="204"/></clipPath>' +
       '<linearGradient id="qAgHeavy" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#6e3d0c" stop-opacity="0"/><stop offset=".5" stop-color="#6e3d0c" stop-opacity=".75"/><stop offset="1" stop-color="#6e3d0c" stop-opacity="0"/></linearGradient>' +
       '<linearGradient id="qAgLight" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffe2a6" stop-opacity="0"/><stop offset=".5" stop-color="#ffe2a6" stop-opacity=".7"/><stop offset="1" stop-color="#ffe2a6" stop-opacity="0"/></linearGradient>' +
       '</defs>';
@@ -196,7 +168,8 @@
     s += T(765, 486, 'PRESSURE PUMP', { a: 'middle', sans: 1, s: 11.5, w: 600, ls: 0.8, c: '#f0913f' });
     s += T(765, 499, 'holding ' + n0(P) + ' psig', { a: 'middle', s: 8.5, c: 'var(--cap2)' });
     // ---- flexible line: pump outlet -> water-side valve on the rotating bottle ----
-    var port = rot([300, 74], sa), dirA = sa * Math.PI / 180, dir = [Math.sin(dirA), -Math.cos(dirA)];
+    // hose end = side outlet of the driving-side (lower at rest) right-angle valve of the approved bottle
+    var port = rot([48, 281], sa), dirA = sa * Math.PI / 180, dir = [Math.cos(dirA), Math.sin(dirA)];
     var c1 = [port[0] + dir[0] * 72, Math.min(462, port[1] + dir[1] * 72)];
     var hp = 'M' + r1(port[0]) + ',' + r1(port[1]) + ' C' + r1(c1[0]) + ',' + r1(c1[1]) + ' ' + (PUMP_PX - 110) + ',' + PUMP_PY + ' ' + (PUMP_PX - 4) + ',' + PUMP_PY;
     var hose = '<path d="' + hp + '" fill="none" stroke="#0a0e16" stroke-width="8" stroke-linecap="round"/>' +
@@ -205,7 +178,7 @@
     s += T(702, 262, 'FLEXIBLE LINE', { s: 8.5, w: 600, ls: 0.8, c: 'var(--txt2)' });
     s += T(702, 274, 'pump → lower water-side port', { s: 8, c: 'var(--cap2)' });
     // ---- rotating bottle ----
-    var tr = 'rotate(' + r1(sa) + ' ' + PX + ' ' + PY + ') translate(' + PX + ' ' + PY + ') scale(' + CFG.S + ') translate(' + (-CX) + ' ' + (-CY) + ')';
+    var tr = 'rotate(' + r1(sa) + ' ' + PX + ' ' + PY + ') translate(' + PX + ' ' + PY + ') scale(' + S2 + ')';
     s += '<g transform="' + tr + '">' + bottle(st, o.waterFrac) + '</g>';
     s += hose;
     s += '<circle cx="' + r1(port[0]) + '" cy="' + r1(port[1]) + '" r="4.2" fill="url(#qMetal)" stroke="#0a0e16" stroke-width="0.8"/>';

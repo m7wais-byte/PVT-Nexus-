@@ -2,7 +2,7 @@
    BottleDetails — contextual "Bottle Details" overlay (replaces the former
    standalone Equipment Library).
 
-   Opened from any element with data-bd-open="oil" | "oilN2" | "gas" |
+   Opened from any element with data-bd-open="oil" | "gas" |
    "oil|gas" (several types: a small selector opens first), e.g. the
    "Bottle Details" pill (BottleArt.pill) or a clickable bottle body
    (class bd-hit). data-bd-ctx = one line naming the bottle on that page.
@@ -12,7 +12,8 @@
      3D model              equipment/bottle3d.js, imported on first use;
                            destroyed (renderer, geometry, textures) on close
    Exterior / cutaway, upright / horizontal, labels, clickable parts with
-   short explanations, and the operating principle of the variant.
+   short explanations, and the operating principle. The same two approved
+   designs (Oil, Gas) are drawn on the procedure pages (components/BottleArt.js).
 
    Opening holds the procedure (PC.hold): a running stage is paused through
    its own Pause action and animations freeze; closing returns to the same
@@ -25,7 +26,7 @@
   var E = function () { return window.EQUIPMENT; };
   var esc = function (s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); };
   var BACK = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M19 12H5M11 6l-6 6 6 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>';
-  var NAME = { oil: 'Oil Sample Bottle', oilN2: 'Oil Sample Bottle', gas: 'Gas Sample Bottle' };
+  var NAME = { oil: 'Oil Sample Bottle', gas: 'Gas Sample Bottle' };
 
   var ov = null, root = null, viewer = null, loading = null, lastFocus = null, menu = null;
   var S = { kinds: ['oil'], kind: 'oil', ctx: '', mode: '2d', view: 'cutaway', orient: 'upright', labels: true, auto: false, selected: null };
@@ -85,7 +86,7 @@
     ref('ctx').textContent = S.ctx ? 'On this page: ' + S.ctx : '';
     ref('kinds').innerHTML = S.kinds.length > 1 ? seg('kind', S.kinds.map(function (k) { return [k, esc(NAME[k])]; })) : '';
     ref('kinds').querySelectorAll('button').forEach(function (x) { x.setAttribute('aria-pressed', x.getAttribute('data-v') === S.kind ? 'true' : 'false'); });
-    ref('title').textContent = b.name + (S.kind === 'oilN2' ? ' · nitrogen-compensated' : '');
+    ref('title').textContent = b.name;
     ref('tag').textContent = S.view === 'cutaway' ? (three ? 'CUTAWAY · QUARTER SECTION' : 'CUTAWAY · SECTION ON AXIS') : 'EXTERIOR';
     ref('tag').className = 'eq-tag' + (S.view === 'cutaway' ? ' cut' : '');
     ref('basis').textContent = b.type;
@@ -220,7 +221,7 @@
     var r = el.getBoundingClientRect();
     menu = document.createElement('div'); menu.className = 'bd-menu'; menu.setAttribute('role', 'menu');
     menu.innerHTML = '<p>Bottles on this page</p>' + kinds.map(function (k) {
-      return '<button type="button" role="menuitem" data-k="' + k + '">' + esc(NAME[k]) + (k === 'oilN2' ? ' · nitrogen-compensated' : '') + '</button>';
+      return '<button type="button" role="menuitem" data-k="' + k + '">' + esc(NAME[k]) + '</button>';
     }).join('');
     document.body.appendChild(menu);
     var mw = menu.offsetWidth, mh = menu.offsetHeight;

@@ -162,34 +162,40 @@ screens/                one file per screen, each registers a named slot
 
 ## Sample bottles and Bottle Details (2026-10-19)
 
-Every sample bottle in the procedures is drawn with the approved **Oil Sample Bottle** / **Gas Sample Bottle**
-designs through one kit, `components/BottleArt.js` (window.BottleArt). Each page keeps its own bore window, fill
-styles, piston transforms, valves and tube ends, so values, timing and routing are unchanged.
-- `BottleArt.oilBody / oilFront / cage / piston / ring` — floating-piston cylinder (caps, valve protectors, seals,
-  guide ring, loose mixing ring on the sample side); `gasBody / gasPaths / gasNipple / gasH` — seamless gas cylinder;
-  `rigBottle` — the charging-rig bottle shared by showTest and StageViscSingle; `pill` — SVG "Bottle Details" button.
-- `components/SampleBottle.js` (Sampling + RecombSim shells) keeps its frame and API and now draws with BottleArt.
+Every sample bottle in the procedures is the approved **Oil Sample Bottle** or **Gas Sample Bottle** — the same
+drawing as Bottle Details (`equipment/bottle-draw.js`, PBDraw), placed with one transform (translate · rotate ·
+uniform scale) through `components/BottleArt.js` (window.BottleArt). There are no other bottle variants.
+- `BottleArt.oil(p, o)` — floating piston, loose mixing ring, sample and driving-fluid chambers, end caps and
+  right-angle needle valves; the page supplies only live state (fill / piston styles or its own bore contents in the
+  approved bore units -226..226 with a 46-unit piston, valve-state ring and needle lift). `oilPort` gives the world
+  point of each valve's side outlet, where the page tubing ends. `BottleArt.gas(p, o)` / `gasPort` likewise for the
+  gas bottle. `pill` — SVG "Bottle Details" button.
+- `components/SampleBottle.js` (Sampling pages) places the same oil / gas drawings in the old Sampling frame.
+- Tubing was re-routed to the approved side outlets; flow connections, valve states, values, timing and stage
+  order are unchanged. Line valves that belong to the rig stay separate from the bottle's own valves.
+- Visual standardization only: where a procedure text describes another bottle arrangement (for example nitrogen
+  back-pressure in the wellhead guide), the drawing does not depict that mechanism.
 
-| Page | Bottle | Variant in Bottle Details |
+| Page | Bottle | Bottle Details |
 |---|---|---|
-| Sampling · Wellhead (`showModule01`) | field bottle, N₂ behind the piston | `oilN2` |
-| Sampling · Separator | oil bottle (water side) + gas bottle | `oil` + `gas` (selector) |
-| Validation · Sample Transfer (`showXfer`) | SPS/PDS receiving bottle; lower section keeps its N₂ chamber / inlet / equalizer | `oil` |
-| Validation · steps 1–3 (`showRestore`) | SPS/PDS, inverted (water up) | `oil` |
+| Sampling · Wellhead (`showModule01`) | field oil bottle | `oil` |
+| Sampling · Separator | oil bottle + gas bottle | `oil` + `gas` (selector) |
+| Validation · Sample Transfer (`showXfer`) | SPS/PDS receiving bottle | `oil` |
+| Validation · steps 1–3 (`showRestore`) | SPS/PDS, inverted (driving side up) | `oil` |
 | Validation · step 4 (`QcAgitSim`) | SPS/PDS on the inversion stand | `oil` |
 | Validation · Charging (`showTest`) | SPS/PDS charging rig | `oil` |
 | Validation · Recombination (`RecombSim`) | GSP gas bottle, separator oil bottle, recombination bottle | `gas` + `oil` (selector) |
 | Analysis · Single-phase viscosity (`StageViscSingle`) | SPS/PDS rig | `oil` |
-| Analysis · GC gas (`StageGC`) | gas bottles in the balloon oven | `gas` |
+| Analysis · GC gas (`StageGC`) | active and spare gas bottles in the balloon oven | `gas` |
 
 Not sample bottles (unchanged): MDT/MPSR downhole bottles (BottomHoleSim, the MPSR tool on showXfer), titanium
 transfer cylinder (RecombSim), PVT cells, pumps, flash balloon, helium cylinder.
 
-**Bottle Details** (`components/BottleDetails.js`): any element with `data-bd-open="oil|oilN2|gas"` (several types
-separated by `|` open a selector) and optional `data-bd-ctx` opens a full-screen overlay outside #app with the approved
+**Bottle Details** (`components/BottleDetails.js`): any element with `data-bd-open="oil|gas"` (both types separated
+by `|` open a selector) and optional `data-bd-ctx` opens a full-screen overlay outside #app with the approved
 viewer — 2D (`equipment/bottle-draw.js`) / 3D (`equipment/bottle3d.js`, imported on first use and destroyed on close),
-exterior / cutaway, upright / horizontal, labels, clickable parts, operating principle per variant
-(`EQUIPMENT.*.principle` in `equipment/equipment-data.js`; `oilN2` = nitrogen-compensated copy of `oil`).
+exterior / cutaway, upright / horizontal, labels, clickable parts and operating principle
+(`EQUIPMENT.*.principle` in `equipment/equipment-data.js`).
 Opening calls `PC.hold(true)` (ProcCtl.js): a running stage is paused through its own Pause action, animations freeze;
 closing returns to the same stage and values and the user resumes from the panel. General equipment view only.
 `equipment/build-preview.py OUT.html` bundles the whole app into one file for a hosted review preview.

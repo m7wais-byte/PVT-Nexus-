@@ -69,38 +69,17 @@
   };
 
   /* --------------------------------------------------------------------------
-     Bottle Details (components/BottleDetails.js): functional variants and operating
-     principles. oilN2 = the same Oil Sample Bottle with nitrogen behind the piston
-     instead of hydraulic fluid (nitrogen-compensated). General text only.
+     Bottle Details (components/BottleDetails.js): operating principle of the two
+     approved designs. General text only.
      -------------------------------------------------------------------------- */
   var EQ = window.EQUIPMENT, O = EQ.oil;
-  O.variant = 'Conventional · hydraulic driving fluid';
+  O.variant = 'Floating piston · driving fluid';
   O.principle = [
     'The floating piston divides the bore into two sealed chambers: the sample above it and the driving (hydraulic) fluid below it. Nothing passes the piston seals.',
     'When fluid is pumped into the driving side, the piston moves and pushes on the sample; when the sample enters, the driving fluid is displaced out through its own valve. Pressure is carried across the piston, so the sample is held or moved by liquid, never by gas contact.',
     'Moving or inverting the bottle makes the loose mixing ring travel through the sample, which helps homogenise it before transfer.'
   ];
-  var N = EQ.oilN2 = JSON.parse(JSON.stringify(O));
-  N.name = 'Oil Sample Bottle';
-  N.variant = 'Nitrogen-compensated';
-  N.type = 'Floating-piston sample cylinder · nitrogen-compensated';
-  N.summary = 'Piston-type cylinder with a nitrogen charge behind the floating piston instead of hydraulic fluid.';
-  N.about = [
-    'The same floating-piston cylinder as the conventional bottle, but the chamber behind the piston holds a nitrogen charge instead of hydraulic fluid.',
-    'A loose mixing ring travels through the sample when the bottle is moved, to help mix it.',
-    'Each end carries a right-angle needle valve inside a protective cage: the sample valve on the sample side and the nitrogen valve on the nitrogen side.'
-  ];
-  N.principle = [
-    'Nitrogen is charged behind the piston before sampling. The piston keeps the nitrogen completely separate from the sample: the gas never mixes with or dissolves into the sample.',
-    'As the sample enters, it pushes the piston against the nitrogen. The nitrogen is compressed and pushes back, so the sample fills under back-pressure instead of flowing into an empty space.',
-    'The nitrogen pressure is transmitted through the piston to the sample. When the sample contracts (for example on cooling), the nitrogen expands and keeps the sample pressurised.'
-  ];
-  N.basis = 'Nitrogen-compensated variant of the approved Oil Sample Bottle design.';
-  N.parts.drive = { n: 'Nitrogen chamber', d: 'Space between the piston and the nitrogen-side cap, holding the nitrogen charge. It is sealed from the sample by the piston.', internal: 1 };
-  N.parts.port = { n: 'Connections', d: 'Side outlet of each valve: the sample connection at the sample end, and the nitrogen charging connection at the other end.' };
-  N.parts.valve = { n: 'Needle valves', d: 'Right-angle needle valves: the sample valve and the nitrogen valve. Shown closed, with the needle on its seat.' };
-  N.parts.piston = { n: 'Floating piston', d: 'Free piston separating the sample from the nitrogen charge and transmitting the nitrogen pressure to the sample.', internal: 1 };
-  EQ.gas.variant = 'Conventional · no piston';
+  EQ.gas.variant = 'Double-ended · no piston';
   EQ.gas.principle = [
     'The cylinder is one continuous chamber with no piston, so the gas sample fills the whole volume. There is no liquid level and no driving fluid.',
     'The sample is taken by connecting one end to the sampling point and opening the valves: gas flows in until the bottle reaches line pressure. The valves are then closed to isolate it.',
