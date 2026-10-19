@@ -22,35 +22,10 @@ const U = 0.01;                       // world units per 2D drawing unit
 const SEG = 72;                       // revolve segments
 const COS30 = Math.cos(Math.PI / 6);
 
-/* ------------------------------------------------------------ part catalogue */
-const PARTS = {
-  oil: {
-    body:     { n: 'Pressure-vessel body', d: 'Seamless stainless-steel barrel. The cutaway shows its wall thickness around the bore.' },
-    cap:      { n: 'End caps', d: 'Screwed caps closing each end of the barrel. A spigot enters the bore and carries the cap seal.' },
-    capSeal:  { n: 'Cap seals', d: 'O-ring with a back-up ring on each cap spigot, sealing the cap against the bore.', internal: 1 },
-    cage:     { n: 'Valve protectors', d: 'Protective cages around both valves: two rings joined by bars, guarding the valves during handling and transport.' },
-    valve:    { n: 'Needle valves', d: 'Right-angle needle valves: the inlet comes from the cylinder axis, the outlet leaves to the side. Drawn closed, with the needle on its seat.' },
-    handle:   { n: 'Valve handles', d: 'T-handles on the valve stems, used to open and close each needle valve.' },
-    port:     { n: 'Connections', d: 'Side outlet of each valve: the sample connection on the sample side, and the driving-fluid connection on the other end.' },
-    evac:     { n: 'Evacuation fitting', d: 'Plugged side port on the sample-side cap, drilled through into the sample chamber so that the chamber can be evacuated.' },
-    piston:   { n: 'Floating piston', d: 'Free piston separating the sample from the driving fluid. It moves only when fluid enters or leaves either side.', internal: 1 },
-    seals:    { n: 'Piston seals', d: 'Two O-rings, each between back-up rings, in grooves near the piston ends.', internal: 1 },
-    guide:    { n: 'Guide ring', d: 'Wear band around the middle of the piston that keeps the piston centred in the bore.', internal: 1 },
-    ring:     { n: 'Mixing ring', d: 'Loose metal ring in the sample chamber, separate from the piston. Moving the bottle makes it travel through the sample and mix it.', internal: 1 },
-    oil:      { n: 'Sample chamber', d: 'Space between the sample-side cap and the piston, holding the oil sample.', internal: 1 },
-    drive:    { n: 'Driving-fluid chamber', d: 'Space between the piston and the driving-side cap, holding the driving (hydraulic) fluid.', internal: 1 },
-    passage:  { n: 'Drilled passages', d: 'Ports through the caps and valve bodies connecting the valves and the evacuation fitting to the chambers.', internal: 1 }
-  },
-  gas: {
-    body:     { n: 'Cylinder body', d: 'Seamless stainless-steel cylinder with tapered shoulders and a threaded neck at each end.' },
-    nipple:   { n: 'Hex nipples', d: 'Threaded nipples joining each neck to its valve (simplified thread detail).' },
-    valve:    { n: 'Isolation valves', d: 'Representative inline needle valves, one at each end of the cylinder. Drawn closed.' },
-    handle:   { n: 'Valve handles', d: 'Knurled handles on the side of each valve.' },
-    port:     { n: 'Connections', d: 'Male connector and tube stub at each end, used to connect the cylinder to the sampling line.' },
-    chamber:  { n: 'Gas chamber', d: 'One continuous internal volume, filled throughout with gas. There is no piston and no liquid level.', internal: 1 },
-    passage:  { n: 'Bore', d: 'Through bore of the nipples, valves and connectors.', internal: 1 }
-  }
-};
+/* ------------------------------------------------------------ part catalogue
+   Names and explanations live in equipment/equipment-data.js (window.EQUIPMENT),
+   shared with the 2D drawings and the Equipment Library page. */
+const PARTS = { oil: window.EQUIPMENT.oil.parts, gas: window.EQUIPMENT.gas.parts };
 /* label anchors, model space in 2D units (y up). part = selection target */
 const ANCHORS = {
   oil: [

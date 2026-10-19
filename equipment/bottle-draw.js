@@ -28,6 +28,7 @@
   };
 
   function r1(v) { return Math.round(v * 10) / 10; }
+  function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
   function R(x, y, w, h, a) { return '<rect x="' + r1(x) + '" y="' + r1(y) + '" width="' + r1(w) + '" height="' + r1(h) + '" ' + (a || '') + '/>'; }
   function C(x, y, r, a) { return '<circle cx="' + r1(x) + '" cy="' + r1(y) + '" r="' + r1(r) + '" ' + (a || '') + '/>'; }
   function P(d, a) { return '<path d="' + d + '" ' + (a || '') + '/>'; }
@@ -332,5 +333,79 @@
   }
   var EXTENT = { oil: { hl: 362, hw: 62 }, gas: { hl: 248, hw: 46 } };
 
-  window.PBDraw = { COL: COL, defs: defs, oil: oil, gas: gas, anchors: anchors, EXTENT: EXTENT };
+  /* ------------------------------------------------------- full 2D drawing
+     svg(kind, view, orient, o) -> complete <svg> with the bottle and (optionally) its labels.
+     Both bottles use one viewBox per orientation, so they are drawn at the same scale.
+     o = { ns (id namespace), labels (bool), selected (part id), title (aria label) }
+     Each label is a <g class="pb-lab" data-part=…> so a page can make it clickable. */
+  function rot(p, deg) { var a = deg * Math.PI / 180, c = Math.cos(a), s = Math.sin(a); return [p[0] * c - p[1] * s, p[0] * s + p[1] * c]; }
+  function vbox(orient) {
+    return orient === 'horizontal' ? { w: 1200, h: 420, cx: 600, cy: 210, ang: -90, s: 1.25 } : { w: 640, h: 790, cx: 320, cy: 395, ang: 0, s: 1 };
+  }
+  function partOf(kind, id) {
+    var E = window.EQUIPMENT && window.EQUIPMENT[kind];
+    return E && E.map2d && E.map2d[id] || '';
+  }
+  function labelLayer(kind, view, V, selected) {
+    var g = [Math.sin(V.ang * Math.PI / 180), Math.cos(V.ang * Math.PI / 180)];
+    var nrm = rot([1, 0], V.ang), horiz = V.ang !== 0, o = '', tx = '';
+    var items = anchors(kind, view, g).map(function (a) {
+      var q = rot([a.x * V.s, a.y * V.s], V.ang);
+      return { a: a, p: [V.cx + q[0], V.cy + q[1]], w: Math.max(a.n.length * 7.2, a.d.length * 6.4) + 12 };
+    });
+    var lab = function (i, x, y, an) {
+      var part = partOf(kind, i.a.id);
+      var x0 = an === 'start' ? x - 4 : an === 'end' ? x - i.w : x - i.w / 2;      // whole label area is clickable, not just the glyphs
+      return '<g class="pb-lab' + (part && part === selected ? ' on' : '') + '"' + (part ? ' data-part="' + part + '" tabindex="0" role="button"' : '') + '>' +
+        (part ? '<rect x="' + r1(x0) + '" y="' + r1(y - 13) + '" width="' + r1(i.w + 4) + '" height="30" fill="transparent"/>' : '') +
+        '<text class="lab-n" x="' + r1(x) + '" y="' + r1(y) + '" text-anchor="' + an + '">' + esc(i.a.n) + '</text>' +
+        '<text class="lab-s" x="' + r1(x) + '" y="' + r1(y + 13) + '" text-anchor="' + an + '">' + esc(i.a.d) + '</text></g>';
+    };
+    [1, -1].forEach(function (side) {
+      var L = items.filter(function (i) { return i.a.s === side; });
+      if (!horiz) {
+        var x = V.cx + side * 104, sp = 33;
+        L.sort(function (p, q) { return p.p[1] - q.p[1]; });
+        L.forEach(function (i, k) { i.y = Math.max(i.p[1] + 4, k ? L[k - 1].y + sp : 22); });
+        for (var k = L.length - 1; k >= 0; k--) { var lim = k === L.length - 1 ? V.h - 20 : L[k + 1].y - sp; if (L[k].y > lim) L[k].y = lim; }
+        L.forEach(function (i, k) {
+          var xm = x - side * (10 + 6 * (k % 3));
+          o += '<path class="lead" d="M' + r1(i.p[0]) + ' ' + r1(i.p[1]) + ' H' + r1(xm) + ' V' + r1(i.y - 4) + ' H' + r1(x - side * 4) + '"/>';
+          o += '<circle class="dot" cx="' + r1(i.p[0]) + '" cy="' + r1(i.p[1]) + '" r="2.2"/>';
+          tx += lab(i, x, i.y, side > 0 ? 'start' : 'end');
+        });
+      } else {
+        var up = nrm[1] * side < 0, nt = L.length > 6 ? 3 : 2;
+        var rows = [0, 1, 2].map(function (t) { return up ? V.cy - 100 - 36 * t : V.cy + 104 + 36 * t; });
+        L.sort(function (p, q) { return p.p[0] - q.p[0]; });
+        var tiers = [[], [], []];
+        L.forEach(function (i, k) { i.t = k % nt; tiers[i.t].push(i); });
+        tiers.forEach(function (T) {
+          T.forEach(function (i, k) { var x0 = i.p[0]; if (k) x0 = Math.max(x0, T[k - 1].x + T[k - 1].w / 2 + i.w / 2 + 6); i.x = Math.max(x0, 10 + i.w / 2); });
+          for (var k = T.length - 1; k >= 0; k--) { var lim = k === T.length - 1 ? V.w - 10 - T[k].w / 2 : T[k + 1].x - T[k + 1].w / 2 - T[k].w / 2 - 6; if (T[k].x > lim) T[k].x = lim; }
+        });
+        L.forEach(function (i) {
+          var y = rows[i.t], end = up ? y + 18 : y - 13, ym = up ? end + 6 + 4 * i.t : end - 6 - 4 * i.t;
+          o += '<path class="lead" d="M' + r1(i.p[0]) + ' ' + r1(i.p[1]) + ' V' + r1(ym) + ' H' + r1(i.x) + ' V' + r1(end) + '"/>';
+          o += '<circle class="dot" cx="' + r1(i.p[0]) + '" cy="' + r1(i.p[1]) + '" r="2.2"/>';
+          tx += lab(i, i.x, y, 'middle');
+        });
+      }
+    });
+    return o + tx;                                      // text after leaders, so leaders never cross a label
+  }
+  function svg(kind, view, orient, o) {
+    o = o || {};
+    var V = vbox(orient), ns = o.ns || ('pb' + kind);
+    if (o.tight && !o.labels) V = orient === 'horizontal' ? { w: 1000, h: 170, cx: 500, cy: 85, ang: -90, s: 1.25 } : { w: 150, h: 740, cx: 75, cy: 370, ang: 0, s: 1 };   // thumbnails: no label margins
+    var g = [Math.sin(V.ang * Math.PI / 180), Math.cos(V.ang * Math.PI / 180)];
+    var textRot = Math.abs(((V.ang - 90) % 360 + 540) % 360 - 180) > 90 ? 90 : -90;   // body marking always reads upright
+    var body = (kind === 'oil' ? oil : gas)(ns, { view: view, g: g, textRot: textRot });
+    return '<svg class="pb-svg" viewBox="0 0 ' + V.w + ' ' + V.h + '" preserveAspectRatio="xMidYMid meet" role="img"' + (o.title ? ' aria-label="' + esc(o.title) + '"' : '') + '>' +
+      '<defs>' + defs(ns) + '</defs>' +
+      '<g transform="translate(' + V.cx + ' ' + V.cy + ') rotate(' + V.ang + ') scale(' + V.s + ')">' + body + '</g>' +
+      (o.labels ? labelLayer(kind, view, V, o.selected) : '') + '</svg>';
+  }
+
+  window.PBDraw = { COL: COL, defs: defs, oil: oil, gas: gas, anchors: anchors, EXTENT: EXTENT, svg: svg };
 })();

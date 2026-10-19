@@ -20,7 +20,7 @@ body = re.search(r'<body>(.*?)<script', html, re.S).group(1)
 logo = base64.b64encode(open(os.path.join(HERE, '..', '..', 'assets', 'logo.png'), 'rb').read()).decode()
 body = body.replace('src="../../assets/logo.png"', 'src="data:image/png;base64,' + logo + '"')
 
-mod = rd('bottle3d.js')
+mod = rd('../../equipment/bottle3d.js')
 assert 'export function mount' in mod
 mod = mod.replace('export function mount', 'function mount') + '\nwindow.__pb3dResolve({ mount });\n'
 
@@ -38,7 +38,8 @@ out = (
     '<script>window.PB3DReady = new Promise(function (res, rej) { window.__pb3dResolve = res; '
     'setTimeout(function () { rej(new Error("3D library did not load")); }, 20000); });'
     ' window.PB3DReady.catch(function () {});</script>\n'
-    '<script>\n' + rd('bottle-draw.js') + '\n</script>\n'
+    '<script>\n' + rd('../../equipment/equipment-data.js') + '\n</script>\n'
+    '<script>\n' + rd('../../equipment/bottle-draw.js') + '\n</script>\n'
     '<script>\n' + rd('app.js') + '\n</script>\n'
     '<script type="module">\n' + mod + '</script>\n'
 )

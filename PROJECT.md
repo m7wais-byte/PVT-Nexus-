@@ -156,9 +156,28 @@ screens/                one file per screen, each registers a named slot
 | `module03` | charging + flash |
 | `module04` | report |
 | `module05` | calculators |
+| `equipment` | Equipment Library (dashboard card above the calculator) |
 | `analysis` | analysis menu |
 | `difflib` `separator` `gc` `visc` `pvTest` `density` | analysis stages |
 | `validation` `about` `settings` | support screens |
+
+## Equipment Library (2026-10-19)
+
+Dashboard card (screens/showDash.js, full width, directly above the calculator strip) -> screen `equipment`
+(screens/showEquip.js; Back to Dashboard in the page header, BACK_PARENT equipment -> dashboard).
+The page body is the native module `components/EquipmentLibrary.js`, mounted by `Main.syncEquip()` into `eqHost`
+(same pattern as RecombSim). Catalogue -> inspection view per bottle: 2D technical / 3D, exterior / cutaway,
+upright / horizontal, labels, part selection with explanation, parts list, "About this bottle".
+
+Shared sources (also used by prototypes/bottles):
+- `equipment/equipment-data.js` window.EQUIPMENT: names, general descriptions, part explanations, 2D label -> part map.
+  General text only: no pressures, temperatures, capacities or procedures.
+- `equipment/bottle-draw.js` PBDraw.svg(kind, view, orient, {labels, selected, ns, tight}) — approved 2D drawings.
+- `equipment/bottle3d.js` ES module, approved 3D models; imported by EquipmentLibrary only when the 3D view is first
+  opened (resolved against index.html). three.js comes from `vendor/three-0.160.0/` via the import map in index.html.
+- `equipment/equipment.css` styles, scoped under `.eq`.
+The viewer is destroyed when the page or bottle catalogue is left; one canvas at a time.
+Workflow scenes still use components/SampleBottle.js (unchanged) — the new bottles are not in the workflow yet.
 
 ## Template syntax
 

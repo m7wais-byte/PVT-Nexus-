@@ -88,6 +88,9 @@ Run any procedure directly, or the full validation sequence.
 ### 04 · Report
 A full **Final Report** assembled from the simulator's own stage values: cover, summary, Tables 1–14, Figures 1–10 and appendices (including a list of every assumption). Exports through **Print / PDF** and **Export Word**.
 
+### Equipment Library
+Opened from the full-width card on the dashboard, above the PVT Calculator. A catalogue of sampling equipment — currently the **Oil Sample Bottle** (floating-piston cylinder with a mixing ring) and the **Gas Sample Bottle** (double-ended cylinder) — each inspectable as a 2D technical drawing or an interactive 3D model, in exterior or cutaway view, upright or horizontal. Click a label, a part on the 3D model or a name in the parts list to read what that part does. Descriptions are general (no job-specific values or procedures); the designs are representative, not manufacturer replicas. The 3D code and its library load only when the 3D view is first opened.
+
 ### 05 · PVT Calculator
 Live oil and gas property calculators that run beside the workflow.
 
@@ -122,6 +125,8 @@ cd PVT-Nexus-
 # open index.html in Chrome or Edge (double-click works — no server needed)
 ```
 
+The Equipment Library's **3D view** uses ES modules, which browsers do not load from `file://`. To use it locally, serve the folder instead, e.g. `python3 -m http.server 8000` and open `http://localhost:8000/`. Everything else, including the 2D equipment drawings, works from a double-click.
+
 Recommended: a desktop browser at 1366 × 768 or larger.
 
 ---
@@ -136,6 +141,9 @@ PVT-Nexus-/
 ├── timing.js           Global process-animation speed (PROCESS_SPEED_MULTIPLIER)
 ├── runtime.js          Lightweight template / component engine
 ├── assets/             Logo
+├── equipment/          Equipment Library: bottle data, 2D drawings (bottle-draw.js), 3D viewer (bottle3d.js), styles
+├── vendor/             three.js r160 (MIT) for the 3D viewer, loaded on demand
+├── prototypes/bottles/ Standalone bottle design review page (uses equipment/ and vendor/)
 ├── data/
 │   ├── pure-components.js   Pure-component reference table (MW, Pc, Tc)
 │   └── report-data.js       Final Report data set (demonstration values)
@@ -151,6 +159,7 @@ PVT-Nexus-/
 │   ├── StageDensity.js      Direct density
 │   ├── StageReport.js       Final Report
 │   ├── OilCalc.js / GasCalc.js   Property calculators
+│   ├── EquipmentLibrary.js  Equipment Library catalogue and inspection page
 │   └── StepGuide.js         Explain panel content
 ├── screens/            One file per screen
 └── PROJECT.md          Detailed developer notes

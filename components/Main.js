@@ -67,6 +67,7 @@ class Component extends DCLogic {
   oilCalcHost = { current: null };
   bhHost = { current: null };   // Bottom Hole page: native BottomHoleSim module mounts here
   rcHost = { current: null };   // Validation > Recombination: native RecombSim module mounts here
+  eqHost = { current: null };   // Dashboard > Equipment Library: native EquipmentLibrary module mounts here
   qcAgHost = { current: null }; // Validation > Step 4 Sample Homogenization: QcAgitSim scene (svg <g>)
   gasCalcHost = { current: null };
 
@@ -93,6 +94,7 @@ class Component extends DCLogic {
     this.syncCalcMount(window.GasCalc, this.gasCalcHost, this.state.screen === 'module05' && this.state.calcMode === 'gas');
     this.syncBhSim();
     this.syncRecomb();
+    this.syncEquip();
     this.syncQcAgit();
     this.qc3Guard();
   }
@@ -124,6 +126,15 @@ class Component extends DCLogic {
       mod.unmount();
       this.rcHost.current = null;
     }
+  }
+  /* Dashboard > Equipment Library - catalogue + 2D / 3D bottle inspection (components/EquipmentLibrary.js).
+     The 3D code (equipment/bottle3d.js + three.js) is imported only when the 3D view is first opened. */
+  syncEquip() {
+    const mod = window.EquipmentLibrary;
+    if (!mod) return;
+    const on = this.state.screen === 'equipment', host = this.eqHost.current;
+    if (on && host && host.isConnected) { if (!mod.isMounted(host)) mod.mount(host); }
+    else if (!on) { mod.unmount(); this.eqHost.current = null; }
   }
   /* Bottom Hole page (open / cased) — own timeline in components/BottomHoleSim.js.
      It reports completion back so "Move to Lab" keeps using state.phase === 'done'. */
@@ -1592,7 +1603,7 @@ const hi_d = (on) => on ? 'opacity:1; transition:opacity .5s ease;' : 'opacity:.
       analysis:'dashboard', difflib:'analysis', separator:'analysis',
       gc:'analysis', visc:'analysis', analysisTest:'analysis',
       viscMenu:'analysis', viscKin:'viscMenu', viscSingle:'viscMenu', viscTwo:'viscMenu',
-      module04:'dashboard', module05:'dashboard'
+      module04:'dashboard', module05:'dashboard', equipment:'dashboard'
     };
     const BACK_NAME = {
       dashboard:'Dashboard', module01:'Field Sampling',
@@ -2873,6 +2884,9 @@ const hi_d = (on) => on ? 'opacity:1; transition:opacity .5s ease;' : 'opacity:.
       goPvTest: () => this.setState({ screen: 'pvTest' }),
       showDensity: scr === 'density',
       showRecomb: scr === 'recomb',
+      showEquip: scr === 'equipment',
+      eqHost: this.eqHost,
+      goEquip: () => { this.clearTimers(); this.setState({ screen: 'equipment' }); },
       rcHost: this.rcHost,
       rcPillText: this.state.rcDone ? 'Complete' : this.state.rcStarted ? 'In Progress' : 'Not Started',
       rcPillStyle: 'flex:0 0 auto; align-self:center; white-space:nowrap; font-size:11px; font-weight:600; padding:3px 10px; border-radius:20px; ' +
@@ -3230,6 +3244,7 @@ DC.define('Main', {
     <sc-slot name="showRestore"></sc-slot>
 
     <!-- ===== MODULE 05 SCREEN — PVT CALCULATOR (embedded) ===== -->
+    <sc-slot name="showEquip"></sc-slot>
     <sc-slot name="showCalc"></sc-slot>
 
     <!-- ===== MODULE 03 SCREEN — PVT TESTING + GC ===== -->

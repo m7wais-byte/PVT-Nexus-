@@ -21,6 +21,8 @@ A self-contained copy is published as a private claude.ai artifact: https://clau
 
 To refresh that copy after a design change, run `python3 prototypes/bottles/build-preview.py OUT.html` and republish it to the same artifact. The script inlines the CSS, the JS (including the 3D module) and the logo into one file. The hosted page may load scripts only from approved CDNs, so its import map loads the identical pinned **three@0.160.0** from jsDelivr instead of `vendor/`.
 
+The approved designs now live in `equipment/` (shared with the app's Equipment Library); this page reads them from there.
+
 URL options for review links: `?mode=2d|3d` · `&show=both|oil|gas` · `&view=exterior|cutaway|pair` · `&orient=upright|horizontal` · `&labels=0` · `&theme=light|dark`
 
 ## Controls
@@ -46,10 +48,11 @@ Both bottles are drawn at the same scale, and the exterior and cutaway views use
 |---|---|
 | `index.html` | Page shell |
 | `bottles.css` | Styles; light and dark tokens from `theme.css` |
-| `bottle-draw.js` | `PBDraw.oil()` / `PBDraw.gas()` editable SVG generators, label anchors, namespaced ids |
+| `../../equipment/bottle-draw.js` | Shared with the app: `PBDraw.oil()` / `PBDraw.gas()` / `PBDraw.svg()` 2D drawings and label layout |
+| `../../equipment/equipment-data.js` | Shared with the app: part names and explanations |
 | `app.js` | View controls and 2D label layout; loads the 3D module on first use |
-| `bottle3d.js` | ES module: 3D models (one group per part), quarter-section cutaway, picking, labels, on-demand rendering |
-| `vendor/three-0.160.0/` | Pinned three.js r160 (MIT, `LICENSE` kept): `three.module.min.js`, `OrbitControls`, `RoomEnvironment`. Unmodified; source and checksum in `SOURCE.txt` |
+| `../../equipment/bottle3d.js` | Shared with the app. ES module: 3D models (one group per part), quarter-section cutaway, picking, labels, on-demand rendering |
+| `../../vendor/three-0.160.0/` | Pinned three.js r160 (MIT, `LICENSE` kept): `three.module.min.js`, `OrbitControls`, `RoomEnvironment`. Unmodified; source and checksum in `SOURCE.txt` |
 | `build-preview.py` | Bundles the page into one HTML file for the hosted preview |
 | `screenshots/` | 2D: `01`–`08`. 3D: `09`–`19` (1366×768, 1920×1080, details, horizontal, 390 px mobile) |
 
