@@ -179,6 +179,21 @@ Shared sources (also used by prototypes/bottles):
 The viewer is destroyed when the page or bottle catalogue is left; one canvas at a time.
 Workflow scenes still use components/SampleBottle.js (unchanged) — the new bottles are not in the workflow yet.
 
+### MRMS — MDT Multisample Module (2026-10-19)
+
+Third catalogue entry (`EQUIPMENT.catalogue`; the bottle switcher still uses `EQUIPMENT.order`). Its page has three
+sub-views: **Module assembly** (six SPMC chambers, selectable; "Open chamber N" or double-click), **SPMC chamber**
+(back button to the assembly), **Operating principle** (4 stages, Play/Pause/Previous/Next/Reset, ~8.5 s each,
+"Explain this stage" in the side panel). Controls: 2D/3D, exterior/cutaway, upright/horizontal, labels, light/dark
+stage background, reset camera, auto-rotate.
+- `equipment/mrms-draw.js` MRDraw.svg('module'|'spmc', view, orient, o); MRDraw.spmc(ns, {st}) also draws the principle frames.
+- `equipment/mrms3d.js` ES module, imported on first 3D use (same viewer behaviour as bottle3d.js; module = half
+  section with whole chambers, SPMC = quarter section).
+- `equipment/mrms-principle.js` MRPrinciple.mount(stageEl, explainEl); rAF only while playing; destroyed on leave.
+- Sources, version (SPMC-T) and every geometric assumption: `equipment/MRMS-SPMC-SOURCES.md`.
+- `equipment/build-preview.py OUT.html` bundles the whole app into one file for the hosted review preview.
+Not linked to the sampling / validation workflows.
+
 ## Template syntax
 
 The markup is the original export's dialect, handled by `runtime.js`:

@@ -8,7 +8,7 @@ DC.slot('showEquip', `<sc-if value="{{ showEquip }}" hint-placeholder-val="{{ fa
         <div class="pg-titles">
           <span class="pg-eyebrow" style="color:var(--teal);">Equipment Library</span>
           <h2 class="pg-title">Sampling Equipment</h2>
-          <p class="pg-desc">Inspect each bottle in 2D and 3D, exterior or cutaway, and select a part to read what it does.</p>
+          <p class="pg-desc">Inspect each item in 2D and 3D, exterior or cutaway, and select a part to read what it does.</p>
         </div>
         <div class="pg-end">
           <button onclick="{{ goDashboard }}" class="ui-btn ui-btn-ghost"><svg width="15" height="15" sc-camel-view-box="0 0 24 24" fill="none"><path d="M19 12H5M11 6l-6 6 6 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></path></svg><span>Back to Dashboard</span></button>

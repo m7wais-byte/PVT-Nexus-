@@ -91,6 +91,8 @@ A full **Final Report** assembled from the simulator's own stage values: cover, 
 ### Equipment Library
 Opened from the full-width card on the dashboard, above the PVT Calculator. A catalogue of sampling equipment — currently the **Oil Sample Bottle** (floating-piston cylinder with a mixing ring) and the **Gas Sample Bottle** (double-ended cylinder) — each inspectable as a 2D technical drawing or an interactive 3D model, in exterior or cutaway view, upright or horizontal. Click a label, a part on the 3D model or a name in the parts list to read what that part does. Descriptions are general (no job-specific values or procedures); the designs are representative, not manufacturer replicas. The 3D code and its library load only when the 3D view is first opened.
 
+The library also contains the **MRMS — MDT Multisample Module** with its six **SPMC single-phase multisample chambers**: module assembly, an individual SPMC chamber (exterior and cutaway, 2D and 3D) and an animated **Operating Principle** (ready, controlled filling, isolation, pressure compensation during retrieval). It is an educational representation; sources and assumptions are in `equipment/MRMS-SPMC-SOURCES.md`.
+
 ### 05 · PVT Calculator
 Live oil and gas property calculators that run beside the workflow.
 
@@ -141,7 +143,7 @@ PVT-Nexus-/
 ├── timing.js           Global process-animation speed (PROCESS_SPEED_MULTIPLIER)
 ├── runtime.js          Lightweight template / component engine
 ├── assets/             Logo
-├── equipment/          Equipment Library: bottle data, 2D drawings (bottle-draw.js), 3D viewer (bottle3d.js), styles
+├── equipment/          Equipment Library: data, 2D drawings (bottle-draw.js, mrms-draw.js), 3D viewers (bottle3d.js, mrms3d.js), MRMS operating principle, styles
 ├── vendor/             three.js r160 (MIT) for the 3D viewer, loaded on demand
 ├── prototypes/bottles/ Standalone bottle design review page (uses equipment/ and vendor/)
 ├── data/
