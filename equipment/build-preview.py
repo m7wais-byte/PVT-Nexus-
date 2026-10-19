@@ -37,17 +37,16 @@ def ready(name, hook):
     return ('<script>window.' + name + ' = new Promise(function (res, rej) { window.__' + hook + ' = res; '
             'setTimeout(function () { rej(new Error("3D library did not load")); }, 20000); }); window.' + name + '.catch(function () {});</script>\n')
 
-out = ('<!DOCTYPE html>\n<html lang="en">\n<head>\n<meta charset="utf-8">\n'
-       '<meta name="viewport" content="width=device-width, initial-scale=1">\n'
-       '<title>PVT Nexus Preview</title>\n' + '\n'.join(head_links) + '\n'
+# the artifact host adds the <!doctype>/<head>/<body> skeleton, so only the content is written
+out = ('<title>PVT Nexus Preview</title>\n' + '\n'.join(head_links) + '\n'
        '<style>\n' + rd('theme.css') + '\n' + rd('equipment/equipment.css') + '\n</style>\n'
        '<script type="importmap">\n{ "imports": { "three": "' + CDN + 'build/three.module.min.js", '
        '"three/addons/": "' + CDN + 'examples/jsm/" } }\n</script>\n'
-       '</head>\n<body>\n<div id="app"></div>\n'
+       '<div id="app"></div>\n'
        + ready('PB3DReady', 'pb3dResolve') + ready('MR3DReady', 'mr3dResolve')
        + ''.join(js(s) for s in scripts)
        + '<script>' + mount + '</script>\n'
        + module('equipment/bottle3d.js', 'pb3dResolve') + module('equipment/mrms3d.js', 'mr3dResolve')
-       + '</body>\n</html>\n')
+)
 open(sys.argv[1], 'w', encoding='utf-8').write(out)
 print('wrote', sys.argv[1], len(out), 'bytes')

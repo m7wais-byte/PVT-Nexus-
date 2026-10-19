@@ -80,7 +80,12 @@ they do not all belong to the same generation:
    of the sample length) for visibility. Pressure and temperature indicators are qualitative (no numbers). The
    "without compensation" marker shows the general effect of cooling a non-compensated sample.
 
-## 5. Not implemented (by request)
+## 5. Hosted review preview
+
+Private claude.ai artifact (separate from GitHub Pages): https://claude.ai/artifact/XNC3CJXHpbP3N5SENmv9Sk.
+Rebuild with `python3 equipment/build-preview.py OUT.html` and republish to the same artifact.
+
+## 6. Not implemented (by request)
 
 - SRS (single-phase reservoir sampler): separate step, after MRMS review.
 - Links to the sampling / validation workflows.
