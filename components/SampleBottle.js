@@ -1,6 +1,7 @@
 /* ==========================================================================
    SampleBottle — shared piston sample bottle (SPS/PDS type) for the Sampling
-   section. Geometry, gradients and valves are taken 1:1 from the SPS/PDS
+   section. Drawn with the approved Oil / Gas Sample Bottle designs
+   (components/BottleArt.js); the frame below is unchanged. Geometry, gradients and valves are taken 1:1 from the SPS/PDS
    bottle drawn in Validation / Restoration (screens/showRestore.js,
    "SPS/PDS BOTTLE" block, coordinates 258..342 x 74..417), so every sample /
    transport bottle in Sampling is the same drawing, only scaled and placed.
@@ -33,61 +34,70 @@
       '<linearGradient id="' + p + 'N2" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#8fb6c9" stop-opacity=".85"></stop><stop offset="1" stop-color="#3d6577" stop-opacity=".9"></stop></linearGradient>' +
       '<linearGradient id="' + p + 'Gas" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#d3efff"></stop><stop offset="1" stop-color="#7fb4dc"></stop></linearGradient>' +
       '<symbol id="' + p + 'Hw" sc-camel-view-box="0 0 30 30" overflow="visible"><circle cx="15" cy="15" r="12.5" fill="none" stroke="#0a0e16" stroke-width="4.5"></circle><circle cx="15" cy="15" r="12.5" fill="none" stroke="#aebccf" stroke-width="2.6"></circle><g stroke="#9fb0c8" stroke-width="2.2" stroke-linecap="round"><line x1="15" y1="15" x2="15" y2="3.5"></line><line x1="15" y1="15" x2="15" y2="26.5"></line><line x1="15" y1="15" x2="3.5" y2="15"></line><line x1="15" y1="15" x2="26.5" y2="15"></line></g><circle cx="15" cy="15" r="4" fill="url(#' + p + 'Metal)" stroke="#0a0e16" stroke-width="1"></circle></symbol>' +
-      '<clipPath id="' + p + 'Chm"><rect x="263" y="' + CH_Y + '" width="74" height="' + CH_H + '"></rect></clipPath>';
+      '<clipPath id="' + p + 'Chm"><rect x="263" y="' + CH_Y + '" width="74" height="' + CH_H + '"></rect></clipPath>' +
+      '<clipPath id="' + p + 'GasIn"><path d="' + window.BottleArt.gasPaths({ cx: 300, R: 42, y0: 112, y1: 360, rn: 10, sh: 40, wall: 5 }).inner + '"></path></clipPath>' +
+      window.BottleArt.defs(p);
   }
 
   function place(x, y, s) {
     return 'translate(' + (x - TOP_X * s).toFixed(2) + ' ' + (y - TOP_Y * s).toFixed(2) + ') scale(' + s + ')';
   }
 
-  function markup(o) {
-    var p = o.p, gas = o.mode === 'gas';
-    var buf = o.buf === 'n2' ? p + 'N2' : p + 'Water';
-    var m = '<g transform="' + place(o.x, o.y, o.s) + '">';
-    if (o.shadow !== false) m += '<ellipse cx="300" cy="424" rx="34" ry="5" fill="rgba(0,0,0,.28)"></ellipse>';
-    // top (sample-side) valve
-    m += '<rect x="294" y="74" width="12" height="15" rx="1.5" fill="url(#' + p + 'Pipe)" stroke="#0a0e16" stroke-width="0.7"></rect>';
-    m += '<rect x="284" y="89" width="32" height="17" rx="3" fill="url(#' + p + 'Metal)" stroke="#0a0e16" stroke-width="0.9"></rect>';
-    m += '<circle cx="327.5" cy="97.5" r="11.5" fill="none" stroke="' + (o.ring || '#8fa3c2') + '" stroke-width="1.6"></circle>';
-    m += '<use href="#' + p + 'Hw" x="318" y="88" width="19" height="19"></use>';
-    m += '<rect x="291" y="106" width="18" height="13" rx="2" fill="url(#' + p + 'Metal)" stroke="#0a0e16" stroke-width="0.8"></rect>';
-    // body: domed ends + cylinder
-    m += '<ellipse cx="300" cy="128" rx="42" ry="11" fill="url(#' + p + 'Cyl)" stroke="#0a0e16" stroke-width="1.2"></ellipse>';
-    m += '<rect x="258" y="128" width="84" height="216" fill="url(#' + p + 'Cyl)" stroke="#0a0e16" stroke-width="1.2"></rect>';
-    m += '<ellipse cx="300" cy="344" rx="42" ry="11" fill="url(#' + p + 'Cyl)" stroke="#0a0e16" stroke-width="1.2"></ellipse>';
-    // internal chamber
-    m += '<rect x="263" y="' + CH_Y + '" width="74" height="' + CH_H + '" fill="#0a1420" stroke="#33445e" stroke-width="1"></rect>';
-    m += '<g clip-path="url(#' + p + 'Chm)">';
-    if (gas) {
-      m += '<rect x="263" y="' + CH_Y + '" width="74" height="' + CH_H + '" fill="url(#' + p + 'Gas)" style="' + (o.sample || '') + '"></rect>';
+  /* Body = the approved Oil / Gas Sample Bottle designs (components/BottleArt.js), drawn in these
+     Restoration coordinates: bore window, valve hardware and ports are unchanged, so every fill
+     style, piston transform and tube end still lines up. o.mix = false hides the mixing ring. */
+  var BODY = { cx: 300, rb: 37, y0: CH_Y, y1: CH_Y + CH_H, R: 42, capR: 46, capH: 18 };
+  var GAS = { cx: 300, R: 42, y0: 112, y1: 360, rn: 10, sh: 40, wall: 5 };
+  function valve(p, top, o) {
+    var m = '';
+    if (top) {
+      m += '<rect x="294" y="74" width="12" height="15" rx="1.5" fill="url(#' + p + 'Pipe)" stroke="#0a0e16" stroke-width="0.7"></rect>';
+      m += '<rect x="284" y="89" width="32" height="17" rx="3" fill="url(#' + p + 'BkStD)" stroke="#0a0e16" stroke-width="0.9"></rect>';
+      m += '<circle cx="327.5" cy="97.5" r="11.5" fill="none" stroke="' + (o.ring || '#8fa3c2') + '" stroke-width="1.6"></circle>';
+      m += '<use href="#' + p + 'Hw" x="318" y="88" width="19" height="19"></use>';
+      m += '<rect x="291" y="106" width="18" height="13" rx="2" fill="url(#' + p + 'BkStD)" stroke="#0a0e16" stroke-width="0.8"></rect>';
     } else {
-      m += '<rect x="263" y="' + CH_Y + '" width="74" height="' + CH_H + '" fill="url(#' + buf + ')" opacity="0.9" style="' + (o.buffer || '') + '"></rect>';
-      m += '<rect x="263" y="' + CH_Y + '" width="74" height="' + CH_H + '" fill="url(#' + p + 'Sample)" opacity="0.92" style="' + (o.sample || '') + '"></rect>';
+      m += '<rect x="294" y="356" width="12" height="20" rx="1.5" fill="url(#' + p + 'Pipe)" stroke="#0a0e16" stroke-width="0.7"></rect>';
+      m += '<rect x="284" y="376" width="32" height="17" rx="3" fill="url(#' + p + 'BkStD)" stroke="#0a0e16" stroke-width="0.9"></rect>';
+      m += '<use href="#' + p + 'Hw" x="318" y="375" width="19" height="19"></use>';
+      m += '<rect x="294" y="393" width="12" height="17" rx="1.5" fill="url(#' + p + 'Pipe)" stroke="#0a0e16" stroke-width="0.7"></rect>';
+      m += '<rect x="290" y="410" width="20" height="7" rx="2" fill="url(#' + p + 'BkStD)" stroke="#0a0e16" stroke-width="0.7"></rect>';
     }
+    return m;
+  }
+  function markup(o) {
+    var p = o.p, gas = o.mode === 'gas', A = window.BottleArt;
+    var buf = o.buf === 'n2' ? p + 'N2' : p + 'Water';
+    var m = '<g transform="' + place(o.x, o.y, o.s) + '"' + (o.bd ? ' class="bd-hit" data-bd-open="' + o.bd + '"' + (o.bdCtx ? ' data-bd-ctx="' + o.bdCtx + '"' : '') : '') + '>';
+    if (o.shadow !== false) m += '<ellipse cx="300" cy="424" rx="34" ry="5" fill="rgba(0,0,0,.28)"></ellipse>';
+    if (gas) {
+      // Gas Sample Bottle: seamless shell, tapered shoulders, isolation valve at each end; one gas volume (no piston, no level)
+      m += valve(p, true, o) + valve(p, false, o);
+      m += A.gasBody(p, GAS);
+      m += '<g clip-path="url(#' + p + 'GasIn)"><rect x="258" y="112" width="84" height="248" fill="url(#' + p + 'Gas)" style="' + (o.sample || '') + '"></rect></g>';
+      m += A.gasNipple(p, 300, 112, 9, -1, 8) + A.gasNipple(p, 300, 360, 9, 1, 8);
+      m += '<rect x="268" y="156" width="5" height="160" rx="2.5" fill="#ffffff" opacity="0.16"></rect>';
+      if (o.letters) m += '<text x="300" y="242" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="17" font-weight="600" fill="#0b2a40" opacity=".75">G</text>';
+      return m + '</g>';
+    }
+    // Oil Sample Bottle: valve protectors around both valves, screwed caps, floating piston, mixing ring
+    m += A.cage(p, 300, 116, 78, 43) + A.cage(p, 300, 356, 404, 43);
+    m += valve(p, true, o) + valve(p, false, o);
+    m += A.oilBody(p, BODY);
+    m += '<g clip-path="url(#' + p + 'Chm)">';
+    m += '<rect x="263" y="' + CH_Y + '" width="74" height="' + CH_H + '" fill="url(#' + buf + ')" opacity="0.9" style="' + (o.buffer || '') + '"></rect>';
+    m += '<rect x="263" y="' + CH_Y + '" width="74" height="' + CH_H + '" fill="url(#' + p + 'Sample)" opacity="0.92" style="' + (o.sample || '') + '"></rect>';
     m += '</g>';
-    m += '<rect x="268" y="138" width="6" height="196" rx="3" fill="#ffffff" opacity="0.2"></rect>';
-    m += '<rect x="326" y="140" width="3" height="192" fill="#ffffff" opacity="0.09"></rect>';
-    if (!gas) {
-      // floating piston: top face sits on the sample / buffer boundary (Restoration model)
-      m += '<g clip-path="url(#' + p + 'Chm)"><g style="' + (o.piston || '') + '">';
-      m += '<rect x="263" y="' + CH_Y + '" width="74" height="' + PIST + '" fill="url(#' + p + 'Metal)" stroke="#0a0e16" stroke-width="1"></rect>';
-      m += '<rect x="263" y="' + (CH_Y + 1.6) + '" width="74" height="2" fill="#eef4fb" opacity=".45"></rect>';
-      m += '</g></g>';
-    }
-    m += '<rect x="263" y="' + CH_Y + '" width="74" height="' + CH_H + '" fill="none" stroke="rgba(150,175,210,.3)" stroke-width="1"></rect>';
+    // floating piston: top face on the sample / buffer boundary; the mixing ring rests on it (sample side, upright)
+    m += '<g clip-path="url(#' + p + 'Chm)"><g style="' + (o.piston || '') + '">';
+    if (o.mix !== false) m += A.ring(p, 300, 37, CH_Y - A.ringHalf(37));
+    m += A.piston(p, 263, 74, CH_Y, PIST);
+    m += '</g></g>';
+    m += A.oilFront(p, BODY);
     if (o.letters) {
-      if (gas) m += '<text x="300" y="242" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="17" font-weight="600" fill="#0b2a40" opacity=".75">G</text>';
-      else {
-        m += '<text x="300" y="160" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="17" font-weight="600" fill="#3d2606" opacity=".8" style="' + (o.sampleLetter || '') + '">O</text>';
-        m += '<text x="300" y="328" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="' + (o.buf === 'n2' ? 15 : 17) + '" font-weight="600" fill="' + (o.buf === 'n2' ? '#07202e' : 'var(--txt)') + '" opacity=".85">' + (o.buf === 'n2' ? 'N₂' : 'W') + '</text>';
-      }
+      m += '<text x="300" y="160" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="17" font-weight="600" fill="#3d2606" opacity=".8" style="' + (o.sampleLetter || '') + '">O</text>';
+      m += '<text x="300" y="328" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="' + (o.buf === 'n2' ? 15 : 17) + '" font-weight="600" fill="' + (o.buf === 'n2' ? '#07202e' : 'var(--txt)') + '" opacity=".85">' + (o.buf === 'n2' ? 'N₂' : 'W') + '</text>';
     }
-    // bottom (buffer-side / outlet) valve
-    m += '<rect x="294" y="356" width="12" height="20" rx="1.5" fill="url(#' + p + 'Pipe)" stroke="#0a0e16" stroke-width="0.7"></rect>';
-    m += '<rect x="284" y="376" width="32" height="17" rx="3" fill="url(#' + p + 'Metal)" stroke="#0a0e16" stroke-width="0.9"></rect>';
-    m += '<use href="#' + p + 'Hw" x="318" y="375" width="19" height="19"></use>';
-    m += '<rect x="294" y="393" width="12" height="17" rx="1.5" fill="url(#' + p + 'Pipe)" stroke="#0a0e16" stroke-width="0.7"></rect>';
-    m += '<rect x="290" y="410" width="20" height="7" rx="2" fill="url(#' + p + 'Metal)" stroke="#0a0e16" stroke-width="0.7"></rect>';
     return m + '</g>';
   }
 

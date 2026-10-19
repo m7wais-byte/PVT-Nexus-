@@ -156,43 +156,43 @@ screens/                one file per screen, each registers a named slot
 | `module03` | charging + flash |
 | `module04` | report |
 | `module05` | calculators |
-| `equipment` | Equipment Library (dashboard card above the calculator) |
 | `analysis` | analysis menu |
 | `difflib` `separator` `gc` `visc` `pvTest` `density` | analysis stages |
 | `validation` `about` `settings` | support screens |
 
-## Equipment Library (2026-10-19)
+## Sample bottles and Bottle Details (2026-10-19)
 
-Dashboard card (screens/showDash.js, full width, directly above the calculator strip) -> screen `equipment`
-(screens/showEquip.js; Back to Dashboard in the page header, BACK_PARENT equipment -> dashboard).
-The page body is the native module `components/EquipmentLibrary.js`, mounted by `Main.syncEquip()` into `eqHost`
-(same pattern as RecombSim). Catalogue -> inspection view per bottle: 2D technical / 3D, exterior / cutaway,
-upright / horizontal, labels, part selection with explanation, parts list, "About this bottle".
+Every sample bottle in the procedures is drawn with the approved **Oil Sample Bottle** / **Gas Sample Bottle**
+designs through one kit, `components/BottleArt.js` (window.BottleArt). Each page keeps its own bore window, fill
+styles, piston transforms, valves and tube ends, so values, timing and routing are unchanged.
+- `BottleArt.oilBody / oilFront / cage / piston / ring` — floating-piston cylinder (caps, valve protectors, seals,
+  guide ring, loose mixing ring on the sample side); `gasBody / gasPaths / gasNipple / gasH` — seamless gas cylinder;
+  `rigBottle` — the charging-rig bottle shared by showTest and StageViscSingle; `pill` — SVG "Bottle Details" button.
+- `components/SampleBottle.js` (Sampling + RecombSim shells) keeps its frame and API and now draws with BottleArt.
 
-Shared sources (also used by prototypes/bottles):
-- `equipment/equipment-data.js` window.EQUIPMENT: names, general descriptions, part explanations, 2D label -> part map.
-  General text only: no pressures, temperatures, capacities or procedures.
-- `equipment/bottle-draw.js` PBDraw.svg(kind, view, orient, {labels, selected, ns, tight}) — approved 2D drawings.
-- `equipment/bottle3d.js` ES module, approved 3D models; imported by EquipmentLibrary only when the 3D view is first
-  opened (resolved against index.html). three.js comes from `vendor/three-0.160.0/` via the import map in index.html.
-- `equipment/equipment.css` styles, scoped under `.eq`.
-The viewer is destroyed when the page or bottle catalogue is left; one canvas at a time.
-Workflow scenes still use components/SampleBottle.js (unchanged) — the new bottles are not in the workflow yet.
+| Page | Bottle | Variant in Bottle Details |
+|---|---|---|
+| Sampling · Wellhead (`showModule01`) | field bottle, N₂ behind the piston | `oilN2` |
+| Sampling · Separator | oil bottle (water side) + gas bottle | `oil` + `gas` (selector) |
+| Validation · Sample Transfer (`showXfer`) | SPS/PDS receiving bottle; lower section keeps its N₂ chamber / inlet / equalizer | `oil` |
+| Validation · steps 1–3 (`showRestore`) | SPS/PDS, inverted (water up) | `oil` |
+| Validation · step 4 (`QcAgitSim`) | SPS/PDS on the inversion stand | `oil` |
+| Validation · Charging (`showTest`) | SPS/PDS charging rig | `oil` |
+| Validation · Recombination (`RecombSim`) | GSP gas bottle, separator oil bottle, recombination bottle | `gas` + `oil` (selector) |
+| Analysis · Single-phase viscosity (`StageViscSingle`) | SPS/PDS rig | `oil` |
+| Analysis · GC gas (`StageGC`) | gas bottles in the balloon oven | `gas` |
 
-### MRMS — MDT Multisample Module (2026-10-19)
+Not sample bottles (unchanged): MDT/MPSR downhole bottles (BottomHoleSim, the MPSR tool on showXfer), titanium
+transfer cylinder (RecombSim), PVT cells, pumps, flash balloon, helium cylinder.
 
-Third catalogue entry (`EQUIPMENT.catalogue`; the bottle switcher still uses `EQUIPMENT.order`). Its page has three
-sub-views: **Module assembly** (six SPMC chambers, selectable; "Open chamber N" or double-click), **SPMC chamber**
-(back button to the assembly), **Operating principle** (4 stages, Play/Pause/Previous/Next/Reset, ~8.5 s each,
-"Explain this stage" in the side panel). Controls: 2D/3D, exterior/cutaway, upright/horizontal, labels, light/dark
-stage background, reset camera, auto-rotate.
-- `equipment/mrms-draw.js` MRDraw.svg('module'|'spmc', view, orient, o); MRDraw.spmc(ns, {st}) also draws the principle frames.
-- `equipment/mrms3d.js` ES module, imported on first 3D use (same viewer behaviour as bottle3d.js; module = half
-  section with whole chambers, SPMC = quarter section).
-- `equipment/mrms-principle.js` MRPrinciple.mount(stageEl, explainEl); rAF only while playing; destroyed on leave.
-- Sources, version (SPMC-T) and every geometric assumption: `equipment/MRMS-SPMC-SOURCES.md`.
-- `equipment/build-preview.py OUT.html` bundles the whole app into one file for the hosted review preview.
-Not linked to the sampling / validation workflows.
+**Bottle Details** (`components/BottleDetails.js`): any element with `data-bd-open="oil|oilN2|gas"` (several types
+separated by `|` open a selector) and optional `data-bd-ctx` opens a full-screen overlay outside #app with the approved
+viewer — 2D (`equipment/bottle-draw.js`) / 3D (`equipment/bottle3d.js`, imported on first use and destroyed on close),
+exterior / cutaway, upright / horizontal, labels, clickable parts, operating principle per variant
+(`EQUIPMENT.*.principle` in `equipment/equipment-data.js`; `oilN2` = nitrogen-compensated copy of `oil`).
+Opening calls `PC.hold(true)` (ProcCtl.js): a running stage is paused through its own Pause action, animations freeze;
+closing returns to the same stage and values and the user resumes from the panel. General equipment view only.
+`equipment/build-preview.py OUT.html` bundles the whole app into one file for a hosted review preview.
 
 ## Template syntax
 

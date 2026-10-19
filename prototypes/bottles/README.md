@@ -21,7 +21,7 @@ A self-contained copy is published as a private claude.ai artifact: https://clau
 
 To refresh that copy after a design change, run `python3 prototypes/bottles/build-preview.py OUT.html` and republish it to the same artifact. The script inlines the CSS, the JS (including the 3D module) and the logo into one file. The hosted page may load scripts only from approved CDNs, so its import map loads the identical pinned **three@0.160.0** from jsDelivr instead of `vendor/`.
 
-The approved designs now live in `equipment/` (shared with the app's Equipment Library); this page reads them from there.
+The approved designs now live in `equipment/` (shared with the app's Bottle Details overlay); this page reads them from there.
 
 URL options for review links: `?mode=2d|3d` · `&show=both|oil|gas` · `&view=exterior|cutaway|pair` · `&orient=upright|horizontal` · `&labels=0` · `&theme=light|dark`
 

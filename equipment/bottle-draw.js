@@ -24,6 +24,7 @@
   var COL = {
     oil:   { name: 'Oil sample',     a: '#cfa060', b: '#9a6a2e' },
     drive: { name: 'Driving fluid',  a: '#6f9cc0', b: '#3d6688' },
+    n2:    { name: 'Nitrogen',       a: '#d6e4f6', b: '#a9bfdc', dot: '#4f6f9c' },
     gas:   { name: 'Gas sample',     a: '#d5ebe0', b: '#a3cbb8', dot: '#4f8f74' }
   };
 
@@ -50,6 +51,8 @@
     o += lg('Knob', [[0, '#1d222b'], [.4, '#4a5260'], [.55, '#5e6775'], [1, '#161a21']]);
     o += lg('Oil', [[0, COL.oil.a], [1, COL.oil.b]], true);
     o += lg('Drive', [[0, COL.drive.a], [1, COL.drive.b]], true);
+    o += lg('N2', [[0, COL.n2.a, .95], [1, COL.n2.b, .95]], true);                                              // nitrogen-compensated variant
+    o += '<pattern id="' + ns + 'N2Dots" width="9" height="9" patternUnits="userSpaceOnUse"><circle cx="2" cy="3" r="1.1" fill="' + COL.n2.dot + '" opacity=".6"/><circle cx="6.5" cy="7.5" r="1" fill="' + COL.n2.dot + '" opacity=".55"/></pattern>';
     o += lg('Gas', [[0, COL.gas.a, .92], [1, COL.gas.b, .92]], true);
     o += lg('RingTop', [[0, '#e9eef4'], [.55, '#a9b4c3'], [1, '#5d6879']], true);
     o += '<pattern id="' + ns + 'Hatch" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="6" height="6" fill="#aab4c2"/><line x1="0" y1="0" x2="0" y2="6" stroke="#4a5566" stroke-width="1.6"/></pattern>';
@@ -167,7 +170,7 @@
     } else {
       o += R(-OIL.R + .6, -OIL.capIn + .6, 2 * OIL.R - 1.2, 2 * OIL.capIn - 1.2, 'fill="' + hatch + '" opacity=".6"');
       o += R(-OIL.rb, -OIL.capIn, 2 * OIL.rb, 2 * OIL.capIn, 'fill="#0b1018"');
-      o += '<g clip-path="url(#' + ns + 'OilBore)">' + oilInside(ns, g) + '</g>';
+      o += '<g clip-path="url(#' + ns + 'OilBore)">' + oilInside(ns, g, op.n2) + '</g>';
       o += R(-OIL.rb, OIL.chT, 2 * OIL.rb, OIL.chB - OIL.chT, 'fill="none" stroke="rgba(170,190,215,.45)" stroke-width=".8"');
       o += R(-OIL.rb + 3, OIL.chT + 6, 3, OIL.chB - OIL.chT - 12, 'rx="1.5" fill="#fff" opacity=".12"');
     }
@@ -178,10 +181,11 @@
     return o;
   }
 
-  function oilInside(ns, g) {
+  function oilInside(ns, g, n2) {
     var o = '', rb = OIL.rb, pt = OIL.pistY, pb = pt + OIL.pist;
     o += R(-rb, OIL.chT, 2 * rb, pt - OIL.chT, 'fill="url(#' + ns + 'Oil)"');
-    o += R(-rb, pb, 2 * rb, OIL.chB - pb, 'fill="url(#' + ns + 'Drive)"');
+    o += R(-rb, pb, 2 * rb, OIL.chB - pb, 'fill="url(#' + ns + (n2 ? 'N2' : 'Drive') + ')"');
+    if (n2) o += R(-rb, pb, 2 * rb, OIL.chB - pb, 'fill="url(#' + ns + 'N2Dots)"');
     // floating piston: body, two seal grooves (O-ring + back-up rings), guide ring between them
     o += R(-rb, pt, 2 * rb, OIL.pist, 'fill="url(#' + ns + 'SteelD)" ' + K + ' stroke-width=".9"');
     o += R(-rb + 3, pt + 2, 2 * rb - 6, 2, 'fill="#fff" opacity=".35"');
@@ -324,7 +328,11 @@
       { id: 'portB', x: -3.5, y: 240, s: -1, n: 'Connection', d: 'bottom end' }
     ]
   };
+  // nitrogen-compensated oil bottle: same drawing, the driving side holds nitrogen
+  var N2LAB = { drive: ['Nitrogen chamber', 'nitrogen charge'], valveB: ['Nitrogen valve', 'right-angle needle valve'],
+    portB: ['Nitrogen connection', 'charging port'], cageB: ['Valve protector', 'nitrogen side'], capB: ['End cap', 'screwed · nitrogen side'], piston: ['Floating piston', 'separates sample and nitrogen'] };
   function anchors(kind, view, g) {
+    if (kind === 'oilN2') return anchors('oil', view, g).map(function (a) { var L = N2LAB[a.id]; return L ? Object.assign({}, a, { n: L[0], d: L[1] }) : a; });
     return ANCHORS[kind].filter(function (a) { return view === 'cutaway' ? !a.ext : !a.cut; }).map(function (a) {
       if (a.id !== 'ring') return a;
       var p = ringPos(g || [0, 1]);                       // the label follows the ring
@@ -400,7 +408,7 @@
     if (o.tight && !o.labels) V = orient === 'horizontal' ? { w: 1000, h: 170, cx: 500, cy: 85, ang: -90, s: 1.25 } : { w: 150, h: 740, cx: 75, cy: 370, ang: 0, s: 1 };   // thumbnails: no label margins
     var g = [Math.sin(V.ang * Math.PI / 180), Math.cos(V.ang * Math.PI / 180)];
     var textRot = Math.abs(((V.ang - 90) % 360 + 540) % 360 - 180) > 90 ? 90 : -90;   // body marking always reads upright
-    var body = (kind === 'oil' ? oil : gas)(ns, { view: view, g: g, textRot: textRot });
+    var body = (kind === 'gas' ? gas : oil)(ns, { view: view, g: g, textRot: textRot, n2: kind === 'oilN2' });
     return '<svg class="pb-svg" viewBox="0 0 ' + V.w + ' ' + V.h + '" preserveAspectRatio="xMidYMid meet" role="img"' + (o.title ? ' aria-label="' + esc(o.title) + '"' : '') + '>' +
       '<defs>' + defs(ns) + '</defs>' +
       '<g transform="translate(' + V.cx + ' ' + V.cy + ') rotate(' + V.ang + ') scale(' + V.s + ')">' + body + '</g>' +

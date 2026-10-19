@@ -88,10 +88,8 @@ Run any procedure directly, or the full validation sequence.
 ### 04 · Report
 A full **Final Report** assembled from the simulator's own stage values: cover, summary, Tables 1–14, Figures 1–10 and appendices (including a list of every assumption). Exports through **Print / PDF** and **Export Word**.
 
-### Equipment Library
-Opened from the full-width card on the dashboard, above the PVT Calculator. A catalogue of sampling equipment — currently the **Oil Sample Bottle** (floating-piston cylinder with a mixing ring) and the **Gas Sample Bottle** (double-ended cylinder) — each inspectable as a 2D technical drawing or an interactive 3D model, in exterior or cutaway view, upright or horizontal. Click a label, a part on the 3D model or a name in the parts list to read what that part does. Descriptions are general (no job-specific values or procedures); the designs are representative, not manufacturer replicas. The 3D code and its library load only when the 3D view is first opened.
-
-The library also contains the **MRMS — MDT Multisample Module** with its six **SPMC single-phase multisample chambers**: module assembly, an individual SPMC chamber (exterior and cutaway, 2D and 3D) and an animated **Operating Principle** (ready, controlled filling, isolation, pressure compensation during retrieval). It is an educational representation; sources and assumptions are in `equipment/MRMS-SPMC-SOURCES.md`.
+### Sample bottles and Bottle Details
+Every sample bottle in the procedures uses the approved **Oil Sample Bottle** (floating-piston cylinder with valve protectors, seals, guide ring and a loose mixing ring) and **Gas Sample Bottle** (seamless double-ended cylinder) designs, adapted to each page's function: conventional (hydraulic water) or nitrogen-compensated oil bottles, and gas bottles. Each page has a **Bottle Details** button (and the bottle itself is clickable) that opens the bottle in a 2D technical view or an interactive 3D model, exterior or cutaway, with part explanations and the operating principle of that variant. Opening it pauses the running stage; **Back to Procedure** returns to the same stage and values, and the procedure resumes when you press Resume.
 
 ### 05 · PVT Calculator
 Live oil and gas property calculators that run beside the workflow.
@@ -127,7 +125,7 @@ cd PVT-Nexus-
 # open index.html in Chrome or Edge (double-click works — no server needed)
 ```
 
-The Equipment Library's **3D view** uses ES modules, which browsers do not load from `file://`. To use it locally, serve the folder instead, e.g. `python3 -m http.server 8000` and open `http://localhost:8000/`. Everything else, including the 2D equipment drawings, works from a double-click.
+The Bottle Details **3D view** uses ES modules, which browsers do not load from `file://`. To use it locally, serve the folder instead, e.g. `python3 -m http.server 8000` and open `http://localhost:8000/`. Everything else, including the 2D equipment drawings, works from a double-click.
 
 Recommended: a desktop browser at 1366 × 768 or larger.
 
@@ -143,7 +141,7 @@ PVT-Nexus-/
 ├── timing.js           Global process-animation speed (PROCESS_SPEED_MULTIPLIER)
 ├── runtime.js          Lightweight template / component engine
 ├── assets/             Logo
-├── equipment/          Equipment Library: data, 2D drawings (bottle-draw.js, mrms-draw.js), 3D viewers (bottle3d.js, mrms3d.js), MRMS operating principle, styles
+├── equipment/          Bottle Details: bottle data, 2D drawings (bottle-draw.js), 3D viewer (bottle3d.js), styles
 ├── vendor/             three.js r160 (MIT) for the 3D viewer, loaded on demand
 ├── prototypes/bottles/ Standalone bottle design review page (uses equipment/ and vendor/)
 ├── data/
@@ -161,7 +159,8 @@ PVT-Nexus-/
 │   ├── StageDensity.js      Direct density
 │   ├── StageReport.js       Final Report
 │   ├── OilCalc.js / GasCalc.js   Property calculators
-│   ├── EquipmentLibrary.js  Equipment Library catalogue and inspection page
+│   ├── BottleArt.js         Shared sample-bottle drawings for the procedures
+│   ├── BottleDetails.js     Bottle Details overlay
 │   └── StepGuide.js         Explain panel content
 ├── screens/            One file per screen
 └── PROJECT.md          Detailed developer notes

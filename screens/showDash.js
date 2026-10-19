@@ -1,7 +1,7 @@
 /* screen: showDash  (13.0 KB) */
 DC.slot('showDash', `<sc-if value="{{ showDash }}" hint-placeholder-val="{{ false }}">
 
-    <div style="position:relative; height:var(--page-h); min-height:0; padding:40px 56px; max-width:1600px; width:100%; margin:0 auto; display:flex; flex-direction:column; justify-content:center; gap:24px; box-sizing:border-box; overflow:auto; background:var(--bg);">
+    <div style="position:relative; height:var(--page-h); min-height:0; padding:56px; max-width:1600px; width:100%; margin:0 auto; display:flex; flex-direction:column; justify-content:center; gap:28px; box-sizing:border-box; overflow:auto; background:var(--bg);">
       <div style="position:absolute; top:-140px; left:-40px; width:640px; height:640px; border-radius:50%; border:1px solid var(--line); pointer-events:none;"></div>
       <div style="position:absolute; top:-40px; left:120px; width:420px; height:420px; border-radius:50%; border:1px solid var(--line); pointer-events:none;"></div>
 
@@ -47,16 +47,6 @@ DC.slot('showDash', `<sc-if value="{{ showDash }}" hint-placeholder-val="{{ fals
           <span style="margin-top:auto; padding-top:14px; align-self:flex-end; display:flex; align-items:center;"><span style="width:36px; height:36px; border-radius:50%; border:1.5px solid var(--blue); color:var(--blue); display:flex; align-items:center; justify-content:center; flex:0 0 auto;"><svg width="15" height="15" sc-camel-view-box="0 0 24 24" fill="none"><path d="M5 12h14M13 6l6 6-6 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></path></svg></span></span>
         </button>
       </div>
-
-      <!-- equipment library (full width, above the calculator). General card: individual equipment is named only inside the library. -->
-      <button onclick="{{ goEquip }}" aria-label="Explore Equipment: open the Equipment Library" style="position:relative; text-align:left; cursor:pointer; font-family:inherit; color:var(--txt); background:var(--panel); border:1px solid var(--line); border-bottom:2.5px solid var(--teal); border-radius:14px; display:flex; align-items:center; gap:20px; padding:22px 28px; flex:0 0 auto; box-shadow:0 1px 2px rgba(10,20,40,.04), 0 8px 20px rgba(10,20,40,.03); transition:transform .18s cubic-bezier(.2,.7,.3,1), box-shadow .18s ease, border-color .18s ease;" style-hover="border-color:var(--teal); box-shadow:0 2px 4px rgba(10,20,40,.05), 0 14px 28px rgba(10,20,40,.08); transform:translateY(-3px);">
-        <span style="width:50px; height:50px; border-radius:50%; background:rgba(56,205,184,.14); color:var(--teal); display:flex; align-items:center; justify-content:center; flex:0 0 auto;"><svg width="24" height="24" sc-camel-view-box="0 0 24 24" fill="none"><path d="M12 2.8l8 4.4v9.6l-8 4.4-8-4.4V7.2l8-4.4z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"></path><path d="M4.3 7.4L12 11.7l7.7-4.3M12 11.7v9.3" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"></path></svg></span>
-        <span style="flex:1 1 auto; min-width:0;">
-          <span style="display:block; font-size:19px; font-weight:700; letter-spacing:-.3px;">Equipment Library</span>
-          <span style="display:block; font-size:13px; color:var(--txt2); line-height:1.5; margin-top:5px; font-weight:400;">Explore laboratory equipment, internal components, and operating principles.</span>
-        </span>
-        <span style="flex:0 0 auto; display:inline-flex; align-items:center; gap:10px; padding:9px 10px 9px 16px; border-radius:999px; border:1.5px solid var(--teal); color:var(--teal); font-size:13.5px; font-weight:600; white-space:nowrap;">Explore Equipment<span style="width:26px; height:26px; border-radius:50%; background:rgba(56,205,184,.14); display:flex; align-items:center; justify-content:center;"><svg width="14" height="14" sc-camel-view-box="0 0 24 24" fill="none"><path d="M5 12h14M13 6l6 6-6 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></path></svg></span></span>
-      </button>
 
       <!-- calculator strip -->
       <div style="position:relative; background:var(--panel); border:1px solid var(--line); border-radius:14px; display:grid; grid-template-columns:1fr 1.1fr 1.1fr; box-shadow:0 1px 2px rgba(10,20,40,.04), 0 8px 20px rgba(10,20,40,.03); overflow:hidden; flex:0 0 auto;">

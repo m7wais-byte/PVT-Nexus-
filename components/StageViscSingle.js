@@ -836,6 +836,7 @@ DC.define('StageViscSingle', {
     <div style="flex:1 1 auto; min-width:0; position:relative; display:flex; flex-direction:column; border-radius:14px; background:var(--panel2); overflow:hidden;">
       <svg sc-camel-view-box="{{ vsVB }}" preserveAspectRatio="xMidYMid meet" style="flex:1 1 auto; min-height:0; width:100%; height:100%; display:block; padding:6px 8px; box-sizing:border-box;">
         <defs>
+          ${BottleArt.defs('vs')}
           <!-- project palette (same gradients as screens/showTest.js) -->
           <linearGradient id="vsMetal" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#283750"></stop><stop offset=".42" stop-color="#b3c1d8"></stop><stop offset=".58" stop-color="#7e90b0"></stop><stop offset="1" stop-color="#1f2a3e"></stop></linearGradient>
           <linearGradient id="vsCyl" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#3a485f"></stop><stop offset=".2" stop-color="#8094b2"></stop><stop offset=".5" stop-color="#aebcd2"></stop><stop offset=".8" stop-color="#54657f"></stop><stop offset="1" stop-color="#222c3e"></stop></linearGradient>
@@ -1096,35 +1097,9 @@ DC.define('StageViscSingle', {
             <path d="M585 185 V${132}" fill="none" stroke="#d6b03c" stroke-width="2.4" stroke-linecap="round"></path>
             <!-- bottle (scaled cutaway) -->
             <g transform="translate(585,474) scale(0.6,0.74) translate(-585,-474)">
-              <path d="M568 104 V92 Q568 84 585 84 Q602 84 602 92 V104 Z" fill="url(#vsMetal)" stroke="#0a0e16" stroke-width="1"></path>
-              <path d="M572 100 Q572 90 585 89" fill="none" stroke="#eef4fb" stroke-width="1" opacity=".4"></path>
-              <rect x="524" y="104" width="122" height="20" rx="4" fill="url(#vsMetal)" stroke="#0a0e16" stroke-width="1.2"></rect>
-              <line x1="524" y1="110" x2="646" y2="110" stroke="#eef4fb" stroke-width="0.8" opacity=".3"></line>
-              <g fill="#0a0e16" stroke="#5a708f" stroke-width="0.8"><circle cx="534" cy="114" r="2.6"></circle><circle cx="558" cy="114" r="2.6"></circle><circle cx="612" cy="114" r="2.6"></circle><circle cx="636" cy="114" r="2.6"></circle></g>
-              <rect x="560" y="124" width="50" height="20" fill="url(#vsMetal)" stroke="#0a0e16" stroke-width="0.8"></rect>
-              <line x1="560" y1="128" x2="610" y2="128" stroke="#eef4fb" stroke-width="0.7" opacity=".3"></line>
-              <rect x="494" y="144" width="182" height="270" rx="18" fill="url(#vsCyl)" stroke="#0a0e16" stroke-width="1.8"></rect>
-              <rect x="506" y="150" width="8" height="258" fill="#ffffff" opacity="0.22"></rect>
-              <rect x="522" y="150" width="4" height="258" fill="#ffffff" opacity="0.1"></rect>
-              <line x1="664" y1="150" x2="664" y2="408" stroke="#000000" stroke-width="3" opacity=".18"></line>
-              <rect x="508" y="152" width="154" height="254" rx="10" fill="#0a1420" stroke="#33445e" stroke-width="1"></rect>
-              <g clip-path="url(#vsBotClip)">
-                <rect x="508" y="152" width="154" height="{{ vsOilH }}" fill="url(#vsOilC)"></rect>
-                <rect x="508" y="{{ vsWaterY }}" width="154" height="{{ vsWaterH }}" fill="url(#vsWater)" opacity=".9"></rect>
-              </g>
-              <g transform="translate(0,{{ vsPistDY }})">
-                <rect x="508" y="152" width="154" height="22" fill="url(#vsMetal)" stroke="#0a0e16" stroke-width="1"></rect>
-                <line x1="508" y1="156" x2="662" y2="156" stroke="#eef4fb" stroke-width="1" opacity=".4"></line>
-                <line x1="508" y1="170" x2="662" y2="170" stroke="#000000" stroke-width="1" opacity=".4"></line>
-                <rect x="508" y="158" width="6" height="10" fill="#0a0e16" opacity=".6"></rect>
-                <rect x="656" y="158" width="6" height="10" fill="#0a0e16" opacity=".6"></rect>
-              </g>
-              <rect x="560" y="414" width="50" height="20" fill="url(#vsMetal)" stroke="#0a0e16" stroke-width="0.8"></rect>
-              <line x1="560" y1="418" x2="610" y2="418" stroke="#eef4fb" stroke-width="0.7" opacity=".25"></line>
-              <rect x="524" y="434" width="122" height="20" rx="4" fill="url(#vsMetal)" stroke="#0a0e16" stroke-width="1.2"></rect>
-              <line x1="524" y1="438" x2="646" y2="438" stroke="#eef4fb" stroke-width="0.8" opacity=".25"></line>
-              <g fill="#0a0e16" stroke="#5a708f" stroke-width="0.8"><circle cx="534" cy="444" r="2.6"></circle><circle cx="558" cy="444" r="2.6"></circle><circle cx="612" cy="444" r="2.6"></circle><circle cx="636" cy="444" r="2.6"></circle></g>
-              <path d="M568 454 V466 Q568 474 585 474 Q602 474 602 466 V454 Z" fill="url(#vsMetal)" stroke="#0a0e16" stroke-width="1"></path>
+              <!-- approved Oil Sample Bottle design (components/BottleArt.js); bore, piston travel and ports unchanged -->
+              ${BottleArt.rigBottle('vs', { clip: 'vsBotClip', fill: `<rect x="508" y="152" width="154" height="{{ vsOilH }}" fill="url(#vsOilC)"></rect>
+                <rect x="508" y="{{ vsWaterY }}" width="154" height="{{ vsWaterH }}" fill="url(#vsWater)" opacity=".9"></rect>`, pistonOpen: '<g transform="translate(0,{{ vsPistDY }})">', pistonY: 152, ctx: 'SPS/PDS sample bottle · feeding the viscometer' })}
             </g>
             <!-- side ports -->
             <circle cx="530" cy="258" r="4.5" fill="url(#vsMetal)" stroke="#0a0e16" stroke-width="0.8"></circle>
@@ -1145,6 +1120,7 @@ DC.define('StageViscSingle', {
           <text x="${BTX(676) - RIG_DX + 30}" y="196" style="${ESS}">SPS/PDS</text>
           <text x="${BTX(676) - RIG_DX + 30}" y="214" style="${SUB}">sample bottle</text>
           <text x="${BTX(676) - RIG_DX + 30}" y="232" style="${MONO} font-size:12.5px; font-weight:700; fill:var(--grn);">${fmtP(BOTTLE_P)} psig</text>
+          ${BottleArt.pill(BTX(676) - RIG_DX + 30, 244, 'oil', { ctx: 'SPS/PDS sample bottle · feeding the viscometer' })}
 
           <!-- transfer pump (project drawing, mirrored to sit RIGHT of the bottle; its outlet faces the bottle) -->
           <g style="{{ vsDimPump }}"><g transform="translate(1170,0) scale(-1,1)">

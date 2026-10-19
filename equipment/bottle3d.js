@@ -24,8 +24,8 @@ const COS30 = Math.cos(Math.PI / 6);
 
 /* ------------------------------------------------------------ part catalogue
    Names and explanations live in equipment/equipment-data.js (window.EQUIPMENT),
-   shared with the 2D drawings and the Equipment Library page. */
-const PARTS = { oil: window.EQUIPMENT.oil.parts, gas: window.EQUIPMENT.gas.parts };
+   shared with the 2D drawings and the Bottle Details overlay. */
+const PARTS = { oil: window.EQUIPMENT.oil.parts, gas: window.EQUIPMENT.gas.parts, oilN2: window.EQUIPMENT.oilN2.parts };
 /* label anchors, model space in 2D units (y up). part = selection target */
 const ANCHORS = {
   oil: [
@@ -58,6 +58,10 @@ const ANCHORS = {
     { p: 'port', n: 'Connection', at: [0, -248, 3.5] }
   ]
 };
+
+// nitrogen-compensated oil bottle: the oil model with nitrogen in place of the driving fluid
+const N2LAB = { drive: 'Nitrogen chamber', 'Driving-fluid valve': 'Nitrogen valve', 'Driving-fluid connection': 'Nitrogen connection' };
+ANCHORS.oilN2 = ANCHORS.oil.map(a => ({ ...a, n: N2LAB[a.p === 'drive' ? 'drive' : a.n] || a.n }));
 
 /* --------------------------------------------------------------- geometry */
 function area(loop) { let s = 0; for (let i = 0; i < loop.length; i++) { const a = loop[i], b = loop[(i + 1) % loop.length]; s += a[0] * b[1] - b[0] * a[1]; } return s / 2; }
@@ -184,18 +188,20 @@ export function mount(host, labelHost, ui) {
     // fluids are slightly translucent so the piston, seals and mixing ring stay readable inside them
     oil:    () => new THREE.MeshStandardMaterial({ color: 0xc58a3d, metalness: 0, roughness: 0.28, transparent: true, opacity: 0.55, depthWrite: false }),
     drive:  () => new THREE.MeshStandardMaterial({ color: 0x4f86ad, metalness: 0, roughness: 0.3, transparent: true, opacity: 0.55, depthWrite: false }),
+    n2:     () => new THREE.MeshBasicMaterial({ color: 0xb9cde8, transparent: true, opacity: 0.22, depthWrite: false }),          // nitrogen charge (unlit tint)
     bore:   () => new THREE.MeshStandardMaterial({ color: 0x0d1118, metalness: 0, roughness: 0.9 }),
     gas:    () => new THREE.MeshBasicMaterial({ color: 0x9fd2ba, transparent: true, opacity: 0.16, depthWrite: false })   // unlit tint: no glare
   };
   const CUT = {   // cut-face material per base material
     steel: 'hatch', steelB: 'hatch', ring: 'hatch', knob: 0x3a404a, seal: 0x23272e, ptfe: 0xf1ecdf, guide: 0xe0d2a8,
-    oil: 0xd39a4c, drive: 0x5f96bd, bore: 0x0d1118, gas: 'gasCut'
+    oil: 0xd39a4c, drive: 0x5f96bd, bore: 0x0d1118, gas: 'gasCut', n2: 'n2Cut'
   };
   function cutMat(kind, offset, id) {
     const c = CUT[kind];
     let m;
     if (c === 'hatch') m = new THREE.MeshStandardMaterial({ color: 0xffffff, map: HATCH[HATCH_OF[id] || 'A'], metalness: 0.2, roughness: 0.7 });
     else if (c === 'gasCut') m = new THREE.MeshBasicMaterial({ color: 0xa8d8c1, transparent: true, opacity: 0.28, depthWrite: false });
+    else if (c === 'n2Cut') m = new THREE.MeshBasicMaterial({ color: 0xc3d5ee, transparent: true, opacity: 0.4, depthWrite: false });
     else if (kind === 'oil' || kind === 'drive') m = new THREE.MeshStandardMaterial({ color: c, metalness: 0, roughness: 0.5, transparent: true, opacity: 0.62, depthWrite: false });
     else m = new THREE.MeshStandardMaterial({ color: c, metalness: 0, roughness: 0.6 });
     m.side = THREE.DoubleSide;
@@ -218,7 +224,7 @@ export function mount(host, labelHost, ui) {
     if (opt.pos) m.position.set(...opt.pos);
     if (opt.rot) m.rotation.set(...opt.rot);
     m.userData.part = id; m.userData.kind = kind;
-    if (kind === 'gas' || kind === 'oil' || kind === 'drive') { m.renderOrder = 2; m.userData.noOcclude = true; }
+    if (kind === 'gas' || kind === 'oil' || kind === 'drive' || kind === 'n2') { m.renderOrder = 2; m.userData.noOcclude = true; }
     part(id).add(m);
     return m;
   }
@@ -229,7 +235,7 @@ export function mount(host, labelHost, ui) {
     const b = new THREE.ShapeGeometry(shapeOf(loops, kB)); b.rotateY(-Math.PI / 2); b.translate(0, dy, 0);
     [a, b].forEach(g => {
       const m = new THREE.Mesh(g, cutMat(kind, offset, id)); m.userData.part = id; m.userData.cap = true; m.userData.kind = kind;
-      if (kind === 'gas' || kind === 'oil' || kind === 'drive') { m.renderOrder = 3; m.userData.noOcclude = true; }
+      if (kind === 'gas' || kind === 'oil' || kind === 'drive' || kind === 'n2') { m.renderOrder = 3; m.userData.noOcclude = true; }
       part(id).add(m);
     });
   }
@@ -293,7 +299,7 @@ export function mount(host, labelHost, ui) {
     // drilled passages: cap port + valve inlet (on the cut plane), dark
     rev('passage', [L(rect(0, 2, 226, 282))], 'bore', -2);
   }
-  function buildOil(horiz) {
+  function buildOil(horiz, n2) {
     rev('body', [rect(22, 34, -236, 236)], 'steel', 1);
     oilEnd(1); oilEnd(-1);
     // evacuation fitting on the sample-side cap (radial, -x) + its drilled passage
@@ -322,7 +328,17 @@ export function mount(host, labelHost, ui) {
       ? [[[0, pt], [12, pt], [12, r1], [19.5, r1], [19.5, pt], [22, pt], [22, 226], [0, 226]]]
       : [[[0, pt], [22, pt], [22, 226], [0, 226]], rect(12, 19.5, r0, r1)];
     rev('oil', oilLoops, 'oil', 0);
-    rev('drive', [rect(0, 22, -226, pb)], 'drive', 0);
+    if (!n2) rev('drive', [rect(0, 22, -226, pb)], 'drive', 0);
+    else {                                         // nitrogen charge: faint tint + scattered molecules, sealed by the piston
+      addMesh('drive', revolve([rect(0, 21.8, -226, pb)]), 'n2');
+      caps('drive', [rect(0, 21.8, -226, pb)], 'n2', 1, 1, 0);
+      const pts = []; let seed = 5; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+      while (pts.length < 1800) { const y = -225 + (pb - 1 + 225) * rnd(), r = 20.5 * Math.sqrt(rnd()), f = rnd() * Math.PI * 2; pts.push(r * Math.sin(f), y, r * Math.cos(f)); }
+      const pg = new THREE.BufferGeometry(); pg.setAttribute('position', new THREE.Float32BufferAttribute(pts, 3));
+      const pm = clip(new THREE.PointsMaterial({ color: 0x4f6f9c, size: 0.022, sizeAttenuation: true, transparent: true, opacity: 0.6, depthWrite: false }));
+      pm.side = THREE.FrontSide;
+      const P = new THREE.Points(pg, pm); P.userData.part = 'drive'; P.userData.noOcclude = true; P.renderOrder = 2; part('drive').add(P);
+    }
   }
 
   /* ============================================================ GAS BOTTLE */
@@ -383,7 +399,7 @@ export function mount(host, labelHost, ui) {
     if (sig === built) return false;
     disposeModel();
     root = new THREE.Group(); root.scale.setScalar(U); scene.add(root);
-    if (S.bottle === 'oil') buildOil(S.horiz); else buildGas();
+    if (S.bottle === 'gas') buildGas(); else buildOil(S.horiz, S.bottle === 'oilN2');
     // internal parts are hidden from the outside: render them only in the cutaway
     Object.keys(parts).forEach(id => { const info = PARTS[S.bottle][id]; parts[id].visible = !(info && info.internal) || S.cut; });
     root.rotation.z = S.horiz ? -Math.PI / 2 : 0;

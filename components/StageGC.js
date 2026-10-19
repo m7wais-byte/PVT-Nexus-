@@ -1947,6 +1947,7 @@ DC.define('StageGC', {
             <radialGradient id="gr-floor" cx="50%" cy="50%" r="50%">
               <stop offset="0" stop-color="rgba(0,0,0,.34)"></stop><stop offset="1" stop-color="rgba(0,0,0,0)"></stop>
             </radialGradient>
+            ${BottleArt.defs('gq')}
             <linearGradient id="gq-bal" x1="0" y1="0" x2="0" y2="1">
               <stop offset="0" stop-color="#6f7986"></stop><stop offset=".28" stop-color="#eef2f6"></stop><stop offset=".62" stop-color="#a7b1bd"></stop><stop offset="1" stop-color="#57606c"></stop>
             </linearGradient>
@@ -2286,11 +2287,11 @@ DC.define('StageGC', {
           <!-- lower shelf + inactive balloons (disconnected, capped) -->
           <text x="1146" y="594" text-anchor="middle" font-family="IBM Plex Mono" font-size="9" font-weight="700" letter-spacing=".6" fill="#3a4759">SPARE BOTTLES · DISCONNECTED</text>
           <g opacity=".8">
-            <rect x="1104" y="617" width="128" height="22" rx="11" fill="url(#gq-bal)" stroke="#2a3340" stroke-width="1"></rect>
+            ${BottleArt.gasH('gq', { x0: 1104, x1: 1232, cy: 628, R: 11, rn: 4, sh: 18, cut: false, plug: true })}
             <rect x="1094" y="624" width="12" height="8" rx="1.5" fill="url(#gq-metal)" stroke="#2a3340" stroke-width=".8"></rect>
             <rect x="1088" y="622" width="7" height="12" rx="1.5" fill="#5d6672" stroke="#2a3340" stroke-width=".8"></rect>
           </g>
-          <rect x="1086" y="626" width="146" height="28" rx="14" fill="url(#gq-bal)" stroke="#2a3340" stroke-width="1.1"></rect>
+          ${BottleArt.gasH('gq', { x0: 1086, x1: 1232, cy: 640, R: 14, rn: 5, sh: 22, cut: false, plug: true })}
           <rect x="1074" y="636" width="13" height="8" rx="1.5" fill="url(#gq-metal)" stroke="#2a3340" stroke-width=".8"></rect>
           <rect x="1066" y="633" width="9" height="14" rx="2" fill="#5d6672" stroke="#2a3340" stroke-width=".8"></rect>
           <path d="M1040 664 L1252 664 L1234 654 L1058 654 Z" fill="rgba(210,218,228,.35)" stroke="#6f7a88" stroke-width="1.2"></path>
@@ -2302,9 +2303,11 @@ DC.define('StageGC', {
           <!-- upper shelf + ACTIVE upper balloon (connected to the GC) -->
           <text x="1150" y="508" text-anchor="middle" font-family="IBM Plex Mono" font-size="9" font-weight="700" letter-spacing=".6" fill="{{ gcQBalTagColor }}">GAS BOTTLE · {{ gcQBalTag }}</text>
           <g style="{{ gcQBalHl }}">
-            <rect x="1076" y="521" width="160" height="30" rx="15" fill="url(#gq-bal)" stroke="#2a3340" stroke-width="1.2"></rect>
-            <rect x="1076" y="521" width="160" height="30" rx="15" fill="url(#gq-balw)" style="{{ gcQBalTint }}"></rect>
-            <rect x="1090" y="526" width="132" height="4" rx="2" fill="rgba(255,255,255,.55)"></rect>
+            <!-- approved Gas Sample Bottle design (components/BottleArt.js), lying on the shelf; far end plugged -->
+            <g class="bd-hit" data-bd-open="gas" data-bd-ctx="Gas sample bottle · heated in the balloon oven for GC injection">
+            ${BottleArt.gasH('gq', { x0: 1076, x1: 1230, cy: 536, R: 15, rn: 5, sh: 24, plug: true, clipId: 'gqBalIn',
+              fill: (x, y, w, h) => `<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="url(#gq-bal)" opacity=".55"></rect><rect x="${x}" y="${y}" width="${w}" height="${h}" fill="url(#gq-balw)" style="{{ gcQBalTint }}"></rect>` })}
+            </g>
             <rect x="1066" y="532" width="12" height="8" rx="1.5" fill="url(#gq-metal)" stroke="#2a3340" stroke-width=".8"></rect>
             <rect x="1058" y="529" width="9" height="14" rx="2" fill="url(#gq-metal)" stroke="#2a3340" stroke-width=".9"></rect>
           </g>
@@ -2314,7 +2317,8 @@ DC.define('StageGC', {
           <rect x="1044" y="424" width="16" height="10" rx="2" fill="url(#gq-metal)" stroke="#0a0e16" stroke-width=".9"></rect>
 
           <!-- glass door (transparent front) -->
-          <rect x="1038" y="442" width="216" height="258" rx="3" fill="rgba(210,232,250,.10)" stroke="#8a95a5" stroke-width="3"></rect>
+          <rect x="1038" y="442" width="216" height="258" rx="3" fill="rgba(210,232,250,.10)" stroke="#8a95a5" stroke-width="3" style="pointer-events:none;"></rect>
+          ${BottleArt.pill(1098, 466, 'gas', { ctx: 'Gas sample bottle · heated in the balloon oven for GC injection' })}
           <g stroke="rgba(255,255,255,.55)" stroke-width="2" stroke-linecap="round"><line x1="1210" y1="452" x2="1244" y2="486"></line><line x1="1222" y1="452" x2="1246" y2="476"></line></g>
           <rect x="1256" y="540" width="6" height="60" rx="3" fill="url(#gq-metal)" stroke="#0a0e16" stroke-width=".8"></rect>
           <!-- front control panel -->

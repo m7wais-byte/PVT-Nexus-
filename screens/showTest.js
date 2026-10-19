@@ -15,6 +15,7 @@ DC.slot('showTest', `<sc-if value="{{ showTest }}" hint-placeholder-val="{{ fals
                 <h2 class="pg-title">Charge to PVT Cell</h2>
                 <div class="pg-desc">Vacuum the cell, charge 80 cc into Pump A, hold 5,000 psi and agitate A ↔ B until stable</div>
                 <span style="font-family:'IBM Plex Mono'; font-size:10px; letter-spacing:.6px; padding:3px 8px; border-radius:6px; background:var(--chipbg); border:1px solid var(--line2); color:var(--chipt); white-space:nowrap;">{{ valSrcContext }}</span>
+                <button type="button" class="bd-btn bd-inline" data-bd-open="oil" data-bd-ctx="SPS/PDS sample bottle · charging the PVT cell">Bottle Details</button>
               </div>
               <div style="display:flex; align-items:center; gap:9px; flex:0 1 auto; min-width:0; padding:5px 14px 5px 11px; border-radius:999px; background:{{ cellStatusBg }}; border:1px solid {{ cellStatusBorder }}; white-space:nowrap;">
                 <span style="{{ cellStatusDot }}"></span>
@@ -69,6 +70,7 @@ DC.slot('showTest', `<sc-if value="{{ showTest }}" hint-placeholder-val="{{ fals
             </sc-if>
             <svg sc-camel-view-box="{{ chargeViewBox }}" sc-camel-preserve-aspect-ratio="xMidYMid meet" style="display:block; width:100%; height:100%; max-height:100%; align-self:center;">
               <defs>
+                ${BottleArt.defs('c')}
                 <linearGradient id="c-metal" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#283750"></stop><stop offset=".42" stop-color="#b3c1d8"></stop><stop offset=".58" stop-color="#7e90b0"></stop><stop offset="1" stop-color="#1f2a3e"></stop></linearGradient>
                 <linearGradient id="c-cyl" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#3a485f"></stop><stop offset=".2" stop-color="#8094b2"></stop><stop offset=".5" stop-color="#aebcd2"></stop><stop offset=".8" stop-color="#54657f"></stop><stop offset="1" stop-color="#222c3e"></stop></linearGradient>
                 <linearGradient id="c-oil" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#7ed99a"></stop><stop offset="1" stop-color="#3a9d63"></stop></linearGradient>
@@ -134,37 +136,10 @@ DC.slot('showTest', `<sc-if value="{{ showTest }}" hint-placeholder-val="{{ fals
               <path d="M585 185 V60" fill="none" stroke="#ffcf3f" stroke-width="2.4" stroke-linecap="round" style="{{ chargeLineFluidStyle }}"></path>
               <path d="M585 185 V60" fill="none" stroke="#fff2c0" stroke-width="2" stroke-linecap="round" stroke-dasharray="2 10" mask="url(#c-fluid-mask)" style="{{ seg1FlowStyle }}"></path>
               <g transform="translate(585,474) scale(0.6,0.74) translate(-585,-474)">
-                <path d="M568 104 V92 Q568 84 585 84 Q602 84 602 92 V104 Z" fill="url(#c-metal)" stroke="#0a0e16" stroke-width="1"></path>
-                <path d="M572 100 Q572 90 585 89" fill="none" stroke="#eef4fb" stroke-width="1" opacity=".4"></path>
-                <rect x="524" y="104" width="122" height="20" rx="4" fill="url(#c-metal)" stroke="#0a0e16" stroke-width="1.2"></rect>
-                <line x1="524" y1="110" x2="646" y2="110" stroke="#eef4fb" stroke-width="0.8" opacity=".3"></line>
-                <g fill="#0a0e16" stroke="#5a708f" stroke-width="0.8"><circle cx="534" cy="114" r="2.6"></circle><circle cx="558" cy="114" r="2.6"></circle><circle cx="612" cy="114" r="2.6"></circle><circle cx="636" cy="114" r="2.6"></circle></g>
-                <rect x="560" y="124" width="50" height="20" fill="url(#c-metal)" stroke="#0a0e16" stroke-width="0.8"></rect>
-                <line x1="560" y1="128" x2="610" y2="128" stroke="#eef4fb" stroke-width="0.7" opacity=".3"></line>
-                <rect x="494" y="144" width="182" height="270" rx="18" fill="url(#c-cyl)" stroke="#0a0e16" stroke-width="1.8"></rect>
-                <rect x="506" y="150" width="8" height="258" fill="#ffffff" opacity="0.22"></rect>
-                <rect x="522" y="150" width="4" height="258" fill="#ffffff" opacity="0.1"></rect>
-                <line x1="664" y1="150" x2="664" y2="408" stroke="#000000" stroke-width="3" opacity=".18"></line>
-                <rect x="508" y="152" width="154" height="254" rx="10" fill="#0a1420" stroke="#33445e" stroke-width="1"></rect>
-                <clipPath id="c-clip"><rect x="508" y="152" width="154" height="254" rx="10"></rect></clipPath>
-                <g clip-path="url(#c-clip)">
-                  <rect x="508" y="152" width="154" height="{{ chargeOilH }}" fill="url(#c-sample)" opacity="1" style="transition:height .12s linear;"></rect>
-                  <rect x="508" y="{{ chargeWaterY }}" width="154" height="{{ chargeWaterH }}" fill="url(#c-water)" opacity=".9" style="transition:y .12s linear,height .12s linear;"></rect>
-                </g>
-                <!-- floating piston (moves with charge step) -->
-                <g style="{{ chargePistonStyle }}">
-                  <rect x="508" y="254" width="154" height="22" fill="url(#c-metal)" stroke="#0a0e16" stroke-width="1"></rect>
-                  <line x1="508" y1="258" x2="662" y2="258" stroke="#eef4fb" stroke-width="1" opacity=".4"></line>
-                  <line x1="508" y1="272" x2="662" y2="272" stroke="#000000" stroke-width="1" opacity=".4"></line>
-                  <rect x="508" y="260" width="6" height="10" fill="#0a0e16" opacity=".6"></rect>
-                  <rect x="656" y="260" width="6" height="10" fill="#0a0e16" opacity=".6"></rect>
-                </g>
-                <rect x="560" y="414" width="50" height="20" fill="url(#c-metal)" stroke="#0a0e16" stroke-width="0.8"></rect>
-                <line x1="560" y1="418" x2="610" y2="418" stroke="#eef4fb" stroke-width="0.7" opacity=".25"></line>
-                <rect x="524" y="434" width="122" height="20" rx="4" fill="url(#c-metal)" stroke="#0a0e16" stroke-width="1.2"></rect>
-                <line x1="524" y1="438" x2="646" y2="438" stroke="#eef4fb" stroke-width="0.8" opacity=".25"></line>
-                <g fill="#0a0e16" stroke="#5a708f" stroke-width="0.8"><circle cx="534" cy="444" r="2.6"></circle><circle cx="558" cy="444" r="2.6"></circle><circle cx="612" cy="444" r="2.6"></circle><circle cx="636" cy="444" r="2.6"></circle></g>
-                <path d="M568 454 V466 Q568 474 585 474 Q602 474 602 466 V454 Z" fill="url(#c-metal)" stroke="#0a0e16" stroke-width="1"></path>
+                <clipPath id="c-clip"><rect x="508" y="152" width="154" height="254"></rect></clipPath>
+                <!-- approved Oil Sample Bottle design (components/BottleArt.js); bore, piston travel and ports unchanged -->
+                ${BottleArt.rigBottle('c', { clip: 'c-clip', fill: `<rect x="508" y="152" width="154" height="{{ chargeOilH }}" fill="url(#c-sample)" opacity="1" style="transition:height .12s linear;"></rect>
+                  <rect x="508" y="{{ chargeWaterY }}" width="154" height="{{ chargeWaterH }}" fill="url(#c-water)" opacity=".9" style="transition:y .12s linear,height .12s linear;"></rect>`, pistonOpen: '<g style="{{ chargePistonStyle }}">', pistonY: 254, ctx: 'SPS/PDS sample bottle · charging the PVT cell' })}
               </g>
 
               <text x="596" y="150" font-family="IBM Plex Sans" font-size="14" font-weight="600" fill="var(--txt)">SPS/PDS</text>

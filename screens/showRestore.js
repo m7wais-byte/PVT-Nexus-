@@ -13,6 +13,8 @@ DC.slot('showRestore', `<sc-if value="{{ showRestore }}" hint-placeholder-val="{
             </sc-if>
         </div>
         <div class="pg-end">
+          <button type="button" class="bd-btn" data-bd-open="oil" data-bd-ctx="SPS/PDS sample bottle under validation · water driving side">Bottle Details</button>
+          <span style="width:1px; height:18px; background:var(--line2); flex:0 0 auto;"></span>
           <span style="font-family:'IBM Plex Mono'; font-size:10px; letter-spacing:.8px; text-transform:uppercase; color:var(--mut);">Sample Source</span>
           <span style="display:flex; align-items:center; gap:6px;">
             <sc-for list="{{ valSrcBtns }}" as="b" hint-placeholder-count="3">
@@ -37,6 +39,7 @@ DC.slot('showRestore', `<sc-if value="{{ showRestore }}" hint-placeholder-val="{
               <radialGradient id="qGauge" cx="50%" cy="42%" r="60%"><stop offset="0" stop-color="#13202f"></stop><stop offset="1" stop-color="#0a1018"></stop></radialGradient>
               <filter id="qGlow" x="-70%" y="-70%" width="240%" height="240%"><feGaussianBlur sc-camel-std-deviation="4.5" result="b"></feGaussianBlur><feMerge><feMergeNode in="b"></feMergeNode><feMergeNode in="SourceGraphic"></feMergeNode></feMerge></filter>
               <pattern id="qHatch" width="8" height="8" sc-camel-pattern-transform="rotate(45)" sc-camel-pattern-units="userSpaceOnUse"><line x1="0" y1="0" x2="0" y2="8" stroke="#e7b15a" stroke-width="2"></line></pattern>
+              ${BottleArt.defs('q')}
               <symbol id="qhw" sc-camel-view-box="0 0 30 30" overflow="visible"><circle cx="15" cy="15" r="12.5" fill="none" stroke="#0a0e16" stroke-width="4.5"></circle><circle cx="15" cy="15" r="12.5" fill="none" stroke="#aebccf" stroke-width="2.6"></circle><g stroke="#9fb0c8" stroke-width="2.2" stroke-linecap="round"><line x1="15" y1="15" x2="15" y2="3.5"></line><line x1="15" y1="15" x2="15" y2="26.5"></line><line x1="15" y1="15" x2="3.5" y2="15"></line><line x1="15" y1="15" x2="26.5" y2="15"></line></g><circle cx="15" cy="15" r="4" fill="url(#qMetal)" stroke="#0a0e16" stroke-width="1"></circle></symbol>
             </defs>
 
@@ -82,20 +85,24 @@ DC.slot('showRestore', `<sc-if value="{{ showRestore }}" hint-placeholder-val="{
               <path d="M356 330 C 380 336, 384 366, 370 382" fill="none" stroke="#5c4326" stroke-width="3" stroke-linecap="round"></path>
             </g>
 
-            <!-- ===== SPS/PDS BOTTLE (INVERTED: water top, piston mid, oil bottom) ===== -->
+            <!-- ===== SPS/PDS BOTTLE (INVERTED: water top, piston mid, oil bottom) =====
+                 approved Oil Sample Bottle design (components/BottleArt.js) on the unchanged bore window 263..337 x 134..338 -->
+            ${BottleArt.cage('q', 300, 116, 78, 43)}${BottleArt.cage('q', 300, 356, 404, 43)}
             <rect x="294" y="74" width="12" height="15" rx="1.5" fill="url(#qPipe)" stroke="#0a0e16" stroke-width="0.7"></rect>
-            <rect x="284" y="89" width="32" height="17" rx="3" fill="url(#qMetal)" stroke="#0a0e16" stroke-width="0.9"></rect>
+            <rect x="284" y="89" width="32" height="17" rx="3" fill="url(#qBkStD)" stroke="#0a0e16" stroke-width="0.9"></rect>
             <circle cx="327.5" cy="97.5" r="11.5" fill="none" stroke="{{ rsValveRing }}" stroke-width="1.6" style="transition:stroke .3s ease;"></circle>
             <g style="{{ rsValveWheelStyle }}"><use href="#qhw" x="318" y="88" width="19" height="19"></use></g>
-            <rect x="291" y="106" width="18" height="13" rx="2" fill="url(#qMetal)" stroke="#0a0e16" stroke-width="0.8"></rect>
-            <ellipse cx="300" cy="128" rx="42" ry="11" fill="url(#qCyl)" stroke="#0a0e16" stroke-width="1.2"></ellipse>
-            <rect x="258" y="128" width="84" height="216" fill="url(#qCyl)" stroke="#0a0e16" stroke-width="1.2"></rect>
-            <ellipse cx="300" cy="344" rx="42" ry="11" fill="url(#qCyl)" stroke="#0a0e16" stroke-width="1.2"></ellipse>
-            <rect x="263" y="134" width="74" height="204" fill="#0a1420" stroke="#33445e" stroke-width="1"></rect>
+            <rect x="291" y="106" width="18" height="13" rx="2" fill="url(#qBkStD)" stroke="#0a0e16" stroke-width="0.8"></rect>
+            <!-- lower sample valve hardware sits behind the bottom cap -->
+            <rect x="294" y="356" width="12" height="20" rx="1.5" fill="url(#qPipe)" stroke="#0a0e16" stroke-width="0.7"></rect>
+            <g class="bd-hit" data-bd-open="oil" data-bd-ctx="SPS/PDS sample bottle · inverted for restoration (water side up)">
+            ${BottleArt.oilBody('q', { cx: 300, rb: 37, y0: 134, y1: 338, R: 42, capR: 46, capH: 18 })}
             <clipPath id="qChm"><rect x="263" y="134" width="74" height="204"></rect></clipPath>
             <g clip-path="url(#qChm)">
               <rect x="263" y="134" width="74" height="204" fill="url(#qWater)" opacity="0.9" style="{{ qcWaterStyle }}"></rect>
               <rect x="263" y="134" width="74" height="204" fill="url(#qSample)" opacity="0.92" style="{{ qcOilStyle }}"></rect>
+              <!-- loose mixing ring: oil (sample) side is down, so the ring rests on the bottom cap -->
+              ${BottleArt.ring('q', 300, 37, 338 - BottleArt.ringHalf(37))}
               <sc-if value="{{ qcS3 }}" hint-placeholder-val="{{ false }}">
               <!-- step 3: water dispersed in the oil (cloudy) -> droplets settle -> free-water layer at the bottom -->
               <rect x="263" y="{{ qc3HazeY }}" width="74" height="{{ qc3HazeH }}" fill="#dcecf7" opacity="{{ qc3HazeOp }}"></rect>
@@ -105,15 +112,11 @@ DC.slot('showRestore', `<sc-if value="{{ showRestore }}" hint-placeholder-val="{
               <line x1="263" y1="{{ qcFreeWaterY }}" x2="337" y2="{{ qcFreeWaterY }}" stroke="#cfeaff" stroke-width="1.1" opacity="{{ qc3IfOp }}"></line>
               </sc-if>
             </g>
-            <rect x="268" y="138" width="6" height="196" rx="3" fill="#ffffff" opacity="0.2"></rect>
-            <rect x="326" y="140" width="3" height="192" fill="#ffffff" opacity="0.09"></rect>
             <g clip-path="url(#qChm)">
-              <g style="{{ qcPistonStyle }}">
-                <rect x="263" y="134" width="74" height="12" fill="url(#qMetal)" stroke="#0a0e16" stroke-width="1"></rect>
-                <rect x="263" y="135.6" width="74" height="2" fill="#eef4fb" opacity=".45"></rect>
-              </g>
+              <g style="{{ qcPistonStyle }}">${BottleArt.piston('q', 263, 74, 134, 12)}</g>
             </g>
-            <rect x="263" y="134" width="74" height="204" fill="none" stroke="rgba(150,175,210,.3)" stroke-width="1"></rect>
+            ${BottleArt.oilFront('q', { cx: 300, rb: 37, y0: 134, y1: 338, R: 42 })}
+            </g>
             <text x="300" y="178" text-anchor="middle" font-family="IBM Plex Mono" font-size="17" font-weight="600" fill="var(--txt)" opacity=".85">W</text>
             <text x="300" y="290" text-anchor="middle" font-family="IBM Plex Mono" font-size="17" font-weight="600" fill="#3d2606" opacity=".8">O</text>
             <text x="300" y="66" text-anchor="middle" font-family="IBM Plex Mono" font-size="9" letter-spacing="1.2" fill="var(--cap2)">SPS/PDS · ~800 cc</text>
@@ -126,8 +129,7 @@ DC.slot('showRestore', `<sc-if value="{{ showRestore }}" hint-placeholder-val="{
             <polygon points="676,72 690,66 690,78" fill="#5fb0ff" style="{{ rsArrowLStyle }}"></polygon>
 
             <!-- ===== SINGLE LOWER SAMPLE VALVE (OIL SIDE) ===== -->
-            <rect x="294" y="356" width="12" height="20" rx="1.5" fill="url(#qPipe)" stroke="#0a0e16" stroke-width="0.7"></rect>
-            <rect x="284" y="376" width="32" height="17" rx="3" fill="url(#qMetal)" stroke="#0a0e16" stroke-width="0.9"></rect>
+            <rect x="284" y="376" width="32" height="17" rx="3" fill="url(#qBkStD)" stroke="#0a0e16" stroke-width="0.9"></rect>
             <sc-if value="{{ qcS3 }}" hint-placeholder-val="{{ false }}"><circle cx="327.5" cy="384.5" r="11.5" fill="none" stroke="{{ qc3SvRing }}" stroke-width="1.6" style="transition:stroke .3s ease;"></circle></sc-if>
             <g style="{{ qc3SvWheelStyle }}"><use href="#qhw" x="318" y="375" width="19" height="19"></use></g>
             <rect x="294" y="393" width="12" height="17" rx="1.5" fill="url(#qPipe)" stroke="#0a0e16" stroke-width="0.7"></rect>

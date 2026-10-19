@@ -98,9 +98,12 @@
       var y = oilTop + 3 + rr + s * (L - 6 - 2 * rr);
       o += '<circle cx="' + r1(clamp(x, X0 + rr + 1, X1 - rr - 1)) + '" cy="' + r1(y) + '" r="' + r1(rr) + '" fill="#fff3d0" opacity="' + (0.55 + 0.25 * h(i, 8)).toFixed(2) + '" stroke="rgba(70,45,12,.35)" stroke-width="0.5"/>';
     }
+    // loose mixing ring (oil side): lies on whichever end of the oil side is down and travels through
+    // the sample as the bottle turns, lagging the rotation like the heavier oil
+    var hr = BottleArt.ringHalf(37), rs = 1 - upEnd(u - 600);
+    o += BottleArt.raw(BottleArt.ring('q', CX, 37, oilTop + hr + rs * (L - 2 * hr)));
     // floating piston (fixed: P and T held, so the bottleModel split does not change)
-    o += '<rect x="' + X0 + '" y="' + r1(pistTop) + '" width="74" height="' + PIST + '" fill="url(#qMetal)" stroke="#0a0e16" stroke-width="1"/>';
-    o += '<rect x="' + X0 + '" y="' + r1(pistTop + 1.6) + '" width="74" height="2" fill="#eef4fb" opacity=".45"/>';
+    o += BottleArt.raw(BottleArt.piston('q', X0, 74, pistTop, PIST));
     o += '</g>';
     // phase letters, counter-rotated so they stay upright on screen
     var lab = function (x, y, s, sz, col, w) {
@@ -114,6 +117,7 @@
   }
 
   /* SPS/PDS shell (same drawing as Restoration), clamps and heating jacket - all rotate together */
+  var BODY = { cx: 300, rb: 37, y0: 134, y1: 338, R: 42, capR: 46, capH: 18 };
   function bottle(st, wf) {
     var o = '';
     // rotating cradle: back plate + arm to the pivot hub (behind the bottle)
@@ -121,23 +125,21 @@
     o += '<rect x="220" y="122" width="13" height="248" rx="3" fill="url(#qCyl)" stroke="#0a0e16" stroke-width="1"/>';
     // heating jacket (holds the restoration temperature)
     o += '<rect x="244" y="112" width="112" height="246" rx="13" fill="rgba(231,117,46,.10)" stroke="#e7752e" stroke-width="1.6"/>';
+    // approved Oil Sample Bottle design (components/BottleArt.js) on the unchanged bore window: valve protectors
+    o += BottleArt.raw(BottleArt.cage('q', 300, 116, 78, 43) + BottleArt.cage('q', 300, 356, 404, 43));
     // water-side valve (pump connection, open) on top
     o += '<rect x="294" y="74" width="12" height="15" rx="1.5" fill="url(#qPipe)" stroke="#0a0e16" stroke-width="0.7"/>';
-    o += '<rect x="284" y="89" width="32" height="17" rx="3" fill="url(#qMetal)" stroke="#0a0e16" stroke-width="0.9"/>';
+    o += '<rect x="284" y="89" width="32" height="17" rx="3" fill="url(#qBkStD)" stroke="#0a0e16" stroke-width="0.9"/>';
     o += '<circle cx="327.5" cy="97.5" r="11.5" fill="none" stroke="#46d39a" stroke-width="1.6"/>';
     o += '<use href="#qhw" x="318" y="88" width="19" height="19"/>';
-    o += '<rect x="291" y="106" width="18" height="13" rx="2" fill="url(#qMetal)" stroke="#0a0e16" stroke-width="0.8"/>';
-    o += '<ellipse cx="300" cy="128" rx="42" ry="11" fill="url(#qCyl)" stroke="#0a0e16" stroke-width="1.2"/>';
-    o += '<rect x="258" y="128" width="84" height="216" fill="url(#qCyl)" stroke="#0a0e16" stroke-width="1.2"/>';
-    o += '<ellipse cx="300" cy="344" rx="42" ry="11" fill="url(#qCyl)" stroke="#0a0e16" stroke-width="1.2"/>';
-    o += '<rect x="263" y="134" width="74" height="204" fill="#0a1420" stroke="#33445e" stroke-width="1"/>';
-    o += interior(st, wf).svg;
-    o += '<rect x="268" y="138" width="6" height="196" rx="3" fill="#ffffff" opacity="0.18"/>';
-    o += '<rect x="326" y="140" width="3" height="192" fill="#ffffff" opacity="0.08"/>';
-    o += '<rect x="263" y="134" width="74" height="204" fill="none" stroke="rgba(150,175,210,.3)" stroke-width="1"/>';
-    // oil-side sample valve (closed)
+    o += '<rect x="291" y="106" width="18" height="13" rx="2" fill="url(#qBkStD)" stroke="#0a0e16" stroke-width="0.8"/>';
     o += '<rect x="294" y="356" width="12" height="20" rx="1.5" fill="url(#qPipe)" stroke="#0a0e16" stroke-width="0.7"/>';
-    o += '<rect x="284" y="376" width="32" height="17" rx="3" fill="url(#qMetal)" stroke="#0a0e16" stroke-width="0.9"/>';
+    o += '<g class="bd-hit" data-bd-open="oil" data-bd-ctx="SPS/PDS sample bottle · inversion agitation">';
+    o += BottleArt.raw(BottleArt.oilBody('q', BODY));
+    o += interior(st, wf).svg;
+    o += BottleArt.raw(BottleArt.oilFront('q', BODY)) + '</g>';
+    // oil-side sample valve (closed)
+    o += '<rect x="284" y="376" width="32" height="17" rx="3" fill="url(#qBkStD)" stroke="#0a0e16" stroke-width="0.9"/>';
     o += '<use href="#qhw" x="318" y="375" width="19" height="19"/>';
     o += '<rect x="294" y="393" width="12" height="17" rx="1.5" fill="url(#qPipe)" stroke="#0a0e16" stroke-width="0.7"/>';
     o += '<rect x="290" y="410" width="20" height="7" rx="2" fill="url(#qMetal)" stroke="#0a0e16" stroke-width="0.7"/>';

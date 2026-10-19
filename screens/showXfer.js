@@ -10,6 +10,7 @@ DC.slot('showXfer', `<sc-if value="{{ showXfer }}" hint-placeholder-val="{{ fals
           <span style="align-self:center; flex:0 0 auto; display:inline-flex; align-items:center; gap:7px; font-family:'IBM Plex Mono'; font-size:11px; color:{{ mxLiveColor }};"><span style="width:7px; height:7px; border-radius:50%; background:{{ mxLiveColor }}; box-shadow:0 0 8px {{ mxLiveColor }};"></span>{{ mxLiveLabel }}</span>
           <p class="pg-desc">MDT / MPSR tool → SPS/PDS bottle, before laboratory QC.</p>
         </div>
+        <div class="pg-end"><button type="button" class="bd-btn" data-bd-open="oil" data-bd-ctx="SPS/PDS receiving bottle · water driving side; its lower section also carries a N₂ chamber, N₂ inlet and equalizer (not modelled in this general view)">Bottle Details</button></div>
       </div>
 
       <div class="lab-body">
@@ -25,6 +26,7 @@ DC.slot('showXfer', `<sc-if value="{{ showXfer }}" hint-placeholder-val="{{ fals
               <linearGradient id="mxSample" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#e7b15a"></stop><stop offset="1" stop-color="#c07f2e"></stop></linearGradient>
               <linearGradient id="mxWater" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#5aa6d8"></stop><stop offset="1" stop-color="#2f6f9c"></stop></linearGradient>
               <radialGradient id="mxGauge" cx="50%" cy="42%" r="60%"><stop offset="0" stop-color="#13202f"></stop><stop offset="1" stop-color="#0a1018"></stop></radialGradient>
+              ${BottleArt.defs('mx')}
             </defs>
 
             <line x1="0" y1="512" x2="900" y2="512" stroke="#46566f" stroke-width="1.5"></line>
@@ -109,40 +111,42 @@ DC.slot('showXfer', `<sc-if value="{{ showXfer }}" hint-placeholder-val="{{ fals
             <text x="318" y="114" font-family="IBM Plex Mono" font-size="9.5" letter-spacing=".5" fill="var(--cap2)">{{ mxValveText }}</text>
             <text x="356" y="72" text-anchor="middle" font-family="IBM Plex Mono" font-size="10" letter-spacing="1" fill="var(--cap2)">TRANSFER LINE</text>
 
-            <!-- ===== SPS/PDS BOTTLE (VERTICAL) ===== -->
+            <!-- ===== SPS/PDS BOTTLE (VERTICAL) =====
+                 approved Oil Sample Bottle design (components/BottleArt.js) on the unchanged bore 258..342 x 174..426 -->
+            ${BottleArt.cage('mx', 300, 162, 141, 34)}
             <rect x="292" y="144" width="16" height="14" rx="2" fill="url(#mxPipe)" stroke="#0a0e16" stroke-width="0.8"></rect>
-            <rect x="276" y="152" width="48" height="11" rx="3" fill="url(#mxMetal)" stroke="#0a0e16" stroke-width="0.9"></rect>
+            <rect x="276" y="152" width="48" height="11" rx="3" fill="url(#mxBkStD)" stroke="#0a0e16" stroke-width="0.9"></rect>
             <ellipse cx="300" cy="512" rx="66" ry="6" fill="rgba(0,0,0,.35)"></ellipse>
             <rect x="254" y="472" width="9" height="34" fill="url(#mxPipe)" stroke="#0a0e16" stroke-width="0.6"></rect>
             <rect x="337" y="472" width="9" height="34" fill="url(#mxPipe)" stroke="#0a0e16" stroke-width="0.6"></rect>
             <rect x="236" y="500" width="128" height="12" rx="4" fill="url(#mxMetal)" stroke="#0a0e16" stroke-width="1"></rect>
-            <rect x="250" y="162" width="100" height="310" rx="16" fill="url(#mxCyl)" stroke="#0a0e16" stroke-width="1.2"></rect>
-            <rect x="258" y="174" width="84" height="252" rx="3" fill="#0b1220"></rect>
+            <g class="bd-hit" data-bd-open="oil" data-bd-ctx="SPS/PDS sample bottle · receiving the transferred sample">
+            ${BottleArt.oilBody('mx', { cx: 300, rb: 42, y0: 174, y1: 426, R: 48, capR: 52, capH: 12 })}
             <g clip-path="url(#mxBotBoreF)">
               <rect x="258" y="174" width="84" height="252" fill="url(#mxSample)" style="{{ mxBotFluidStyle }}"></rect>
               <rect x="258" y="174" width="84" height="252" fill="url(#mxWater)" style="{{ mxBotWaterStyle }}"></rect>
             </g>
             <clipPath id="mxBotBoreF"><rect x="258" y="174" width="84" height="252" rx="3"></rect></clipPath>
-            <rect x="262" y="178" width="5" height="244" rx="2.5" fill="#ffffff" opacity="0.13"></rect>
             <!-- floating piston: rides the sample/water interface, clipped to the bore so it never crosses the wall -->
             <clipPath id="mxBotBore"><rect x="258" y="174" width="84" height="252" rx="3"></rect></clipPath>
             <g clip-path="url(#mxBotBore)">
               <g style="{{ mxBotPistonStyle }}">
-                <rect x="258" y="174" width="84" height="14" rx="1.5" fill="url(#mxCylH)" stroke="#0a0e16" stroke-width="0.9"></rect>
-                <rect x="258" y="176.4" width="84" height="1.6" fill="#eef4fb" opacity=".45"></rect>
-                <rect x="258" y="179.6" width="84" height="1.7" fill="#0a0e16" opacity=".5"></rect>
-                <rect x="258" y="184.2" width="84" height="1.7" fill="#0a0e16" opacity=".5"></rect>
-                <rect x="292" y="178" width="16" height="6" rx="1" fill="#0a0e16" opacity=".28"></rect>
+                <!-- loose mixing ring rides on the piston face (sample side up) -->
+                ${BottleArt.ring('mx', 300, 42, 174 - BottleArt.ringHalf(42))}
+                ${BottleArt.piston('mx', 258, 84, 174, 14)}
               </g>
             </g>
-            <rect x="258" y="174" width="84" height="252" rx="3" fill="none" stroke="rgba(150,175,210,.4)" stroke-width="0.9"></rect>
-            <rect x="258" y="426" width="84" height="9" fill="#0b1220" stroke="rgba(150,175,210,.3)" stroke-width="0.7"></rect>
+            ${BottleArt.oilFront('mx', { cx: 300, rb: 42, y0: 174, y1: 426, R: 48 })}
+            </g>
             <text x="300" y="192" text-anchor="middle" font-family="IBM Plex Sans" font-size="11" font-weight="600" letter-spacing=".5" fill="#2a1a06" style="{{ mxBotFluidTextStyle }}">FLUID</text>
             <text x="300" y="396" text-anchor="middle" font-family="IBM Plex Sans" font-size="11" font-weight="600" letter-spacing=".5" fill="#07202e">WATER</text>
             <text x="238" y="300" text-anchor="end" font-family="IBM Plex Sans" font-size="13" font-weight="600" letter-spacing=".4" fill="var(--lbl)">SPS/PDS</text>
             <text x="238" y="316" text-anchor="end" font-family="IBM Plex Mono" font-size="10" fill="var(--mut)">~800 cc</text>
 
             <!-- ===== LOWER BOTTLE DETAILS ===== -->
+            <!-- lower section of this bottle (below the water-side cap): carries the N₂ chamber, N₂ inlet, equalizer and water port -->
+            <rect x="250" y="438" width="100" height="34" rx="6" fill="url(#mxBkSt)" stroke="#0a0e16" stroke-width="1.1"></rect>
+            <rect x="256" y="442" width="5" height="26" rx="2.5" fill="#ffffff" opacity=".18"></rect>
             <rect x="306" y="438" width="28" height="26" rx="2" fill="rgba(120,150,190,.16)" stroke="#7a90ad" stroke-width="1"></rect>
             <g fill="rgba(200,220,245,.45)"><circle cx="312" cy="444" r="1.3"></circle><circle cx="320" cy="448" r="1.3"></circle><circle cx="328" cy="443" r="1.3"></circle><circle cx="314" cy="455" r="1.3"></circle><circle cx="324" cy="458" r="1.3"></circle><circle cx="330" cy="452" r="1.3"></circle></g>
             <rect x="312" y="464" width="7" height="24" fill="url(#mxPipe)" stroke="#0a0e16" stroke-width="0.6"></rect>

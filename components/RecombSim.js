@@ -646,11 +646,17 @@
     var o = '<g opacity="' + r1(g.a * 100) / 100 + '">' + glow(hl(w, 'gsp'), x - 62, 146, 124, 420);
     o += '<rect x="' + (x - 5) + '" y="160" width="10" height="14" fill="url(#rcPipe)" stroke="#0a0e16" stroke-width=".7"/>';
     o += valveV(x, 184, g.open);
-    o += '<rect x="' + (x - 9) + '" y="194" width="18" height="22" rx="2" fill="url(#rcMetal)" stroke="#0a0e16"/>';
-    o += '<rect x="' + (x - 40) + '" y="214" width="80" height="340" rx="36" fill="url(#rcCylG)" stroke="#0a0e16" stroke-width="1.3"/>';
-    o += '<rect x="' + (x - 31) + '" y="228" width="62" height="312" rx="28" fill="url(#rcGasG)" opacity="' + r1(fillA * 100) / 100 + '"/>';
-    o += '<rect x="' + (x - 31) + '" y="228" width="62" height="312" rx="28" fill="url(#rcGasDots)" opacity=".7"/>';
-    o += '<rect x="' + (x - 22) + '" y="240" width="7" height="286" rx="3.5" fill="#fff" opacity=".22"/>';
+    o += '<rect x="' + (x - 9) + '" y="194" width="18" height="22" rx="2" fill="url(#rcbBkStD)" stroke="#0a0e16"/>';
+    // approved Gas Sample Bottle design (components/BottleArt.js): seamless shell, tapered shoulders, one gas volume.
+    // The lower end valve is not part of this procedure: shown closed with a plug.
+    var GG = { cx: x, R: 40, y0: 214, y1: 548, rn: 9, sh: 52, wall: 5 };
+    o += '<g class="bd-hit" data-bd-open="gas" data-bd-ctx="Separator gas sample bottle (GSP) · gas source for recombination">';
+    o += BottleArt.raw(BottleArt.gasBody('rcb', GG));
+    o += '<clipPath id="rcGspIn"><path d="' + BottleArt.gasPaths(GG).inner + '"/></clipPath><g clip-path="url(#rcGspIn)">';
+    o += '<rect x="' + (x - 40) + '" y="214" width="80" height="334" fill="url(#rcGasG)" opacity="' + r1(fillA * 100) / 100 + '"/>';
+    o += '<rect x="' + (x - 40) + '" y="214" width="80" height="334" fill="url(#rcGasDots)" opacity=".7"/></g>';
+    o += '<rect x="' + (x - 24) + '" y="262" width="6" height="238" rx="3" fill="#fff" opacity=".18"/></g>';
+    o += BottleArt.raw(BottleArt.gasNipple('rcb', x, 548, 9, 1, 9)) + '<rect x="' + (x - 6) + '" y="557" width="12" height="5" rx="1.5" fill="url(#rcbBkStD)" stroke="#0a0e16" stroke-width=".7"/>';
     o += T(x, 392, 'G', { a: 'middle', m: 1, s: 20, w: 700, c: '#0d3b28' });
     o += vtag(x - 30, 187, g.open, 'end');
     o += T(x, 574, 'GSP Gas Cylinder', { a: 'middle', s: 14, w: 600, c: 'var(--txt)' });
@@ -965,7 +971,11 @@
         o += '<ellipse cx="300" cy="' + r1(yd) + '" rx="2.6" ry="3.6" fill="#d8973a" stroke="#8a5a1a" stroke-width=".5"/>';
       }
     }
-    o += '<rect x="263" y="' + r1(pistY) + '" width="74" height="12" fill="url(#rcbMetal)" stroke="#0a0e16"/><rect x="263" y="' + r1(pistY + 1.6) + '" width="74" height="2" fill="#eef4fb" opacity=".45"/>';
+    // loose mixing ring (approved Oil Sample Bottle): lies on the lower end of the sample side - on the piston face
+    // when upright, on the top cap when inverted - and travels through the sample as the bottle turns
+    var hr = BottleArt.ringHalf(37), tr = smooth((1 - Math.cos(a)) / 2);
+    o += BottleArt.raw(BottleArt.ring('rcb', 300, 37, lerp(pistY - hr, y0 + hr, tr)));
+    o += BottleArt.raw(BottleArt.piston('rcb', 263, 74, pistY, 12));
     o += '</g>';
     // phase letters (counter-rotated so they stay readable)
     var lab = function (p, s, sz, col) {
@@ -1012,7 +1022,8 @@
   function drawBottle(w) {
     var b = w.bot; if (!b.kind || b.a <= .01) return '';
     var x = b.x, y = b.y, tr = SampleBottle.place(x, y, BOT_S);
-    var shell = SampleBottle.markup({ p: 'rcb', x: x, y: y, s: BOT_S, sample: 'opacity:0', buffer: 'opacity:0', piston: 'display:none', ring: b.top ? '#46d39a' : '#8fa3c2', shadow: !b.ang && w.stand <= .01 });
+    var shell = SampleBottle.markup({ p: 'rcb', x: x, y: y, s: BOT_S, sample: 'opacity:0', buffer: 'opacity:0', piston: 'display:none', ring: b.top ? '#46d39a' : '#8fa3c2', shadow: !b.ang && w.stand <= .01,
+      bd: 'oil', bdCtx: b.kind === 'oil' ? 'Separator oil sample bottle (conventional, water driving side)' : 'Recombination bottle · Oil Sample Bottle holding the recombined gas and oil' });
     var body = shell + '<g transform="' + tr + '">' + bottleLayers(w, b) + (w.jacket > .01 ? jacketMarkup(w) : '') + '</g>';
     var o = '<g opacity="' + r1(b.a * 100) / 100 + '">' + glow(hl(w, 'bot'), x - 60, y - 14, 120, 410);
     if (b.ang) o += '<g transform="rotate(' + r1(b.ang) + ' ' + r1(x) + ' ' + r1(y + PIV_DY) + ')">' + body + '</g>';
@@ -1235,7 +1246,7 @@
   }
 
   function defs() {
-    var sb = (window.SampleBottle ? SampleBottle.defs('rcb') : '').replace(/sc-camel-view-box/g, 'viewBox');
+    var sb = window.SampleBottle ? BottleArt.raw(SampleBottle.defs('rcb')) : '';
     return '<defs>' + sb +
       '<linearGradient id="rcMetal" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#b3c1d8"/><stop offset=".5" stop-color="#7e90b0"/><stop offset="1" stop-color="#3a485f"/></linearGradient>' +
       '<linearGradient id="rcMetalH" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#283750"/><stop offset=".42" stop-color="#b3c1d8"/><stop offset=".58" stop-color="#7e90b0"/><stop offset="1" stop-color="#1f2a3e"/></linearGradient>' +
