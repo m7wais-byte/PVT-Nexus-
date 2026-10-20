@@ -8,7 +8,7 @@
    Recombination: mix = 0.9 · smooth(rk) while rotating, 0.9 -> 1 while stabilizing.
 
    The bottle is the approved Oil Sample Bottle (equipment/bottle-draw.js frame, bore
-   x -22..22 / y -226..226, 46-unit floating piston, scale 0.5 about the pivot). Step 4 starts
+   x -22..22 / y -226..226, 46-unit floating piston, scale S2 = 0.57 about the pivot). Step 4 starts
    and ends upright: the OIL sample above the piston and the hydraulic WATER below it; the
    pump hose is on the side outlet of the lower (driving-side) right-angle valve.
    Screen angle = -ang. Local fills never change: water / piston / oil stay in their own
@@ -27,7 +27,7 @@
     ROCK_MS: 12000,    // process ms for the 3 inversion cycles (x PROCESS_SPEED_MULTIPLIER)
     STAB_MS: 3000,     // process ms stabilizing upright after the last cycle
     N: 3,              // 180° inversion cycles (same as Recombination)
-    PX: 360, PY: 266,  // pivot on the inversion stand (screen coords, viewBox 0 22 900 492)
+    PX: 380, PY: 244,  // pivot on the inversion stand (screen coords, viewBox 0 22 900 492)
     NB: 28             // free-gas bubbles drawn (visual only, no gas volume is modelled)
   };
   var TOT = CFG.ROCK_MS + CFG.STAB_MS;
@@ -61,7 +61,7 @@
   /* ---------------- bottle interior (approved Oil Sample Bottle frame) ----------------
      Local frame = equipment/bottle-draw.js: bore x -22..22, y -226 (sample end) .. 226 (driving end),
      piston 46 long. At angle 0 the sample (oil) is above the piston and the hydraulic water below it. */
-  var BX0 = -22, BX1 = 22, BT = -226, BB = 226, BP = 46, BUSE = 452 - 46, S2 = 0.5;
+  var BX0 = -22, BX1 = 22, BT = -226, BB = 226, BP = 46, BUSE = 452 - 46, S2 = 0.57;
   function interior(st, wf) {
     var wh = BUSE * clamp(wf, 0, 1), pistBot = BB - wh, pt = pistBot - BP, L = pt - BT, u = st.u, mix = st.mix;
     var Y = function (sv, pad) { return pt - pad - sv * (L - 2 * pad); };      // axial: 0 = piston face, 1 = far (sample-valve) end
@@ -144,11 +144,23 @@
       '<linearGradient id="qAgLight" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffe2a6" stop-opacity="0"/><stop offset=".5" stop-color="#ffe2a6" stop-opacity=".7"/><stop offset="1" stop-color="#ffe2a6" stop-opacity="0"/></linearGradient>' +
       '</defs>';
     var PX = CFG.PX, PY = CFG.PY;
-    // ---- inversion stand (static, behind the bottle) ----
-    s += '<ellipse cx="' + PX + '" cy="468" rx="118" ry="7" fill="rgba(0,0,0,.35)"/>';
-    s += '<rect x="' + (PX - 104) + '" y="456" width="208" height="12" rx="3" fill="url(#qCyl)" stroke="#0a0e16" stroke-width="1.1"/>';
-    s += '<path d="M' + (PX - 60) + ',456 L' + (PX - 10) + ',' + PY + ' L' + (PX + 10) + ',' + PY + ' L' + (PX + 60) + ',456 Z" fill="url(#qCyl)" stroke="#0a0e16" stroke-width="1" opacity=".9"/>';
-    s += '<circle cx="' + PX + '" cy="' + PY + '" r="24" fill="url(#qMetal)" stroke="#0a0e16" stroke-width="1.2"/>';
+    // ---- inversion stand (static, behind the bottle): weighted base plate on four feet, two tapered A-frame legs
+    //      with a cross brace, and the trunnion bearing block that carries the rotating cradle at the pivot ----
+    var BW = 128, LW = 64;
+    s += '<ellipse cx="' + PX + '" cy="469" rx="' + (BW + 10) + '" ry="5" fill="rgba(0,0,0,.35)"/>';
+    s += '<rect x="' + (PX - BW) + '" y="455" width="' + 2 * BW + '" height="12" rx="3" fill="url(#qCyl)" stroke="#0a0e16" stroke-width="1.1"/>';
+    s += '<rect x="' + (PX - BW + 6) + '" y="451" width="' + (2 * BW - 12) + '" height="5" rx="2" fill="url(#qMetal)" stroke="#0a0e16" stroke-width="0.6"/>';
+    [-BW + 4, -BW / 3 - 7, BW / 3 - 7, BW - 18].forEach(function (dx) { s += '<rect x="' + (PX + dx) + '" y="466" width="14" height="4" rx="1" fill="#1a2030"/>'; });
+    [-1, 1].forEach(function (sg) {
+      var xb = PX + sg * LW, xt = PX + sg * 13;
+      s += '<path d="M' + (xb - 9) + ',451 L' + (xt - 6) + ',' + (PY + 14) + ' L' + (xt + 6) + ',' + (PY + 14) + ' L' + (xb + 9) + ',451 Z" fill="url(#qCyl)" stroke="#0a0e16" stroke-width="1"/>';
+      s += '<rect x="' + (xb - 13) + '" y="443" width="26" height="9" rx="2" fill="url(#qMetal)" stroke="#0a0e16" stroke-width="0.7"/>';
+    });
+    var by = 372, bx = 13 + (LW - 13) * (by - PY - 14) / (451 - PY - 14);   // brace ends on the leg centre lines
+    s += '<rect x="' + r1(PX - bx) + '" y="' + (by - 4) + '" width="' + r1(2 * bx) + '" height="8" rx="3" fill="url(#qPipe)" stroke="#0a0e16" stroke-width="0.8"/>';
+    s += '<rect x="' + (PX - 26) + '" y="' + (PY + 6) + '" width="52" height="22" rx="4" fill="url(#qMetal)" stroke="#0a0e16" stroke-width="1"/>';
+    s += '<circle cx="' + PX + '" cy="' + PY + '" r="22" fill="url(#qMetal)" stroke="#0a0e16" stroke-width="1.2"/>';
+    s += '<circle cx="' + PX + '" cy="' + PY + '" r="13" fill="url(#qCyl)" stroke="#0a0e16" stroke-width="0.9"/>';
     // ---- pressure pump (stationary), same drawing as the Restoration transfer pump ----
     var ledOn = true;
     s += '<ellipse cx="765" cy="466" rx="86" ry="7" fill="rgba(0,0,0,.32)"/>';
@@ -175,17 +187,18 @@
     var hose = '<path d="' + hp + '" fill="none" stroke="#0a0e16" stroke-width="8" stroke-linecap="round"/>' +
       '<path d="' + hp + '" fill="none" stroke="#2c3a50" stroke-width="5.6" stroke-linecap="round"/>' +
       '<path d="' + hp + '" fill="none" stroke="#5aa6d8" stroke-width="2.6" stroke-linecap="round" opacity=".9"/>';
-    s += T(702, 262, 'FLEXIBLE LINE', { s: 8.5, w: 600, ls: 0.8, c: 'var(--txt2)' });
-    s += T(702, 274, 'pump → lower water-side port', { s: 8, c: 'var(--cap2)' });
+    s += T(702, 250, 'FLEXIBLE LINE', { s: 8.5, w: 600, ls: 0.8, c: 'var(--txt2)' });
+    s += T(702, 262, 'pump → lower water-side port', { s: 8, c: 'var(--cap2)' });
     // ---- rotating bottle ----
     var tr = 'rotate(' + r1(sa) + ' ' + PX + ' ' + PY + ') translate(' + PX + ' ' + PY + ') scale(' + S2 + ')';
-    s += '<g transform="' + tr + '">' + bottle(st, o.waterFrac) + '</g>';
+    // the flexible line hangs behind the bottle, so it never crosses the bore while the bottle turns
     s += hose;
+    s += '<g transform="' + tr + '">' + bottle(st, o.waterFrac) + '</g>';
     s += '<circle cx="' + r1(port[0]) + '" cy="' + r1(port[1]) + '" r="4.2" fill="url(#qMetal)" stroke="#0a0e16" stroke-width="0.8"/>';
-    s += T(PX - 112, 452, 'INVERSION STAND', { a: 'end', s: 8.5, ls: 1, c: 'var(--cap2)' }) + T(PX - 112, 464, 'SPS/PDS · ~800 cc', { a: 'end', s: 8, c: 'var(--cap)' });
+    s += T(PX - BW - 10, 452, 'INVERSION STAND', { a: 'end', s: 8.5, ls: 1, c: 'var(--cap2)' }) + T(PX - BW - 10, 464, 'SPS/PDS · ~800 cc', { a: 'end', s: 8, c: 'var(--cap)' });
 
     // ---- compact readout card: angle, cycle, pressure, temperature ----
-    var cx0 = 18, cy0 = 34, cw = 188, chh = 150;
+    var cx0 = 640, cy0 = 34, cw = 188, chh = 150;   // top-right: clear of the rotating bottle at every angle
     var phC = st.phase === 'done' ? '#5fd9a8' : st.phase === 'ready' ? 'rgba(185,210,240,.8)' : st.phase === 'stabilizing' ? '#f5c46b' : '#5fb0ff';
     s += '<rect x="' + cx0 + '" y="' + cy0 + '" width="' + cw + '" height="' + chh + '" rx="11" fill="rgba(9,16,29,.86)" stroke="rgba(120,150,190,.28)" stroke-width="1.1"/>';
     s += T(cx0 + 13, cy0 + 18, '180° INVERSION AGITATION', { s: 8.5, ls: 1.1, c: 'rgba(185,210,240,.8)' });

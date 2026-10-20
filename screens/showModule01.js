@@ -54,13 +54,13 @@ DC.slot('showModule01', `<sc-if value="{{ showModule01 }}" hint-placeholder-val=
           <!-- ===== WELLHEAD SAMPLING: sampling valve on the flowline just after the X-tree -> tubing -> piston bottle ===== -->
           <sc-if value="{{ actWh }}" hint-placeholder-val="{{ false }}">
           <g class="fz-focus">
-            <path d="M206 196 V62 Q206 50 218 50 H384 Q396 50 396 62 V74.75 Q396 86.75 384 86.75 H381.1" fill="none" stroke="#0a0e16" stroke-width="7" stroke-linejoin="round"></path>
-            <path d="M206 196 V62 Q206 50 218 50 H384 Q396 50 396 62 V74.75 Q396 86.75 384 86.75 H381.1" fill="none" stroke="#63779a" stroke-width="4.6" stroke-linejoin="round"></path>
-            <path d="M204.8 196 V62 Q204.8 48.8 218 48.8 H360" fill="none" stroke="#dbe6f5" stroke-width="1.1" opacity=".45"></path>
+            <path d="M206 196 V132 Q206 120 218 120 H347 Q359 120 359 132 V153.6 Q359 165.2 369.6 165.2" fill="none" stroke="#0a0e16" stroke-width="7" stroke-linejoin="round"></path>
+            <path d="M206 196 V132 Q206 120 218 120 H347 Q359 120 359 132 V153.6 Q359 165.2 369.6 165.2" fill="none" stroke="#63779a" stroke-width="4.6" stroke-linejoin="round"></path>
+            <path d="M204.8 196 V132 Q204.8 118.8 218 118.8 H347" fill="none" stroke="#dbe6f5" stroke-width="1.1" opacity=".45"></path>
             <sc-if value="{{ sampleFlow }}" hint-placeholder-val="{{ false }}">
-            <path d="M206 196 V62 Q206 50 218 50 H384 Q396 50 396 62 V74.75 Q396 86.75 384 86.75 H381.1" fill="none" stroke="#e7b15a" stroke-width="2.2" stroke-linecap="round" stroke-dasharray="4 10" style="animation:dashflow calc(1s * var(--pm, 1)) linear infinite;"></path>
+            <path d="M206 196 V132 Q206 120 218 120 H347 Q359 120 359 132 V153.6 Q359 165.2 369.6 165.2" fill="none" stroke="#e7b15a" stroke-width="2.2" stroke-linecap="round" stroke-dasharray="4 10" style="animation:dashflow calc(1s * var(--pm, 1)) linear infinite;"></path>
             </sc-if>
-            <rect x="284" y="44" width="6" height="12" rx="1.2" fill="url(#ovMetal)" stroke="#0a0e16" stroke-width="0.6"></rect>
+            <rect x="284" y="114" width="6" height="12" rx="1.2" fill="url(#ovMetal)" stroke="#0a0e16" stroke-width="0.6"></rect>
             <!-- sampling valve (needle valve on the flowline riser) -->
             <circle cx="206" cy="206" r="13" fill="none" stroke="#5fd0ff" stroke-width="1.4" opacity=".5" style="transform-box:fill-box; transform-origin:center; animation:ringpulse calc(2.4s * var(--pm, 1)) ease-out infinite;"></circle>
             <rect x="202" y="210" width="8" height="15" fill="url(#ovMetal)" stroke="#0a0e16" stroke-width="0.7"></rect>
@@ -71,10 +71,12 @@ DC.slot('showModule01', `<sc-if value="{{ showModule01 }}" hint-placeholder-val=
             <path d="M216 160 L211 196" fill="none" stroke="var(--cap2)" stroke-width=".8"></path>
             <text x="218" y="148" font-family="IBM Plex Sans, sans-serif" font-size="12" font-weight="600" fill="var(--txt)">Sampling valve</text>
             <text x="218" y="160" font-family="IBM Plex Mono, monospace" font-size="9.4" fill="var(--lbl2)">flowline · after X-tree</text>
-            <!-- approved Oil Sample Bottle (components/SampleBottle.js): sample above the piston, driving fluid below -->
-            ${SampleBottle.markup({ p:'sb', x:372, y:68, s:0.42, bd:'oil', bdCtx:'Wellhead sampling bottle', sample:'{{ whBtlSample }}', buffer:'{{ whBtlBuffer }}', piston:'{{ whBtlPiston }}' })}
-            <text x="404" y="112" font-family="IBM Plex Sans, sans-serif" font-size="12" font-weight="600" fill="var(--acca2)">Oil sample bottle</text>
-            <text x="404" y="124" font-family="IBM Plex Mono, monospace" font-size="9.4" fill="var(--lbl2)">floating piston · driving fluid below</text>
+            <!-- approved Oil Sample Bottle (components/SampleBottle.js): standing on the ground beside the flowline (in front of it),
+                 sample above the piston, driving fluid below; mirrored so both valve outlets face left, toward the wellhead -->
+            <ellipse cx="384" cy="359" rx="24" ry="3.2" fill="rgba(0,0,0,.28)"></ellipse>
+            ${SampleBottle.markup({ p:'sb', cx:384, cy:249.5, k:0.30, mirror:true, bd:'oil', bdCtx:'Wellhead sampling bottle', sample:'{{ whBtlSample }}', buffer:'{{ whBtlBuffer }}', piston:'{{ whBtlPiston }}' })}
+            <text x="404" y="150" font-family="IBM Plex Sans, sans-serif" font-size="12" font-weight="600" fill="var(--acca2)">Oil sample bottle</text>
+            <text x="404" y="162" font-family="IBM Plex Mono, monospace" font-size="9.4" fill="var(--lbl2)">floating piston · driving fluid below</text>
           </g>
           </sc-if>
 
@@ -82,31 +84,34 @@ DC.slot('showModule01', `<sc-if value="{{ showModule01 }}" hint-placeholder-val=
           <sc-if value="{{ actSep }}" hint-placeholder-val="{{ false }}">
           <g class="fz-focus">
             <!-- gas path -->
-            <path d="M1110 144 V84 Q1110 72 1122 72 H1250 Q1262 72 1262 84 V111.45" fill="none" stroke="#0a0e16" stroke-width="7" stroke-linejoin="round"></path>
-            <path d="M1110 144 V84 Q1110 72 1122 72 H1250 Q1262 72 1262 84 V111.45" fill="none" stroke="#63779a" stroke-width="4.6" stroke-linejoin="round"></path>
-            <path d="M1108.8 144 V84 Q1108.8 70.8 1122 70.8 H1250" fill="none" stroke="#dbe6f5" stroke-width="1.1" opacity=".45"></path>
+            <path d="M1110 141 V120 Q1110 108 1122 108 H1187.5" fill="none" stroke="#0a0e16" stroke-width="7" stroke-linejoin="round"></path>
+            <path d="M1110 141 V120 Q1110 108 1122 108 H1187.5" fill="none" stroke="#63779a" stroke-width="4.6" stroke-linejoin="round"></path>
+            <path d="M1108.8 141 V120 Q1108.8 106.8 1122 106.8 H1180" fill="none" stroke="#dbe6f5" stroke-width="1.1" opacity=".45"></path>
             <sc-if value="{{ sampleFlow }}" hint-placeholder-val="{{ false }}">
-            <path d="M1110 144 V84 Q1110 72 1122 72 H1250 Q1262 72 1262 84 V111.45" fill="none" stroke="#9fe4ff" stroke-width="2.2" stroke-linecap="round" stroke-dasharray="4 10" style="animation:dashflow calc(1s * var(--pm, 1)) linear infinite;"></path>
+            <path d="M1110 141 V120 Q1110 108 1122 108 H1187.5" fill="none" stroke="#9fe4ff" stroke-width="2.2" stroke-linecap="round" stroke-dasharray="4 10" style="animation:dashflow calc(1s * var(--pm, 1)) linear infinite;"></path>
             </sc-if>
             <path d="M1103 141 L1117 141 L1110 150 Z M1103 159 L1117 159 L1110 150 Z" fill="{{ sepValveFill }}" stroke="#0a0e16" stroke-width="1" stroke-linejoin="round"></path>
             <line x1="1110" y1="150" x2="1123" y2="150" stroke="#8fa3c2" stroke-width="1.8"></line>
             <rect x="1122.5" y="143.5" width="3" height="13" rx="1.4" fill="url(#ovMetalH)" stroke="#0a0e16" stroke-width="0.7"></rect>
-            ${SampleBottle.markup({ p:'sb', x:1262, y:88, s:0.36, mode:'gas', bd:'gas', bdCtx:'Separator gas sample bottle', sample:'{{ sepGasFill }}' })}
-            <text x="1242" y="112" text-anchor="end" font-family="IBM Plex Sans, sans-serif" font-size="12" font-weight="600" fill="var(--hdb3)">Gas sample</text>
-            <text x="1242" y="123" text-anchor="end" font-family="IBM Plex Mono, monospace" font-size="9.4" fill="var(--lbl2)">gas outlet line</text>
+            <!-- approved Gas Sample Bottle, lying above the gas outlet line; its left end connection takes the sample line -->
+            ${SampleBottle.markup({ p:'sb', cx:1252, cy:108, k:0.26, rot:-90, mode:'gas', bd:'gas', bdCtx:'Separator gas sample bottle', sample:'{{ sepGasFill }}' })}
+            <text x="1252" y="72" text-anchor="middle" font-family="IBM Plex Sans, sans-serif" font-size="12" font-weight="600" fill="var(--hdb3)">Gas sample</text>
+            <text x="1252" y="83" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="9.4" fill="var(--lbl2)">gas outlet line</text>
             <!-- oil path -->
-            <path d="M1120 274 V248 Q1120 236 1132 236 H1308 Q1320 236 1320 248 V250.75 Q1320 262.75 1308 262.75 H1307.15" fill="none" stroke="#0a0e16" stroke-width="7" stroke-linejoin="round"></path>
-            <path d="M1120 274 V248 Q1120 236 1132 236 H1308 Q1320 236 1320 248 V250.75 Q1320 262.75 1308 262.75 H1307.15" fill="none" stroke="#63779a" stroke-width="4.6" stroke-linejoin="round"></path>
-            <path d="M1118.8 274 V248 Q1118.8 234.8 1132 234.8 H1308" fill="none" stroke="#dbe6f5" stroke-width="1.1" opacity=".45"></path>
+            <path d="M1120 269 V204.6 Q1120 192.6 1132 192.6 H1287.5" fill="none" stroke="#0a0e16" stroke-width="7" stroke-linejoin="round"></path>
+            <path d="M1120 269 V204.6 Q1120 192.6 1132 192.6 H1287.5" fill="none" stroke="#63779a" stroke-width="4.6" stroke-linejoin="round"></path>
+            <path d="M1118.8 269 V204.6 Q1118.8 191.4 1132 191.4 H1280" fill="none" stroke="#dbe6f5" stroke-width="1.1" opacity=".45"></path>
             <sc-if value="{{ sampleFlow }}" hint-placeholder-val="{{ false }}">
-            <path d="M1120 274 V248 Q1120 236 1132 236 H1308 Q1320 236 1320 248 V250.75 Q1320 262.75 1308 262.75 H1307.15" fill="none" stroke="#e7b15a" stroke-width="2.2" stroke-linecap="round" stroke-dasharray="4 10" style="animation:dashflow calc(1s * var(--pm, 1)) linear infinite;"></path>
+            <path d="M1120 269 V204.6 Q1120 192.6 1132 192.6 H1287.5" fill="none" stroke="#e7b15a" stroke-width="2.2" stroke-linecap="round" stroke-dasharray="4 10" style="animation:dashflow calc(1s * var(--pm, 1)) linear infinite;"></path>
             </sc-if>
             <path d="M1113 269 L1127 269 L1120 278 Z M1113 287 L1127 287 L1120 278 Z" fill="{{ sepValveFill }}" stroke="#0a0e16" stroke-width="1" stroke-linejoin="round"></path>
             <line x1="1120" y1="278" x2="1107" y2="278" stroke="#8fa3c2" stroke-width="1.8"></line>
             <rect x="1104.5" y="271.5" width="3" height="13" rx="1.4" fill="url(#ovMetalH)" stroke="#0a0e16" stroke-width="0.7"></rect>
-            ${SampleBottle.markup({ p:'sb', x:1300, y:248, s:0.33, bd:'oil', bdCtx:'Separator oil sample bottle', sample:'{{ sepBtlSample }}', buffer:'{{ sepBtlBuffer }}', piston:'{{ sepBtlPiston }}' })}
-            <text x="1280" y="262" text-anchor="end" font-family="IBM Plex Sans, sans-serif" font-size="12" font-weight="600" fill="var(--acca2)">Oil sample</text>
-            <text x="1280" y="273" text-anchor="end" font-family="IBM Plex Mono, monospace" font-size="9.4" fill="var(--lbl2)">oil outlet line</text>
+            <!-- approved Oil Sample Bottle standing on the ground right of the outlets; mirrored so its valve outlets face the separator -->
+            <ellipse cx="1300" cy="359" rx="22" ry="3" fill="rgba(0,0,0,.28)"></ellipse>
+            ${SampleBottle.markup({ p:'sb', cx:1300, cy:265.7, k:0.26, mirror:true, bd:'oil', bdCtx:'Separator oil sample bottle', sample:'{{ sepBtlSample }}', buffer:'{{ sepBtlBuffer }}', piston:'{{ sepBtlPiston }}' })}
+            <text x="1270" y="240" text-anchor="end" font-family="IBM Plex Sans, sans-serif" font-size="12" font-weight="600" fill="var(--acca2)">Oil sample</text>
+            <text x="1270" y="251" text-anchor="end" font-family="IBM Plex Mono, monospace" font-size="9.4" fill="var(--lbl2)">oil outlet line</text>
           </g>
           </sc-if>
           </svg>

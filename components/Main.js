@@ -1311,17 +1311,17 @@ const hi_d = (on) => on ? 'opacity:1; transition:opacity .5s ease;' : 'opacity:.
     const oilWater_d = 'transform:scaleY(' + (1 - oilG_d).toFixed(3) + '); transform-box:fill-box; transform-origin:bottom center; transition:transform calc(2.8s * var(--pm, 1)) ease;';
     const oilPiston_d = 'transform:translateY(' + (oilG_d * 105).toFixed(1) + 'px); transition:transform calc(2.8s * var(--pm, 1)) ease;';
     const panPiston_d = 'transform:translateY(' + (oilG_d * 216).toFixed(1) + 'px); transition:transform calc(2.8s * var(--pm, 1)) ease;';
-    // wellhead bottle: tall oil chamber above, smaller N2 back-pressure chamber below
+    // wellhead bottle: tall oil chamber above, smaller driving-fluid (back-pressure) chamber below
     const whOilG_d = 0.12 + 0.70 * f_d;
     const whOilFill_d = 'transform:scaleY(' + whOilG_d.toFixed(3) + '); transform-box:fill-box; transform-origin:top center; opacity:' + (f_d > 0.02 ? '1' : '0') + '; transition:transform calc(2.8s * var(--pm, 1)) ease, opacity calc(1.2s * var(--pm, 1)) ease;';
-    const whN2Fill_d = 'transform:scaleY(' + (1 - whOilG_d).toFixed(3) + '); transform-box:fill-box; transform-origin:bottom center; transition:transform calc(2.8s * var(--pm, 1)) ease;';
+    const whDriveFill_d = 'transform:scaleY(' + (1 - whOilG_d).toFixed(3) + '); transform-box:fill-box; transform-origin:bottom center; transition:transform calc(2.8s * var(--pm, 1)) ease;';
     const whPiston_d = 'transform:translateY(' + (whOilG_d * 252).toFixed(1) + 'px); transition:transform calc(2.8s * var(--pm, 1)) ease;';
     const whOilLabel_d = 'opacity:' + (f_d > 0.25 ? '1' : '0') + '; transition:opacity calc(1.2s * var(--pm, 1)) ease;';
     const miniPiston_d = 'transform:translateY(' + (oilG_d * 84).toFixed(1) + 'px); transition:transform calc(2.8s * var(--pm, 1)) ease;';
     const miniPistonY_d = +(45 + oilG_d * 84).toFixed(1);
     const gasFill_d = 'opacity:' + (0.4 + 0.55 * f_d).toFixed(2) + '; transition:opacity calc(2.2s * var(--pm, 1)) ease;';
     // Sampling bottles = Validation/Restoration bottle (components/SampleBottle.js); same fill model,
-    // fill fractions unchanged: wellhead whOilG_d (N2 buffer), separator oilG_d (water buffer)
+    // fill fractions unchanged: wellhead whOilG_d, separator oilG_d (driving fluid below the piston)
     const _sbOp_d = '; opacity:' + (f_d > 0.02 ? '1' : '0') + ';';
     const _sbWh_d = window.SampleBottle ? window.SampleBottle.styles(whOilG_d) : { sample:'', buffer:'', piston:'' };
     const _sbSep_d = window.SampleBottle ? window.SampleBottle.styles(oilG_d) : { sample:'', buffer:'', piston:'' };
@@ -1629,7 +1629,8 @@ const hi_d = (on) => on ? 'opacity:1; transition:opacity .5s ease;' : 'opacity:.
     const mxValve = (mxRunning || mxDone) ? mxLin(0, 0.05) : 0;          // 0 closed .. 1 open
     const mxF1 = mxLin(0.03, 0.15);
     const mxVm = mxEio(0.15, 1);
-    const MX_VALVE_AT = 96 / 175;                                      // valve body face along the transfer line
+    const MXG = window.MX_GEO || { xLen: 175, xValveAt: 96, wLen: 86.8, wArrowAt: 28.5, dropX: 340, valveY: 108 };   // scene geometry (screens/showXfer.js)
+    const MX_VALVE_AT = MXG.xValveAt / MXG.xLen;                       // valve body face along the transfer line
     const mxF2 = mxValve >= 1 ? mxLin(0.15, 0.27) : Math.min(mxLin(0.15, 0.27), MX_VALVE_AT);
     const mxVb = mxEio(0.27, 1);
     const mxF3 = mxLin(0.27, 0.37);
@@ -1638,14 +1639,14 @@ const hi_d = (on) => on ? 'opacity:1; transition:opacity .5s ease;' : 'opacity:.
     const mxPulseStyle = (f) => `opacity:${(mxRunning && f > 0.001) ? 1 : 0}; transition:opacity .35s ease;`;
     const mxArrowStyle = (f, at) => `opacity:${f >= at ? 0.95 : 0.22}; transition:opacity .25s ease;`;
     const mxPumpFrontStyle = mxFrontStyle(368, mxF1),   mxPumpPulseStyle = mxPulseStyle(mxF1);
-    const mxXferFrontStyle = mxFrontStyle(175, mxF2),   mxXferPulseStyle = mxPulseStyle(mxF2);
-    const mxWoutFrontStyle = mxFrontStyle(86.8, mxF3), mxWoutPulseStyle = mxPulseStyle(mxF3);
+    const mxXferFrontStyle = mxFrontStyle(MXG.xLen, mxF2),   mxXferPulseStyle = mxPulseStyle(mxF2);
+    const mxWoutFrontStyle = mxFrontStyle(MXG.wLen, mxF3), mxWoutPulseStyle = mxPulseStyle(mxF3);
     const mxArrowPumpStyle = mxArrowStyle(mxF1, 160 / 368);
-    const mxArrowX1Style = mxArrowStyle(mxF2, 38 / 175);
+    const mxArrowX1Style = mxArrowStyle(mxF2, 38 / MXG.xLen);
     const mxArrowX2Style = mxArrowStyle(mxF2, 1);
-    const mxArrowWStyle = mxArrowStyle(mxF3, 28.5 / 86.8);
+    const mxArrowWStyle = mxArrowStyle(mxF3, MXG.wArrowAt / MXG.wLen);
     // valve handle: across the pipe = closed, in line with the pipe = open
-    const mxValveHandleStyle = `transform:rotate(${(90 * mxValve).toFixed(1)}deg); transform-box:view-box; transform-origin:340px 108px; transition:transform .12s linear;`;
+    const mxValveHandleStyle = `transform:rotate(${(90 * mxValve).toFixed(1)}deg); transform-box:view-box; transform-origin:${MXG.dropX}px ${MXG.valveY}px; transition:transform .12s linear;`;
     const mxValveRing = mxValve >= 1 ? '#46d39a' : '#8fa3c2';
     const mxValveText = mxValve >= 1 ? 'VALVE · OPEN' : 'VALVE · CLOSED';
 
@@ -2689,14 +2690,15 @@ const hi_d = (on) => on ? 'opacity:1; transition:opacity .5s ease;' : 'opacity:.
     const qc3Flow = qcS3 && qRunning && qc3D.flow;
     const rsFlowOn = (rsRun && qcRk < 0.90) || qc3Flow;       // pump + water flow stop exactly at target pressure
     const rsValve = qcS2 ? rLin(0.02, 0.07) * (1 - rLin(0.92, 0.97)) : qcS3 ? qc3D.wv : 0;   // 0 closed .. 1 open
-    const RS_L = 774, RS_VALVE_AT = 770 / 774;                // pump outlet -> water-side valve side port (approved bottle, inverted)
+    const QG = window.QC_GEO || { rsLen: 774, rsUpAt: 110, rsLAt: 330, cy: 250, s: 0.49 };   // scene geometry (screens/showRestore.js)
+    const RS_L = QG.rsLen, RS_VALVE_AT = (RS_L - 4) / RS_L;    // pump outlet -> water-side valve side port (approved bottle, inverted)
     const rsFrontRaw = qcS2 ? rLin(0.03, 0.22) : (qcS3 && qc3D.wv > 0) ? 1 : 0;
     // before the valve is fully open the front halts at the valve face; after the valve closes (0.92+) the filled line simply holds
     const rsFront = (rsValve < 1 && qcRk < 0.92) ? Math.min(rsFrontRaw, RS_VALVE_AT) : rsFrontRaw;
     const rsFrontStyle = `stroke-dashoffset:${(RS_L + 4 - rsFront * RS_L).toFixed(2)}; opacity:${rsFront > 0.001 ? 1 : 0}; transition:stroke-dashoffset .12s linear, opacity .3s ease;`;
     const rsPulseStyle = `opacity:${(rsFlowOn && rsFront > 0.001) ? 1 : 0}; transition:opacity .3s ease;`;
-    const rsArrowUpStyle = `opacity:${(rsFlowOn && rsFront >= 110 / RS_L) ? 0.95 : 0.22}; transition:opacity .3s ease;`;
-    const rsArrowLStyle = `opacity:${(rsFlowOn && rsFront >= 330 / RS_L) ? 0.95 : 0.22}; transition:opacity .3s ease;`;
+    const rsArrowUpStyle = `opacity:${(rsFlowOn && rsFront >= QG.rsUpAt / RS_L) ? 0.95 : 0.22}; transition:opacity .3s ease;`;
+    const rsArrowLStyle = `opacity:${(rsFlowOn && rsFront >= QG.rsLAt / RS_L) ? 0.95 : 0.22}; transition:opacity .3s ease;`;
     const rsValveWheelStyle = `transform:rotate(${(180 * rsValve).toFixed(1)}deg); transform-box:view-box; transform-origin:327.5px 97.5px; transition:transform .12s linear;`;
     const rsValveRing = rsValve >= 0.999 ? '#46d39a' : '#8fa3c2';
     const rsNeedleStyle = window.BottleArt ? window.BottleArt.needle(rsValve) : '';
@@ -2709,11 +2711,11 @@ const hi_d = (on) => on ? 'opacity:1; transition:opacity .5s ease;' : 'opacity:.
     // inverted bottle: water on top, piston mid, oil below. Injecting water drives the piston down.
     // pressure compresses (piston down); heating to 95 C expands the oil, easing the piston a little
     // back up into the water side. bleeding free water off the oil side lets it settle down again.
-    // Drawing frame = approved Oil Sample Bottle bore, screen-aligned, centre (300, 250), scale 0.49:
+    // Drawing frame = approved Oil Sample Bottle bore, screen-aligned, centre / scale from QC_GEO (showRestore.js):
     // bore y -226..226 (452 units) with a 46-unit floating piston, so the two columns share 406 units.
     // Split, piston travel and free-water band all come from the shared bottleModel() (drawing only).
     const qcBot = this.bottleModel();
-    const QC_BORE = 452, QC_PIST = 46, QC_USE = QC_BORE - QC_PIST, QC_T = -226, QC_B = 226, QC_CY = 250, QC_S = 0.49;
+    const QC_BORE = 452, QC_PIST = 46, QC_USE = QC_BORE - QC_PIST, QC_T = -226, QC_B = 226, QC_CY = QG.cy, QC_S = QG.s;
     const qcPistFrac = qcBot.waterFrac;
     const qcPistEase = ((qcS2 || qcS3) && qRunning) ? 'transform .12s linear' : 'transform calc(1s * var(--pm, 1)) ease-out';   // restoration: track the clock
     const qcWaterStyle = `transform:scaleY(${((QC_USE / QC_BORE) * qcPistFrac).toFixed(4)}); transform-box:fill-box; transform-origin:top; transition:${qcPistEase};`;
@@ -3069,7 +3071,9 @@ const hi_d = (on) => on ? 'opacity:1; transition:opacity .5s ease;' : 'opacity:.
       prodVB: '0 0 1000 560',
       // one field-system drawing (FieldSketch.js) for Overview / Wellhead / Separator; inactive groups dimmed
       fieldVis: ovw_d || ap_d === 'wellhead' || ap_d === 'separator',
-      fieldVB: ovw_d ? '0 86 1320 560' : '0 30 1340 560',
+      // sampling pages frame their own working area of the same drawing (wellhead -> choke, manifold -> separator outlets),
+      // so the sampling bottles read clearly without being drawn out of proportion to the field equipment
+      fieldVB: ovw_d ? '0 86 1320 560' : ap_d === 'separator' ? '560 46 780 420' : '0 76 740 420',
       fzWellCls: (ap_d === 'wellhead' || ap_d === 'separator') ? 'fz-dim' : 'fz-g',
       fzTreeCls: ap_d === 'separator' ? 'fz-dim' : 'fz-g',
       fzMidCls: (ap_d === 'wellhead' || ap_d === 'separator') ? 'fz-dim' : 'fz-g',
@@ -3085,7 +3089,7 @@ const hi_d = (on) => on ? 'opacity:1; transition:opacity .5s ease;' : 'opacity:.
       actOv: ovw_d,
       mbOv: mbtn_d(ovw_d),
       selOv: () => this.pick('overview'),
-      oilFill: oilFill_d, oilWater: oilWater_d, oilPiston: oilPiston_d, panPiston: panPiston_d, whOilFill: whOilFill_d, whN2Fill: whN2Fill_d, whPiston: whPiston_d, whOilLabel: whOilLabel_d, miniPiston: miniPiston_d, miniPistonY: miniPistonY_d, gasFill: gasFill_d, sampleFlow: sampleFlow_d,
+      oilFill: oilFill_d, oilWater: oilWater_d, oilPiston: oilPiston_d, panPiston: panPiston_d, whOilFill: whOilFill_d, whDriveFill: whDriveFill_d, whPiston: whPiston_d, whOilLabel: whOilLabel_d, miniPiston: miniPiston_d, miniPistonY: miniPistonY_d, gasFill: gasFill_d, sampleFlow: sampleFlow_d,
       m01SvgStyle: 'display:block; width:100%; height:100%; flex:1 1 auto; min-width:0;',
       m01BhScene: bhScene_v, m01ProdVis: !bhScene_v,
       showWhPanel: whScene_v,

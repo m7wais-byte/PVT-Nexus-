@@ -12,6 +12,9 @@
                        inner (bore contents) | sample / drive / piston styles + extra,
                        ring (false: no mixing ring), screen (inner drawn in the
                        un-rotated screen frame), ringT / ringB, needleT / needleB,
+                       mirror (true: valve outlets on the other side - an inverted
+                       bottle with rot 180 + mirror keeps its outlets on the right;
+                       the cutaway carries no text, so nothing reads mirrored),
                        bd / ctx (Bottle Details trigger) }
      oilPort(o, 'T'|'B')  world point of the side outlet of the sample-side (T)
                        or driving-side (B) right-angle valve: tubing ends here
@@ -49,16 +52,17 @@
   }
   function needle(open) { return 'transform:translateY(' + (-7 * Math.max(0, Math.min(1, open))).toFixed(2) + 'px); transition:transform .3s ease;'; }
 
-  function place(o) { return 'translate(' + r2(o.x) + ' ' + r2(o.y) + ')' + (o.rot ? ' rotate(' + o.rot + ')' : '') + ' scale(' + o.s + ')'; }
+  function place(o) { return 'translate(' + r2(o.x) + ' ' + r2(o.y) + ')' + (o.rot ? ' rotate(' + o.rot + ')' : '') + ' scale(' + (o.mirror ? -o.s + ' ' + o.s : o.s) + ')'; }
   function bdAttrs(o) { return o.bd ? ' class="bd-hit" data-bd-open="' + o.bd + '"' + (o.ctx ? ' data-bd-ctx="' + o.ctx + '"' : '') : ''; }
   function toWorld(o, lx, ly) {
     var a = (o.rot || 0) * Math.PI / 180, c = Math.cos(a), sn = Math.sin(a);
+    if (o.mirror) lx = -lx;
     return [r2(o.x + o.s * (lx * c - ly * sn)), r2(o.y + o.s * (lx * sn + ly * c))];
   }
 
   function oil(p, o) {
     var inner = o.inner != null ? o.inner : D().liveInside(p, { sample: o.sample, drive: o.drive, piston: o.piston, ring: o.ring, extra: o.extra });
-    if (o.screen && o.rot) inner = '<g transform="rotate(' + (-o.rot) + ')">' + inner + '</g>';
+    if (o.screen && (o.rot || o.mirror)) inner = '<g transform="' + (o.mirror ? 'scale(-1 1) ' : '') + 'rotate(' + (-(o.rot || 0)) + ')">' + inner + '</g>';
     var body = D().oil(p, { view: 'cutaway', live: { inner: inner, ringT: o.ringT, ringB: o.ringB, needleT: o.needleT, needleB: o.needleB } });
     return '<g transform="' + place(o) + '"' + bdAttrs(o) + '>' + body + '</g>';
   }

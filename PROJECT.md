@@ -173,8 +173,8 @@ uniform scale) through `components/BottleArt.js` (window.BottleArt). There are n
 - `components/SampleBottle.js` (Sampling pages) places the same oil / gas drawings in the old Sampling frame.
 - Tubing was re-routed to the approved side outlets; flow connections, valve states, values, timing and stage
   order are unchanged. Line valves that belong to the rig stay separate from the bottle's own valves.
-- Visual standardization only: where a procedure text describes another bottle arrangement (for example nitrogen
-  back-pressure in the wellhead guide), the drawing does not depict that mechanism.
+- The wellhead guide text now describes driving-fluid back-pressure (no nitrogen chamber), matching the drawing
+  (2026-10-20). The SRS downhole tool keeps its N₂ compensation: it is a tool feature, not a sample bottle.
 
 | Page | Bottle | Bottle Details |
 |---|---|---|
@@ -721,3 +721,38 @@ Playback: `GC.gas.runMs` 60 s (x PROCESS_SPEED_MULTIPLIER).
   orthogonal callout leaders, larger text, magnifier frame + zoom cone to the inset. Side-panel figure shows the
   MPSR bottles / SRS chamber + N2 from the same state. Timeline, states and values unchanged.
 - Backup: _backup_app_20260930_before_sampling_visual/
+
+## Field sampling + Validation bottle scenes (2026-10-20)
+
+Drawing / layout only: pressures, temperatures, volumes, valve states, stage order, timing and controls unchanged.
+
+- **Shared kit.** `BottleArt.oil/gas` take `mirror: true` (valve outlets on the other side; `oilPort` / `gasPort`
+  follow it). Rotate 180 + mirror = a vertical flip, so an inverted bottle keeps its outlets on the right; the cutaway
+  carries no text, so nothing reads mirrored. `SampleBottle.markup/ports` also accept direct placement
+  `{ cx, cy, k, rot, mirror }` (centre + approved-drawing scale).
+- **Field Sampling overview** (`FieldSketch.js`): pipe-support stand between wellhead and choke removed (separator legs
+  kept). Manifold rebuilt: straight TEST LINE (cyan flow) to the separator; production route = tee drop -> closed
+  production valve -> PRODUCTION header -> rounded bend -> buried run TO PRODUCTION; OTHER WELLS come in buried and
+  rise into the header through a branch tee. Amber moving dashes + arrows show the other wells' flow (this well's
+  production valve is closed, so the dead leg 440 -> 524 carries none). Route labels sit on `var(--panel)` plates.
+  Separator outlets: welded neck + flange at each shell nozzle, rounded bends on gas / water, oil run starts inside
+  the head (the old gap at the oil nozzle is closed), the three outlet valves are one size at x 1160 with a flange on
+  each side. Sample risers (x 1110 gas, 1120 oil) and overview markers unchanged. Hover hit areas follow the new runs.
+- **Wellhead / Separator pages** frame their own working area of the same drawing (`fieldVB` in Main.renderVals:
+  wellhead `0 76 740 420`, separator `560 46 780 420`; overview unchanged). Wellhead bottle k 0.30, standing on the
+  ground beside the flowline, mirrored (outlets face the wellhead), tubing over the choke into the top port.
+  Separator: gas bottle k 0.26 lying above the gas line (left end connection), oil bottle k 0.26 standing right of
+  the outlets, mirrored; tubing from the existing sample valves.
+- **Sample Transfer** (`showXfer.js`): geometry block `MXG` / `window.MX_GEO` (centre 300, 304, scale 0.55; was 0.49)
+  used by the drawing and by Main.js (transfer / displaced-water line lengths, line-valve position). New receiving
+  stand: base plate (the lower valve protector stands on it), rod, two boss heads + jaws on the barrel.
+- **Validation steps 1-3** (`showRestore.js`): geometry block `QCG` / `window.QC_GEO` (centre 300, 254, scale 0.55;
+  was 0.49) used by the drawing and Main.js (injection-line length, flow-arrow positions, callout leaders). Bottle
+  inverted with rot 180 + mirror -> both valve outlets face right; the injection line drops beside the top valve into
+  its side port. Clamp stand rebuilt (base plate, rod, boss heads, jaws on the heating jacket). Step 3 drain: reverse-L
+  outlet (horizontal from the sample-valve port, one bend, straight down), glass receiver directly under the outlet,
+  four SMIL drops fall from the outlet into it while `waterDropStyle` is on (same flag / volumes as before).
+- **Validation step 4** (`QcAgitSim.js`): scale 0.57 (was 0.5), pivot (380, 244); A-frame inversion stand (base plate
+  on feet, two tapered legs + brace, trunnion block); readout card moved top-right, clear of the rotating bottle at
+  every angle; the flexible line is drawn behind the bottle.
+
