@@ -748,8 +748,8 @@ Drawing / layout only: pressures, temperatures, volumes, valve states, stage ord
   stand: base plate (the lower valve protector stands on it), rod, two boss heads + jaws on the barrel.
 - **Validation steps 1-3** (`showRestore.js`): geometry block `QCG` / `window.QC_GEO` (centre 300, 254, scale 0.55;
   was 0.49) used by the drawing and Main.js (injection-line length, flow-arrow positions, callout leaders). Bottle
-  inverted with rot 180 + mirror -> both valve outlets face right; the injection line drops beside the top valve into
-  its side port. Clamp stand rebuilt (base plate, rod, boss heads, jaws on the heating jacket). Step 3 drain: reverse-L
+  inverted with rot 180 + mirror -> both valve outlets face right; the injection line runs straight up from the pump and straight left into
+  the top valve side port (one bend; readout cards lowered 16 px to clear it). Clamp stand rebuilt (base plate, rod, boss heads, jaws on the heating jacket). Step 3 drain: reverse-L
   outlet (horizontal from the sample-valve port, one bend, straight down), glass receiver directly under the outlet,
   four SMIL drops fall from the outlet into it while `waterDropStyle` is on (same flag / volumes as before).
 - **Validation step 4** (`QcAgitSim.js`): scale 0.57 (was 0.5), pivot (380, 244); A-frame inversion stand (base plate

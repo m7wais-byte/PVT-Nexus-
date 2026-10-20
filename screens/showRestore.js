@@ -10,10 +10,10 @@ var QCG = (function () {
   var pB = window.BottleArt.oilPort(frame, 'B');   // driving (water) side valve outlet - top
   var pT = window.BottleArt.oilPort(frame, 'T');   // sample side valve outlet - bottom
   g.portB = pB; g.portT = pT;
-  // injection line: pump top -> up -> left along the run -> down beside the valve -> left into its side port
-  g.runY = 64; g.dropX = r1(pB[0] + 26);
-  g.rsPath = 'M765 288 V' + g.runY + ' H' + g.dropX + ' V' + pB[1] + ' H' + pB[0];
-  g.rsLen = r1((288 - g.runY) + (765 - g.dropX) + (pB[1] - g.runY) + (g.dropX - pB[0]));
+  // injection line: pump top -> straight up -> one bend -> straight left into the water-side valve side port
+  g.runY = pB[1]; g.dropX = pB[0];
+  g.rsPath = 'M765 288 V' + g.runY + ' H' + pB[0];
+  g.rsLen = r1((288 - g.runY) + (765 - pB[0]));
   g.rsDash = Math.ceil(g.rsLen + 4);
   g.rsUpAt = 288 - 176; g.rsLAt = (288 - g.runY) + (765 - 676);   // flow-arrow positions along the line
   // step 3 drainage: reverse-L outlet (horizontal from the sample-valve port, one bend, straight down) over the receiver
@@ -198,7 +198,7 @@ DC.slot('showRestore', `<sc-if value="{{ showRestore }}" hint-placeholder-val="{
               <text x="${QCG.txtX}" y="340" font-family="IBM Plex Mono" font-size="8" fill="var(--lbl2)">{{ qc3FwSub }}</text>
             </g>
             <!-- ===== STEP 3: simulated 24 h settling timer + drained volume ===== -->
-            <g>
+            <g transform="translate(0 16)">
               <rect x="556" y="258" width="140" height="118" rx="10" fill="rgba(9,16,29,.86)" stroke="rgba(120,150,190,.28)" stroke-width="1.2"></rect>
               <foreignObject x="566" y="266" width="124" height="13"><div style="margin:0; font-family:'IBM Plex Mono',ui-monospace,monospace; font-size:8.5px; letter-spacing:1px; line-height:1.2; white-space:nowrap; color:rgba(185,210,240,.80);">SETTLING TIME</div></foreignObject>
               <foreignObject x="566" y="279" width="124" height="20"><div style="margin:0; font-family:'IBM Plex Mono',ui-monospace,monospace; font-size:14px; font-weight:600; line-height:1.25; white-space:nowrap; color:#8fd0ff;">{{ qc3HoursText }}</div></foreignObject>
@@ -211,13 +211,13 @@ DC.slot('showRestore', `<sc-if value="{{ showRestore }}" hint-placeholder-val="{
               <foreignObject x="566" y="351" width="124" height="20"><div style="margin:0; font-family:'IBM Plex Mono',ui-monospace,monospace; font-size:14px; font-weight:600; line-height:1.25; white-space:nowrap; color:#5aa6d8;">{{ qc3DrainText }} <span style="font-size:9.5px; font-weight:400; color:rgba(160,188,220,.78);">cc</span></div></foreignObject>
             </g>
             <sc-if value="{{ qc3MsgOn }}" hint-placeholder-val="{{ false }}">
-            <rect x="556" y="384" width="140" height="34" rx="9" fill="rgba(70,211,154,.12)" stroke="rgba(70,211,154,.4)" stroke-width="1"></rect>
-            <foreignObject x="562" y="387" width="128" height="30"><div style="margin:0; font-family:'IBM Plex Sans',sans-serif; font-size:9.5px; font-weight:600; line-height:1.3; text-align:center; color:var(--accg);">{{ qc3Msg }}</div></foreignObject>
+            <rect x="556" y="400" width="140" height="34" rx="9" fill="rgba(70,211,154,.12)" stroke="rgba(70,211,154,.4)" stroke-width="1"></rect>
+            <foreignObject x="562" y="403" width="128" height="30"><div style="margin:0; font-family:'IBM Plex Sans',sans-serif; font-size:9.5px; font-weight:600; line-height:1.3; text-align:center; color:var(--accg);">{{ qc3Msg }}</div></foreignObject>
             </sc-if>
             </sc-if>
 
-            <!-- ===== LIVE PRESSURE / TEMPERATURE READOUT ===== -->
-            <g>
+            <!-- ===== LIVE PRESSURE / TEMPERATURE READOUT (lowered: the injection line runs above it) ===== -->
+            <g transform="translate(0 16)">
               <rect x="556" y="96" width="186" height="150" rx="12" fill="rgba(9,16,29,.86)" stroke="rgba(120,150,190,.28)" stroke-width="1.2"></rect>
               <foreignObject x="570" y="108" width="162" height="14"><div style="margin:0; font-family:'IBM Plex Mono',ui-monospace,monospace; font-size:8.5px; letter-spacing:1.4px; line-height:1.2; color:rgba(185,210,240,.80);">{{ qcGaugeCap }}</div></foreignObject>
 
@@ -232,8 +232,8 @@ DC.slot('showRestore', `<sc-if value="{{ showRestore }}" hint-placeholder-val="{
               <rect x="570" y="236" width="158" height="5" rx="2.5" fill="#e7752e" style="{{ qcTBarStyle }}"></rect>
             </g>
             <sc-if value="{{ qcOpenRecorded }}" hint-placeholder-val="{{ false }}">
-            <rect x="570" y="296" width="126" height="24" rx="12" fill="rgba(70,211,154,.12)" stroke="rgba(70,211,154,.4)" stroke-width="1"></rect>
-            <foreignObject x="570" y="301" width="126" height="16"><div style="margin:0; font-family:'IBM Plex Sans',sans-serif; font-size:10.5px; line-height:1.4; white-space:nowrap; overflow:hidden; text-align:center; color:var(--accg);">{{ qcOpenBadge }}</div></foreignObject>
+            <rect x="570" y="312" width="126" height="24" rx="12" fill="rgba(70,211,154,.12)" stroke="rgba(70,211,154,.4)" stroke-width="1"></rect>
+            <foreignObject x="570" y="317" width="126" height="16"><div style="margin:0; font-family:'IBM Plex Sans',sans-serif; font-size:10.5px; line-height:1.4; white-space:nowrap; overflow:hidden; text-align:center; color:var(--accg);">{{ qcOpenBadge }}</div></foreignObject>
             </sc-if>
 
             <!-- ===== TRANSFER PUMP ===== -->
