@@ -1,4 +1,6 @@
 /* screen: showRestore  (33.1 KB) */
+/* Validation steps 1-3 support stand: rod left of the bottle, two clamps on the barrel (bottle centre 300, 238, scale 0.55) */
+var QC_STAND = BottleArt.stand('q', { x: 300, rodX: 150, ground: 470, top: 112, clamps: [{ y: 168, h: 19 }, { y: 308, h: 19 }], baseL: 104, baseR: 214 });
 DC.slot('showRestore', `<sc-if value="{{ showRestore }}" hint-placeholder-val="{{ false }}">
     <div data-screen-label="Module 02 — Validation" class="pg pg-stack">
 
@@ -47,32 +49,23 @@ DC.slot('showRestore', `<sc-if value="{{ showRestore }}" hint-placeholder-val="{
             <rect x="0" y="470" width="900" height="90" fill="rgba(120,150,185,.04)"></rect>
 
             <sc-if value="{{ qcRig }}" hint-placeholder-val="{{ true }}">
-            <!-- ===== CLAMP STAND ===== -->
-            <ellipse cx="150" cy="468" rx="62" ry="7" fill="rgba(0,0,0,.35)"></ellipse>
-            <ellipse cx="150" cy="464" rx="56" ry="9" fill="url(#qCyl)" stroke="#0a0e16" stroke-width="1"></ellipse>
-            <rect x="146" y="100" width="9" height="362" fill="url(#qPipe)" stroke="#0a0e16" stroke-width="0.7"></rect>
-            <rect x="141" y="96" width="19" height="7" rx="2" fill="url(#qMetal)" stroke="#0a0e16" stroke-width="0.7"></rect>
-            <g>
-              <rect x="155" y="192" width="121" height="8" rx="3" fill="url(#qPipe)" stroke="#0a0e16" stroke-width="0.7"></rect>
-              <rect x="272" y="185" width="11" height="22" rx="3" fill="url(#qMetal)" stroke="#0a0e16" stroke-width="0.8"></rect>
-              <rect x="155" y="296" width="121" height="8" rx="3" fill="url(#qPipe)" stroke="#0a0e16" stroke-width="0.7"></rect>
-              <rect x="272" y="289" width="11" height="22" rx="3" fill="url(#qMetal)" stroke="#0a0e16" stroke-width="0.8"></rect>
-            </g>
+            <!-- ===== CLAMP STAND (shared BottleArt.stand): base plate, rod, two clamps gripping the barrel ===== -->
+            ${QC_STAND.back}
 
             <!-- ===== PUMP -> UPPER (WATER-SIDE) VALVE ONLY =====
-                 the bottle is the approved Oil Sample Bottle, inverted (rotate 180): the driving-side (water) valve is on top and
-                 its right-angle outlet faces left, so the injection line ends at that side port (276.5, 112.3) -->
-            <path d="M765 288 V72 H262 V112.3 H276.5" fill="none" stroke="#0a0e16" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"></path>
-            <path d="M765 288 V72 H262 V112.3 H276.5" fill="none" stroke="url(#qPipe)" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"></path>
-            <path d="M763 286 V70 H262" fill="none" stroke="#cdd9ea" stroke-width="1.3" stroke-linecap="round" opacity=".3"></path>
+                 the bottle is the approved Oil Sample Bottle, inverted (rotate 180) and mirrored on this page so both
+                 right-angle outlets face RIGHT: the injection line ends at the driving-side port (326.4, 83.45) -->
+            <path d="M765 288 V72 H346 V83.45 H326.4" fill="none" stroke="#0a0e16" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"></path>
+            <path d="M765 288 V72 H346 V83.45 H326.4" fill="none" stroke="url(#qPipe)" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"></path>
+            <path d="M763 286 V70 H344" fill="none" stroke="#cdd9ea" stroke-width="1.3" stroke-linecap="round" opacity=".3"></path>
             <rect x="440" y="66" width="10" height="13" rx="1.5" fill="url(#qMetal)" stroke="#0a0e16" stroke-width="0.6"></rect>
             <rect x="600" y="66" width="10" height="13" rx="1.5" fill="url(#qMetal)" stroke="#0a0e16" stroke-width="0.6"></rect>
             <!-- injection line is primed with water (static); active flow is drawn over the bottle hardware below -->
-            <path d="M765 288 V72 H262 V112.3 H276.5" fill="none" stroke="#2f6f9c" stroke-width="2.6" stroke-linejoin="round" opacity=".5"></path>
+            <path d="M765 288 V72 H346 V83.45 H326.4" fill="none" stroke="#2f6f9c" stroke-width="2.6" stroke-linejoin="round" opacity=".5"></path>
             <text x="520" y="60" text-anchor="middle" font-family="IBM Plex Mono" font-size="10" letter-spacing="1" fill="var(--cap2)">WATER-SIDE INJECTION LINE</text>
 
             <!-- ===== HEATING JACKET (full bottle) ===== -->
-            <g style="{{ resJacketStyle }}">
+            <g style="{{ resJacketStyle }}"><g transform="translate(300 238) scale(1.1224) translate(-300 -250)">
               <rect x="272" y="127" width="56" height="246" rx="12" fill="none" stroke="#e7752e" stroke-width="5" opacity="0" style="{{ resJacketGlowStyle }}; filter:blur(1.5px);"></rect>
               <rect x="275" y="130" width="50" height="240" rx="10" fill="rgba(231,117,46,.09)" stroke="#e7752e" stroke-width="1.8"></rect>
               <clipPath id="qJckC"><rect x="276" y="131" width="48" height="238" rx="9"></rect></clipPath>
@@ -84,13 +77,13 @@ DC.slot('showRestore', `<sc-if value="{{ showRestore }}" hint-placeholder-val="{
               </g>
               <rect x="271" y="125" width="58" height="9" rx="4" fill="rgba(231,117,46,.55)" stroke="#a3521c" stroke-width="0.8"></rect>
               <rect x="271" y="366" width="58" height="9" rx="4" fill="rgba(231,117,46,.55)" stroke="#a3521c" stroke-width="0.8"></rect>
-              <path d="M325 340 C 349 346, 353 372, 341 386" fill="none" stroke="#5c4326" stroke-width="3" stroke-linecap="round"></path>
-            </g>
+              <path d="M275 340 C 251 346, 247 372, 259 386" fill="none" stroke="#5c4326" stroke-width="3" stroke-linecap="round"></path>
+            </g></g>
 
             <!-- ===== SPS/PDS BOTTLE = approved Oil Sample Bottle, INVERTED for restoration (water side up, oil sample down) =====
-                 centre (300, 250), scale 0.49, rotate 180. Bore contents are drawn in the screen-aligned bottle frame
+                 centre (300, 238), scale 0.55, rotate 180 + flip (valves face right on Validation pages). Bore contents are drawn in the screen-aligned bottle frame
                  (x -22..22, y -226..226, y down); Main.js computes fills, piston and step-3 bands in that frame. -->
-            ${BottleArt.oil('q', { x: 300, y: 250, s: 0.49, rot: 180, screen: true, bd: 'oil', ctx: 'SPS/PDS sample bottle · inverted for restoration (driving side up)',
+            ${BottleArt.oil('q', { x: 300, y: 238, s: 0.55, rot: 180, flip: true, screen: true, bd: 'oil', ctx: 'SPS/PDS sample bottle · inverted for restoration (driving side up)',
               ringB: '{{ rsValveRing }}', needleB: '{{ rsNeedleStyle }}', ringT: '{{ qc3SvRing }}', needleT: '{{ qc3SvNeedleStyle }}',
               inner: `<rect x="-22" y="-226" width="44" height="452" fill="url(#qDrive)" style="{{ qcWaterStyle }}"></rect>
               <rect x="-22" y="-226" width="44" height="452" fill="url(#qOil)" style="{{ qcOilStyle }}"></rect>
@@ -103,59 +96,65 @@ DC.slot('showRestore', `<sc-if value="{{ showRestore }}" hint-placeholder-val="{
               <line x1="-22" y1="{{ qcFreeWaterY }}" x2="22" y2="{{ qcFreeWaterY }}" stroke="#cfeaff" stroke-width="1.1" opacity="{{ qc3IfOp }}"></line>
               </sc-if>
               <g style="{{ qcPistonStyle }}">${PBDraw.piston('q', -226)}</g>` })}
-            <text x="300" y="66" text-anchor="middle" font-family="IBM Plex Mono" font-size="9" letter-spacing="1.2" fill="var(--cap2)">SPS/PDS · ~800 cc</text>
+            ${QC_STAND.front}
+            <text x="270" y="58" text-anchor="end" font-family="IBM Plex Mono" font-size="9" letter-spacing="1.2" fill="var(--cap2)">SPS/PDS · ~800 cc</text>
 
             <!-- ===== RESTORATION WATER FLOW: pump outlet -> up -> left along the injection line -> water-side valve side port ===== -->
-            <path d="M765 288 V72 H262 V112.3 H276.5" fill="none" stroke="#5aa6d8" stroke-width="2.8" stroke-linejoin="round" stroke-dasharray="778 778" style="{{ rsFrontStyle }}"></path>
-            <mask id="qRsMask" sc-camel-mask-units="userSpaceOnUse" x="0" y="0" width="900" height="560"><path d="M765 288 V72 H262 V112.3 H276.5" fill="none" stroke="#ffffff" stroke-width="10" stroke-linejoin="round" stroke-dasharray="778 778" style="{{ rsFrontStyle }}"></path></mask>
-            <path d="M765 288 V72 H262 V112.3 H276.5" fill="none" stroke="#d6eeff" stroke-width="2.2" stroke-dasharray="6 16" stroke-linecap="round" stroke-linejoin="round" mask="url(#qRsMask)" style="{{ rsPulseStyle }}"><animate sc-camel-attribute-name="stroke-dashoffset" values="0;-22" dur="0.22s" sc-camel-repeat-count="indefinite"></animate></path>
+            <path d="M765 288 V72 H346 V83.45 H326.4" fill="none" stroke="#5aa6d8" stroke-width="2.8" stroke-linejoin="round" stroke-dasharray="709 709" style="{{ rsFrontStyle }}"></path>
+            <mask id="qRsMask" sc-camel-mask-units="userSpaceOnUse" x="0" y="0" width="900" height="560"><path d="M765 288 V72 H346 V83.45 H326.4" fill="none" stroke="#ffffff" stroke-width="10" stroke-linejoin="round" stroke-dasharray="709 709" style="{{ rsFrontStyle }}"></path></mask>
+            <path d="M765 288 V72 H346 V83.45 H326.4" fill="none" stroke="#d6eeff" stroke-width="2.2" stroke-dasharray="6 16" stroke-linecap="round" stroke-linejoin="round" mask="url(#qRsMask)" style="{{ rsPulseStyle }}"><animate sc-camel-attribute-name="stroke-dashoffset" values="0;-22" dur="0.22s" sc-camel-repeat-count="indefinite"></animate></path>
             <polygon points="765,176 759,190 771,190" fill="#5fb0ff" style="{{ rsArrowUpStyle }}"></polygon>
             <polygon points="676,72 690,66 690,78" fill="#5fb0ff" style="{{ rsArrowLStyle }}"></polygon>
 
-            <!-- ===== STEP 3: controlled water bleed to beaker ===== -->
+            <!-- ===== STEP 3: controlled water bleed to the receiver =====
+                 reverse-L outlet: sample-side port (326.4, 392.55) -> horizontal run -> one 90-degree elbow -> open end facing
+                 down at (372, 418), air gap above the receiver (top 430). Drops leave the opening only while qc3Flow (waterDropStyle). -->
             <sc-if value="{{ qcS3 }}" hint-placeholder-val="{{ false }}">
-            <path d="M276.5 387.7 H264 V428 H300" fill="none" stroke="#0a0e16" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"></path>
-            <path d="M276.5 387.7 H264 V428 H300" fill="none" stroke="url(#qPipe)" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"></path>
+            <path d="M326.4 392.55 H372 V416" fill="none" stroke="#0a0e16" stroke-width="7" stroke-linejoin="round"></path>
+            <path d="M326.4 392.55 H372 V416" fill="none" stroke="url(#qPipe)" stroke-width="3.5" stroke-linejoin="round"></path>
+            <rect x="364" y="385.5" width="14" height="14" rx="4" fill="url(#qMetal)" stroke="#0a0e16" stroke-width="0.8"></rect>
+            <rect x="367" y="412" width="10" height="6" rx="1.2" fill="url(#qMetal)" stroke="#0a0e16" stroke-width="0.7"></rect>
+            <ellipse cx="372" cy="418" rx="3.2" ry="1" fill="#05090f"></ellipse>
+            <path d="M348 430 H396 L389 464 H355 Z" fill="#0c1626" stroke="#46566f" stroke-width="1.4"></path>
+            <clipPath id="qBeakC"><path d="M349 431 H395 L388 463 H356 Z"></path></clipPath>
+            <g clip-path="url(#qBeakC)"><rect x="349" y="431" width="46" height="32" fill="#5aa6d8" opacity="0.85" style="{{ beakerFillStyle }}"></rect></g>
             <g style="{{ waterDropStyle }}">
-              <path d="M300 428 V458" fill="none" stroke="#5aa6d8" stroke-width="1.4" stroke-dasharray="3 9" stroke-linecap="round" opacity="0.7"><animate sc-camel-attribute-name="stroke-dashoffset" values="0;-24" dur="1.6s" sc-camel-repeat-count="indefinite"></animate></path>
-              <circle cx="300" cy="430" r="2.8" fill="#5aa6d8"><animate sc-camel-attribute-name="cy" values="428;444;458" dur="1.4s" sc-camel-repeat-count="indefinite"></animate><animate sc-camel-attribute-name="r" values="2.4;3;2" dur="1.4s" sc-camel-repeat-count="indefinite"></animate><animate sc-camel-attribute-name="opacity" values="0;1;0" dur="1.4s" sc-camel-repeat-count="indefinite"></animate></circle>
-              <circle cx="300" cy="430" r="2.6" fill="#5aa6d8"><animate sc-camel-attribute-name="cy" values="428;444;458" dur="1.4s" begin="0.47s" sc-camel-repeat-count="indefinite"></animate><animate sc-camel-attribute-name="r" values="2.4;3;2" dur="1.4s" begin="0.47s" sc-camel-repeat-count="indefinite"></animate><animate sc-camel-attribute-name="opacity" values="0;1;0" dur="1.4s" begin="0.47s" sc-camel-repeat-count="indefinite"></animate></circle>
-              <circle cx="300" cy="430" r="2.6" fill="#5aa6d8"><animate sc-camel-attribute-name="cy" values="428;444;458" dur="1.4s" begin="0.93s" sc-camel-repeat-count="indefinite"></animate><animate sc-camel-attribute-name="r" values="2.4;3;2" dur="1.4s" begin="0.93s" sc-camel-repeat-count="indefinite"></animate><animate sc-camel-attribute-name="opacity" values="0;1;0" dur="1.4s" begin="0.93s" sc-camel-repeat-count="indefinite"></animate></circle>
+              <path d="M372 421 V458" fill="none" stroke="#5aa6d8" stroke-width="1.2" stroke-dasharray="3 9" stroke-linecap="round" opacity="0.45"><animate sc-camel-attribute-name="stroke-dashoffset" values="0;-24" dur="1.6s" sc-camel-repeat-count="indefinite"></animate></path>
+              <circle cx="372" cy="420" r="2.8" fill="#5aa6d8" opacity="0"><animate sc-camel-attribute-name="cy" values="420;420;437;458" sc-camel-key-times="0;.3;.68;1" dur="1.4s" sc-camel-repeat-count="indefinite"></animate><animate sc-camel-attribute-name="r" values="1.2;2.7;2.9;2.1" sc-camel-key-times="0;.3;.68;1" dur="1.4s" sc-camel-repeat-count="indefinite"></animate><animate sc-camel-attribute-name="opacity" values="0;1;1;0" sc-camel-key-times="0;.3;.85;1" dur="1.4s" sc-camel-repeat-count="indefinite"></animate></circle>
+              <circle cx="372" cy="420" r="2.6" fill="#5aa6d8" opacity="0"><animate sc-camel-attribute-name="cy" values="420;420;437;458" sc-camel-key-times="0;.3;.68;1" dur="1.4s" begin="0.47s" sc-camel-repeat-count="indefinite"></animate><animate sc-camel-attribute-name="r" values="1.2;2.7;2.9;2.1" sc-camel-key-times="0;.3;.68;1" dur="1.4s" begin="0.47s" sc-camel-repeat-count="indefinite"></animate><animate sc-camel-attribute-name="opacity" values="0;1;1;0" sc-camel-key-times="0;.3;.85;1" dur="1.4s" begin="0.47s" sc-camel-repeat-count="indefinite"></animate></circle>
+              <circle cx="372" cy="420" r="2.6" fill="#5aa6d8" opacity="0"><animate sc-camel-attribute-name="cy" values="420;420;437;458" sc-camel-key-times="0;.3;.68;1" dur="1.4s" begin="0.93s" sc-camel-repeat-count="indefinite"></animate><animate sc-camel-attribute-name="r" values="1.2;2.7;2.9;2.1" sc-camel-key-times="0;.3;.68;1" dur="1.4s" begin="0.93s" sc-camel-repeat-count="indefinite"></animate><animate sc-camel-attribute-name="opacity" values="0;1;1;0" sc-camel-key-times="0;.3;.85;1" dur="1.4s" begin="0.93s" sc-camel-repeat-count="indefinite"></animate></circle>
             </g>
-            <path d="M276 430 H324 L317 464 H283 Z" fill="#0c1626" stroke="#46566f" stroke-width="1.4"></path>
-            <clipPath id="qBeakC"><path d="M277 431 H323 L316 463 H284 Z"></path></clipPath>
-            <g clip-path="url(#qBeakC)"><rect x="277" y="431" width="46" height="32" fill="#5aa6d8" opacity="0.85" style="{{ beakerFillStyle }}"></rect></g>
-            <text x="300" y="480" text-anchor="middle" font-family="IBM Plex Mono" font-size="8" fill="var(--cap)">{{ qc3BeakerText }}</text>
+            <text x="372" y="480" text-anchor="middle" font-family="IBM Plex Mono" font-size="8" fill="var(--cap)">{{ qc3BeakerText }}</text>
             </sc-if>
 
             <!-- ===== RIGHT CALLOUTS ===== -->
             <g font-family="IBM Plex Sans">
-              <line x1="320" y1="113" x2="392" y2="92" stroke="rgba(95,176,255,.5)" stroke-width="1"></line>
+              <line x1="309" y1="93" x2="392" y2="92" stroke="rgba(95,176,255,.5)" stroke-width="1"></line>
               <circle cx="394" cy="92" r="2.6" fill="#5fb0ff"></circle>
               <text x="402" y="90" font-size="11" font-weight="600" letter-spacing=".4" fill="var(--hdb)">WATER SIDE VALVE</text>
               <text x="402" y="102" font-family="IBM Plex Mono" font-size="8" fill="var(--lbl2)">{{ rsValveText }}</text>
-              <line x1="327" y1="238" x2="392" y2="234" stroke="rgba(231,117,46,.55)" stroke-width="1"></line>
+              <line x1="330" y1="238" x2="392" y2="234" stroke="rgba(231,117,46,.55)" stroke-width="1"></line>
               <circle cx="394" cy="234" r="2.6" fill="#e7752e"></circle>
               <text x="402" y="232" font-size="11" font-weight="600" letter-spacing=".4" fill="var(--acca)">HEATING JACKET</text>
               <foreignObject x="401" y="235" width="150" height="14"><div style="margin:0; font-family:'IBM Plex Mono',ui-monospace,monospace; font-size:8.5px; line-height:1.1; white-space:nowrap; color:var(--acca);">Wrapped around the bottle</div></foreignObject>
-              <line x1="320" y1="387" x2="392" y2="378" stroke="rgba(150,175,210,.45)" stroke-width="1"></line>
-              <circle cx="394" cy="378" r="2.6" fill="#aebccf"></circle>
-              <text x="402" y="376" font-size="11" font-weight="600" letter-spacing=".4" fill="var(--lbl)">SAMPLE VALVE</text>
-              <text x="402" y="388" font-family="IBM Plex Mono" font-size="8" fill="var(--lbl2)">{{ qc3SvText }}</text>
+              <line x1="309" y1="384" x2="392" y2="370" stroke="rgba(150,175,210,.45)" stroke-width="1"></line>
+              <circle cx="394" cy="370" r="2.6" fill="#aebccf"></circle>
+              <text x="402" y="368" font-size="11" font-weight="600" letter-spacing=".4" fill="var(--lbl)">SAMPLE VALVE</text>
+              <text x="402" y="380" font-family="IBM Plex Mono" font-size="8" fill="var(--lbl2)">{{ qc3SvText }}</text>
             </g>
 
             <sc-if value="{{ qcS3 }}" hint-placeholder-val="{{ false }}">
             <!-- ===== STEP 3: hydraulic water vs free water callouts ===== -->
             <g font-family="IBM Plex Sans">
-              <line x1="312" y1="168" x2="392" y2="164" stroke="rgba(95,176,255,.5)" stroke-width="1"></line>
+              <line x1="313" y1="168" x2="392" y2="164" stroke="rgba(95,176,255,.5)" stroke-width="1"></line>
               <circle cx="394" cy="164" r="2.6" fill="#5fb0ff"></circle>
               <text x="402" y="162" font-size="11" font-weight="600" letter-spacing=".4" fill="var(--hdb)">HYDRAULIC WATER</text>
               <text x="402" y="174" font-family="IBM Plex Mono" font-size="8" fill="var(--lbl2)">pump side · above the piston</text>
-              <line x1="312" y1="{{ qc3OilY }}" x2="392" y2="284" stroke="rgba(231,177,90,.55)" stroke-width="1"></line>
+              <line x1="313" y1="{{ qc3OilY }}" x2="392" y2="284" stroke="rgba(231,177,90,.55)" stroke-width="1"></line>
               <circle cx="394" cy="284" r="2.6" fill="#e7b15a"></circle>
               <text x="402" y="282" font-size="11" font-weight="600" letter-spacing=".4" fill="var(--acca)">OIL SAMPLE</text>
               <text x="402" y="294" font-family="IBM Plex Mono" font-size="8" fill="var(--lbl2)">{{ qc3OilSub }}</text>
-              <line x1="312" y1="{{ qc3FwY }}" x2="392" y2="330" stroke="rgba(95,176,255,.5)" stroke-width="1"></line>
+              <line x1="313" y1="{{ qc3FwY }}" x2="392" y2="330" stroke="rgba(95,176,255,.5)" stroke-width="1"></line>
               <circle cx="394" cy="330" r="2.6" fill="#38b6d6"></circle>
               <text x="402" y="328" font-size="11" font-weight="600" letter-spacing=".4" fill="var(--accw)">FREE WATER</text>
               <text x="402" y="340" font-family="IBM Plex Mono" font-size="8" fill="var(--lbl2)">{{ qc3FwSub }}</text>

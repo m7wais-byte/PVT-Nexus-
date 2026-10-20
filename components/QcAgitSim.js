@@ -8,7 +8,7 @@
    Recombination: mix = 0.9 · smooth(rk) while rotating, 0.9 -> 1 while stabilizing.
 
    The bottle is the approved Oil Sample Bottle (equipment/bottle-draw.js frame, bore
-   x -22..22 / y -226..226, 46-unit floating piston, scale 0.5 about the pivot). Step 4 starts
+   x -22..22 / y -226..226, 46-unit floating piston, scale 0.56 about the pivot). Step 4 starts
    and ends upright: the OIL sample above the piston and the hydraulic WATER below it; the
    pump hose is on the side outlet of the lower (driving-side) right-angle valve.
    Screen angle = -ang. Local fills never change: water / piston / oil stay in their own
@@ -27,7 +27,8 @@
     ROCK_MS: 12000,    // process ms for the 3 inversion cycles (x PROCESS_SPEED_MULTIPLIER)
     STAB_MS: 3000,     // process ms stabilizing upright after the last cycle
     N: 3,              // 180° inversion cycles (same as Recombination)
-    PX: 360, PY: 266,  // pivot on the inversion stand (screen coords, viewBox 0 22 900 492)
+    PX: 405, PY: 245,  // pivot on the inversion stand (screen coords, viewBox 0 22 900 492); the swept
+                       // circle (r ~199) clears the readout card, the base plate and the pump
     NB: 28             // free-gas bubbles drawn (visual only, no gas volume is modelled)
   };
   var TOT = CFG.ROCK_MS + CFG.STAB_MS;
@@ -61,7 +62,7 @@
   /* ---------------- bottle interior (approved Oil Sample Bottle frame) ----------------
      Local frame = equipment/bottle-draw.js: bore x -22..22, y -226 (sample end) .. 226 (driving end),
      piston 46 long. At angle 0 the sample (oil) is above the piston and the hydraulic water below it. */
-  var BX0 = -22, BX1 = 22, BT = -226, BB = 226, BP = 46, BUSE = 452 - 46, S2 = 0.5;
+  var BX0 = -22, BX1 = 22, BT = -226, BB = 226, BP = 46, BUSE = 452 - 46, S2 = 0.56;
   function interior(st, wf) {
     var wh = BUSE * clamp(wf, 0, 1), pistBot = BB - wh, pt = pistBot - BP, L = pt - BT, u = st.u, mix = st.mix;
     var Y = function (sv, pad) { return pt - pad - sv * (L - 2 * pad); };      // axial: 0 = piston face, 1 = far (sample-valve) end
@@ -144,11 +145,20 @@
       '<linearGradient id="qAgLight" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffe2a6" stop-opacity="0"/><stop offset=".5" stop-color="#ffe2a6" stop-opacity=".7"/><stop offset="1" stop-color="#ffe2a6" stop-opacity="0"/></linearGradient>' +
       '</defs>';
     var PX = CFG.PX, PY = CFG.PY;
-    // ---- inversion stand (static, behind the bottle) ----
-    s += '<ellipse cx="' + PX + '" cy="468" rx="118" ry="7" fill="rgba(0,0,0,.35)"/>';
-    s += '<rect x="' + (PX - 104) + '" y="456" width="208" height="12" rx="3" fill="url(#qCyl)" stroke="#0a0e16" stroke-width="1.1"/>';
-    s += '<path d="M' + (PX - 60) + ',456 L' + (PX - 10) + ',' + PY + ' L' + (PX + 10) + ',' + PY + ' L' + (PX + 60) + ',456 Z" fill="url(#qCyl)" stroke="#0a0e16" stroke-width="1" opacity=".9"/>';
-    s += '<circle cx="' + PX + '" cy="' + PY + '" r="24" fill="url(#qMetal)" stroke="#0a0e16" stroke-width="1.2"/>';
+    // ---- inversion stand (static, behind the bottle): base plate on levelling feet, twin-leg
+    //      column with a lightening window, bearing housing at the pivot (same styling as the
+    //      Validation clamp stands, BottleArt.stand) ----
+    var K = 'stroke="#0a0e16"';
+    s += '<ellipse cx="' + PX + '" cy="468" rx="112" ry="6" fill="rgba(0,0,0,.3)"/>';
+    [PX - 92, PX + 84].forEach(function (fx) { s += '<rect x="' + fx + '" y="465" width="8" height="5" rx="1" fill="#1d2430" ' + K + ' stroke-width=".6"/>'; });
+    s += '<rect x="' + (PX - 100) + '" y="455" width="200" height="11" rx="3" fill="url(#qSteelV)" ' + K + ' stroke-width="1"/>';
+    s += '<rect x="' + (PX - 96) + '" y="456.5" width="192" height="1.6" rx=".8" fill="#fff" opacity=".35"/>';
+    s += '<path d="M' + (PX - 46) + ',455 L' + (PX - 15) + ',' + (PY + 20) + ' L' + (PX + 15) + ',' + (PY + 20) + ' L' + (PX + 46) + ',455 Z ' +
+      'M' + (PX - 24) + ',443 L' + (PX - 7) + ',' + (PY + 52) + ' L' + (PX + 7) + ',' + (PY + 52) + ' L' + (PX + 24) + ',443 Z" fill="url(#qSteelD)" fill-rule="evenodd" ' + K + ' stroke-width="1"/>';
+    s += '<rect x="' + (PX - 52) + '" y="443" width="104" height="12" rx="2.5" fill="url(#qSteelD)" ' + K + ' stroke-width=".9"/>';
+    s += '<circle cx="' + PX + '" cy="' + PY + '" r="26" fill="url(#qSteelD)" ' + K + ' stroke-width="1.2"/>';
+    s += '<circle cx="' + PX + '" cy="' + PY + '" r="18" fill="none" stroke="#0a0e16" stroke-width=".8" opacity=".55"/>';
+    for (var bi = 0; bi < 6; bi++) { var ba = bi * Math.PI / 3; s += '<circle cx="' + r1(PX + 22 * Math.cos(ba)) + '" cy="' + r1(PY + 22 * Math.sin(ba)) + '" r="1.8" fill="#1f2630" stroke="#8b97a8" stroke-width=".5"/>'; }
     // ---- pressure pump (stationary), same drawing as the Restoration transfer pump ----
     var ledOn = true;
     s += '<ellipse cx="765" cy="466" rx="86" ry="7" fill="rgba(0,0,0,.32)"/>';

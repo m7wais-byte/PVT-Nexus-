@@ -1052,11 +1052,16 @@
     var x = STAND.x, y = STAND.py;
     var o = '<g opacity="' + r1(w.stand * 100) / 100 + '">';
     o += '<ellipse cx="' + x + '" cy="618" rx="130" ry="7" fill="rgba(0,0,0,.18)"/>';
+    [x - 112, x + 104].forEach(function (fx) { o += '<rect x="' + fx + '" y="614" width="8" height="5" rx="1" fill="#1d2430" stroke="#0a0e16" stroke-width=".6"/>'; });   // levelling feet
     o += '<rect x="' + (x - 120) + '" y="604" width="240" height="12" rx="3" fill="url(#rcMetal)" stroke="#0a0e16"/>';
+    o += '<rect x="' + (x - 116) + '" y="605.5" width="232" height="1.6" rx=".8" fill="#fff" opacity=".35"/>';
     // two uprights either side of the bottle, carrying the pivot shaft
     o += '<rect x="' + (x - 78) + '" y="' + (y - 6) + '" width="12" height="' + (610 - y) + '" fill="url(#rcMetalH)" stroke="#0a0e16"/>';
     o += '<rect x="' + (x + 66) + '" y="' + (y - 6) + '" width="12" height="' + (610 - y) + '" fill="url(#rcMetalH)" stroke="#0a0e16"/>';
     o += '<rect x="' + (x - 78) + '" y="' + (y - 4) + '" width="156" height="8" rx="3" fill="url(#rcMetal)" stroke="#0a0e16" opacity=".9"/>';
+    // bearing blocks carrying the pivot shaft + gussets at the foot of each upright
+    [x - 82, x + 62].forEach(function (bx) { o += '<rect x="' + bx + '" y="' + (y - 12) + '" width="20" height="24" rx="3" fill="url(#rcMetalH)" stroke="#0a0e16"/>'; });
+    [[x - 66, 1], [x + 66, -1]].forEach(function (g) { o += '<path d="M' + g[0] + ',604 L' + g[0] + ',584 L' + (g[0] + 14 * g[1]) + ',604 Z" fill="url(#rcMetalH)" stroke="#0a0e16" stroke-width=".8"/>'; });
     o += T(x + 120, 632, 'INVERSION STAND', { a: 'end', m: 1, s: 9, ls: .6, c: 'var(--mut)' });
     return o + '</g>';
   }

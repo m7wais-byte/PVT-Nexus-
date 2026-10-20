@@ -1,4 +1,6 @@
 /* screen: showXfer  (21.4 KB) */
+/* Sample Transfer support stand: rod left, fork ledge under the lower cap, clamp on the barrel (bottle centre 300, 300, scale 0.55) */
+var MX_STAND = BottleArt.stand('mx', { x: 300, rodX: 204, ground: 512, top: 196, clamps: [{ y: 268, h: 19 }], rest: { y: 438, h: 22 }, baseL: 168, baseR: 346 });
 DC.slot('showXfer', `<sc-if value="{{ showXfer }}" hint-placeholder-val="{{ false }}">
     <div data-screen-label="Module 01b — Bottom Hole Sample Transfer" class="pg pg-stack">
 
@@ -97,41 +99,42 @@ DC.slot('showXfer', `<sc-if value="{{ showXfer }}" hint-placeholder-val="{{ fals
             <text x="600" y="156" text-anchor="middle" font-family="IBM Plex Mono" font-size="10" fill="var(--mut)">~450 cc</text>
 
             <!-- ===== TRANSFER LINE: MPSR FLUID SIDE -> SIDE PORT OF THE BOTTLE SAMPLE VALVE (approved right-angle valve) ===== -->
-            <path d="M410 92 H340 V180.3 H323.5" fill="none" stroke="#0a0e16" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"></path>
-            <path d="M410 92 H340 V180.3 H323.5" fill="none" stroke="url(#mxPipe)" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"></path>
+            <path d="M410 92 H346 V145.5 H326.4" fill="none" stroke="#0a0e16" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"></path>
+            <path d="M410 92 H346 V145.5 H326.4" fill="none" stroke="url(#mxPipe)" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"></path>
             <!-- sample front: starts at the MPSR outlet, travels through the line and line valve to the bottle sample valve -->
-            <path d="M410 92 H340 V180.3 H323.5" fill="none" stroke="#e7b15a" stroke-width="2.8" stroke-linejoin="round" stroke-dasharray="179 179" style="{{ mxXferFrontStyle }}"></path>
-            <mask id="mxXferMask" sc-camel-mask-units="userSpaceOnUse" x="0" y="0" width="900" height="545"><path d="M410 92 H340 V180.3 H323.5" fill="none" stroke="#ffffff" stroke-width="10" stroke-linejoin="round" stroke-dasharray="179 179" style="{{ mxXferFrontStyle }}"></path></mask>
-            <path d="M410 92 H340 V180.3 H323.5" fill="none" stroke="#fff1cf" stroke-width="2.2" stroke-dasharray="6 16" stroke-linecap="round" stroke-linejoin="round" mask="url(#mxXferMask)" style="{{ mxXferPulseStyle }}"><animate sc-camel-attribute-name="stroke-dashoffset" values="0;-22" dur="0.26s" sc-camel-repeat-count="indefinite"></animate></path>
+            <path d="M410 92 H346 V145.5 H326.4" fill="none" stroke="#e7b15a" stroke-width="2.8" stroke-linejoin="round" stroke-dasharray="138 138" style="{{ mxXferFrontStyle }}"></path>
+            <mask id="mxXferMask" sc-camel-mask-units="userSpaceOnUse" x="0" y="0" width="900" height="545"><path d="M410 92 H346 V145.5 H326.4" fill="none" stroke="#ffffff" stroke-width="10" stroke-linejoin="round" stroke-dasharray="138 138" style="{{ mxXferFrontStyle }}"></path></mask>
+            <path d="M410 92 H346 V145.5 H326.4" fill="none" stroke="#fff1cf" stroke-width="2.2" stroke-dasharray="6 16" stroke-linecap="round" stroke-linejoin="round" mask="url(#mxXferMask)" style="{{ mxXferPulseStyle }}"><animate sc-camel-attribute-name="stroke-dashoffset" values="0;-22" dur="0.26s" sc-camel-repeat-count="indefinite"></animate></path>
             <polygon points="372,92 384,86 384,98" fill="#e7b15a" style="{{ mxArrowX1Style }}"></polygon>
-            <polygon points="340,168 334,156 346,156" fill="#e7b15a" style="{{ mxArrowX2Style }}"></polygon>
-            <rect x="328" y="118" width="24" height="16" rx="3" fill="url(#mxMetal)" stroke="#0a0e16" stroke-width="1"></rect>
-            <circle cx="340" cy="108" r="9" fill="#0c1626" stroke="{{ mxValveRing }}" stroke-width="2.2" style="transition:stroke .3s ease;"></circle>
-            <line x1="332.5" y1="108" x2="347.5" y2="108" stroke="#9fb6d6" stroke-width="1.8" stroke-linecap="round" style="{{ mxValveHandleStyle }}"></line>
-            <text x="326" y="112" text-anchor="end" font-family="IBM Plex Mono" font-size="9.5" letter-spacing=".5" fill="var(--cap2)">{{ mxValveText }}</text>
+            <polygon points="346,141 340,131 352,131" fill="#e7b15a" style="{{ mxArrowX2Style }}"></polygon>
+            <rect x="334" y="112" width="24" height="14" rx="3" fill="url(#mxMetal)" stroke="#0a0e16" stroke-width="1"></rect>
+            <circle cx="346" cy="102" r="9" fill="#0c1626" stroke="{{ mxValveRing }}" stroke-width="2.2" style="transition:stroke .3s ease;"></circle>
+            <line x1="338.5" y1="102" x2="353.5" y2="102" stroke="#9fb6d6" stroke-width="1.8" stroke-linecap="round" style="{{ mxValveHandleStyle }}"></line>
+            <text x="332" y="95" text-anchor="end" font-family="IBM Plex Mono" font-size="9.5" letter-spacing=".5" fill="var(--cap2)">{{ mxValveText }}</text>
             <text x="376" y="72" text-anchor="middle" font-family="IBM Plex Mono" font-size="10" letter-spacing="1" fill="var(--cap2)">TRANSFER LINE</text>
 
             <!-- ===== SPS/PDS BOTTLE = approved Oil Sample Bottle, upright: sample side up, driving (water) side down =====
-                 centre (300, 318), scale 0.49; Main.js fills / piston are in the bottle's bore units -->
-            <ellipse cx="300" cy="512" rx="66" ry="6" fill="rgba(0,0,0,.35)"></ellipse>
-            <rect x="236" y="500" width="128" height="12" rx="4" fill="url(#mxMetal)" stroke="#0a0e16" stroke-width="1"></rect>
-            ${BottleArt.oil('mx', { x: 300, y: 318, s: 0.49, bd: 'oil', ctx: 'SPS/PDS sample bottle · receiving the transferred sample',
+                 centre (300, 300), scale 0.55, valves face right; Main.js fills / piston are in the bottle's bore units.
+                 Support stand (BottleArt.stand): lower cap rests on a fork ledge, one clamp on the barrel. -->
+            ${MX_STAND.back}
+            ${BottleArt.oil('mx', { x: 300, y: 300, s: 0.55, bd: 'oil', ctx: 'SPS/PDS sample bottle · receiving the transferred sample',
               sample: '{{ mxBotFluidStyle }}', drive: '{{ mxBotWaterStyle }}', piston: '{{ mxBotPistonStyle }}',
               ringT: '{{ mxValveRing }}', needleT: '{{ mxBotNeedleT }}', ringB: '{{ mxValveRing }}', needleB: '{{ mxBotNeedleT }}' })}
-            <text x="262" y="300" text-anchor="end" font-family="IBM Plex Sans" font-size="13" font-weight="600" letter-spacing=".4" fill="var(--lbl)">SPS/PDS</text>
-            <text x="262" y="316" text-anchor="end" font-family="IBM Plex Mono" font-size="10" fill="var(--mut)">~800 cc</text>
+            ${MX_STAND.front}
+            <text x="186" y="300" text-anchor="end" font-family="IBM Plex Sans" font-size="13" font-weight="600" letter-spacing=".4" fill="var(--lbl)">SPS/PDS</text>
+            <text x="186" y="316" text-anchor="end" font-family="IBM Plex Mono" font-size="10" fill="var(--mut)">~800 cc</text>
 
-            <!-- displaced water out of the driving-side valve side port (323.5, 455.7) to the receiver -->
-            <path d="M323.5 455.7 H396 V470" fill="none" stroke="#0a0e16" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"></path>
-            <path d="M323.5 455.7 H396 V470" fill="none" stroke="url(#mxPipe)" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round"></path>
+            <!-- displaced water out of the driving-side valve side port (326.4, 454.5) to the receiver -->
+            <path d="M326.4 454.5 H396 V470" fill="none" stroke="#0a0e16" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"></path>
+            <path d="M326.4 454.5 H396 V470" fill="none" stroke="url(#mxPipe)" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round"></path>
             <!-- displaced water front: starts at the bottle water port, travels the lower line to the receiver -->
-            <path d="M323.5 455.7 H396 V470" fill="none" stroke="#5aa6d8" stroke-width="2.4" stroke-linejoin="round" stroke-dasharray="90.8 90.8" style="{{ mxWoutFrontStyle }}"></path>
-            <mask id="mxWoutMask" sc-camel-mask-units="userSpaceOnUse" x="0" y="0" width="900" height="545"><path d="M323.5 455.7 H396 V470" fill="none" stroke="#ffffff" stroke-width="9" stroke-linejoin="round" stroke-dasharray="90.8 90.8" style="{{ mxWoutFrontStyle }}"></path></mask>
-            <path d="M323.5 455.7 H396 V470" fill="none" stroke="#d6eeff" stroke-width="1.8" stroke-dasharray="5 13" stroke-linecap="round" stroke-linejoin="round" mask="url(#mxWoutMask)" style="{{ mxWoutPulseStyle }}"><animate sc-camel-attribute-name="stroke-dashoffset" values="0;-18" dur="0.26s" sc-camel-repeat-count="indefinite"></animate></path>
-            <polygon points="352,455.7 342,450.7 342,460.7" fill="#5aa6d8" style="{{ mxArrowWStyle }}"></polygon>
-            <circle cx="372" cy="455.7" r="12" fill="url(#mxGauge)" stroke="#0a0e16" stroke-width="1.2"></circle>
-            <circle cx="372" cy="455.7" r="8.6" fill="none" stroke="rgba(174,188,207,.45)" stroke-width="0.9"></circle>
-            <line x1="372" y1="455.7" x2="378" y2="449.7" stroke="#8fd0ff" stroke-width="1.3" stroke-linecap="round"></line>
+            <path d="M326.4 454.5 H396 V470" fill="none" stroke="#5aa6d8" stroke-width="2.4" stroke-linejoin="round" stroke-dasharray="85.1 85.1" style="{{ mxWoutFrontStyle }}"></path>
+            <mask id="mxWoutMask" sc-camel-mask-units="userSpaceOnUse" x="0" y="0" width="900" height="545"><path d="M326.4 454.5 H396 V470" fill="none" stroke="#ffffff" stroke-width="9" stroke-linejoin="round" stroke-dasharray="85.1 85.1" style="{{ mxWoutFrontStyle }}"></path></mask>
+            <path d="M326.4 454.5 H396 V470" fill="none" stroke="#d6eeff" stroke-width="1.8" stroke-dasharray="5 13" stroke-linecap="round" stroke-linejoin="round" mask="url(#mxWoutMask)" style="{{ mxWoutPulseStyle }}"><animate sc-camel-attribute-name="stroke-dashoffset" values="0;-18" dur="0.26s" sc-camel-repeat-count="indefinite"></animate></path>
+            <polygon points="352,454.5 342,449.5 342,459.5" fill="#5aa6d8" style="{{ mxArrowWStyle }}"></polygon>
+            <circle cx="372" cy="454.5" r="12" fill="url(#mxGauge)" stroke="#0a0e16" stroke-width="1.2"></circle>
+            <circle cx="372" cy="454.5" r="8.6" fill="none" stroke="rgba(174,188,207,.45)" stroke-width="0.9"></circle>
+            <line x1="372" y1="454.5" x2="378" y2="448.5" stroke="#8fd0ff" stroke-width="1.3" stroke-linecap="round"></line>
             <rect x="380" y="472" width="32" height="40" rx="3" fill="rgba(180,210,240,.06)" stroke="rgba(174,188,207,.5)" stroke-width="1"></rect>
             <rect x="382" y="474" width="28" height="36" fill="url(#mxWater)" opacity=".85" style="{{ mxBeakerStyle }}"></rect>
             <g stroke="rgba(220,235,250,.4)" stroke-width="0.8"><line x1="380" y1="482" x2="388" y2="482"></line><line x1="380" y1="492" x2="388" y2="492"></line><line x1="380" y1="502" x2="388" y2="502"></line></g>
@@ -139,11 +142,11 @@ DC.slot('showXfer', `<sc-if value="{{ showXfer }}" hint-placeholder-val="{{ fals
 
             <!-- ===== CALLOUTS ===== -->
             <g font-family="IBM Plex Sans">
-              <line x1="324" y1="186" x2="420" y2="214" stroke="rgba(231,177,90,.45)" stroke-width="1"></line>
+              <line x1="309" y1="150" x2="420" y2="214" stroke="rgba(231,177,90,.45)" stroke-width="1"></line>
               <circle cx="422" cy="214" r="2.6" fill="#e7b15a"></circle>
               <text x="430" y="218" font-size="12" font-weight="600" letter-spacing=".3" fill="var(--lbl)">Sample valve</text>
               <text x="430" y="231" font-family="IBM Plex Mono" font-size="9.5" fill="var(--mut)">right-angle · sample in</text>
-              <line x1="324" y1="450" x2="420" y2="414" stroke="rgba(90,166,216,.45)" stroke-width="1"></line>
+              <line x1="309" y1="452" x2="420" y2="414" stroke="rgba(90,166,216,.45)" stroke-width="1"></line>
               <circle cx="422" cy="414" r="2.6" fill="#5aa6d8"></circle>
               <text x="430" y="418" font-size="12" font-weight="600" letter-spacing=".3" fill="var(--accb4)">Driving-fluid valve</text>
               <text x="430" y="431" font-family="IBM Plex Mono" font-size="9.5" fill="var(--mut)">water out to the receiver</text>

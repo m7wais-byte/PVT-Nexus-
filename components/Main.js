@@ -1645,7 +1645,7 @@ const hi_d = (on) => on ? 'opacity:1; transition:opacity .5s ease;' : 'opacity:.
     const mxArrowX2Style = mxArrowStyle(mxF2, 1);
     const mxArrowWStyle = mxArrowStyle(mxF3, 28.5 / 86.8);
     // valve handle: across the pipe = closed, in line with the pipe = open
-    const mxValveHandleStyle = `transform:rotate(${(90 * mxValve).toFixed(1)}deg); transform-box:view-box; transform-origin:340px 108px; transition:transform .12s linear;`;
+    const mxValveHandleStyle = `transform:rotate(${(90 * mxValve).toFixed(1)}deg); transform-box:view-box; transform-origin:346px 102px; transition:transform .12s linear;`;
     const mxValveRing = mxValve >= 1 ? '#46d39a' : '#8fa3c2';
     const mxValveText = mxValve >= 1 ? 'VALVE · OPEN' : 'VALVE · CLOSED';
 
@@ -2130,7 +2130,7 @@ const hi_d = (on) => on ? 'opacity:1; transition:opacity .5s ease;' : 'opacity:.
     const pressurised = cStep >= 5 || cStage >= 5;
 
     // drawing: approved Oil Sample Bottle bore y -226..226 (452 units) with a 46-unit floating piston -> 406 units
-    // of fluid, drawn at scale 0.41. Oil above the piston, water below it; the split comes from the shared
+    // of fluid, drawn at scale 0.47. Oil above the piston, water below it; the split comes from the shared
     // bottleModel(), which subtracts the sample drawn to the PVT cell as the transfer pump empties (100 -> 18 mL).
     const cBot = this.bottleModel();
     const C_BORE = 452, C_PIST = 46, C_USE = C_BORE - C_PIST;
@@ -2140,7 +2140,7 @@ const hi_d = (on) => on ? 'opacity:1; transition:opacity .5s ease;' : 'opacity:.
     const chargeWaterH = 226 - chargeWaterY;
     // bottle piston, line fluid and Pump A piston all track the same tween — keep their transitions identical
     const chargePistonStyle = 'transform:translateY(' + pistonDY.toFixed(1) + 'px); transition:transform .12s linear;';
-    const chargePistonLabelStyle = 'transform:translateY(' + (pistonDY * 0.41).toFixed(1) + 'px); transition:transform .12s linear;';
+    const chargePistonLabelStyle = 'transform:translateY(' + (pistonDY * 0.47).toFixed(1) + 'px); transition:transform .12s linear;';
 
     // fluid front along (585,60)->(770,60)->(770,190)->(1030,190)->(1030,215)
     // during the Pump A charge (stage 6) the head sweeps the whole path repeatedly,
@@ -2709,11 +2709,11 @@ const hi_d = (on) => on ? 'opacity:1; transition:opacity .5s ease;' : 'opacity:.
     // inverted bottle: water on top, piston mid, oil below. Injecting water drives the piston down.
     // pressure compresses (piston down); heating to 95 C expands the oil, easing the piston a little
     // back up into the water side. bleeding free water off the oil side lets it settle down again.
-    // Drawing frame = approved Oil Sample Bottle bore, screen-aligned, centre (300, 250), scale 0.49:
+    // Drawing frame = approved Oil Sample Bottle bore, screen-aligned, centre (300, 238), scale 0.55:
     // bore y -226..226 (452 units) with a 46-unit floating piston, so the two columns share 406 units.
     // Split, piston travel and free-water band all come from the shared bottleModel() (drawing only).
     const qcBot = this.bottleModel();
-    const QC_BORE = 452, QC_PIST = 46, QC_USE = QC_BORE - QC_PIST, QC_T = -226, QC_B = 226, QC_CY = 250, QC_S = 0.49;
+    const QC_BORE = 452, QC_PIST = 46, QC_USE = QC_BORE - QC_PIST, QC_T = -226, QC_B = 226, QC_CY = 238, QC_S = 0.55;
     const qcPistFrac = qcBot.waterFrac;
     const qcPistEase = ((qcS2 || qcS3) && qRunning) ? 'transform .12s linear' : 'transform calc(1s * var(--pm, 1)) ease-out';   // restoration: track the clock
     const qcWaterStyle = `transform:scaleY(${((QC_USE / QC_BORE) * qcPistFrac).toFixed(4)}); transform-box:fill-box; transform-origin:top; transition:${qcPistEase};`;
