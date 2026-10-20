@@ -6,11 +6,12 @@ var C_STAND = (function () {
   // prototype units at bottle scale 0.5 -> here the bottle is drawn at 0.47 (factor 0.94)
   var x = 562.44, y = 330, k = 0.94, rodX = x - 52 * k, top = y - (222 + 45) * k + 45 * k;
   var g = 'url(#ccSteelD)', K = 'stroke="#2a3443" stroke-width=".7"';
-  var back = '<rect x="' + (x - 70 * k).toFixed(1) + '" y="558" width="' + (140 * k).toFixed(1) + '" height="8" rx="2" fill="url(#ccSteelV)" stroke="#2a3443" stroke-width=".8"></rect>' +
-    '<rect x="' + rodX.toFixed(1) + '" y="' + (y - 222 * k).toFixed(1) + '" width="' + (6 * k).toFixed(1) + '" height="' + (558 - (y - 222 * k)).toFixed(1) + '" fill="' + g + '" ' + K + '></rect>' +
+  // base plate drawn after the pump line, which runs along the floor behind it (around the rod, never across it)
+  var plate = '<rect x="' + (x - 70 * k).toFixed(1) + '" y="558" width="' + (140 * k).toFixed(1) + '" height="8" rx="2" fill="url(#ccSteelV)" stroke="#2a3443" stroke-width=".8"></rect>';
+  var back = '<rect x="' + rodX.toFixed(1) + '" y="' + (y - 222 * k).toFixed(1) + '" width="' + (6 * k).toFixed(1) + '" height="' + (558 - (y - 222 * k)).toFixed(1) + '" fill="' + g + '" ' + K + '></rect>' +
     [y - 92 * k, y + 88 * k].map(function (cy) { return '<rect x="' + rodX.toFixed(1) + '" y="' + (cy - 4 * k).toFixed(1) + '" width="' + (34 * k).toFixed(1) + '" height="' + (8 * k).toFixed(1) + '" rx="2" fill="' + g + '" ' + K + '></rect>'; }).join('');
   void top;
-  return { back: back, front: '' };
+  return { back: back, front: '', plate: plate };
 })();
 DC.slot('showTest', `<sc-if value="{{ showTest }}" hint-placeholder-val="{{ false }}">
     <div data-screen-label="Module 03 — PVT Testing + GC" style="display:flex; flex-direction:column; height:var(--page-h); overflow:hidden;">
@@ -143,12 +144,13 @@ DC.slot('showTest', `<sc-if value="{{ showTest }}" hint-placeholder-val="{{ fals
               <foreignObject x="327" y="523" width="141" height="15"><div style="margin:0; display:flex; align-items:center; justify-content:center; height:100%; white-space:nowrap; line-height:1.1; font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:10.5px; color:{{ chargePumpLabelColor }};">{{ chargePumpLabel }}</div></foreignObject>
               <text x="397.5" y="550" text-anchor="middle" font-family="IBM Plex Sans" font-size="10" fill="var(--mut)" paint-order="stroke" stroke="var(--panel)" stroke-width="3" stroke-linejoin="round">connected to water side</text>
 
-              <!-- pump -> bottle driving side (physical, solid bright tubing) -->
-              <path d="M459 458 H472 V540 H600 V462.1 H585" fill="none" stroke="#0a0e16" stroke-width="8" stroke-linecap="round"></path>
-              <path d="M459 458 H472 V540 H600 V462.1 H585" fill="none" stroke="url(#c-metal)" stroke-width="4" stroke-linecap="round"></path>
-              <path d="M459 458 H472 V540 H600 V462.1 H585" fill="none" stroke="#46e0ff" stroke-width="2.4" stroke-linecap="round" style="{{ pumpLineFluidStyle }}"></path>
-              <path d="M459 458 H472 V540 H600 V462.1 H585" fill="none" stroke="#eaf9ff" stroke-width="2" stroke-linecap="round" stroke-dasharray="2 10" style="{{ chargePumpFlowStyle }}"></path>
-              <path d="M520 534 l12 6 l-12 6 Z" fill="#46e0ff" style="{{ pumpLineFluidStyle }}"></path>
+              <!-- pump -> bottle driving side (physical, solid bright tubing): down to the floor, behind the stand base plate, up to the bottle -->
+              <path d="M459 458 H472 V562 H600 V462.1 H585" fill="none" stroke="#0a0e16" stroke-width="8" stroke-linecap="round"></path>
+              <path d="M459 458 H472 V562 H600 V462.1 H585" fill="none" stroke="url(#c-metal)" stroke-width="4" stroke-linecap="round"></path>
+              <path d="M459 458 H472 V562 H600 V462.1 H585" fill="none" stroke="#46e0ff" stroke-width="2.4" stroke-linecap="round" style="{{ pumpLineFluidStyle }}"></path>
+              <path d="M459 458 H472 V562 H600 V462.1 H585" fill="none" stroke="#eaf9ff" stroke-width="2" stroke-linecap="round" stroke-dasharray="2 10" style="{{ chargePumpFlowStyle }}"></path>
+              <path d="M466 496 l6 12 l6 -12 Z" fill="#46e0ff" style="{{ pumpLineFluidStyle }}"></path>
+              ${C_STAND.plate}
               <text x="636" y="530" text-anchor="start" font-family="IBM Plex Mono" font-size="11" letter-spacing=".5" fill="var(--cap2)">Pump Line</text>
 
               <!-- bottle valve on the bottle outlet riser (drives vBottle; same look as the cell valve) -->
@@ -303,6 +305,7 @@ DC.slot('showTest', `<sc-if value="{{ showTest }}" hint-placeholder-val="{{ fals
               <foreignObject x="866" y="145.5" width="164" height="14"><div style="margin:0; display:flex; align-items:center; height:100%; white-space:nowrap; line-height:1.1; font-family:'IBM Plex Mono',ui-monospace,monospace;justify-content:center;font-size:9px; letter-spacing:.3px; color:var(--btnt);">AGITATING&nbsp;{{ agDirText }}&nbsp;· 10 cc/min</div></foreignObject>
               </sc-if>
               <text x="948" y="100" text-anchor="middle" font-family="IBM Plex Sans" font-size="18" font-weight="600" fill="var(--txt)">PVT Cell</text>
+              ${PVTCellArt.pill(996, 86, 'Charge · sample from the SPS/PDS bottle enters at Port L')}
               <foreignObject x="828" y="72" width="240" height="14"><div style="margin:0; display:flex; align-items:center; height:100%; white-space:nowrap; line-height:1.1; font-family:'IBM Plex Mono',ui-monospace,monospace;justify-content:center;font-size:10px; letter-spacing:.8px; overflow:hidden; color:{{ cellStatusColor }};">{{ cellStateShort }}</div></foreignObject>
                           </svg>
             </div>
@@ -327,6 +330,7 @@ DC.slot('showTest', `<sc-if value="{{ showTest }}" hint-placeholder-val="{{ fals
                 <div style="display:flex; align-items:baseline; gap:8px; flex-wrap:wrap;">
                   <h2 class="pg-title">Flash Process</h2>
                   <span style="font-family:'IBM Plex Mono'; font-size:10px; letter-spacing:.6px; padding:3px 8px; border-radius:6px; background:var(--chipbg); border:1px solid var(--line2); color:var(--chipt); white-space:nowrap;">{{ valSrcContext }}</span>
+                  <button type="button" class="bd-btn bd-inline" data-cd-open="" data-cd-ctx="Flash · sample leaves Pump A through Port R to the flash unit">Cell Details</button>
                 </div>
                 <div class="pg-desc" style="margin-top:1px;">Vacuum, charge helium, flash 50 cc from Pump A — oil to the glass, gas to the gasometer and balloon</div>
               </div>

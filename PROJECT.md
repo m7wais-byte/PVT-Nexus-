@@ -23,6 +23,7 @@ data/report-data.js     Final Report data set (window.PVT_REPORT) - all report t
 
 components/
   PVTCellArt.js         the approved shared PVT cell drawing (see "PVT Cell — approved shared design")
+  CellDetails.js        "Cell Details" overlay for the approved PVT cell (Exterior / Cutaway / Plumbing)
   Main.js               app shell markup + ALL process logic (41 methods)
   StageDiffLib.js       differential liberation
   StageSeparator.js     separator test (rebuilt 2026-09-30) - see "Separator Test" section below
@@ -254,6 +255,11 @@ navigation entry stay removed. Sources and assumptions: `equipment/MRMS-SPMC-SOU
   2D / 3D, exterior / cutaway, upright / horizontal, labels, light background, parts, camera controls; 3D imported
   on first use and destroyed on close. Opening calls `PC.hold(true)` like Bottle Details; Back to Transfer
   returns to the same step and quantities.
+- **Cell Details** (`components/CellDetails.js`): any `#app [data-cd-open]` (a `bd-btn` in the cell heading, or
+  `PVTCellArt.pill()` in the drawing on Charge and Two-Phase Viscosity) opens one shared overlay on the approved cell:
+  Exterior / Cutaway (complete device with drives, stand, computer, controller, signal cable) and Plumbing (built-in
+  routing, marked as a schematic assumption). Labels and parts list; no live readings, valve states or prototype
+  numbers. Opening calls `PC.hold(true, true)`: the procedure pauses, and on close it resumes only if it was running.
 - The 450 cc transfer volume, pressures, temperatures, timing, valve sequence and step order are unchanged.
   **Open modelling issue:** 450 cc transferred vs the documented 250 cm³ SPMC-T sample (see MRMS-SPMC-SOURCES.md).
 `equipment/build-preview.py OUT.html` bundles the whole app into one file for a hosted review preview.

@@ -814,6 +814,7 @@ DC.define('StageSeparator', {
           <div style="font-size:10px; color:var(--mut); margin-top:1px;">{{ dlnTitleSub }}</div>
         </div>
         <div style="flex:1 1 10px;"></div>
+        <button type="button" class="bd-btn bd-inline" data-cd-open="" data-cd-ctx="Separator Test · sample inlet at Port L, outlet at Port R">Cell Details</button>
         <span style="display:inline-flex; align-items:center; padding:3px 10px; border-radius:999px; background:{{ dlnTagBg }}; border:1px solid {{ dlnTagBd }}; font-family:'IBM Plex Mono'; font-size:10px; letter-spacing:.5px; color:{{ dlnTagCol }}; white-space:nowrap;">{{ dlnTag }}</span>
       </div>
       <svg viewBox="{{ dlnVb }}" preserveAspectRatio="xMidYMid meet" style="display:block; width:100%; flex:1 1 auto; min-height:0; margin-top:4px;">

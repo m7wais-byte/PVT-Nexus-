@@ -810,6 +810,7 @@ DC.define('StagePVTest', {
         <div style="{{ pvCellColStyle }}">
           <div style="display:flex; align-items:center; justify-content:center; gap:8px; flex:0 0 auto;">
             <span style="font-size:15px; font-weight:700; color:var(--txt); letter-spacing:-.2px; white-space:nowrap;">PVT Cell</span>
+            <button type="button" class="bd-btn bd-inline" data-cd-open="" data-cd-ctx="PV / Bsat · closed cell, Pump A open to the pressure sensor">Cell Details</button>
             <span style="display:inline-flex; align-items:center; padding:2px 9px; border-radius:999px; background:{{ pvCellTagBg }}; border:1px solid {{ pvCellTagBorder }}; font-family:'IBM Plex Mono'; font-size:9.5px; letter-spacing:.5px; color:{{ pvCellTagColor }}; white-space:nowrap;">{{ pvCellTag }}</span>
           </div>
           <svg viewBox="735 96 628 470" preserveAspectRatio="xMidYMid meet" style="display:block; width:100%; height:100%; flex:1 1 auto; min-height:0;">

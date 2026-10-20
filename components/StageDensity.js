@@ -557,6 +557,7 @@ DC.define('StageDensity', {
       <div style="flex:0 0 auto; display:flex; align-items:baseline; gap:10px; min-width:0;">
         <div style="font-size:12.5px; font-weight:600; color:var(--txt); white-space:nowrap;">Density Measurement Setup</div>
         <div style="font-family:'IBM Plex Mono',ui-monospace,monospace; font-size:9px; letter-spacing:.5px; color:var(--mut); white-space:nowrap;">PVT CELL &#8594; DENSITY COIL &#8594; BALANCE</div>
+        <button type="button" class="bd-btn" data-cd-open="" data-cd-ctx="Direct Density · sample flows from Port R to the density coil">Cell Details</button>
       </div>
       <div style="font-family:'IBM Plex Mono',ui-monospace,monospace; font-size:9.5px; letter-spacing:.3px; line-height:1.35; color:{{ dnActionColor }}; margin-top:3px; padding:4px 8px; border-radius:6px; background:var(--icard); border:1px solid var(--line); flex:0 0 auto; min-height:22px;">{{ dnActionText }}</div>
       <svg viewBox="700 92 724 482" preserveAspectRatio="xMidYMid meet" style="display:block; width:100%; height:100%; flex:1 1 auto; min-height:0;">

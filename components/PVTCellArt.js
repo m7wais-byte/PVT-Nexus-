@@ -122,6 +122,7 @@
 
   // OPEN / CLOSED indication (ring, cutaway seat bar, tag); no operating mechanism is implied
   function vstate(o, k, x, ty, cut) {
+    if (o.state === false) return { ring: '0', seat: '0', tag: '' };   // general view (Cell Details): no valve state shown
     var on = (o.valves || {})[k];
     if (on == null) on = o.raw ? false : 'false';   // unused valve: shown closed
     var ring = live(o, on, F.on(['1', '0'])), seat = live(o, on, F.on(['0', '1']));
@@ -329,7 +330,17 @@
     return '<g fill="none" stroke-linecap="round"><path d="' + d + '" stroke="#1e2733" stroke-width="3.2"/><path d="' + d + '" stroke="#47546a" stroke-width="1" opacity=".7"/></g>';
   }
 
+  /* "Cell Details" pill drawn in a page SVG (opens components/CellDetails.js); same look as the Bottle Details pill */
+  function pill(x, y, ctx, sc) {
+    var w = 96, s = sc || 1;
+    return '<g class="bd-pill" data-cd-open=""' + (ctx ? ' data-cd-ctx="' + ctx + '"' : '') + ' role="button" tabindex="0" aria-label="Cell Details" transform="translate(' + r1(x) + ' ' + r1(y) + ') scale(' + s + ')">' +
+      '<rect x="0" y="0" width="' + w + '" height="22" rx="11"></rect>' +
+      '<circle cx="12" cy="11" r="5.2" fill="none" stroke-width="1.4"></circle><path d="M12 9.6 V14 M12 7.6 V7.7" stroke-width="1.5" stroke-linecap="round" fill="none"></path>' +
+      '<text x="' + (w / 2 + 7) + '" y="15" text-anchor="middle">Cell Details</text></g>';
+  }
+
   window.PVTCellArt = {
+    pill: pill,
     G: G, LEGACY: LEGACY, OLD: OLD, defs: defsMarkup, cell: cell, desk: desk, cable: cable, pt: pt, deskPt: deskPt,
     // outward-facing end of a port valve (external tubing attaches here), page coordinates
     port: function (o, k) { return pt(o || {}, G.port[k].x, G.hy); },

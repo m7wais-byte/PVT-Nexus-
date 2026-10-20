@@ -1161,6 +1161,7 @@ DC.define('StageViscTwo', {
             disp: { P: '{{ v2PNum }}', B: '{{ v2PumpB }}', A: '{{ v2PumpA }}' },
  })}
           <text x="948" y="104" text-anchor="middle" style="font-family:'IBM Plex Sans',sans-serif; font-size:17px; font-weight:700; fill:var(--txt);">PVT Cell</text>
+          ${PVTCellArt.pill(988, 84, 'Two-Phase Viscosity · oil leaves at Port L, gas at Port R', 1.15)}
           <text x="742" y="176" text-anchor="end" style="${MONO} font-size:10px; font-weight:600; letter-spacing:.4px; fill:var(--cap2);">OIL TRANSFER</text>
           <text x="1154" y="176" text-anchor="start" style="${MONO} font-size:10px; font-weight:600; letter-spacing:.4px; fill:var(--cap2);">GAS OUTLET</text>
           <circle cx="948" cy="217.7" r="24" fill="none" stroke="#46e0ff" stroke-width="1.6" style="{{ v2SensorPulse }}"></circle>
