@@ -625,11 +625,11 @@ class Component extends DCLogic {
         src:'transferred from the MDT / MPSR tool', resvP:3000, resvT:114, restP:5000, restT:114, atResv:true,
         pLabel:'BOTTOM-HOLE PRESSURE', pVal:(4200).toLocaleString('en-US'), pUnit:'psia',
         tLabel:'BOTTOM-HOLE TEMPERATURE', tVal:'114', btLabel:'BOTTLE TEMP.' },
-      wellhead: { key:'wellhead', name:'Wellhead', sample:'Wellhead Sample', bottle:'Piston bottle \u00b7 ~600 cc', open:1450, openT:22,
+      wellhead: { key:'wellhead', name:'Wellhead', sample:'Wellhead Sample', bottle:'Piston bottle', open:1450, openT:22,
         src:'filled on the wellhead sampling line', resvP:3000, resvT:114, restP:5000, restT:114, atResv:true,
         pLabel:'WELLHEAD PRESSURE', pVal:(1450).toLocaleString('en-US'), pUnit:'psig',
         tLabel:'WELLHEAD TEMP.', tVal:'60', btLabel:'BOTTLE TEMP. / COND.' },
-      separator: { key:'separator', name:'Separator', sample:'Separator Sample', bottle:'Oil piston bottle \u00b7 ~600 cc', open:200, openT:35,
+      separator: { key:'separator', name:'Separator', sample:'Separator Sample', bottle:'Oil piston bottle', open:200, openT:35,
         src:'drawn from the separator oil outlet', resvP:null, restP:2500, restT:35, atResv:false,
         pLabel:'SEPARATOR PRESSURE', pVal:(200).toLocaleString('en-US'), pUnit:'psig',
         tLabel:'SEPARATOR TEMPERATURE', tVal:'35', tUnit:'\u00b0C', btLabel:'BOTTLE TEMP. / COND.' }

@@ -177,9 +177,8 @@ uniform scale) through `components/BottleArt.js` (window.BottleArt). There are n
   design names only a generic "driving (hydraulic) fluid" (type not specified - prototypes/bottles/README.md note 8),
   so the wellhead text names no buffer fluid and no pressure: stages 5-6, the overview cards and the step list
   describe the sample entering the bottle and moving the piston. The former note "N₂ at 2,000 psig behind the piston
-  ... Bottle 600 cc" was removed: neither value has a documented source. OPEN FOR REVIEW: the Validation source labels
-  in Main.js valSrcMap still read "Piston bottle · ~600 cc" (wellhead) and "Oil piston bottle · ~600 cc" (separator),
-  also without a source. The SRS downhole tool keeps its N₂ compensation (separate tool, not a sample bottle).
+  ... Bottle 600 cc" was removed: neither value has a documented source. The Validation source labels in Main.js valSrcMap
+  likewise dropped their unsourced "~600 cc" (now "Piston bottle" / "Oil piston bottle"); no simulation volume changed. The SRS downhole tool keeps its N₂ compensation (separate tool, not a sample bottle).
 
 | Page | Bottle | Bottle Details |
 |---|---|---|
