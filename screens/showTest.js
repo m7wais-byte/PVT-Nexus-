@@ -1,6 +1,7 @@
 /* screen: showTest  (84.4 KB) */
-/* Charging support stand: rod right of the bottle (bottle centre 562.44, 330, scale 0.47) */
-var C_STAND = BottleArt.stand('c', { x: 562.44, rodX: 640, ground: 566, top: 250, clamps: [{ y: 300, h: 16.5 }], rest: { y: 448, h: 19 }, baseL: 512, baseR: 672 });
+/* Charging support stand: rod BEHIND the bottle so the moving Floating Piston pointer never crosses it
+   (bottle centre 562.44, 330, scale 0.47) */
+var C_STAND = BottleArt.stand('c', { x: 562.44, rodX: 562.44, ground: 566, top: 360, clamps: [{ y: 300, h: 16.5 }], rest: { y: 448, h: 19 }, baseL: 506, baseR: 619 });
 DC.slot('showTest', `<sc-if value="{{ showTest }}" hint-placeholder-val="{{ false }}">
     <div data-screen-label="Module 03 — PVT Testing + GC" style="display:flex; flex-direction:column; height:var(--page-h); overflow:hidden;">
       
@@ -124,7 +125,7 @@ DC.slot('showTest', `<sc-if value="{{ showTest }}" hint-placeholder-val="{{ fals
 
               <sc-if value="{{ showBottleRig }}" hint-placeholder-val="{{ true }}">
               <g style="{{ rigDimStyle }}">
-              <!-- support stand (BottleArt.stand, drawn first): rod right of the bottle, clamp on the barrel, lower cap on a fork ledge -->
+              <!-- support stand (BottleArt.stand, drawn first): rod behind the bottle, clamp on the barrel, lower cap on a fork ledge -->
               ${C_STAND.back}
 
               <!-- SPS/PDS bottle : technical cutaway, enlarged focal point -->
@@ -146,7 +147,7 @@ DC.slot('showTest', `<sc-if value="{{ showTest }}" hint-placeholder-val="{{ fals
               <text x="470" y="255" text-anchor="end" font-family="IBM Plex Sans" font-size="12" fill="var(--txt2)">Sample side</text>
               <text x="470" y="267" text-anchor="end" font-family="IBM Plex Sans" font-size="10" fill="var(--mut)">approximate / unknown</text>
               <g style="{{ chargePistonLabelStyle }}">
-                <line x1="579" y1="234.6" x2="706" y2="234.6" stroke="var(--line2)" stroke-width="1"></line>
+                <line x1="587" y1="234.6" x2="706" y2="234.6" stroke="var(--line2)" stroke-width="1"></line>
                 <text x="710" y="237.6" text-anchor="start" font-family="IBM Plex Sans" font-size="12" fill="var(--txt2)">Floating Piston</text>
               </g>
               <line x1="545" y1="398" x2="474" y2="388" stroke="var(--line2)" stroke-width="1"></line>

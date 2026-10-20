@@ -730,6 +730,9 @@ Playback: `GC.gas.runMs` 60 s (x PROCESS_SPEED_MULTIPLIER).
 - `BottleArt.stand(p, o)` = shared lab support stand (base plate on feet, rod, boss clamps, side jaw pads only,
   optional fork ledge under the lower cap) used by Steps 1-3, Sample Transfer (restored) and Charging.
   Step 4 inversion stand (QcAgitSim) and Recombination stage-9 stand restyled to match; motion unchanged.
+  `rodX == x` puts the rod behind the bottle (Charging: keeps the moving Floating Piston pointer clear).
+  Recombination stages before inversion: slot stand (rod right, two clamps) at the connection slot, fades out
+  as the stage-9 inversion stand takes the bottle (RecombSim drawSlotStand).
 - Scales: Steps 1-3 0.49 -> 0.55 (centre 300, 238; Main QC_CY / QC_S), Step 4 0.5 -> 0.56 (pivot 405, 245),
   transfer 0.49 -> 0.55 (centre 300, 300), charging 0.41 -> 0.47, wellhead 0.42 -> 0.55 (rests on ground y 360),
   separator gas 0.36 -> 0.52, oil 0.33 -> 0.48. Recombination (0.67) unchanged.

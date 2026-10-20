@@ -1065,6 +1065,21 @@
     o += T(x + 120, 632, 'INVERSION STAND', { a: 'end', m: 1, s: 9, ls: .6, c: 'var(--mut)' });
     return o + '</g>';
   }
+  /* support stand at the connection slot (stages before the inversion), same parts as the Validation stands
+     (BottleArt.stand): rod right of the bottle with its own base (clear of the hydraulic line under the bottle),
+     two clamps on the barrel (valve tags and readouts stay clear). Fixed at the slot; fades out as the inversion stand
+     takes the bottle (stage 9). Drawing only. */
+  var SLOT_STAND = null;
+  function slotStand() {
+    if (!SLOT_STAND) SLOT_STAND = BottleArt.stand('rcb', { x: SLOT_X - PIV_DX, rodX: 458, ground: 620, top: 300,
+      clamps: [{ y: r1(PORT_Y + PIV_DY - 48), h: 23 }, { y: r1(PORT_Y + PIV_DY + 102), h: 23 }], baseL: 438, baseR: 490 });
+    return SLOT_STAND;
+  }
+  function slotStandOp(w) { return w.bot.kind ? clamp(1 - w.stand, 0, 1) : 0; }
+  function drawSlotStand(w, part) {
+    var a = slotStandOp(w); if (a <= .01) return '';
+    return '<g opacity="' + r1(a * 100) / 100 + '">' + slotStand()[part] + '</g>';
+  }
   function standHub() { return '<circle cx="' + STAND.x + '" cy="' + STAND.py + '" r="11" fill="url(#rcMetal)" stroke="#0a0e16" stroke-width="1.3"/><circle cx="' + STAND.x + '" cy="' + STAND.py + '" r="4" fill="#0a1420"/>'; }
 
   function rotPt(p, ang, c) {
@@ -1233,8 +1248,8 @@
     // --- equipment (vacuum pump first = behind)
     o += drawVac(w);
     o += drawGSP(w) + drawBooster(w) + drawBooValves(w);
-    o += drawStand(w);
-    o += drawTi(w) + drawBottle(w) + drawPump(w) + drawCell(w);
+    o += drawStand(w) + drawSlotStand(w, 'back');
+    o += drawTi(w) + drawBottle(w) + drawSlotStand(w, 'front') + drawPump(w) + drawCell(w);
     if (w.stand > .01) o += '<g opacity="' + r1(w.stand * 100) / 100 + '">' + standHub() + '</g>';
     o += drawJacketLabel(w);
     o += drawAgCard(w) + drawXfCard(w) + drawRockCard(w);

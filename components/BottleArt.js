@@ -27,7 +27,8 @@
      pill(x, y, spec, o)  "Bottle Details" button drawn in a page SVG
      stand(p, o)  laboratory support stand (Validation pages), world units:
                  o = { x (bottle axis), rodX, ground, top, clamps: [{ y, h }] (h = half
-                 width gripped), rest: { y, h } (ledge under a cap), baseL, baseR }
+                 width gripped), rest: { y, h } (ledge under a cap), baseL, baseR }.
+                 rodX == x: rod behind the bottle (side view), no side arms.
                  -> { back (draw before the bottle), front (jaw pads, after it) }.
                  Pads only touch the sides, so bore, piston and valves stay visible.
    Drawing only: no process values here.
@@ -89,7 +90,7 @@
   /* ------------------------------------------------- laboratory stand */
   function stand(p, o) {
     var x = o.x, rx = o.rodX, g = o.ground, top = o.top, K = 'stroke="#0a0e16"';
-    var left = rx < x, bL = o.baseL != null ? o.baseL : Math.min(rx, x) - 34, bR = o.baseR != null ? o.baseR : Math.max(rx, x) + 34;
+    var behind = Math.abs(rx - x) < 0.5, left = rx < x, bL = o.baseL != null ? o.baseL : Math.min(rx, x) - 34, bR = o.baseR != null ? o.baseR : Math.max(rx, x) + 34;
     var b = '', f = '';
     // heavy base plate on levelling feet
     b += '<ellipse cx="' + r2((bL + bR) / 2) + '" cy="' + r2(g - 1) + '" rx="' + r2((bR - bL) / 2 + 8) + '" ry="5" fill="rgba(0,0,0,.28)"></ellipse>';
@@ -111,7 +112,7 @@
     }
     (o.clamps || []).forEach(function (c) {
       var h = c.h;
-      b += arm(c.y, h + 7);
+      if (!behind) b += arm(c.y, h + 7);
       // clamp band behind the bottle (hidden by it except at the sides)
       b += '<rect x="' + r2(x - h - 7) + '" y="' + r2(c.y - 4) + '" width="' + r2(2 * h + 14) + '" height="8" rx="3" fill="url(#' + p + 'SteelV)" ' + K + ' stroke-width=".7"></rect>';
       // jaw pads (cork-lined) touching each side + the tightening nut on the far jaw
@@ -125,7 +126,7 @@
     });
     if (o.rest) {   // ledge the lower cap sits on: fork plate (behind the valve) with lips each side
       var r = o.rest, h2 = r.h;
-      b += arm(r.y + 3, h2 + 8);
+      if (!behind) b += arm(r.y + 3, h2 + 8);
       b += '<rect x="' + r2(x - h2 - 8) + '" y="' + r2(r.y) + '" width="' + r2(2 * h2 + 16) + '" height="6" rx="2" fill="url(#' + p + 'SteelV)" ' + K + ' stroke-width=".8"></rect>';
       [-1, 1].forEach(function (sd) {
         var lx = sd < 0 ? x - h2 - 8 : x + h2 + 4;
