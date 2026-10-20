@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Bundle the PVT Cell prototype into ONE self-contained HTML file for the hosted
 preview (claude.ai Artifact). Inlines cell.css, the approved bottle drawing
-(equipment/bottle-draw.js), pvt-cell.js, app.js and the logo.
+(equipment/bottle-draw.js), plumbing.js, pvt-cell.js, app.js and the logo.
 
     python3 prototypes/pvt-cell/build-preview.py OUTPUT.html
 """
@@ -24,6 +24,7 @@ out = (
     '<style>\n' + rd('cell.css') + '\n</style>\n'
     + body.strip() + '\n'
     '<script>\n' + rd('../../equipment/bottle-draw.js') + '\n</script>\n'
+    '<script>\n' + rd('plumbing.js') + '\n</script>\n'
     '<script>\n' + rd('pvt-cell.js') + '\n</script>\n'
     '<script>\n' + rd('app.js') + '\n</script>\n'
 )

@@ -75,12 +75,18 @@
   var DESK_DX = -50;   // computer desk offset (behind the receiver position)
   /* ---------------------------------------------- external equipment spots */
   // SPS/PDS sample bottle (approved Oil Sample Bottle drawing, PBDraw) left of the cell
-  var BTL = { x: 160, y: 522, s: 0.5 };
-  BTL.out = [BTL.x + 48 * BTL.s, BTL.y - 281 * BTL.s];   // side outlet of the sample-side valve
+  var BTL = { x: 130, y: 522, s: 0.5 };
+  BTL.out = [BTL.x + 48 * BTL.s, BTL.y - 281 * BTL.s];   // side outlet of the sample-side valve (top)
+  BTL.drv = [BTL.x + 48 * BTL.s, BTL.y + 281 * BTL.s];   // side outlet of the driving-side valve (bottom)
+  // transfer pump (driving fluid into the bottle's lower side, as on the Charge page) right of the bottle
+  var TP = { x0: 190, x1: 300, y0: 600, y1: 706 };
+  // Charge-page "Cell Valve": kept on the external charge line just before Port L (ownership unconfirmed)
+  var CV = { x: 262, y: 262 };
   // generic external receiver, right of the cell (placeholder for flash unit, viscometer, ...)
   var RCV = { x: 1000, y0: 300, y1: 470, hw: 30, cap: 100 };
   var ROUTE = {
-    L: [BTL.out, [266, BTL.out[1]], [266, G.hy], [G.port.L.x, G.hy]],
+    L: [BTL.out, [CV.x, BTL.out[1]], [CV.x, G.hy], [G.port.L.x, G.hy]],
+    D: [[TP.x0, BTL.drv[1]], BTL.drv],
     R: [[G.port.R.x, G.hy], [RCV.x, G.hy], [RCV.x, RCV.y0 - 12]]
   };
   // internal flow paths (cylinder bore top -> riser -> header -> ...)
@@ -90,6 +96,7 @@
     L2A: ROUTE.L.concat([[G.x.A, G.hy], [G.x.A, BT]]),
     A2R: [[G.x.A, BT], [G.x.A, G.hy]].concat(ROUTE.R)
   };
+  FLOW.D = ROUTE.D;   // driving fluid: transfer pump -> bottle (runs with L2A)
   FLOW.B2A = FLOW.A2B.slice().reverse();
   FLOW.A2L = FLOW.L2A.slice().reverse();
   FLOW.R2A = FLOW.A2R.slice().reverse();
@@ -221,12 +228,15 @@
       o += R(nx, y - 10, 16, 20, 'rx="2" fill="url(#pcSteelD)" ' + K + ' stroke-width=".9"');
       o += L(nx + 5.3, y - 10, nx + 5.3, y + 10, 'stroke="#3c4553" stroke-width=".6" opacity=".6"') + L(nx + 10.7, y - 10, nx + 10.7, y + 10, 'stroke="#3c4553" stroke-width=".6" opacity=".6"');
       if (cut) o += R(Math.min(xw, xe), y - 1.6, Math.abs(xe - xw) + (k === 'L' ? 18 : 0), 3.2, 'fill="#28313d"');
-      // cap (shown while the port is not connected)
-      var capX = k === 'L' ? xe - 12 : xe;
-      o += '<g id="pcCap' + k + '">' + R(capX, y - 8.5, 12, 17, 'rx="2.5" fill="#b8434e" stroke="#7a2a32" stroke-width="1"') +
-        L(capX + 4, y - 8.5, capX + 4, y + 8.5, 'stroke="#7a2a32" stroke-width=".7"') + L(capX + 8, y - 8.5, capX + 8, y + 8.5, 'stroke="#7a2a32" stroke-width=".7"') + '</g>';
+      // pressure-rated plug (unused port while the cell holds pressure or vacuum)
+      var capX = k === 'L' ? xe - 14 : xe;
+      o += '<g id="pcCap' + k + '">' + R(capX, y - 9.5, 14, 19, 'rx="2" fill="url(#pcSteelD)" stroke="#1d3a66" stroke-width="1.6"') +
+        L(capX + 4.7, y - 9.5, capX + 4.7, y + 9.5, 'stroke="#2a3443" stroke-width=".7"') + L(capX + 9.3, y - 9.5, capX + 9.3, y + 9.5, 'stroke="#2a3443" stroke-width=".7"') +
+        R(capX + (k === 'L' ? -4 : 14), y - 4, 4, 8, 'rx="1" fill="#1d3a66"') + '</g>';
+      // open end (no plug, no tubing): allowed only at 0 psig
+      o += '<g id="pcOpen' + k + '" opacity="0">' + C(xe, y, 5.5, 'fill="#28313d" stroke="#b0701a" stroke-width="1.6"') + '</g>';
       // tube nut of the external tubing (shown once connected)
-      o += '<g id="pcNut' + k + '" opacity="0">' + R(capX - (k === 'L' ? 2 : 0), y - 8, 14, 16, 'rx="2" fill="url(#pcSteelD)" ' + K + ' stroke-width=".9"') + '</g>';
+      o += '<g id="pcNut' + k + '" opacity="0">' + R(capX + (k === 'L' ? 0 : 0), y - 8, 14, 16, 'rx="2" fill="url(#pcSteelD)" ' + K + ' stroke-width=".9"') + '</g>';
       void s;
     });
     return o;
@@ -242,20 +252,21 @@
       o += R(x - b.hw, G.hy - 1.8, 2 * b.hw, 3.6, 'fill="#28313d"');                 // header through-bore (always open)
       o += R(x - 1.8, G.hy, 3.6, b.y1 - G.hy + 16, 'fill="#28313d"');                // cylinder passage (to the bore)
       o += '<rect id="pcRiser' + k + '" x="' + (x - 1.6) + '" y="' + G.hy + '" width="3.2" height="' + (b.y1 - G.hy + 16) + '" fill="#d99a30" opacity="0"/>';
-      // needle (lifts off its seat when the valve opens)
-      o += '<g id="pcNeedle' + k + '">' + P('M' + (x - 3) + ' ' + (b.y0 - 2) + ' V' + (G.hy - 8) + ' L' + x + ' ' + (G.hy - 2) + ' L' + (x + 3) + ' ' + (G.hy - 8) + ' V' + (b.y0 - 2) + ' Z', 'fill="url(#pcSteelD)" stroke="#2a3443" stroke-width=".7"') + '</g>';
+      // seat indication: a red bar across the cylinder passage while closed (internal mechanism not drawn)
+      o += '<rect id="pcSeat' + k + '" x="' + (x - 7) + '" y="' + (G.hy + 6) + '" width="14" height="4" rx="1" fill="#c0392b"/>';
     }
     // bonnet + packing nut
     o += R(x - 13, b.y0 - 14, 26, 14, 'rx="2" fill="url(#pcSteelD)" ' + K + ' stroke-width="1"');
     o += R(x - 9, b.y0 - 22, 18, 8, 'rx="1.5" fill="url(#pcSteelD)" ' + K + ' stroke-width=".9"');
     if (cut) o += R(x - 12, b.y0 - 13, 24, 12, 'fill="url(#pcHatch)" opacity=".8"');
-    // moving stem + T-handle (stem rises slightly as it opens)
+    // stem + T-handle: drawn static (open/closed shown by the ring and tag; turns not verified)
     o += '<g id="pcStem' + k + '">';
     o += R(x - 3.5, G.stem.top, 7, b.y0 - 22 - G.stem.top + 2, 'fill="url(#pcSteelD)" ' + K + ' stroke-width=".7"');
     o += R(x - 8, G.stem.hub, 16, 10, 'rx="2" fill="url(#pcSteelD)" ' + K + ' stroke-width=".8"');
     o += '<rect id="pcBar' + k + '" x="' + (x - 30) + '" y="' + G.stem.bar + '" width="60" height="8" rx="4" fill="url(#pcSteelD)" ' + K + ' stroke-width=".9"/>';
     o += C(x, G.stem.bar - 1, 6.5, 'fill="url(#pcSteelV)" ' + K + ' stroke-width=".8"');
     o += '</g>';
+    o += '<rect id="pcVring' + k + '" x="' + (x - b.hw - 4) + '" y="' + (b.y0 - 4) + '" width="' + (2 * b.hw + 8) + '" height="' + (b.y1 - b.y0 + 8) + '" rx="6" fill="none" stroke="#2fa66f" stroke-width="3" opacity="0"/>';
     o += '<g id="pcTag' + k + '">' + R(x + 12, 76, 62, 18, 'rx="9" fill="#e4e8ee" stroke="#9aa6b5" stroke-width="1"') +
       '<text x="' + (x + 43) + '" y="89" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="11" font-weight="600" letter-spacing=".6" fill="#566578">CLOSED</text></g>';
     return o;
@@ -365,8 +376,28 @@
       '<rect id="pcBtlOil" x="-22" y="-226" width="44" height="0" fill="url(#' + ns + 'Oil)"/>' +
       '<g id="pcBtlPist">' + D.mixRing(ns, 0, -226 - 8.5) + D.piston(ns, -226) + '</g>';
     o += '<g transform="translate(' + BTL.x + ' ' + BTL.y + ') scale(' + BTL.s + ')" style="color:#8fa3c2">' +
-      '<g id="pcBtlBody">' + D.oil(ns, { view: cut ? 'cutaway' : 'exterior', live: { inner: inner, ringT: 'currentColor', needleT: 'transform:translateY(var(--btlN,0px))' } }) + '</g></g>';
+      '<g id="pcBtlBody">' + D.oil(ns, { view: cut ? 'cutaway' : 'exterior', live: { inner: inner, ringT: 'currentColor', needleT: 'transform:translateY(var(--btlN,0px))',
+        ringB: '#2fa66f', needleB: 'transform:translateY(-7px)' } }) + '</g></g>';   // driving-side valve open while the pump is connected (as on Charge)
+    // pump line: transfer pump outlet -> bottle driving-side valve (driving fluid)
+    var d = poly(ROUTE.D);
+    o += P(d, 'fill="none" stroke="#4a5361" stroke-width="8.4" stroke-linecap="round"') + P(d, 'fill="none" stroke="url(#pcSteelV)" stroke-width="6" stroke-linecap="round"');
+    if (cut) o += P(d, 'fill="none" stroke="#5b93c4" stroke-width="2.6"');
+    o += transferPump(cut);
     return o + '</g>';
+  }
+
+  function transferPump(cut) {
+    var t = TP, o = '', w = t.x1 - t.x0;
+    [t.x0 + 10, t.x1 - 22].forEach(function (x) { o += R(x, t.y1, 12, G.ground - t.y1 - 4, 'fill="url(#pcSteelD)" ' + K + ' stroke-width=".7"') + R(x - 6, G.ground - 6, 24, 6, 'rx="2" fill="#8794a5"'); });
+    o += R(t.x0, t.y0, w, t.y1 - t.y0, 'rx="6" fill="url(#pcPanelV)" stroke="#8592a3" stroke-width="1.3"');
+    o += R(t.x0, t.y0, w, 9, 'rx="5" fill="url(#pcNavyV)"');
+    o += R(t.x0 + 10, t.y0 + 18, w - 20, 26, 'rx="3" fill="url(#pcScreen)" stroke="#3a4656" stroke-width="1"');
+    o += '<text id="pcTPv" x="' + (t.x0 + w / 2) + '" y="' + (t.y0 + 36) + '" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="13" font-weight="600" fill="#5fd4ff">100.0 mL</text>';
+    o += C(t.x1 - 26, t.y0 + 72, 14, 'fill="url(#pcSteelD)" ' + K + ' stroke-width="1"') + C(t.x1 - 26, t.y0 + 72, 9.5, 'fill="#f4f6f9" stroke="#5d6878" stroke-width=".8"') + L(t.x1 - 26, t.y0 + 72, t.x1 - 21, t.y0 + 65, 'stroke="#c0392b" stroke-width="1.6"');
+    o += R(t.x0 + 12, t.y0 + 56, 40, 10, 'rx="2" fill="#c9d0d9" stroke="#7d8898" stroke-width=".8"') + R(t.x0 + 12, t.y0 + 72, 40, 10, 'rx="2" fill="#c9d0d9" stroke="#7d8898" stroke-width=".8"');
+    o += R(t.x0 - 8, BTL.drv[1] - 8, 10, 16, 'rx="2" fill="url(#pcSteelD)" ' + K + ' stroke-width=".9"');   // outlet fitting
+    void cut;
+    return o;
   }
 
   function tubing(k) {
@@ -376,7 +407,17 @@
       '<path d="' + d + '" pathLength="1" stroke="url(#pcSteelV)" stroke-width="6" stroke-dasharray="1 1" stroke-dashoffset="1"/>' +
       '<path d="' + d + '" pathLength="1" stroke="#ffffff" stroke-width="1.3" opacity=".75" stroke-dasharray="1 1" stroke-dashoffset="1"/>' +
       '<path id="pcTubeFluid' + k + '" d="' + d + '" stroke="#d99a30" stroke-width="2.6" opacity="0"/>' +
-      '</g>';
+      (k === 'L' ? cellValve() : '') + '</g>';
+  }
+  // Charge-page Cell Valve on the external charge line (same inline bowtie + handwheel look); state shown by fill
+  function cellValve() {
+    var x = CV.x, y = CV.y, o = '<g id="pcCV" opacity="0">';
+    o += L(x - 30, y, x - 8, y, 'stroke="#5d6878" stroke-width="3"') + C(x - 34, y, 10, 'fill="#f4f6f9" stroke="#5d6878" stroke-width="2.4"') +
+      L(x - 44, y, x - 24, y, 'stroke="#5d6878" stroke-width="1.6"') + L(x - 34, y - 10, x - 34, y + 10, 'stroke="#5d6878" stroke-width="1.6"');
+    o += '<g id="pcCVbody">' + P('M' + (x - 13) + ' ' + (y - 15) + ' H' + (x + 13) + ' L' + x + ' ' + y + ' Z', 'fill="#c9d0d9" stroke="#2a3443" stroke-width="1.3"') +
+      P('M' + (x - 13) + ' ' + (y + 15) + ' H' + (x + 13) + ' L' + x + ' ' + y + ' Z', 'fill="#c9d0d9" stroke="#2a3443" stroke-width="1.3"') + '</g>';
+    o += C(x, y, 20, 'id="pcCVring" fill="none" stroke="#2fa66f" stroke-width="2.4" opacity="0"');
+    return o + '</g>';
   }
 
   function labels() {
@@ -396,7 +437,10 @@
     o += T(1225 + DESK_DX, 302, 'Computer', 'text-anchor="middle"');
     o += T(1400 + DESK_DX, 420, 'Controller', 'text-anchor="middle"');
     o += T(1190 + DESK_DX, 734, 'Signal cables', 'text-anchor="middle" ' + sub);
-    o += '<g id="pcLblBtl" opacity="0">' + T(BTL.x, 286, 'SPS/PDS sample bottle', 'text-anchor="middle"') + T(BTL.out[0] + 6, BTL.out[1] - 16, 'bottle valve', sub) + T(BTL.x, 782, 'driving side: transfer pump not drawn', 'text-anchor="middle" font-size="12.5" font-weight="500" fill="#566578"') + '</g>';
+    o += '<g id="pcLblBtl" opacity="0">' + T(BTL.x, 322, 'SPS/PDS sample bottle', 'text-anchor="middle"') + T(BTL.out[0] + 6, BTL.out[1] - 14, 'bottle valve', sub) +
+      T((TP.x0 + TP.x1) / 2, 782, 'Transfer pump', 'text-anchor="middle"') + T(BTL.drv[0] + 4, BTL.drv[1] + 32, 'pump line', sub) + '</g>';
+    o += '<g id="pcLblCV" opacity="0">' + T(CV.x - 50, CV.y - 26, 'Cell Valve', 'text-anchor="end"') + T(CV.x - 50, CV.y - 9, 'Charge line', 'text-anchor="end" ' + sub) +
+      T(CV.x - 50, CV.y + 7, 'owner unconfirmed', 'text-anchor="end" font-size="13" font-weight="600" fill="#b0701a"') + '<text id="pcCVTxt" x="' + (CV.x - 50) + '" y="' + (CV.y + 24) + '" text-anchor="end" ' + sub + '>closed</text></g>';
     o += '<g id="pcLblRcv" opacity="0">' + T(RCV.x + 14, 238, 'External equipment') + T(RCV.x + 14, 256, 'generic receiver (placeholder)', sub) + '</g>';
     return o + '</g>';
   }
@@ -405,7 +449,7 @@
     var o = '<g id="pcFlows" fill="none" stroke-linecap="round" stroke-linejoin="round">';
     Object.keys(FLOW).forEach(function (k) {
       o += '<g id="pcFlow' + k + '" opacity="0"><path d="' + poly(FLOW[k]) + '" stroke="#ffffff" stroke-width="6.5" stroke-dasharray="8 12"/>' +
-        '<path d="' + poly(FLOW[k]) + '" stroke="#e8590c" stroke-width="3.6" stroke-dasharray="8 12"/></g>';
+        '<path d="' + poly(FLOW[k]) + '" stroke="' + (k === 'D' ? '#2a6fb0' : '#e8590c') + '" stroke-width="3.6" stroke-dasharray="8 12"/></g>';
     });
     return o + '</g>';
   }
@@ -425,10 +469,11 @@
     var svg = '<svg class="pc-svg" viewBox="' + G.VB + '" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Dual-cylinder PVT cell">' +
       '<defs>' + defs() + (window.PBDraw ? window.PBDraw.defs('pcb') : '') + '</defs>' +
       '<rect x="0" y="0" width="' + G.W + '" height="' + G.H + '" fill="none"/>' +
-      L(10, G.ground, G.W - 10, G.ground, 'stroke="#c9d1db" stroke-width="1.5"') +
+      '<g id="pcEquip">' + L(10, G.ground, G.W - 10, G.ground, 'stroke="#c9d1db" stroke-width="1.5"') +
       desk() + cables() + frame() +
       '<g id="pcViewExt">' + layer(false) + '</g><g id="pcViewCut">' + layer(true) + '</g>' +
-      frameFront() + tubing('L') + tubing('R') + flows() + labels() +
+      frameFront() + tubing('L') + tubing('R') + flows() + labels() + '</g>' +
+      '<g id="pcPlumb" style="display:none">' + window.PVTPlumb.svg() + '</g>' +
       '</svg>';
     host.innerHTML = svg;
     var root = host.querySelector('svg');
@@ -440,6 +485,8 @@
 
     function setView(v) {
       view = v;
+      q('pcEquip').style.display = v === 'plumbing' ? 'none' : '';
+      q('pcPlumb').style.display = v === 'plumbing' ? '' : 'none';
       views.exterior.style.display = v === 'exterior' ? '' : 'none';
       views.cutaway.style.display = v === 'cutaway' ? '' : 'none';
       root.classList.toggle('is-cut', v === 'cutaway');
@@ -477,14 +524,13 @@
     }
 
     function valve(k, open) {
-      var ang = open * Math.PI / 2, w = Math.max(9, 60 * Math.abs(Math.cos(ang)));
-      qa('pcBar' + k).forEach(function (e) { e.setAttribute('x', (G.x[k] - w / 2).toFixed(2)); e.setAttribute('width', w.toFixed(2)); });
-      qa('pcStem' + k).forEach(function (e) { e.setAttribute('transform', 'translate(0 ' + (-4 * open).toFixed(2) + ')'); });
-      qa('pcNeedle' + k).forEach(function (e) { e.setAttribute('transform', 'translate(0 ' + (-7 * open).toFixed(2) + ')'); });
-      var st = open > .98 ? 'OPEN' : open < .02 ? 'CLOSED' : 'TURNING';
+      // state indication only: ring + tag cross-fade; the seat bar fades out as the valve opens
+      setAll('pcVring' + k, 'opacity', open.toFixed(2));
+      setAll('pcSeat' + k, 'opacity', (1 - open).toFixed(2));
+      var st = open >= .5 ? 'OPEN' : 'CLOSED';
       qa('pcTag' + k).forEach(function (g) {
         if (g.dataset.s === st) return; g.dataset.s = st;
-        var c = st === 'OPEN' ? ['#dff3e8', '#4fae80', '#14603f'] : st === 'CLOSED' ? ['#e4e8ee', '#9aa6b5', '#566578'] : ['#fdf0dc', '#d9a24a', '#8a5a12'];
+        var c = st === 'OPEN' ? ['#dff3e8', '#4fae80', '#14603f'] : ['#e4e8ee', '#9aa6b5', '#566578'];
         g.firstChild.setAttribute('fill', c[0]); g.firstChild.setAttribute('stroke', c[1]);
         g.lastChild.setAttribute('fill', c[2]); g.lastChild.textContent = st;
       });
@@ -511,23 +557,34 @@
       root.querySelectorAll('#pcVolA').forEach(function (e) { e.textContent = fmt(S.vA, 1) + ' cc'; });
       root.querySelectorAll('#pcTemp').forEach(function (e) { e.textContent = fmt(S.T, 1) + ' °C'; });
       setTxt('pcCtlP', pTxt);
-      // external connections: cap -> equipment appears -> tubing drawn -> tube nut
+      // ports: pressure-rated plug, open end (0 psig only), or external tubing (equipment appears, then tubing, then nut)
       ['L', 'R'].forEach(function (k) {
-        var c = Math.max(0, Math.min(1, S['conn' + k] || 0));
+        var c = Math.max(0, Math.min(1, S['conn' + k] || 0)), pl = Math.max(0, Math.min(1, S['plug' + k] || 0));
         var eq = Math.min(1, c / .25), tube = Math.max(0, (c - .25) / .75);
-        setAll('pcCap' + k, 'opacity', (1 - eq).toFixed(2));
+        setAll('pcCap' + k, 'opacity', pl.toFixed(2));
+        setAll('pcOpen' + k, 'opacity', ((1 - pl) * (1 - eq)).toFixed(2));
         setAll('pcNut' + k, 'opacity', tube >= .999 ? '1' : '0');
+        if (k === 'L') {
+          var cvo = Math.max(0, Math.min(1, (tube - .62) / .12));
+          q('pcCV').setAttribute('opacity', cvo.toFixed(2)); q('pcLblCV').setAttribute('opacity', cvo.toFixed(2));
+          var cv = S.cellValve || 0;
+          q('pcCVbody').querySelectorAll('path').forEach(function (e) { e.setAttribute('fill', cv >= .5 ? '#7fd1a6' : '#c9d0d9'); });
+          q('pcCVring').setAttribute('opacity', cv.toFixed(2));
+          setTxt('pcCVTxt', cv >= .5 ? 'open' : 'closed');
+        }
         q('pcTube' + k).querySelectorAll('path[pathLength]').forEach(function (p) { p.setAttribute('stroke-dashoffset', (1 - tube).toFixed(4)); });
         q('pcTubeFluid' + k).setAttribute('opacity', (view === 'cutaway' && tube >= .999 ? (S['tf' + k] || 0) : 0).toFixed(2));
         var eqId = k === 'L' ? 'pcBtl' : 'pcRcv';
         setAll(eqId, 'opacity', eq.toFixed(2));
         var lb = q(k === 'L' ? 'pcLblBtl' : 'pcLblRcv'); if (lb) lb.setAttribute('opacity', eq.toFixed(2));
-        setTxt('pcPort' + k + 'Txt', c <= 0 ? 'capped' : (tube >= .999 ? 'connected' : 'connecting'));
+        setTxt('pcPort' + k + 'Txt', c > 0 ? (tube >= .999 ? 'connected' : 'connecting') : pl >= .5 ? 'rated plug' : 'open · 0 psig');
       });
       // bottle (approved Oil Sample Bottle): valve ring colour, needle lift, sample above the piston
       var bo = Math.max(0, Math.min(1, S.btlValve || 0));
       root.querySelectorAll('#pcBtl > g').forEach(function (g) { g.style.color = bo > .5 ? '#2fa66f' : '#8fa3c2'; g.style.setProperty('--btlN', (-7 * bo).toFixed(2) + 'px'); });
-      var gB = Math.max(0, Math.min(1, (S.btlV || 0) / (S.btlCap || 275)));
+      // bottle: sample quantity (btlV) drawn against the existing simulator drawing scale (btlDraw) — not a capacity
+      var gB = Math.max(0, Math.min(1, (S.btlV || 0) / (S.btlDraw || 800)));
+      root.querySelectorAll('#pcTPv').forEach(function (e) { e.textContent = fmt(S.tpV == null ? 100 : S.tpV, 1) + ' mL'; });
       root.querySelectorAll('#pcBtlOil').forEach(function (e) { e.setAttribute('height', (406 * gB).toFixed(2)); });
       root.querySelectorAll('#pcBtlPist').forEach(function (e) { e.setAttribute('transform', 'translate(0 ' + (406 * gB).toFixed(2) + ')'); });
       // receiver fill (cutaway)
@@ -535,18 +592,19 @@
       if (rf) { var h = (RCV.y1 - RCV.y0 - 20) * Math.max(0, Math.min(1, (S.rcvV || 0) / RCV.cap)); rf.setAttribute('y', (RCV.y1 - 12 - h).toFixed(2)); rf.setAttribute('height', h.toFixed(2)); }
       // flow: only along an open, connected path, only while the movement runs
       Object.keys(FLOW).forEach(function (k) {
-        var on = S.flow === k && flowOpen(k, S) ? 1 : 0;
+        var on = (S.flow === k || (k === 'D' && S.flow === 'L2A')) && flowOpen(k === 'D' ? 'L2A' : k, S) ? 1 : 0;
         var e = q('pcFlow' + k);
         e.setAttribute('opacity', on ? '1' : '0');
         if (on) e.querySelectorAll('path').forEach(function (p) { p.setAttribute('stroke-dashoffset', (-t * 34).toFixed(1)); });
       });
       monitor(S);
+      if (view === 'plumbing') window.PVTPlumb.update(root, S);
     }
 
     function flowOpen(k, S) {
       var A = S.valveA > .98, B = S.valveB > .98;
       if (k === 'A2B' || k === 'B2A') return A && B;
-      if (k === 'L2A' || k === 'A2L') return A && S.connL >= 1 && S.btlValve > .98;
+      if (k === 'L2A' || k === 'A2L') return A && S.connL >= 1 && S.btlValve > .98 && S.cellValve > .98;
       if (k === 'A2R' || k === 'R2A') return A && S.connR >= 1;
       return false;
     }

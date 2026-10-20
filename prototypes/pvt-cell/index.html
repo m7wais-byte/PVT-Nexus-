@@ -20,7 +20,7 @@
     </div>
     <div class="ctl" role="group" aria-label="View">
       <span class="cl">View</span>
-      <div class="seg" id="viewSeg"><button type="button" data-v="exterior" class="on">Exterior</button><button type="button" data-v="cutaway">Cutaway</button></div>
+      <div class="seg" id="viewSeg"><button type="button" data-v="exterior" class="on">Exterior</button><button type="button" data-v="cutaway">Cutaway</button><button type="button" data-v="plumbing">Plumbing</button></div>
     </div>
     <label class="sw"><input type="checkbox" id="lblChk" checked><span></span><em>Labels</em></label>
   </header>
@@ -29,6 +29,20 @@
     <section class="stage card">
       <div id="stage" class="stage-svg"></div>
       <p id="cutNote" class="cut-note" hidden>Cutaway — training view. The real cylinders are opaque stainless steel.</p>
+      <footer class="foot">
+        <div class="read">
+          <div><span>Pressure</span><b id="rP">0</b><i>psig</i></div>
+          <div><span>Temp.</span><b id="rT">0</b><i>°C</i></div>
+          <div><span>Pump B</span><b id="rB">0</b><i>cc</i></div>
+          <div><span>Pump A</span><b id="rA">0</b><i>cc</i></div>
+          <div><span>Total</span><b id="rS">0</b><i>cc</i></div>
+          <div class="ph"><span>Phase</span><b id="rPh" class="sm">—</b></div>
+        </div>
+        <div class="run">
+          <div class="status"><div class="act" id="act">Idle</div><div class="track"><div class="bar" id="bar"></div></div><p class="msg" id="msg" aria-live="polite"></p></div>
+          <button class="btn" id="btnPause" type="button">Pause</button><button class="btn" id="btnReset" type="button">Reset</button>
+        </div>
+      </footer>
     </section>
 
     <aside class="side card" aria-label="Preview controls">
@@ -40,44 +54,35 @@
         <p class="desc" id="presetDesc"></p>
       </div>
 
-      <div class="read">
-        <div><span>Pressure</span><b id="rP">0</b><i>psig</i></div>
-        <div><span>Temperature</span><b id="rT">0</b><i>°C</i></div>
-        <div><span>Pump B</span><b id="rB">0</b><i>cc</i></div>
-        <div><span>Pump A</span><b id="rA">0</b><i>cc</i></div>
-        <div><span>Total</span><b id="rS">0</b><i>cc</i></div>
-        <div class="wide"><span>Phase</span><b id="rPh" class="sm">—</b></div>
-      </div>
 
       <div class="grp">
-        <div class="gh">Cell valves</div>
+        <div class="gh">Cell valves <small>open / closed indication only</small></div>
         <div class="row2"><button class="btn tg" id="btnVB" type="button">Pump B valve</button><button class="btn tg" id="btnVA" type="button">Pump A valve</button></div>
+        <div class="row4" id="vstates"><button class="btn" type="button" data-a="0" data-b="0">Both closed</button><button class="btn" type="button" data-a="1" data-b="0">Only A</button><button class="btn" type="button" data-a="0" data-b="1">Only B</button><button class="btn" type="button" data-a="1" data-b="1">Both open</button></div>
+        <button class="btn" id="btnFour" type="button">Check all 4 valve states in the Plumbing view</button>
       </div>
       <div class="grp">
-        <div class="gh">Sample volume <small>piston mechanics only — pressure not calculated</small></div>
+        <div class="gh">Sample volume <small>100 cc scale per cylinder (existing simulator value)</small></div>
         <div class="row4"><button class="btn" id="bUp" type="button">B −10</button><button class="btn" id="bDn" type="button">B +10</button><button class="btn" id="aUp" type="button">A −10</button><button class="btn" id="aDn" type="button">A +10</button></div>
         <div class="row2"><button class="btn" id="xAB" type="button">Transfer A → B</button><button class="btn" id="xBA" type="button">Transfer B → A</button></div>
       </div>
       <div class="grp">
         <div class="gh">Conditions <small>set values, not calculated</small></div>
         <div class="row4"><button class="btn" id="pDn" type="button">P −500</button><button class="btn" id="pUp" type="button">P +500</button><button class="btn" id="tDn" type="button">T −10</button><button class="btn" id="tUp" type="button">T +10</button></div>
-        <div class="row2"><button class="btn tg" id="ph1" type="button">Single-phase</button><button class="btn tg" id="ph2" type="button">Two-phase (illus.)</button></div>
+        <div class="row3"><button class="btn" id="pVent" type="button">Vent to 0 psig</button><button class="btn tg" id="ph1" type="button">Single-phase</button><button class="btn tg" id="ph2" type="button">Two-phase (illus.)</button></div>
       </div>
       <div class="grp">
-        <div class="gh">External tubing</div>
-        <div class="row2"><button class="btn tg" id="btnL" type="button">Port L</button><button class="btn tg" id="btnR" type="button">Port R</button></div>
-        <div class="row2"><button class="btn tg" id="btnBV" type="button">Bottle valve</button><span class="hint">bottle's own valve (Port L only)</span></div>
+        <div class="gh">Ports <small>plug off / tubing off only at 0 psig</small></div>
+        <div class="prow"><span>Port L</span><div class="seg" id="portL"><button type="button" data-v="plug">Rated plug</button><button type="button" data-v="open">Open</button><button type="button" data-v="tube">Tubing</button></div></div>
+        <div class="prow"><span>Port R</span><div class="seg" id="portR"><button type="button" data-v="plug">Rated plug</button><button type="button" data-v="open">Open</button><button type="button" data-v="tube">Tubing</button></div></div>
+        <div class="row2"><button class="btn tg" id="btnBV" type="button">Bottle valve</button><button class="btn tg" id="btnCV" type="button">Cell Valve</button></div>
       </div>
 
-      <div class="grp run">
-        <div class="status"><div class="act" id="act">Idle</div><div class="track"><div class="bar" id="bar"></div></div></div>
-        <div class="row2"><button class="btn" id="btnPause" type="button">Pause</button><button class="btn" id="btnReset" type="button">Reset</button></div>
-        <p class="msg" id="msg" aria-live="polite"></p>
-      </div>
     </aside>
   </main>
 </div>
 <script src="../../equipment/bottle-draw.js"></script>
+<script src="plumbing.js"></script>
 <script src="pvt-cell.js"></script>
 <script src="app.js"></script>
 </body>
