@@ -636,7 +636,7 @@
             V('Reservoir temperature', num(114, 0), '°C'),
             V('Reservoir pressure', num(3000, 0), 'psig'),
             V('Transfer pump', 'Off', ''),
-            V('Sample', 'In MPSR', '')
+            V('Sample', 'In SPMC', '')
           ] : [
           V('Transfer', num(m.xfrP, 0), '%'),
           V('Heating', num(xHot ? 100 : 0, 0), '%'),
@@ -646,7 +646,7 @@
           V('Reservoir pressure', num(3000, 0), 'psi'),
           V('Reservoir temperature', num(114, 0), '°C'),
           V('Transfer pump', xp === 'run' ? 'Running' : xp === 'done' ? 'Stopped' : 'Off', ''),
-          V('Sample', xp === 'done' ? 'In SPS/PDS bottle' : xp === 'run' ? 'Transferring' : 'In MPSR', '')
+          V('Sample', xp === 'done' ? 'In SPS/PDS bottle' : xp === 'run' ? 'Transferring' : 'In SPMC', '')
         ];
       return pack({
         title: 'Bottom-Hole Sample Transfer · Stage ' + xs + ' of 7 — ' + xk.t,
