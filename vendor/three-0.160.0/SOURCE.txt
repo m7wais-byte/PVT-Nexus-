@@ -1,0 +1,6 @@
+three.js r160 (npm package three@0.160.0), MIT licence (see LICENSE).
+Files copied unmodified from the npm tarball:
+  build/three.module.min.js                       -> three.module.min.js
+  examples/jsm/controls/OrbitControls.js          -> addons/controls/OrbitControls.js
+  examples/jsm/environments/RoomEnvironment.js    -> addons/environments/RoomEnvironment.js
+Tarball sha256: 1ee2f935c4f555814b388e87b5ef78a44856bd2e9d0feb88643a6e193fb42856

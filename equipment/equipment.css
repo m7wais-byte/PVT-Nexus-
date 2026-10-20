@@ -1,0 +1,136 @@
+/* ==========================================================================
+   Bottle Details overlay (components/BottleDetails.js) + the "Bottle Details"
+   pill and clickable bottles on the workflow pages (components/BottleArt.js).
+   Uses the app tokens from theme.css; the viewer is scoped under .eq.
+   ========================================================================== */
+.eq { --eq-stage:#070d18; --eq-grid:rgba(150,180,220,.035); --eq-lead:rgba(150,180,215,.62); --eq-cut:#e7752e;
+      height:100%; min-height:0; display:flex; flex-direction:column; gap:10px; color:var(--txt); }
+html[data-theme="light"] .eq { --eq-stage:#f8fafc; --eq-grid:rgba(40,70,110,.05); --eq-lead:rgba(38,56,80,.55); --eq-cut:#c8571b; }
+
+/* ---- inspection view ---- */
+.eq-bar { flex:0 0 auto; display:flex; align-items:center; flex-wrap:wrap; gap:8px 12px; }
+.eq-seg { display:inline-flex; border:1px solid var(--line2); border-radius:8px; overflow:hidden; background:var(--panel); }
+.eq-seg button { border:0; background:transparent; color:var(--mut); font-family:inherit; font-size:12.5px; font-weight:600; padding:7px 11px; cursor:pointer; white-space:nowrap; }
+.eq-seg button + button { border-left:1px solid var(--line2); }
+.eq-seg button[aria-pressed="true"] { background:var(--blue); color:#fff; }
+.eq-seg button:focus-visible { outline:2px solid var(--blue); outline-offset:-2px; }
+.eq-sw { display:inline-flex; align-items:center; gap:8px; cursor:pointer; font-size:12.5px; font-weight:600; color:var(--txt2); }
+.eq-sw input { position:absolute; opacity:0; width:1px; height:1px; }
+.eq-sw span { width:34px; height:19px; border-radius:10px; background:var(--track); border:1px solid var(--line2); position:relative; flex:0 0 auto; }
+.eq-sw span::after { content:''; position:absolute; top:2px; left:2px; width:13px; height:13px; border-radius:50%; background:var(--mut); transition:transform .15s; }
+.eq-sw input:checked + span { background:rgba(70,211,154,.25); }
+.eq-sw input:checked + span::after { transform:translateX(15px); background:var(--grn); }
+.eq-sw input:focus-visible + span { outline:2px solid var(--blue); outline-offset:2px; }
+.eq-3d-only[hidden] { display:none !important; }
+.eq-sep { width:1px; height:22px; background:var(--line); }
+
+.eq-main { flex:1 1 auto; min-height:0; display:grid; grid-template-columns:minmax(0,1fr) clamp(260px,22vw,330px); gap:10px; }
+.eq-stage { position:relative; min-height:0; min-width:0; display:flex; flex-direction:column; border-radius:12px; overflow:hidden; border:1px solid var(--line);
+            background-color:var(--eq-stage); background-image:linear-gradient(var(--eq-grid) 1px,transparent 1px),linear-gradient(90deg,var(--eq-grid) 1px,transparent 1px); background-size:24px 24px; }
+.eq-stage-head { flex:0 0 auto; display:flex; align-items:center; gap:10px; padding:10px 14px 0; }
+.eq-stage-head h3 { margin:0; font-size:15px; font-weight:700; white-space:nowrap; }
+.eq-tag { font:600 10px/1 var(--font-mono); letter-spacing:.7px; padding:5px 8px; border-radius:6px; border:1px solid var(--line2); color:var(--txt2); background:var(--chipbg); white-space:nowrap; }
+.eq-tag.cut { color:var(--eq-cut); border-color:color-mix(in srgb, var(--eq-cut) 50%, transparent); }
+.eq-stage-head .eq-basis { margin-left:auto; min-width:0; font:500 10.5px var(--font-mono); color:var(--mut); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.eq-view { position:relative; flex:1 1 auto; min-height:0; }
+.eq-2d { position:absolute; inset:0; display:flex; }
+.eq-2d svg { width:100%; height:100%; display:block; }
+.eq-3d { position:absolute; inset:0; }
+.eq-2d[hidden], .eq-3d[hidden] { display:none; }
+.eq-help { position:absolute; left:14px; bottom:8px; margin:0; font:500 10.5px var(--font-mono); color:var(--mut); pointer-events:none; }
+
+/* 2D drawing (equipment/bottle-draw.js) */
+.eq .lab-n { font:600 13px var(--font-main); fill:var(--lbl); }
+.eq .lab-s { font:500 10.5px var(--font-mono); fill:var(--lbl2); }
+.eq .lab-n, .eq .lab-s { paint-order:stroke; stroke:var(--eq-stage); stroke-width:4px; stroke-linejoin:round; }
+.eq .lead { fill:none; stroke:var(--eq-lead); stroke-width:.9; }
+.eq .dot { fill:var(--blue); }
+.eq .pb-lab[data-part] { cursor:pointer; }
+.eq .pb-lab[data-part]:hover .lab-n, .eq .pb-lab.on .lab-n { fill:var(--blue); }
+.eq .pb-lab:focus { outline:none; }
+.eq .pb-lab:focus-visible .lab-n { fill:var(--blue); text-decoration:underline; }
+
+/* 3D viewer (equipment/bottle3d.js) */
+.eq .v3-canvas { position:absolute; inset:0; touch-action:none; }
+.eq .v3-canvas canvas { display:block; cursor:grab; }
+.eq .v3-canvas canvas:active { cursor:grabbing; }
+.eq .v3-labels { position:absolute; inset:0; pointer-events:none; overflow:hidden; }
+.eq .v3-lead { position:absolute; inset:0; }
+.eq .v3-lead path { fill:none; stroke:var(--eq-lead); stroke-width:1; }
+.eq .v3-lead circle { fill:var(--blue); }
+.eq .v3-lab { position:absolute; transform:translateY(-50%); pointer-events:auto; cursor:pointer; white-space:nowrap;
+              font:600 12px var(--font-main); color:var(--lbl); padding:3px 8px; border-radius:6px;
+              background:color-mix(in srgb, var(--eq-stage) 82%, transparent); border:1px solid var(--line2); }
+.eq .v3-lab:hover, .eq .v3-lab.on { border-color:var(--blue); color:var(--txt); }
+.eq .v3-lab.on { background:color-mix(in srgb, var(--blue) 22%, var(--eq-stage)); }
+.eq .v3-lab:focus-visible { outline:2px solid var(--blue); outline-offset:2px; }
+.eq-msg { position:absolute; left:20px; right:20px; top:50%; margin:0; text-align:center; font-size:14px; color:var(--txt2); }
+.eq-msg.err { color:var(--eq-cut); }
+
+/* side panel */
+.eq-side { min-height:0; overflow:auto; display:flex; flex-direction:column; gap:12px; padding:14px; border-radius:12px; border:1px solid var(--line); background:var(--panel); }
+.eq-info h4 { margin:0 0 6px; font-size:16px; font-weight:700; }
+.eq-info p { margin:0 0 8px; font-size:13px; line-height:1.5; color:var(--txt2); }
+.eq-info .eq-flag { font:500 11px/1.4 var(--font-mono); color:var(--eq-cut); }
+.eq-h { margin:2px 0 0; font:600 10.5px var(--font-mono); letter-spacing:.7px; text-transform:uppercase; color:var(--mut); }
+.eq-parts { display:grid; gap:5px; }
+.eq-part { display:flex; justify-content:space-between; align-items:center; gap:8px; text-align:left; cursor:pointer; padding:7px 10px; border-radius:8px;
+           border:1px solid var(--line2); background:transparent; color:var(--txt2); font-family:inherit; font-size:12.5px; font-weight:600; }
+.eq-part small { font:500 9.5px var(--font-mono); color:var(--mut); text-transform:uppercase; letter-spacing:.5px; }
+.eq-part:hover { border-color:var(--blue); }
+.eq-part[aria-pressed="true"] { border-color:var(--blue); background:color-mix(in srgb, var(--blue) 14%, transparent); color:var(--txt); }
+.eq-part:focus-visible { outline:2px solid var(--blue); outline-offset:2px; }
+.eq-about p { margin:0 0 8px; font-size:12.5px; line-height:1.5; color:var(--txt2); }
+.eq-about .eq-basis2 { font-size:11.5px; color:var(--mut); }
+
+@media (max-width:1100px) {
+  .eq-main { grid-template-columns:1fr; grid-template-rows:minmax(420px,58vh) auto; }
+}
+
+
+/* ---- overlay ---- */
+html.bd-open { overflow:hidden; }
+.bd-ov { position:fixed; inset:0; z-index:1000; display:flex; padding:18px; box-sizing:border-box; font-family:var(--font-main); color:var(--txt);
+         background:rgba(4,8,16,.62); backdrop-filter:blur(2px); }
+html[data-theme="light"] .bd-ov { background:rgba(30,42,60,.38); }
+.bd-win { flex:1 1 auto; min-width:0; min-height:0; display:flex; flex-direction:column; gap:10px; padding:16px 18px;
+          border-radius:16px; background:var(--bg); border:1px solid var(--line); box-shadow:0 24px 60px rgba(0,0,0,.35); overflow:hidden; }
+.bd-head { flex:0 0 auto; display:flex; align-items:center; gap:10px 18px; flex-wrap:wrap; }
+.bd-titles { display:flex; align-items:baseline; gap:12px; flex-wrap:wrap; min-width:0; }
+.bd-eyebrow { font:600 10.5px var(--font-mono); letter-spacing:1.3px; text-transform:uppercase; color:var(--teal); }
+.bd-titles h2 { margin:0; font-size:19px; font-weight:700; letter-spacing:-.2px; color:var(--txt); }
+.bd-variant { font:600 10.5px var(--font-mono); letter-spacing:.6px; text-transform:uppercase; padding:4px 8px; border-radius:6px;
+              color:var(--txt2); background:var(--chipbg); border:1px solid var(--line2); }
+.bd-ctx { margin:0; flex:1 1 220px; min-width:0; font-size:12.5px; color:var(--mut); }
+.bd-close { margin-left:auto; display:inline-flex; align-items:center; gap:8px; padding:9px 14px; }
+.bd-kinds:empty { display:none; }
+.bd-principle p { color:var(--txt2); }
+.bd-note { margin:0; padding-top:8px; border-top:1px solid var(--line); font-size:11.5px; color:var(--mut); }
+@media (max-width:1100px) { .bd-win { overflow:auto; } .bd-win .eq-main { flex:0 0 auto; } }
+@media (max-width:700px) { .bd-ov { padding:6px; } .bd-win { padding:10px; border-radius:12px; } }
+
+/* selector when a page shows several bottle types */
+.bd-menu { position:fixed; z-index:1001; min-width:220px; font-family:var(--font-main); padding:8px; border-radius:10px; background:var(--panel); border:1px solid var(--line2);
+           box-shadow:0 12px 32px rgba(0,0,0,.28); display:grid; gap:4px; }
+.bd-menu p { margin:2px 6px 4px; font:600 10px var(--font-mono); letter-spacing:.8px; text-transform:uppercase; color:var(--mut); }
+.bd-menu button { text-align:left; cursor:pointer; font-family:inherit; font-size:13px; font-weight:600; color:var(--txt); padding:8px 10px;
+                  border-radius:7px; border:1px solid transparent; background:transparent; }
+.bd-menu button:hover, .bd-menu button:focus-visible { border-color:var(--blue); background:color-mix(in srgb, var(--blue) 12%, transparent); outline:none; }
+
+/* "Bottle Details" pill in the page drawings (BottleArt.pill) and clickable bottles */
+#app .bd-pill { cursor:pointer; }
+#app .bd-pill rect { fill:var(--panel); stroke:var(--teal); stroke-width:1.3; }
+#app .bd-pill text { font:600 11px var(--font-main, 'IBM Plex Sans', sans-serif); fill:var(--teal); }
+#app .bd-pill circle, #app .bd-pill path { stroke:var(--teal); }
+#app .bd-pill:hover rect, #app .bd-pill:focus-visible rect { fill:color-mix(in srgb, var(--teal) 16%, var(--panel)); }
+#app .bd-pill:focus { outline:none; }
+#app .bd-pill:focus-visible rect { stroke-width:2.2; }
+#app .bd-hit { cursor:pointer; }
+#app .bd-hit:hover { filter:drop-shadow(0 0 3px rgba(56,205,184,.75)); }
+/* compact HTML button in page headers / side panels */
+#app .bd-btn { display:inline-flex; align-items:center; gap:6px; margin-left:auto; flex:0 0 auto; cursor:pointer; white-space:nowrap;
+               font:600 11.5px var(--font-main); color:var(--teal); background:transparent; border:1.3px solid var(--teal); border-radius:999px; padding:4px 11px; }
+#app .bd-btn::before { content:'i'; width:13px; height:13px; border-radius:50%; border:1.3px solid currentColor; display:inline-flex; align-items:center; justify-content:center;
+                       font:700 9px var(--font-mono); line-height:1; }
+#app .bd-btn:hover, #app .bd-btn:focus-visible { background:color-mix(in srgb, var(--teal) 14%, transparent); outline:none; }
+#app .bd-btn.bd-inline { margin-left:0; }

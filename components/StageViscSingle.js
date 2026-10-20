@@ -80,9 +80,11 @@ function mkW(th) {
 const devT = th => `translate(${PIV[0]},${PIV[1]}) rotate(${r1(th)}) scale(${DEV_S}) translate(${-PIN[0]},${-PIN[1]})`;
 const arcPt = (th, rr) => { const a = th * Math.PI / 180, R = rr || ARC_R; return [r1(PIV[0] + R * Math.sin(a)), r1(PIV[1] - R * Math.cos(a))]; };
 
-/* SPS/PDS bottle = the project's bottle drawing (screens/showTest.js): inner window 152..406,
-   22-px floating piston, drawn scaled (0.6 x 0.74 about 585,474) and shifted by RIG_DX / RIG_DY */
-const BOT = { iy: 152, ih: 254, pist: 22 };
+/* SPS/PDS bottle = the approved Oil Sample Bottle, placed as on the charging page (screens/showTest.js):
+   centre (565.3, 330), scale 0.41, bore -226..226 (local units) with a 46-unit floating piston; the
+   sample-valve side outlet ends on the riser (585, 214.8), the driving-side outlet at (585, 445.2).
+   Whole rig shifted by RIG_DX / RIG_DY */
+const BOT = { iy: -226, ih: 452, pist: 46 }, BOT_C = [565.3, 330], BOT_S = 0.41;
 const RIG_DX = 255, RIG_DY = -40;              // bottle rig on the RIGHT of the bench
 const BTX = x => r1(585 + (x - 585) * 0.6 + RIG_DX), BTY = y => r1(474 + (y - 474) * 0.74 + RIG_DY);
 const PX_CC = (BOT.ih - BOT.pist) / BOTTLE_CAP;
@@ -127,7 +129,7 @@ function roundPts(pts, r) {
   return out;
 }
 const D_ST = dOf(P_ST);
-const C_W = `M${712 + RIG_DX},${458 + RIG_DY} H${585 + RIG_DX} V${474 + RIG_DY}`;   // pump (right of the bottle, mirrored drawing) -> bottle bottom
+const C_W = `M${712 + RIG_DX},${458 + RIG_DY} H${640 + RIG_DX} V${445.2 + RIG_DY} H${585 + RIG_DX}`;   // pump (right of the bottle, mirrored drawing) -> driving-side valve outlet
 function arrowD(x, y, dir) {
   const s = 7.5, a = (dir === 'r' ? 0 : dir === 'd' ? 90 : dir === 'u' ? -90 : dir === 'l' ? 180 : dir) * Math.PI / 180;
   const c = Math.cos(a), n = Math.sin(a);
@@ -616,7 +618,7 @@ class Component extends DCLogic {
       vsWaterLine: 'opacity:' + (st.conn[0] >= 1 ? 1 : 0) + '; transition:opacity .4s;',
       vsWaterDash: 'opacity:' + (st.pumpFlow ? 1 : 0) + '; transition:opacity .3s;',
 
-      vsOilH: f(oilH), vsPistY: f(pistY), vsWaterY: f(waterY), vsWaterH: f(Math.max(0, BOT.iy + BOT.ih - waterY)), vsPistLblY: BTY(pistY + 11), vsPistPortY: r1(474 + (pistY + 11 - 474) * 0.74),
+      vsOilH: f(oilH), vsPistY: f(pistY), vsWaterY: f(waterY), vsWaterH: f(Math.max(0, BOT.iy + BOT.ih - waterY)), vsPistLblY: r1(BOT_C[1] + BOT_S * (pistY + BOT.pist / 2) + RIG_DY),
 
       vsDIn: gm.D_IN, vsDSt: D_ST, vsDTail: gm.D_TAIL,
       vsIn: (fIn * 1000).toFixed(1) + ' 1000', vsSt: (fSt * 1000).toFixed(1) + ' 1000', vsTl: (fTl * 1000).toFixed(1) + ' 1000',
@@ -653,7 +655,7 @@ class Component extends DCLogic {
       vsDriveTxt: st.drive ? 'ENERGIZED' : '', vsSenseTxt: st.falling ? (st.sense ? 'SIGNAL' : 'LISTENING') : '',
       vsLiveCoil: 'opacity:' + (st.showComp ? 0 : 1) + '; transition:opacity .3s;',
 
-      vsVBHot: 'opacity:' + st.vB + ';', vsVBWheel: 'transform:rotate(' + (st.vB * 90).toFixed(1) + 'deg); transform-box:fill-box; transform-origin:center;',
+      vsVBHot: 'opacity:' + st.vB + ';', vsBtlRingT: st.vB > .5 ? '#46d39a' : '#8fa3c2', vsBtlNeedleT: BottleArt.needle(st.vB), vsBtlRingB: st.conn[0] >= 1 ? '#46d39a' : '#8fa3c2', vsBtlNeedleB: BottleArt.needle(st.conn[0] >= 1 ? 1 : 0), vsVBWheel: 'transform:rotate(' + (st.vB * 90).toFixed(1) + 'deg); transform-box:fill-box; transform-origin:center;',
       vsVLHot: 'opacity:' + Math.min(1, st.vL * 1.6) + ';', vsVLWheel: 'transform:rotate(' + (st.vL * 90).toFixed(1) + 'deg); transform-box:fill-box; transform-origin:center;',
       vsTB: tB, vsTL: tL,
 
@@ -836,6 +838,7 @@ DC.define('StageViscSingle', {
     <div style="flex:1 1 auto; min-width:0; position:relative; display:flex; flex-direction:column; border-radius:14px; background:var(--panel2); overflow:hidden;">
       <svg sc-camel-view-box="{{ vsVB }}" preserveAspectRatio="xMidYMid meet" style="flex:1 1 auto; min-height:0; width:100%; height:100%; display:block; padding:6px 8px; box-sizing:border-box;">
         <defs>
+          ${BottleArt.defs('vs')}
           <!-- project palette (same gradients as screens/showTest.js) -->
           <linearGradient id="vsMetal" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#283750"></stop><stop offset=".42" stop-color="#b3c1d8"></stop><stop offset=".58" stop-color="#7e90b0"></stop><stop offset="1" stop-color="#1f2a3e"></stop></linearGradient>
           <linearGradient id="vsCyl" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#3a485f"></stop><stop offset=".2" stop-color="#8094b2"></stop><stop offset=".5" stop-color="#aebcd2"></stop><stop offset=".8" stop-color="#54657f"></stop><stop offset="1" stop-color="#222c3e"></stop></linearGradient>
@@ -1092,44 +1095,14 @@ DC.define('StageViscSingle', {
             <rect x="500" y="556" width="170" height="8" rx="2" fill="#1a2030" stroke="#0a0e16"></rect>
             <ellipse cx="585" cy="566" rx="90" ry="6" fill="rgba(0,0,0,.3)"></ellipse>
             <!-- outlet riser (sample side, always full) -->
-            <path d="M585 185 V${132}" fill="none" stroke="#0a0e16" stroke-width="8" stroke-linecap="round"></path>
-            <path d="M585 185 V${132}" fill="none" stroke="#d6b03c" stroke-width="2.4" stroke-linecap="round"></path>
-            <!-- bottle (scaled cutaway) -->
-            <g transform="translate(585,474) scale(0.6,0.74) translate(-585,-474)">
-              <path d="M568 104 V92 Q568 84 585 84 Q602 84 602 92 V104 Z" fill="url(#vsMetal)" stroke="#0a0e16" stroke-width="1"></path>
-              <path d="M572 100 Q572 90 585 89" fill="none" stroke="#eef4fb" stroke-width="1" opacity=".4"></path>
-              <rect x="524" y="104" width="122" height="20" rx="4" fill="url(#vsMetal)" stroke="#0a0e16" stroke-width="1.2"></rect>
-              <line x1="524" y1="110" x2="646" y2="110" stroke="#eef4fb" stroke-width="0.8" opacity=".3"></line>
-              <g fill="#0a0e16" stroke="#5a708f" stroke-width="0.8"><circle cx="534" cy="114" r="2.6"></circle><circle cx="558" cy="114" r="2.6"></circle><circle cx="612" cy="114" r="2.6"></circle><circle cx="636" cy="114" r="2.6"></circle></g>
-              <rect x="560" y="124" width="50" height="20" fill="url(#vsMetal)" stroke="#0a0e16" stroke-width="0.8"></rect>
-              <line x1="560" y1="128" x2="610" y2="128" stroke="#eef4fb" stroke-width="0.7" opacity=".3"></line>
-              <rect x="494" y="144" width="182" height="270" rx="18" fill="url(#vsCyl)" stroke="#0a0e16" stroke-width="1.8"></rect>
-              <rect x="506" y="150" width="8" height="258" fill="#ffffff" opacity="0.22"></rect>
-              <rect x="522" y="150" width="4" height="258" fill="#ffffff" opacity="0.1"></rect>
-              <line x1="664" y1="150" x2="664" y2="408" stroke="#000000" stroke-width="3" opacity=".18"></line>
-              <rect x="508" y="152" width="154" height="254" rx="10" fill="#0a1420" stroke="#33445e" stroke-width="1"></rect>
-              <g clip-path="url(#vsBotClip)">
-                <rect x="508" y="152" width="154" height="{{ vsOilH }}" fill="url(#vsOilC)"></rect>
-                <rect x="508" y="{{ vsWaterY }}" width="154" height="{{ vsWaterH }}" fill="url(#vsWater)" opacity=".9"></rect>
-              </g>
-              <g transform="translate(0,{{ vsPistDY }})">
-                <rect x="508" y="152" width="154" height="22" fill="url(#vsMetal)" stroke="#0a0e16" stroke-width="1"></rect>
-                <line x1="508" y1="156" x2="662" y2="156" stroke="#eef4fb" stroke-width="1" opacity=".4"></line>
-                <line x1="508" y1="170" x2="662" y2="170" stroke="#000000" stroke-width="1" opacity=".4"></line>
-                <rect x="508" y="158" width="6" height="10" fill="#0a0e16" opacity=".6"></rect>
-                <rect x="656" y="158" width="6" height="10" fill="#0a0e16" opacity=".6"></rect>
-              </g>
-              <rect x="560" y="414" width="50" height="20" fill="url(#vsMetal)" stroke="#0a0e16" stroke-width="0.8"></rect>
-              <line x1="560" y1="418" x2="610" y2="418" stroke="#eef4fb" stroke-width="0.7" opacity=".25"></line>
-              <rect x="524" y="434" width="122" height="20" rx="4" fill="url(#vsMetal)" stroke="#0a0e16" stroke-width="1.2"></rect>
-              <line x1="524" y1="438" x2="646" y2="438" stroke="#eef4fb" stroke-width="0.8" opacity=".25"></line>
-              <g fill="#0a0e16" stroke="#5a708f" stroke-width="0.8"><circle cx="534" cy="444" r="2.6"></circle><circle cx="558" cy="444" r="2.6"></circle><circle cx="612" cy="444" r="2.6"></circle><circle cx="636" cy="444" r="2.6"></circle></g>
-              <path d="M568 454 V466 Q568 474 585 474 Q602 474 602 466 V454 Z" fill="url(#vsMetal)" stroke="#0a0e16" stroke-width="1"></path>
-            </g>
-            <!-- side ports -->
-            <circle cx="530" cy="258" r="4.5" fill="url(#vsMetal)" stroke="#0a0e16" stroke-width="0.8"></circle>
-            <circle cx="530" cy="388" r="4.5" fill="url(#vsMetal)" stroke="#0a0e16" stroke-width="0.8"></circle>
-            <circle cx="530" cy="{{ vsPistPortY }}" r="4.5" fill="url(#vsMetal)" stroke="#0a0e16" stroke-width="0.8"></circle>
+            <path d="M585 214.8 V${132}" fill="none" stroke="#0a0e16" stroke-width="8" stroke-linecap="round"></path>
+            <path d="M585 214.8 V${132}" fill="none" stroke="#d6b03c" stroke-width="2.4" stroke-linecap="round"></path>
+            <!-- approved Oil Sample Bottle (components/BottleArt.js); fills / piston in bore units -->
+            ${BottleArt.oil('vs', { x: BOT_C[0], y: BOT_C[1], s: BOT_S, bd: 'oil', ctx: 'SPS/PDS sample bottle · feeding the viscometer',
+              inner: `<rect x="-22" y="-226" width="44" height="{{ vsOilH }}" fill="url(#vsOil)"></rect>
+              <rect x="-22" y="{{ vsWaterY }}" width="44" height="{{ vsWaterH }}" fill="url(#vsDrive)"></rect>
+              <g transform="translate(0,{{ vsPistDY }})">${PBDraw.mixRing('vs', 0, -226 - 8.5)}${PBDraw.piston('vs', -226)}</g>`,
+              ringT: '{{ vsBtlRingT }}', needleT: '{{ vsBtlNeedleT }}', ringB: '{{ vsBtlRingB }}', needleB: '{{ vsBtlNeedleB }}' })}
             <!-- bottle valve (project valve) -->
             <circle cx="585" cy="120" r="19" fill="#46d39a" opacity=".35" style="{{ vsHaloVB }}"></circle>
             <line x1="563" y1="120" x2="573" y2="120" stroke="#8fa3c2" stroke-width="2.4"></line>
@@ -1145,6 +1118,7 @@ DC.define('StageViscSingle', {
           <text x="${BTX(676) - RIG_DX + 30}" y="196" style="${ESS}">SPS/PDS</text>
           <text x="${BTX(676) - RIG_DX + 30}" y="214" style="${SUB}">sample bottle</text>
           <text x="${BTX(676) - RIG_DX + 30}" y="232" style="${MONO} font-size:12.5px; font-weight:700; fill:var(--grn);">${fmtP(BOTTLE_P)} psig</text>
+          ${BottleArt.pill(BTX(676) - RIG_DX + 30, 244, 'oil', { ctx: 'SPS/PDS sample bottle · feeding the viscometer' })}
 
           <!-- transfer pump (project drawing, mirrored to sit RIGHT of the bottle; its outlet faces the bottle) -->
           <g style="{{ vsDimPump }}"><g transform="translate(1170,0) scale(-1,1)">
@@ -1192,11 +1166,11 @@ DC.define('StageViscSingle', {
         <g style="{{ vsCompStyle }}">
           <g class="vs-halo" style="${LBL}"><path d="{{ vsLch.d }}" fill="none" stroke="var(--vs-lead)"></path><text x="{{ vsLch.x }}" y="{{ vsLch.y }}">Chamber · 3 cc</text><path d="{{ vsLbody.d }}" fill="none" stroke="var(--vs-lead)"></path><text x="{{ vsLbody.x }}" y="{{ vsLbody.y }}">Falling body</text><path d="{{ vsLdrive.d }}" fill="none" stroke="var(--vs-lead)"></path><text x="{{ vsLdrive.x }}" y="{{ vsLdrive.y }}" text-anchor="start">Driving coil <tspan style="${MONO} font-size:11px; font-weight:700; fill:#4d9dff;">{{ vsDriveTxt }}</tspan></text><path d="{{ vsLsense.d }}" fill="none" stroke="var(--vs-lead)"></path><text x="{{ vsLsense.x }}" y="{{ vsLsense.y }}" text-anchor="start">Sensing coil <tspan style="${MONO} font-size:11px; font-weight:700; fill:#46d39a;">{{ vsSenseTxt }}</tspan></text><path d="{{ vsLpt100.d }}" fill="none" stroke="var(--vs-lead)"></path><text x="{{ vsLpt100.x }}" y="{{ vsLpt100.y }}" text-anchor="start">PT100 · temperature</text><path d="{{ vsLpt.d }}" fill="none" stroke="var(--vs-lead)"></path><text x="{{ vsLpt.x }}" y="{{ vsLpt.y }}" text-anchor="start">Pressure transmitter</text><sc-for list="{{ vsTickLbls }}" as="k" hint-placeholder-count="2"><text x="{{ k.x }}" y="{{ k.y }}" text-anchor="middle" style="font-size:11px; fill:var(--mut); {{ k.st }}">{{ k.t }}</text></sc-for><text x="${PIV[0]}" y="${BASE_Y + 10.5}" text-anchor="middle" style="font-size:10px; font-weight:600; letter-spacing:.3px; fill:#c3d2e6; stroke:none;">Hinge (pivot)</text><text x="${r1((PIV[0] + ARC_P1[0]) / 2 - 20)}" y="${BASE_Y + 10.5}" text-anchor="middle" style="font-size:10px; font-weight:600; letter-spacing:.3px; fill:#c3d2e6; stroke:none;">Quadrant guide</text></g>
           <g style="${LBL}">
-            <line x1="${BTX(676) - 4}" y1="258" x2="${BTX(676) + 26}" y2="258" stroke="var(--vs-lead)"></line>
+            <line x1="${BOT_CX - 4}" y1="258" x2="${BTX(676) + 26}" y2="258" stroke="var(--vs-lead)"></line>
             <text x="${BTX(676) + 30}" y="262">Sample side (oil)</text>
-            <line x1="${BTX(676) - 4}" y1="{{ vsPistLblY }}" x2="${BTX(676) + 26}" y2="{{ vsPistLblY }}" stroke="var(--vs-lead)"></line>
+            <line x1="${BOT_CX - 4}" y1="{{ vsPistLblY }}" x2="${BTX(676) + 26}" y2="{{ vsPistLblY }}" stroke="var(--vs-lead)"></line>
             <text x="${BTX(676) + 30}" y="{{ vsPistLblY }}" dy="4">Floating piston</text>
-            <line x1="${BTX(676) - 4}" y1="352" x2="${BTX(676) + 26}" y2="352" stroke="var(--vs-lead)"></line>
+            <line x1="${BOT_CX - 4}" y1="352" x2="${BTX(676) + 26}" y2="352" stroke="var(--vs-lead)"></line>
             <text x="${BTX(676) + 30}" y="356">Water side</text>
           </g>
           <text x="${CTL.x + CTL.w / 2}" y="${CTL.y - 8}" text-anchor="middle" style="${LBL}">Viscometer controller</text>

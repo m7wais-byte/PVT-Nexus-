@@ -1629,7 +1629,7 @@ const hi_d = (on) => on ? 'opacity:1; transition:opacity .5s ease;' : 'opacity:.
     const mxValve = (mxRunning || mxDone) ? mxLin(0, 0.05) : 0;          // 0 closed .. 1 open
     const mxF1 = mxLin(0.03, 0.15);
     const mxVm = mxEio(0.15, 1);
-    const MX_VALVE_AT = 136 / 168;                                     // valve body face along the transfer line
+    const MX_VALVE_AT = 96 / 175;                                      // valve body face along the transfer line
     const mxF2 = mxValve >= 1 ? mxLin(0.15, 0.27) : Math.min(mxLin(0.15, 0.27), MX_VALVE_AT);
     const mxVb = mxEio(0.27, 1);
     const mxF3 = mxLin(0.27, 0.37);
@@ -1638,14 +1638,14 @@ const hi_d = (on) => on ? 'opacity:1; transition:opacity .5s ease;' : 'opacity:.
     const mxPulseStyle = (f) => `opacity:${(mxRunning && f > 0.001) ? 1 : 0}; transition:opacity .35s ease;`;
     const mxArrowStyle = (f, at) => `opacity:${f >= at ? 0.95 : 0.22}; transition:opacity .25s ease;`;
     const mxPumpFrontStyle = mxFrontStyle(368, mxF1),   mxPumpPulseStyle = mxPulseStyle(mxF1);
-    const mxXferFrontStyle = mxFrontStyle(168, mxF2),   mxXferPulseStyle = mxPulseStyle(mxF2);
-    const mxWoutFrontStyle = mxFrontStyle(132.5, mxF3), mxWoutPulseStyle = mxPulseStyle(mxF3);
+    const mxXferFrontStyle = mxFrontStyle(175, mxF2),   mxXferPulseStyle = mxPulseStyle(mxF2);
+    const mxWoutFrontStyle = mxFrontStyle(86.8, mxF3), mxWoutPulseStyle = mxPulseStyle(mxF3);
     const mxArrowPumpStyle = mxArrowStyle(mxF1, 160 / 368);
-    const mxArrowX1Style = mxArrowStyle(mxF2, 50 / 168);
+    const mxArrowX1Style = mxArrowStyle(mxF2, 38 / 175);
     const mxArrowX2Style = mxArrowStyle(mxF2, 1);
-    const mxArrowWStyle = mxArrowStyle(mxF3, 50 / 132.5);
+    const mxArrowWStyle = mxArrowStyle(mxF3, 28.5 / 86.8);
     // valve handle: across the pipe = closed, in line with the pipe = open
-    const mxValveHandleStyle = `transform:rotate(${(90 * mxValve).toFixed(1)}deg); transform-box:view-box; transform-origin:300px 108px; transition:transform .12s linear;`;
+    const mxValveHandleStyle = `transform:rotate(${(90 * mxValve).toFixed(1)}deg); transform-box:view-box; transform-origin:346px 102px; transition:transform .12s linear;`;
     const mxValveRing = mxValve >= 1 ? '#46d39a' : '#8fa3c2';
     const mxValveText = mxValve >= 1 ? 'VALVE · OPEN' : 'VALVE · CLOSED';
 
@@ -1675,11 +1675,12 @@ const hi_d = (on) => on ? 'opacity:1; transition:opacity .5s ease;' : 'opacity:.
     // and exactly that volume of water leaves through the water port.
     // The floating piston itself takes 14 px of the 252 px bore, so the two fluid columns
     // share the remaining 238 px: sample above the piston, water below it, no gap at either face.
-    const mxBore = 252, mxPistonH = 14, mxUsable = mxBore - mxPistonH;
+    const mxBore = 452, mxPistonH = 46, mxUsable = mxBore - mxPistonH;   // approved Oil Sample Bottle bore (drawing units)
     const mxBFrac = (450 / 800) * mxVb;
     const mxBotFluidTextStyle = `opacity:${mxVb > 0.30 ? 1 : 0}; transition:opacity .4s ease;`;
     const mxBotFluidStyle = `transform:scaleY(${((mxUsable / mxBore) * mxBFrac).toFixed(4)}); transform-box:fill-box; transform-origin:top; transition:${mxEase};`;
     const mxBotWaterStyle = `transform:scaleY(${((mxUsable / mxBore) * (1 - mxBFrac)).toFixed(4)}); transform-box:fill-box; transform-origin:bottom; transition:${mxEase};`;
+    const mxBotNeedleT = window.BottleArt ? window.BottleArt.needle(mxValve) : '';
     const mxBotPistonStyle = `transform:translateY(${(mxUsable * mxBFrac).toFixed(1)}px); transition:${mxEase};`;
     const mxBeakerStyle = `transform:scaleY(${(0.76 * mxVr).toFixed(4)}); transform-box:fill-box; transform-origin:bottom; transition:${mxEase};`;
     const mxFlowStyle = `opacity:${mxRunning ? 1 : 0}; transition:opacity .4s ease;`;
@@ -2128,18 +2129,18 @@ const hi_d = (on) => on ? 'opacity:1; transition:opacity .5s ease;' : 'opacity:.
     // the cell is at its 5,000 psi setpoint from the dead-space equalisation onwards
     const pressurised = cStep >= 5 || cStage >= 5;
 
-    // bore y 152..406 (254 px) with a 22 px floating piston -> 232 px of fluid.
-    // Oil above the piston, water below it; the split comes from the shared bottleModel(),
-    // which subtracts the sample drawn to the PVT cell as the transfer pump empties (100 -> 18 mL).
+    // drawing: approved Oil Sample Bottle bore y -226..226 (452 units) with a 46-unit floating piston -> 406 units
+    // of fluid, drawn at scale 0.47. Oil above the piston, water below it; the split comes from the shared
+    // bottleModel(), which subtracts the sample drawn to the PVT cell as the transfer pump empties (100 -> 18 mL).
     const cBot = this.bottleModel();
-    const C_BORE = 254, C_PIST = 22, C_USE = C_BORE - C_PIST;
-    const pistonDY = C_USE * cBot.oilFrac - 102;
-    const chargeOilH = 102 + pistonDY;
-    const chargeWaterY = 276 + pistonDY;
-    const chargeWaterH = 130 - pistonDY;
+    const C_BORE = 452, C_PIST = 46, C_USE = C_BORE - C_PIST;
+    const pistonDY = C_USE * cBot.oilFrac;
+    const chargeOilH = pistonDY;
+    const chargeWaterY = -226 + C_PIST + pistonDY;
+    const chargeWaterH = 226 - chargeWaterY;
     // bottle piston, line fluid and Pump A piston all track the same tween — keep their transitions identical
     const chargePistonStyle = 'transform:translateY(' + pistonDY.toFixed(1) + 'px); transition:transform .12s linear;';
-    const chargePistonLabelStyle = 'transform:translateY(' + (pistonDY * 0.74).toFixed(1) + 'px); transition:transform .12s linear;';
+    const chargePistonLabelStyle = 'transform:translateY(' + (pistonDY * 0.47).toFixed(1) + 'px); transition:transform .12s linear;';
 
     // fluid front along (585,60)->(770,60)->(770,190)->(1030,190)->(1030,215)
     // during the Pump A charge (stage 6) the head sweeps the whole path repeatedly,
@@ -2180,6 +2181,9 @@ const hi_d = (on) => on ? 'opacity:1; transition:opacity .5s ease;' : 'opacity:.
     const chargeArrowStyle = { opacity: (cFront >= 8 && !draining) ? 1 : 0, transition: 'opacity .3s ease' };
     const chargePumpFlowStyle = { opacity: flowing ? 1 : 0, animation: flowing ? 'dashflow calc(1s * var(--pm, 1)) linear infinite' : 'none' };
     const pumpLineFluidStyle = { opacity: bottleOn ? 1 : 0, transition: 'opacity .3s ease' };
+    // bottle's own right-angle valves (drawing): sample valve open with the bottle valve, driving-side valve open while the pump is connected
+    const chargeBtlRing = vBottle ? '#46d39a' : '#8fa3c2', chargeBtlNeedle = window.BottleArt ? window.BottleArt.needle(vBottle ? 1 : 0) : '';
+    const chargePumpRing = bottleOn ? '#46d39a' : '#8fa3c2', chargePumpNeedle = window.BottleArt ? window.BottleArt.needle(bottleOn ? 1 : 0) : '';
 
     // pump cylinders
     const _pumpMax = 176;
@@ -2685,7 +2689,7 @@ const hi_d = (on) => on ? 'opacity:1; transition:opacity .5s ease;' : 'opacity:.
     const qc3Flow = qcS3 && qRunning && qc3D.flow;
     const rsFlowOn = (rsRun && qcRk < 0.90) || qc3Flow;       // pump + water flow stop exactly at target pressure
     const rsValve = qcS2 ? rLin(0.02, 0.07) * (1 - rLin(0.92, 0.97)) : qcS3 ? qc3D.wv : 0;   // 0 closed .. 1 open
-    const RS_L = 743, RS_VALVE_AT = 698 / 743;                // pump outlet -> bottle top; valve face along the line
+    const RS_L = 774, RS_VALVE_AT = 770 / 774;                // pump outlet -> water-side valve side port (approved bottle, inverted)
     const rsFrontRaw = qcS2 ? rLin(0.03, 0.22) : (qcS3 && qc3D.wv > 0) ? 1 : 0;
     // before the valve is fully open the front halts at the valve face; after the valve closes (0.92+) the filled line simply holds
     const rsFront = (rsValve < 1 && qcRk < 0.92) ? Math.min(rsFrontRaw, RS_VALVE_AT) : rsFrontRaw;
@@ -2695,6 +2699,7 @@ const hi_d = (on) => on ? 'opacity:1; transition:opacity .5s ease;' : 'opacity:.
     const rsArrowLStyle = `opacity:${(rsFlowOn && rsFront >= 330 / RS_L) ? 0.95 : 0.22}; transition:opacity .3s ease;`;
     const rsValveWheelStyle = `transform:rotate(${(180 * rsValve).toFixed(1)}deg); transform-box:view-box; transform-origin:327.5px 97.5px; transition:transform .12s linear;`;
     const rsValveRing = rsValve >= 0.999 ? '#46d39a' : '#8fa3c2';
+    const rsNeedleStyle = window.BottleArt ? window.BottleArt.needle(rsValve) : '';
     const rsValveText = 'Pump connection · ' + (rsValve >= 0.999 ? 'OPEN' : 'CLOSED');
     // soft orange glow: pulses while the bottle is heating, holds steady once the target is stable
     const rsHeating = rsRun && qcRk < 0.90;
@@ -2704,10 +2709,11 @@ const hi_d = (on) => on ? 'opacity:1; transition:opacity .5s ease;' : 'opacity:.
     // inverted bottle: water on top, piston mid, oil below. Injecting water drives the piston down.
     // pressure compresses (piston down); heating to 95 C expands the oil, easing the piston a little
     // back up into the water side. bleeding free water off the oil side lets it settle down again.
-    // bore y 134..338 (204 px) with a 12 px floating piston, so the two columns share 192 px.
-    // Split, piston travel and free-water band all come from the shared bottleModel().
+    // Drawing frame = approved Oil Sample Bottle bore, screen-aligned, centre (300, 238), scale 0.55:
+    // bore y -226..226 (452 units) with a 46-unit floating piston, so the two columns share 406 units.
+    // Split, piston travel and free-water band all come from the shared bottleModel() (drawing only).
     const qcBot = this.bottleModel();
-    const QC_BORE = 204, QC_PIST = 12, QC_USE = QC_BORE - QC_PIST;
+    const QC_BORE = 452, QC_PIST = 46, QC_USE = QC_BORE - QC_PIST, QC_T = -226, QC_B = 226, QC_CY = 238, QC_S = 0.55;
     const qcPistFrac = qcBot.waterFrac;
     const qcPistEase = ((qcS2 || qcS3) && qRunning) ? 'transform .12s linear' : 'transform calc(1s * var(--pm, 1)) ease-out';   // restoration: track the clock
     const qcWaterStyle = `transform:scaleY(${((QC_USE / QC_BORE) * qcPistFrac).toFixed(4)}); transform-box:fill-box; transform-origin:top; transition:${qcPistEase};`;
@@ -2721,24 +2727,25 @@ const hi_d = (on) => on ? 'opacity:1; transition:opacity .5s ease;' : 'opacity:.
     // layer shrinks exactly as the receiver fills. The oil column (piston underside -> layer top) is constant.
     const QC_FW_H = QC_USE * (30 / 800);
     const qc3Settle = this.state.qcSettle || 0, qc3Dk = this.state.qcDk || 0;
-    const qc3PistBot = 146 + QC_USE * qcPistFrac;                              // underside of the piston
-    const qc3Top0 = 146 + QC_USE * (qcPistFrac - (30 / 800) * water);         // same, before any drainage
+    const qc3PistBot = QC_T + QC_PIST + QC_USE * qcPistFrac;                   // underside of the piston
+    const qc3Top0 = QC_T + QC_PIST + QC_USE * (qcPistFrac - (30 / 800) * water);   // same, before any drainage
     const qc3Sim = (qcS3 && window.QcWaterSim)
-      ? window.QcWaterSim.state(qc3Settle, { x0: 263, x1: 337, top: qc3Top0, bot: 338, layerMax: QC_FW_H })
+      ? window.QcWaterSim.state(qc3Settle, { x0: -22, x1: 22, top: qc3Top0, bot: QC_B, layerMax: QC_FW_H })
       : { drops: '', hi: '', collected: 0, count: 0 };
     const qc3Coll = qc3Settle >= 1 ? 1 : qc3Sim.collected;
     const qc3Layer = qcS3 ? QC_FW_H * Math.max(0, qc3Coll - water) : 0;
     const qcFreeWaterStyle = '';
     const qcFreeWaterH = qc3Layer.toFixed(2);
-    const qcFreeWaterY = (338 - qc3Layer).toFixed(2);
+    const qcFreeWaterY = (QC_B - qc3Layer).toFixed(2);
     const qc3Drops = qc3Sim.drops, qc3DropHi = qc3Sim.hi;
     // oil turns from cloudy (dispersed water) to clear as the droplets settle out
-    const qc3HazeY = qc3PistBot.toFixed(2), qc3HazeH = Math.max(0, 338 - qc3Layer - qc3PistBot).toFixed(2);
+    const qc3HazeY = qc3PistBot.toFixed(2), qc3HazeH = Math.max(0, QC_B - qc3Layer - qc3PistBot).toFixed(2);
     const qc3HazeOp = qcS3 ? (0.24 * (1 - qc3Coll)).toFixed(3) : '0';
     const qc3IfOp = qc3Layer > 0.4 ? '0.9' : '0';
     const qc3SvOpen = qc3D.sv;
     const qc3SvWheelStyle = `transform:rotate(${(180 * qc3SvOpen).toFixed(1)}deg); transform-box:view-box; transform-origin:327.5px 384.5px; transition:transform .12s linear;`;
     const qc3SvRing = qc3SvOpen >= 0.999 ? '#46d39a' : qc3SvOpen > 0.001 ? '#e7b15a' : '#8fa3c2';
+    const qc3SvNeedleStyle = window.BottleArt ? window.BottleArt.needle(qc3SvOpen) : '';
     const qc3SvText = 'Oil / sample outlet \u00b7 ' + (!qcS3 || qc3SvOpen <= 0.001 ? 'closed' : qc3SvOpen >= 0.999 ? 'OPEN' : (qc3Dk < 0.5 ? 'opening' : 'closing'));
     const qc3Hours = Math.min(24, Math.floor(qc3Settle * 24 + 1e-6));
     const qc3HoursText = qc3Hours + ' / 24 hours';
@@ -2751,7 +2758,8 @@ const hi_d = (on) => on ? 'opacity:1; transition:opacity .5s ease;' : 'opacity:.
     const qc3MsgOn = !!qc3Msg;
     const qc3OilSub = qStepDone ? 'clear oil \u00b7 retained' : qc3Coll >= 1 ? 'clear \u00b7 free water below' : qc3Settle > 0 ? 'water droplets settling' : 'dispersed water droplets';
     const qc3FwSub = qStepDone ? 'drained \u00b7 ' + qc3DrainText + ' cc to receiver' : qc3LayerCc > 0.05 ? 'settled layer \u00b7 ' + qc3LayerCc.toFixed(1) + ' cc' : 'none yet \u00b7 water dispersed';
-    const qc3OilY = ((qc3PistBot + 338 - qc3Layer) / 2).toFixed(1);
+    const qc3OilY = (QC_CY + QC_S * (qc3PistBot + QC_B - qc3Layer) / 2).toFixed(1);   // callout leader (screen)
+    const qc3FwY = (QC_CY + QC_S * (QC_B - qc3Layer / 2)).toFixed(1);
     const qcRig = qcS1 || qcS2 || qcS3;
     const qcPumpOn = qRunning && (qcS1 || (qcS2 && (this.state.qcRk || 0) < 0.90) || qc3Flow);
     const qcPumpFlowStyle = { opacity: (qRunning && qcS2) ? 1 : 0, transition:'opacity .4s ease' };
@@ -2846,7 +2854,7 @@ const hi_d = (on) => on ? 'opacity:1; transition:opacity .5s ease;' : 'opacity:.
       mxNext: () => { this.clearTimers(); this.setState({ screen: 'module02', qcStep: 1, qcPhase: 'idle', xfer: 1, resP: 0, resT: 22, water: 0, qcSettle: 0, qcDk: 0, agitate: false, agitP: 0, qcFromBH: true, valSrc: 'bottomhole', qcDone: { 1:false, 2:false, 3:false, 4:false } }); },
       mxMpsrFluidStyle, mxMpsrWaterStyle, mxMpsrPistonStyle, mxSampleLabelStyle, mxWaterLabelStyle,
       mxJacketStyle, mxJacketFillStyle, mxJacketGlowStyle, mxTempBoxText,
-      mxBotFluidTextStyle, mxBotFluidStyle, mxBotWaterStyle, mxBotPistonStyle,
+      mxBotFluidTextStyle, mxBotFluidStyle, mxBotWaterStyle, mxBotPistonStyle, mxBotNeedleT,
       mxBeakerStyle, mxFlowStyle, mxPumpFrontStyle, mxPumpPulseStyle, mxXferFrontStyle, mxXferPulseStyle, mxWoutFrontStyle, mxWoutPulseStyle, mxArrowPumpStyle, mxArrowX1Style, mxArrowX2Style, mxArrowWStyle, mxValveHandleStyle, mxValveRing, mxValveText, mxLed, mxLedStyle, mxLiveColor, mxLiveLabel, mxStatusText, mxXferText, mxBarStyle,
       mxRows, mxSampleId, mxSteps, mxRunText, mxRunStyle, mxNextStyle,
       showRestore: scr === 'module02',
@@ -2952,7 +2960,7 @@ const hi_d = (on) => on ? 'opacity:1; transition:opacity .5s ease;' : 'opacity:.
       chargeFlash: () => this.chargeGoFlash(), chargeRestart: () => this.chargeReset(),
       chargeBtnText, chargeBtnBg, chargeBtnBorder, chargeBtnColor, chargeBtnCursor,
       flashBtnBg, flashBtnBorder, flashBtnColor, flashBtnCursor, readyText, readyColor,
-      chargeOilH, chargeWaterY, chargeWaterH, chargePistonStyle, chargePistonLabelStyle,
+      chargeOilH, chargeWaterY, chargeWaterH, chargePistonStyle, chargePistonLabelStyle, chargeBtlRing, chargeBtlNeedle, chargePumpRing, chargePumpNeedle,
       chargePumpLabel, chargePumpLabelColor, chargePumpFlowStyle, chargePumpAFillStyle,
       chargePumpAFillH, chargePumpAFillY, chargePumpBFillH, chargePumpBFillY, chargePumpBFillStyle,
       chargeHeadX, chargeHeadY, chargeHeadStyle, chargeRevealStyle,
@@ -2980,7 +2988,7 @@ const hi_d = (on) => on ? 'opacity:1; transition:opacity .5s ease;' : 'opacity:.
       resPText, resTText, resJacketStyle, resTempFillStyle, resStable, qcPBarStyle, qcTBarStyle,
       waterDropStyle, beakerFillStyle, waterCheckDone,
       qc3Drops, qc3DropHi, qc3HazeY, qc3HazeH, qc3HazeOp, qc3IfOp, qc3SvWheelStyle, qc3SvRing, qc3SvText, qc3BeakerText,
-      qc3HoursText, qc3BarStyle, qc3DrainText, qc3Msg, qc3MsgOn, qc3OilSub, qc3FwSub, qc3OilY,
+      qc3HoursText, qc3BarStyle, qc3DrainText, qc3Msg, qc3MsgOn, qc3OilSub, qc3FwSub, qc3OilY, qc3FwY, qc3SvNeedleStyle, rsNeedleStyle,
       qcStatusText, qcLiveColor, qcLiveLabel, qcRows, qcProgress,
       qcRunText, qcRunBg, qcRunBorder, qcRunColor, qcRunCursor,
       qcLastStep, qcNextText, qcNextBg, qcNextBorder, qcNextColor, qcNextCursor,

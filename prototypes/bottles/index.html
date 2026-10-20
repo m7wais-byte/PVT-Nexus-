@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PVT Nexus — Sample Bottle Designs</title>
+<!-- same font link as the simulator (index.html); system fonts are used offline -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="bottles.css">
+</head>
+<body>
+<div class="app">
+  <header class="top">
+    <img class="logo" src="../../assets/logo.png" alt="VAPS">
+    <div class="ttl">
+      <div class="eyebrow">PVT NEXUS · DESIGN REVIEW</div>
+      <h1>Sample Bottle Designs</h1>
+    </div>
+    <div class="ctl" role="group" aria-label="Mode">
+      <span class="cl">Mode</span>
+      <div class="seg" id="modeSeg"><button type="button" data-v="2d">2D technical view</button><button type="button" data-v="3d">3D view</button></div>
+    </div>
+    <div class="ctl" role="group" aria-label="Bottle">
+      <span class="cl">Bottle</span>
+      <div class="seg" id="showSeg"><button type="button" data-v="both">Compare</button><button type="button" data-v="oil">Oil Sample Bottle</button><button type="button" data-v="gas">Gas Sample Bottle</button></div>
+    </div>
+    <div class="ctl" role="group" aria-label="View">
+      <span class="cl">View</span>
+      <div class="seg" id="viewSeg"><button type="button" data-v="exterior">Exterior</button><button type="button" data-v="cutaway">Cutaway</button><button type="button" data-v="pair">Ext. + cutaway</button></div>
+    </div>
+    <div class="ctl" role="group" aria-label="Orientation">
+      <span class="cl">Orientation</span>
+      <div class="seg" id="oriSeg"><button type="button" data-v="upright">Upright</button><button type="button" data-v="horizontal">Horizontal</button></div>
+    </div>
+    <label class="sw"><input type="checkbox" id="lblChk" checked><span></span><em>Labels</em></label>
+    <button class="btn" id="themeBtn" type="button">Light background</button>
+  </header>
+
+  <main id="grid" class="grid" aria-live="polite"></main>
+
+  <main id="v3" class="v3" hidden>
+    <section class="v3-stage card">
+      <header>
+        <h2 id="v3title">Oil Sample Bottle</h2><span class="tag cut" id="v3tag">CUTAWAY</span>
+        <div class="v3-tools">
+          <button class="btn" id="resetBtn" type="button">Reset camera</button>
+          <label class="sw"><input type="checkbox" id="autoChk"><span></span><em>Auto-rotate</em></label>
+        </div>
+      </header>
+      <div class="v3-view">
+        <div id="v3canvas" class="v3-canvas"></div>
+        <div id="v3labels" class="v3-labels"></div>
+        <p id="v3msg" class="v3-msg" hidden></p>
+        <p class="v3-help">Drag to rotate · scroll or pinch to zoom · right-drag or two-finger drag to pan · click a part to inspect it</p>
+      </div>
+    </section>
+    <aside class="v3-side card" aria-label="Parts">
+      <div id="v3info" class="v3-info" aria-live="polite"></div>
+      <h3 class="v3-h">Parts</h3>
+      <div id="v3parts" class="v3-parts"></div>
+    </aside>
+  </main>
+
+  <footer class="foot">
+    <span>Representative technical illustrations based on manufacturer references, not replicas of a specific product. Not to scale between manufacturers; no process or operating data shown.</span>
+    <span class="legend" id="legend"></span>
+  </footer>
+</div>
+<script type="importmap">
+{ "imports": {
+    "three": "../../vendor/three-0.160.0/three.module.min.js",
+    "three/addons/": "../../vendor/three-0.160.0/addons/"
+} }
+</script>
+<script src="../../equipment/equipment-data.js"></script>
+<script src="../../equipment/bottle-draw.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

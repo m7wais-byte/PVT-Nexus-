@@ -88,6 +88,9 @@ Run any procedure directly, or the full validation sequence.
 ### 04 · Report
 A full **Final Report** assembled from the simulator's own stage values: cover, summary, Tables 1–14, Figures 1–10 and appendices (including a list of every assumption). Exports through **Print / PDF** and **Export Word**.
 
+### Sample bottles and Bottle Details
+Every sample bottle in the procedures uses the approved **Oil Sample Bottle** (floating-piston cylinder with valve protectors, seals, guide ring and a loose mixing ring) and **Gas Sample Bottle** (seamless double-ended cylinder) designs — the same two drawings on every page and in Bottle Details, with the page tubing connected to their valve outlets. Each page has a **Bottle Details** button (and the bottle itself is clickable) that opens the bottle in a 2D technical view or an interactive 3D model, exterior or cutaway, with part explanations and the operating principle. Opening it pauses the running stage; **Back to Procedure** returns to the same stage and values, and the procedure resumes when you press Resume.
+
 ### 05 · PVT Calculator
 Live oil and gas property calculators that run beside the workflow.
 
@@ -122,6 +125,8 @@ cd PVT-Nexus-
 # open index.html in Chrome or Edge (double-click works — no server needed)
 ```
 
+The Bottle Details **3D view** uses ES modules, which browsers do not load from `file://`. To use it locally, serve the folder instead, e.g. `python3 -m http.server 8000` and open `http://localhost:8000/`. Everything else, including the 2D equipment drawings, works from a double-click.
+
 Recommended: a desktop browser at 1366 × 768 or larger.
 
 ---
@@ -136,6 +141,9 @@ PVT-Nexus-/
 ├── timing.js           Global process-animation speed (PROCESS_SPEED_MULTIPLIER)
 ├── runtime.js          Lightweight template / component engine
 ├── assets/             Logo
+├── equipment/          Bottle Details: bottle data, 2D drawings (bottle-draw.js), 3D viewer (bottle3d.js), styles
+├── vendor/             three.js r160 (MIT) for the 3D viewer, loaded on demand
+├── prototypes/bottles/ Standalone bottle design review page (uses equipment/ and vendor/)
 ├── data/
 │   ├── pure-components.js   Pure-component reference table (MW, Pc, Tc)
 │   └── report-data.js       Final Report data set (demonstration values)
@@ -151,6 +159,8 @@ PVT-Nexus-/
 │   ├── StageDensity.js      Direct density
 │   ├── StageReport.js       Final Report
 │   ├── OilCalc.js / GasCalc.js   Property calculators
+│   ├── BottleArt.js         Shared sample-bottle drawings for the procedures
+│   ├── BottleDetails.js     Bottle Details overlay
 │   └── StepGuide.js         Explain panel content
 ├── screens/            One file per screen
 └── PROJECT.md          Detailed developer notes

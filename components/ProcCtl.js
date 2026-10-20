@@ -391,6 +391,24 @@
   }
 
   var widgets = [];
+  /* hold (Bottle Details overlay): pause every running procedure through its own Pause action, so its
+     panel shows Resume and the user resumes it; keep animations frozen while the overlay is open.
+     A running timeline without a pausable panel is paused on the clock and resumed on release. */
+  var holdOn = false, holdClock = false;
+  function hold(on) {
+    on = !!on;
+    if (on === holdOn) return;
+    holdOn = on;
+    if (on) {
+      var done = false;
+      [].forEach.call(document.querySelectorAll('.pc-host[data-pc]'), function (h) {
+        var W = h.__pc, inf = W && update(W);
+        if (inf && inf.status === 'running' && inf.canPause !== false) { click(W, 'pause'); done = true; }
+      });
+      if (!done && !PCLK.paused() && PCLK.busy()) { PCLK.pause(); holdClock = true; }
+    } else if (holdClock) { holdClock = false; PCLK.resume(); }
+    tick();
+  }
   function tick() {
     var hosts = document.querySelectorAll('.pc-host[data-pc]');
     var anyPaused = false, anyHost = false;
@@ -400,8 +418,8 @@
       var inf = update(W);
       if (inf) { if (!anyHost) global.__PC_STATUS = inf.status; anyHost = true; if (inf.status === 'paused' || (inf.status === 'ready' && inf.frozen)) anyPaused = true; }
     });
-    if (PCLK.paused() && !anyHost) PCLK.resume();   // no procedure on screen: never leave the clock paused
-    freeze(anyPaused || (anyHost && PCLK.paused()));
+    if (PCLK.paused() && !anyHost && !holdOn) PCLK.resume();   // no procedure on screen: never leave the clock paused
+    freeze(holdOn || anyPaused || (anyHost && PCLK.paused()));
     global.__PC_HAS_PANEL = anyHost;
     if (!anyHost) global.__PC_STATUS = null;
   }
@@ -421,6 +439,8 @@
     freeze: freeze,
     noJump: noJump,
     refresh: function () { tick(); },
+    hold: function (on) { hold(on); },
+    held: function () { return holdOn; },
     /* generic stage helpers for PCLK timeline modules */
     seek: function (reset, startFn, reached) {
       PCLK.clearAll();

@@ -160,6 +160,46 @@ screens/                one file per screen, each registers a named slot
 | `difflib` `separator` `gc` `visc` `pvTest` `density` | analysis stages |
 | `validation` `about` `settings` | support screens |
 
+## Sample bottles and Bottle Details (2026-10-19)
+
+Every sample bottle in the procedures is the approved **Oil Sample Bottle** or **Gas Sample Bottle** — the same
+drawing as Bottle Details (`equipment/bottle-draw.js`, PBDraw), placed with one transform (translate · rotate ·
+uniform scale) through `components/BottleArt.js` (window.BottleArt). There are no other bottle variants.
+- `BottleArt.oil(p, o)` — floating piston, loose mixing ring, sample and driving-fluid chambers, end caps and
+  right-angle needle valves; the page supplies only live state (fill / piston styles or its own bore contents in the
+  approved bore units -226..226 with a 46-unit piston, valve-state ring and needle lift). `oilPort` gives the world
+  point of each valve's side outlet, where the page tubing ends. `BottleArt.gas(p, o)` / `gasPort` likewise for the
+  gas bottle. `pill` — SVG "Bottle Details" button.
+- `components/SampleBottle.js` (Sampling pages) places the same oil / gas drawings in the old Sampling frame.
+- Tubing was re-routed to the approved side outlets; flow connections, valve states, values, timing and stage
+  order are unchanged. Line valves that belong to the rig stay separate from the bottle's own valves.
+- Visual standardization only: where a procedure text describes another bottle arrangement (for example nitrogen
+  back-pressure in the wellhead guide), the drawing does not depict that mechanism.
+
+| Page | Bottle | Bottle Details |
+|---|---|---|
+| Sampling · Wellhead (`showModule01`) | field oil bottle | `oil` |
+| Sampling · Separator | oil bottle + gas bottle | `oil` + `gas` (selector) |
+| Validation · Sample Transfer (`showXfer`) | SPS/PDS receiving bottle | `oil` |
+| Validation · steps 1–3 (`showRestore`) | SPS/PDS, inverted (driving side up) | `oil` |
+| Validation · step 4 (`QcAgitSim`) | SPS/PDS on the inversion stand | `oil` |
+| Validation · Charging (`showTest`) | SPS/PDS charging rig | `oil` |
+| Validation · Recombination (`RecombSim`) | GSP gas bottle, separator oil bottle, recombination bottle | `gas` + `oil` (selector) |
+| Analysis · Single-phase viscosity (`StageViscSingle`) | SPS/PDS rig | `oil` |
+| Analysis · GC gas (`StageGC`) | active and spare gas bottles in the balloon oven | `gas` |
+
+Not sample bottles (unchanged): MDT/MPSR downhole bottles (BottomHoleSim, the MPSR tool on showXfer), titanium
+transfer cylinder (RecombSim), PVT cells, pumps, flash balloon, helium cylinder.
+
+**Bottle Details** (`components/BottleDetails.js`): any element with `data-bd-open="oil|gas"` (both types separated
+by `|` open a selector) and optional `data-bd-ctx` opens a full-screen overlay outside #app with the approved
+viewer — 2D (`equipment/bottle-draw.js`) / 3D (`equipment/bottle3d.js`, imported on first use and destroyed on close),
+exterior / cutaway, upright / horizontal, labels, clickable parts and operating principle
+(`EQUIPMENT.*.principle` in `equipment/equipment-data.js`).
+Opening calls `PC.hold(true)` (ProcCtl.js): a running stage is paused through its own Pause action, animations freeze;
+closing returns to the same stage and values and the user resumes from the panel. General equipment view only.
+`equipment/build-preview.py OUT.html` bundles the whole app into one file for a hosted review preview.
+
 ## Template syntax
 
 The markup is the original export's dialect, handled by `runtime.js`:
@@ -681,3 +721,20 @@ Playback: `GC.gas.runMs` 60 s (x PROCESS_SPEED_MULTIPLIER).
   orthogonal callout leaders, larger text, magnifier frame + zoom cone to the inset. Side-panel figure shows the
   MPSR bottles / SRS chamber + N2 from the same state. Timeline, states and values unchanged.
 - Backup: _backup_app_20260930_before_sampling_visual/
+
+## Bottle scale, valve direction and stands (2026-10-20)
+- `BottleArt` placement option `flip` (mirror left-right) sets valve direction per page; the shared drawing is
+  unchanged and `oilPort` / `SampleBottle.ports` follow it. Validation: valves face RIGHT (Steps 1-3 bottle is
+  inverted + flipped; transfer, step 4 at 0°, charging and recombination were already right). Sampling: wellhead
+  bottle (field + panel) and separator oil bottle are flipped so their valves face LEFT toward the incoming line.
+- `BottleArt.stand(p, o)` = shared lab support stand (base plate on feet, rod, boss clamps, side jaw pads only,
+  optional fork ledge under the lower cap) used by Steps 1-3, Sample Transfer (restored) and Charging.
+  Step 4 inversion stand (QcAgitSim) and Recombination stage-9 stand restyled to match; motion unchanged.
+  `rodX == x` puts the rod behind the bottle (Charging: keeps the moving Floating Piston pointer clear).
+  Recombination stages before inversion: slot stand (rod right, two clamps) at the connection slot, fades out
+  as the stage-9 inversion stand takes the bottle (RecombSim drawSlotStand).
+- Scales: Steps 1-3 0.49 -> 0.55 (centre 300, 238; Main QC_CY / QC_S), Step 4 0.5 -> 0.56 (pivot 405, 245),
+  transfer 0.49 -> 0.55 (centre 300, 300), charging 0.41 -> 0.47, wellhead 0.42 -> 0.55 (rests on ground y 360),
+  separator gas 0.36 -> 0.52, oil 0.33 -> 0.48. Recombination (0.67) unchanged.
+- Step 3 drain: reverse-L outlet (horizontal run, one 90° elbow, open end down at 372, 418), air gap above the
+  receiver; drops form at the opening and fall only while `qc3Flow` (waterDropStyle). Volumes / timing unchanged.
