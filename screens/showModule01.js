@@ -74,7 +74,7 @@ DC.slot('showModule01', `<sc-if value="{{ showModule01 }}" hint-placeholder-val=
             <!-- approved Oil Sample Bottle (components/SampleBottle.js): standing on the ground beside the flowline (in front of it),
                  sample above the piston, driving fluid below; mirrored so both valve outlets face left, toward the wellhead -->
             <ellipse cx="384" cy="359" rx="24" ry="3.2" fill="rgba(0,0,0,.28)"></ellipse>
-            ${SampleBottle.markup({ p:'sb', cx:384, cy:249.5, k:0.30, mirror:true, bd:'oil', bdCtx:'Wellhead sampling bottle', sample:'{{ whBtlSample }}', buffer:'{{ whBtlBuffer }}', piston:'{{ whBtlPiston }}' })}
+            ${SampleBottle.markup({ p:'sb', cx:384, cy:249.5, k:0.30, flip:true, bd:'oil', bdCtx:'Wellhead sampling bottle', sample:'{{ whBtlSample }}', buffer:'{{ whBtlBuffer }}', piston:'{{ whBtlPiston }}' })}
             <text x="404" y="150" font-family="IBM Plex Sans, sans-serif" font-size="12" font-weight="600" fill="var(--acca2)">Oil sample bottle</text>
             <text x="404" y="162" font-family="IBM Plex Mono, monospace" font-size="9.4" fill="var(--lbl2)">floating piston · driving fluid below</text>
           </g>
@@ -109,7 +109,7 @@ DC.slot('showModule01', `<sc-if value="{{ showModule01 }}" hint-placeholder-val=
             <rect x="1104.5" y="271.5" width="3" height="13" rx="1.4" fill="url(#ovMetalH)" stroke="#0a0e16" stroke-width="0.7"></rect>
             <!-- approved Oil Sample Bottle standing on the ground right of the outlets; mirrored so its valve outlets face the separator -->
             <ellipse cx="1300" cy="359" rx="22" ry="3" fill="rgba(0,0,0,.28)"></ellipse>
-            ${SampleBottle.markup({ p:'sb', cx:1300, cy:265.7, k:0.26, mirror:true, bd:'oil', bdCtx:'Separator oil sample bottle', sample:'{{ sepBtlSample }}', buffer:'{{ sepBtlBuffer }}', piston:'{{ sepBtlPiston }}' })}
+            ${SampleBottle.markup({ p:'sb', cx:1300, cy:265.7, k:0.26, flip:true, bd:'oil', bdCtx:'Separator oil sample bottle', sample:'{{ sepBtlSample }}', buffer:'{{ sepBtlBuffer }}', piston:'{{ sepBtlPiston }}' })}
             <text x="1270" y="240" text-anchor="end" font-family="IBM Plex Sans, sans-serif" font-size="12" font-weight="600" fill="var(--acca2)">Oil sample</text>
             <text x="1270" y="251" text-anchor="end" font-family="IBM Plex Mono, monospace" font-size="9.4" fill="var(--lbl2)">oil outlet line</text>
           </g>
@@ -239,7 +239,7 @@ DC.slot('showModule01', `<sc-if value="{{ showModule01 }}" hint-placeholder-val=
           <div class="m01-card m01-fig">
             <svg sc-camel-view-box="200 62 390 372" sc-camel-preserve-aspect-ratio="xMidYMid meet" style="display:block; width:100%; height:100%;">
               <defs>${SampleBottle.defs('wp')}</defs>
-              ${SampleBottle.markup({ p:'wp', x:300, y:74, s:1, mirror:true, bd:'oil', bdCtx:'Wellhead sampling bottle', sample:'{{ whBtlSample }}', buffer:'{{ whBtlBuffer }}', piston:'{{ whBtlPiston }}' })}
+              ${SampleBottle.markup({ p:'wp', x:300, y:74, s:1, flip:true, bd:'oil', bdCtx:'Wellhead sampling bottle', sample:'{{ whBtlSample }}', buffer:'{{ whBtlBuffer }}', piston:'{{ whBtlPiston }}' })}
               <g font-family="IBM Plex Sans, sans-serif">
                 <line x1="324" y1="118.7" x2="372" y2="118.7" stroke="rgba(120,170,230,.5)" stroke-width="1"></line>
                 <circle cx="374" cy="118.7" r="2.6" fill="var(--accb)"></circle>

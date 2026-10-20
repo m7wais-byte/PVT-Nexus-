@@ -12,15 +12,15 @@
      ${SampleBottle.markup({ p:'wb', x, y, s, sample:'{{ a }}', buffer:'{{ b }}', piston:'{{ c }}' })}
      mode:'gas' -> Gas Sample Bottle, sample = style of the gas fill
      styles(g)  -> fill / piston styles (BottleArt.styles), buffer = driving fluid
-     Direct placement (2026-10-20): cx, cy = bottle centre, k = approved-drawing scale, rot, mirror
-     (mirror: valve outlets on the left) - used by the Wellhead / Separator sampling scenes.
+     Direct placement (2026-10-20): cx, cy = bottle centre, k = approved-drawing scale, rot, flip
+     (flip: valve outlets on the left) - used by the Wellhead / Separator sampling scenes.
    ========================================================================== */
 (function () {
   var K_OIL = 204 / 452, K_GAS = 0.62;      // old bore height -> approved bore height; gas bottle a little shorter
   function frame(o) {
     var gas = o.mode === 'gas';
-    if (o.k) return { x: o.cx, y: o.cy, s: o.k, rot: o.rot || 0, mirror: !!o.mirror };
-    return { x: o.x, y: o.y + 171.5 * o.s, s: +(o.s * (gas ? K_GAS * 343 / 496 : K_OIL)).toFixed(4), rot: o.rot || 0, mirror: !!o.mirror };
+    if (o.k) return { x: o.cx, y: o.cy, s: o.k, rot: o.rot || 0, flip: !!o.flip };
+    return { x: o.x, y: o.y + 171.5 * o.s, s: +(o.s * (gas ? K_GAS * 343 / 496 : K_OIL)).toFixed(4), rot: o.rot || 0, flip: !!o.flip };
   }
   function defs(p) { return window.BottleArt.defs(p); }
   function markup(o) {

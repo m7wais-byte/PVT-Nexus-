@@ -191,14 +191,14 @@
          e: 'Flow stream entering the sample chamber.',
          o: 'Fluid entering the bottle while the line pressure stays steady.' },
     5: { t: 'Floating piston moves',
-         d: 'As the sample chamber fills, the floating piston is pushed down toward the nitrogen chamber.',
-         w: 'The piston separates the well fluid from the nitrogen. It moves with the sample, so the chamber fills with no empty space where gas could break out.',
+         d: 'As the sample enters the sample chamber, it pushes the floating piston down the bottle.',
+         w: 'The piston keeps the well fluid in its own chamber. It moves with the sample, so the chamber fills with no empty space where gas could break out.',
          e: 'Piston travelling down; sample volume growing above it.',
          o: 'Sample level and piston moving together.' },
-    6: { t: 'Nitrogen holds back-pressure',
-         d: 'The nitrogen below the piston pushes back on it and is displaced only in a controlled way, so the sample fills under pressure.',
-         w: 'This back-pressure keeps the pressure loss small, so gas stays dissolved and the sample stays single phase — as it was in the flowline.',
-         e: 'Nitrogen chamber getting smaller; bottle pressure levelling off.',
+    6: { t: 'Sample chamber fills',
+         d: 'Sample keeps entering the bottle and the piston keeps moving until the sample chamber holds the required volume.',
+         w: 'A steady fill, with no sudden pressure drop, helps keep the dissolved gas in solution so the sample stays single phase — as it was in the flowline.',
+         e: 'Sample chamber growing as the piston moves; bottle pressure levelling off.',
          o: 'Bottle pressure stabilising rather than dropping.' },
     7: { t: 'Close the valves',
          d: 'The required sample volume is reached. The bottle inlet valve is closed first, then the wellhead sampling valve.',
@@ -216,13 +216,13 @@
     intro: 'The sample is collected at surface from a dedicated sampling valve located immediately downstream of the wellhead / X-tree on the production flowline — before the fluid reaches the separator.',
     cards: [
       { n: 'Sampling point', t: 'Dedicated valve on the flowline just after the X-tree. Fluid is taken from the flowing stream, with oil and dissolved gas still together.' },
-      { n: 'Piston sample bottle', t: 'A floating piston separates the well fluid (sample chamber) from the nitrogen chamber below it.' },
-      { n: 'Nitrogen back-pressure', t: 'The nitrogen pushes back on the piston during filling. This limits pressure loss and gas breakout, so the sample stays single phase.' }
+      { n: 'Piston sample bottle', t: 'The well fluid enters the sample chamber above a floating piston and pushes the piston down as the bottle fills.' },
+      { n: 'Steady filling', t: 'The valves are opened slowly so the sample fills without a sudden pressure drop. This limits gas breakout, so the sample stays single phase.' }
     ],
     cond: 'Sampling conditions: wellhead pressure 1,450 psig · wellhead temperature 60 °C.',
-    steps: ['Connect bottle', 'Flush line', 'Open valve gradually', 'Fluid enters bottle', 'Piston moves', 'N₂ back-pressure', 'Close valves', 'Seal for lab'],
-    guide: 'Press Take Sample. The panel then explains each stage as the animation runs.',
-    note: { k: 'Pressure maintenance', t: 'N₂ at 2,000 psig behind the piston keeps the sample above bubble point while it fills. Bottle 600 cc.' }
+    steps: ['Connect bottle', 'Flush line', 'Open valve gradually', 'Fluid enters bottle', 'Piston moves', 'Sample chamber fills', 'Close valves', 'Seal for lab'],
+    guide: 'Press Take Sample. The panel then explains each stage as the animation runs.'
+    // no 'note': the former pressure-maintenance note (N2 at 2,000 psig, bottle 600 cc) had no documented source
   };
   function whStage(main, ph) {
     if (ph === 'done') return 8;

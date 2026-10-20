@@ -9,12 +9,11 @@
    page: fluid fills, piston position, valve-state ring and needle lift.
 
      oil(p, o)   o = { x, y (bottle centre), s (scale), rot (deg),
+                       flip (true: mirror left-right, so the right-angle outlets face the
+                       other way; set per page, the shared drawing is unchanged),
                        inner (bore contents) | sample / drive / piston styles + extra,
                        ring (false: no mixing ring), screen (inner drawn in the
                        un-rotated screen frame), ringT / ringB, needleT / needleB,
-                       mirror (true: valve outlets on the other side - an inverted
-                       bottle with rot 180 + mirror keeps its outlets on the right;
-                       the cutaway carries no text, so nothing reads mirrored),
                        bd / ctx (Bottle Details trigger) }
      oilPort(o, 'T'|'B')  world point of the side outlet of the sample-side (T)
                        or driving-side (B) right-angle valve: tubing ends here
@@ -26,6 +25,12 @@
                  for modules that build SVG strings for innerHTML
      needle(open)  style that lifts a valve needle off its seat (open 0..1)
      pill(x, y, spec, o)  "Bottle Details" button drawn in a page SVG
+     stand(p, o)  laboratory support stand (Validation pages), world units:
+                 o = { x (bottle axis), rodX, ground, top, clamps: [{ y, h }] (h = half
+                 width gripped), rest: { y, h } (ledge under a cap), baseL, baseR }.
+                 rodX == x: rod behind the bottle (side view), no side arms.
+                 -> { back (draw before the bottle), front (jaw pads, after it) }.
+                 Pads only touch the sides, so bore, piston and valves stay visible.
    Drawing only: no process values here.
    ========================================================================== */
 (function () {
@@ -52,17 +57,17 @@
   }
   function needle(open) { return 'transform:translateY(' + (-7 * Math.max(0, Math.min(1, open))).toFixed(2) + 'px); transition:transform .3s ease;'; }
 
-  function place(o) { return 'translate(' + r2(o.x) + ' ' + r2(o.y) + ')' + (o.rot ? ' rotate(' + o.rot + ')' : '') + ' scale(' + (o.mirror ? -o.s + ' ' + o.s : o.s) + ')'; }
+  function place(o) { return 'translate(' + r2(o.x) + ' ' + r2(o.y) + ')' + (o.rot ? ' rotate(' + o.rot + ')' : '') + (o.flip ? ' scale(' + (-o.s) + ' ' + o.s + ')' : ' scale(' + o.s + ')'); }
   function bdAttrs(o) { return o.bd ? ' class="bd-hit" data-bd-open="' + o.bd + '"' + (o.ctx ? ' data-bd-ctx="' + o.ctx + '"' : '') : ''; }
   function toWorld(o, lx, ly) {
     var a = (o.rot || 0) * Math.PI / 180, c = Math.cos(a), sn = Math.sin(a);
-    if (o.mirror) lx = -lx;
+    if (o.flip) lx = -lx;
     return [r2(o.x + o.s * (lx * c - ly * sn)), r2(o.y + o.s * (lx * sn + ly * c))];
   }
 
   function oil(p, o) {
     var inner = o.inner != null ? o.inner : D().liveInside(p, { sample: o.sample, drive: o.drive, piston: o.piston, ring: o.ring, extra: o.extra });
-    if (o.screen && (o.rot || o.mirror)) inner = '<g transform="' + (o.mirror ? 'scale(-1 1) ' : '') + 'rotate(' + (-(o.rot || 0)) + ')">' + inner + '</g>';
+    if (o.screen && (o.rot || o.flip)) inner = '<g transform="' + (o.flip ? 'scale(-1 1) ' : '') + (o.rot ? 'rotate(' + (-o.rot) + ')' : '') + '">' + inner + '</g>';
     var body = D().oil(p, { view: 'cutaway', live: { inner: inner, ringT: o.ringT, ringB: o.ringB, needleT: o.needleT, needleB: o.needleB } });
     return '<g transform="' + place(o) + '"' + bdAttrs(o) + '>' + body + '</g>';
   }
@@ -82,6 +87,55 @@
       '<text x="' + (w / 2 + 7) + '" y="15" text-anchor="middle">Bottle Details</text></g>';
   }
 
+  /* ------------------------------------------------- laboratory stand */
+  function stand(p, o) {
+    var x = o.x, rx = o.rodX, g = o.ground, top = o.top, K = 'stroke="#0a0e16"';
+    var behind = Math.abs(rx - x) < 0.5, left = rx < x, bL = o.baseL != null ? o.baseL : Math.min(rx, x) - 34, bR = o.baseR != null ? o.baseR : Math.max(rx, x) + 34;
+    var b = '', f = '';
+    // heavy base plate on levelling feet
+    b += '<ellipse cx="' + r2((bL + bR) / 2) + '" cy="' + r2(g - 1) + '" rx="' + r2((bR - bL) / 2 + 8) + '" ry="5" fill="rgba(0,0,0,.28)"></ellipse>';
+    [bL + 10, bR - 18].forEach(function (fx) { b += '<rect x="' + r2(fx) + '" y="' + r2(g - 5) + '" width="8" height="5" rx="1" fill="#1d2430" ' + K + ' stroke-width=".6"></rect>'; });
+    b += '<rect x="' + r2(bL) + '" y="' + r2(g - 15) + '" width="' + r2(bR - bL) + '" height="11" rx="3" fill="url(#' + p + 'SteelV)" ' + K + ' stroke-width="1"></rect>';
+    b += '<rect x="' + r2(bL + 4) + '" y="' + r2(g - 13.5) + '" width="' + r2(bR - bL - 8) + '" height="1.6" rx=".8" fill="#fff" opacity=".35"></rect>';
+    // support rod: threaded foot boss, rod, top cap
+    b += '<rect x="' + r2(rx - 9) + '" y="' + r2(g - 24) + '" width="18" height="10" rx="2" fill="url(#' + p + 'SteelD)" ' + K + ' stroke-width=".8"></rect>';
+    b += '<rect x="' + r2(rx - 4) + '" y="' + r2(top) + '" width="8" height="' + r2(g - 24 - top) + '" fill="url(#' + p + 'SteelD)" ' + K + ' stroke-width=".7"></rect>';
+    b += '<rect x="' + r2(rx - 5.5) + '" y="' + r2(top - 4) + '" width="11" height="5" rx="2" fill="url(#' + p + 'SteelD)" ' + K + ' stroke-width=".7"></rect>';
+    function arm(y, reach) {   // boss head on the rod + arm out to the bottle
+      var a0 = left ? rx + 4 : x + reach, a1 = left ? x - reach : rx - 4, o2 = '';
+      o2 += '<rect x="' + r2(Math.min(a0, a1)) + '" y="' + r2(y - 3) + '" width="' + r2(Math.abs(a1 - a0)) + '" height="6" rx="2.5" fill="url(#' + p + 'SteelV)" ' + K + ' stroke-width=".7"></rect>';
+      o2 += '<rect x="' + r2(rx - 8) + '" y="' + r2(y - 8) + '" width="16" height="16" rx="2.5" fill="url(#' + p + 'SteelD)" ' + K + ' stroke-width=".8"></rect>';
+      var kx = left ? rx - 8 : rx + 8, kd = left ? -1 : 1;     // thumb screw on the outer face of the boss
+      o2 += '<rect x="' + r2(kd > 0 ? kx : kx - 6) + '" y="' + r2(y - 1.5) + '" width="6" height="3" fill="url(#' + p + 'SteelV)" ' + K + ' stroke-width=".5"></rect>';
+      o2 += '<rect x="' + r2(kd > 0 ? kx + 6 : kx - 10) + '" y="' + r2(y - 5) + '" width="4" height="10" rx="1.5" fill="url(#' + p + 'Knob)" ' + K + ' stroke-width=".5"></rect>';
+      return o2;
+    }
+    (o.clamps || []).forEach(function (c) {
+      var h = c.h;
+      if (!behind) b += arm(c.y, h + 7);
+      // clamp band behind the bottle (hidden by it except at the sides)
+      b += '<rect x="' + r2(x - h - 7) + '" y="' + r2(c.y - 4) + '" width="' + r2(2 * h + 14) + '" height="8" rx="3" fill="url(#' + p + 'SteelV)" ' + K + ' stroke-width=".7"></rect>';
+      // jaw pads (cork-lined) touching each side + the tightening nut on the far jaw
+      [-1, 1].forEach(function (sd) {
+        var jx = sd < 0 ? x - h - 7 : x + h;
+        f += '<rect x="' + r2(jx) + '" y="' + r2(c.y - 11) + '" width="7" height="22" rx="2.5" fill="url(#' + p + 'SteelD)" ' + K + ' stroke-width=".8"></rect>';
+        f += '<rect x="' + r2(sd < 0 ? jx + 5 : jx) + '" y="' + r2(c.y - 9) + '" width="2" height="18" fill="#a07a4a" opacity=".9"></rect>';
+      });
+      var nx = left ? x + h + 7 : x - h - 7;
+      f += '<rect x="' + r2(left ? nx : nx - 7) + '" y="' + r2(c.y - 4) + '" width="7" height="8" rx="1.5" fill="url(#' + p + 'Knob)" ' + K + ' stroke-width=".6"></rect>';
+    });
+    if (o.rest) {   // ledge the lower cap sits on: fork plate (behind the valve) with lips each side
+      var r = o.rest, h2 = r.h;
+      if (!behind) b += arm(r.y + 3, h2 + 8);
+      b += '<rect x="' + r2(x - h2 - 8) + '" y="' + r2(r.y) + '" width="' + r2(2 * h2 + 16) + '" height="6" rx="2" fill="url(#' + p + 'SteelV)" ' + K + ' stroke-width=".8"></rect>';
+      [-1, 1].forEach(function (sd) {
+        var lx = sd < 0 ? x - h2 - 8 : x + h2 + 4;
+        f += '<rect x="' + r2(lx) + '" y="' + r2(r.y - 7) + '" width="4" height="13" rx="1.5" fill="url(#' + p + 'SteelD)" ' + K + ' stroke-width=".7"></rect>';
+      });
+    }
+    return { back: b, front: f };
+  }
+
   window.BottleArt = { defs: defs, defsRaw: defsRaw, tpl: tpl, raw: raw, styles: styles, needle: needle, H: H, TRAVEL: TRAVEL,
-    oil: oil, oilPort: oilPort, gas: gas, gasPort: gasPort, toWorld: toWorld, pill: pill };
+    oil: oil, oilPort: oilPort, gas: gas, gasPort: gasPort, toWorld: toWorld, pill: pill, stand: stand };
 })();

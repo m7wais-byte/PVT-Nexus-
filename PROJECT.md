@@ -173,12 +173,13 @@ uniform scale) through `components/BottleArt.js` (window.BottleArt). There are n
 - `components/SampleBottle.js` (Sampling pages) places the same oil / gas drawings in the old Sampling frame.
 - Tubing was re-routed to the approved side outlets; flow connections, valve states, values, timing and stage
   order are unchanged. Line valves that belong to the rig stay separate from the bottle's own valves.
-- Nitrogen is removed from the sample-bottle drawings only. OPEN FOR REVIEW: the wellhead Explain text
-  (components/StepGuide.js, WH stages 5-6 and WH_OVERVIEW: cards, step label "N₂ back-pressure", note "N₂ at 2,000 psig
-  behind the piston") still describes a nitrogen back-pressure chamber that the approved bottle does not show. The
-  approved design only names a generic "driving (hydraulic) fluid" (type not specified - prototypes/bottles/README.md
-  note 8), and nothing in the project documents 2,000 psig for it, so the text is left unchanged until the wording and
-  value are confirmed. The SRS downhole tool keeps its N₂ compensation (separate tool, not a sample bottle).
+- Nitrogen is removed from the sample-bottle drawings and from the wellhead Explain text (2026-10-20). The approved
+  design names only a generic "driving (hydraulic) fluid" (type not specified - prototypes/bottles/README.md note 8),
+  so the wellhead text names no buffer fluid and no pressure: stages 5-6, the overview cards and the step list
+  describe the sample entering the bottle and moving the piston. The former note "N₂ at 2,000 psig behind the piston
+  ... Bottle 600 cc" was removed: neither value has a documented source. OPEN FOR REVIEW: the Validation source labels
+  in Main.js valSrcMap still read "Piston bottle · ~600 cc" (wellhead) and "Oil piston bottle · ~600 cc" (separator),
+  also without a source. The SRS downhole tool keeps its N₂ compensation (separate tool, not a sample bottle).
 
 | Page | Bottle | Bottle Details |
 |---|---|---|
@@ -730,10 +731,10 @@ Playback: `GC.gas.runMs` 60 s (x PROCESS_SPEED_MULTIPLIER).
 
 Drawing / layout only: pressures, temperatures, volumes, valve states, stage order, timing and controls unchanged.
 
-- **Shared kit.** `BottleArt.oil/gas` take `mirror: true` (valve outlets on the other side; `oilPort` / `gasPort`
-  follow it). Rotate 180 + mirror = a vertical flip, so an inverted bottle keeps its outlets on the right; the cutaway
-  carries no text, so nothing reads mirrored. `SampleBottle.markup/ports` also accept direct placement
-  `{ cx, cy, k, rot, mirror }` (centre + approved-drawing scale).
+- **Shared kit.** `BottleArt.oil/gas` take `flip: true` (valve outlets on the other side; `oilPort` / `gasPort`
+  follow it). Rotate 180 + flip = a vertical flip, so an inverted bottle keeps its outlets on the right; the cutaway
+  carries no text, so nothing reads flipped. `SampleBottle.markup/ports` also accept direct placement
+  `{ cx, cy, k, rot, flip }` (centre + approved-drawing scale).
 - **Field Sampling overview** (`FieldSketch.js`): pipe-support stand between wellhead and choke removed (separator legs
   kept). Manifold rebuilt: straight TEST LINE (cyan flow) to the separator; production route = tee drop -> closed
   production valve -> PRODUCTION header -> rounded bend -> buried run TO PRODUCTION; OTHER WELLS come in buried and
@@ -744,20 +745,30 @@ Drawing / layout only: pressures, temperatures, volumes, valve states, stage ord
   each side. Sample risers (x 1110 gas, 1120 oil) and overview markers unchanged. Hover hit areas follow the new runs.
 - **Wellhead / Separator pages** frame their own working area of the same drawing (`fieldVB` in Main.renderVals:
   wellhead `0 76 740 420`, separator `560 46 780 420`; overview unchanged). Wellhead bottle k 0.30, standing on the
-  ground beside the flowline, mirrored (outlets face the wellhead), tubing over the choke into the top port; the
-  side-panel figure is mirrored the same way.
+  ground beside the flowline, flipped (outlets face the wellhead), tubing over the choke into the top port; the
+  side-panel figure is flipped the same way.
   Separator: gas bottle k 0.26 lying above the gas line (left end connection), oil bottle k 0.26 standing right of
-  the outlets, mirrored; tubing from the existing sample valves.
+  the outlets, flipped; tubing from the existing sample valves.
 - **Sample Transfer** (`showXfer.js`): geometry block `MXG` / `window.MX_GEO` (centre 300, 304, scale 0.55; was 0.49)
   used by the drawing and by Main.js (transfer / displaced-water line lengths, line-valve position). New receiving
   stand: base plate (the lower valve protector stands on it), rod, two boss heads + jaws on the barrel.
 - **Validation steps 1-3** (`showRestore.js`): geometry block `QCG` / `window.QC_GEO` (centre 300, 254, scale 0.55;
   was 0.49) used by the drawing and Main.js (injection-line length, flow-arrow positions, callout leaders). Bottle
-  inverted with rot 180 + mirror -> both valve outlets face right; the injection line runs straight up from the pump and straight left into
+  inverted with rot 180 + flip -> both valve outlets face right; the injection line runs straight up from the pump and straight left into
   the top valve side port (one bend; readout cards lowered 16 px to clear it). Clamp stand rebuilt (base plate, rod, boss heads, jaws on the heating jacket). Step 3 drain: reverse-L
   outlet (horizontal from the sample-valve port, one bend, straight down), glass receiver directly under the outlet,
   four SMIL drops fall from the outlet into it while `waterDropStyle` is on (same flag / volumes as before).
 - **Validation step 4** (`QcAgitSim.js`): scale 0.57 (was 0.5), pivot (380, 244); A-frame inversion stand (base plate
   on feet, two tapered legs + brace, trunnion block); readout card moved top-right, clear of the rotating bottle at
   every angle; the flexible line is drawn behind the bottle.
+- **From main (PR #2, merged into this branch 2026-10-20):** `BottleArt.flip` (same behaviour as the `mirror` option
+  this branch had - one name kept, `flip`) and `BottleArt.stand(p, o)`, the shared lab support stand (base plate on
+  feet, rod, boss clamps, side jaw pads, optional fork ledge; `rodX == x` puts the rod behind the bottle).
+  Charging (`showTest.js`): bottle 0.41 -> 0.47 on that stand, rod behind the bottle so the moving Floating Piston
+  pointer never crosses it. Recombination (`RecombSim.js`): slot stand (rod right, two clamps) in the stages before
+  inversion, fading out as the stage-9 inversion stand takes the bottle; stage-9 stand restyled. Both kept as is.
+- **Both branches redrew Steps 1-4, Sample Transfer, Wellhead and Separator.** This branch's versions were kept
+  (reviewed: straight injection line, sampling-page framing, rotating Agitation layout); main's alternatives for
+  those scenes (Steps 1-3 centre 300, 238; Step 4 pivot 405, 245; transfer centre 300, 300; wellhead 0.55 and
+  separator gas 0.52 / oil 0.48 in the full-field view) are not used.
 

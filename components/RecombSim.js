@@ -1052,13 +1052,33 @@
     var x = STAND.x, y = STAND.py;
     var o = '<g opacity="' + r1(w.stand * 100) / 100 + '">';
     o += '<ellipse cx="' + x + '" cy="618" rx="130" ry="7" fill="rgba(0,0,0,.18)"/>';
+    [x - 112, x + 104].forEach(function (fx) { o += '<rect x="' + fx + '" y="614" width="8" height="5" rx="1" fill="#1d2430" stroke="#0a0e16" stroke-width=".6"/>'; });   // levelling feet
     o += '<rect x="' + (x - 120) + '" y="604" width="240" height="12" rx="3" fill="url(#rcMetal)" stroke="#0a0e16"/>';
+    o += '<rect x="' + (x - 116) + '" y="605.5" width="232" height="1.6" rx=".8" fill="#fff" opacity=".35"/>';
     // two uprights either side of the bottle, carrying the pivot shaft
     o += '<rect x="' + (x - 78) + '" y="' + (y - 6) + '" width="12" height="' + (610 - y) + '" fill="url(#rcMetalH)" stroke="#0a0e16"/>';
     o += '<rect x="' + (x + 66) + '" y="' + (y - 6) + '" width="12" height="' + (610 - y) + '" fill="url(#rcMetalH)" stroke="#0a0e16"/>';
     o += '<rect x="' + (x - 78) + '" y="' + (y - 4) + '" width="156" height="8" rx="3" fill="url(#rcMetal)" stroke="#0a0e16" opacity=".9"/>';
+    // bearing blocks carrying the pivot shaft + gussets at the foot of each upright
+    [x - 82, x + 62].forEach(function (bx) { o += '<rect x="' + bx + '" y="' + (y - 12) + '" width="20" height="24" rx="3" fill="url(#rcMetalH)" stroke="#0a0e16"/>'; });
+    [[x - 66, 1], [x + 66, -1]].forEach(function (g) { o += '<path d="M' + g[0] + ',604 L' + g[0] + ',584 L' + (g[0] + 14 * g[1]) + ',604 Z" fill="url(#rcMetalH)" stroke="#0a0e16" stroke-width=".8"/>'; });
     o += T(x + 120, 632, 'INVERSION STAND', { a: 'end', m: 1, s: 9, ls: .6, c: 'var(--mut)' });
     return o + '</g>';
+  }
+  /* support stand at the connection slot (stages before the inversion), same parts as the Validation stands
+     (BottleArt.stand): rod right of the bottle with its own base (clear of the hydraulic line under the bottle),
+     two clamps on the barrel (valve tags and readouts stay clear). Fixed at the slot; fades out as the inversion stand
+     takes the bottle (stage 9). Drawing only. */
+  var SLOT_STAND = null;
+  function slotStand() {
+    if (!SLOT_STAND) SLOT_STAND = BottleArt.stand('rcb', { x: SLOT_X - PIV_DX, rodX: 458, ground: 620, top: 300,
+      clamps: [{ y: r1(PORT_Y + PIV_DY - 48), h: 23 }, { y: r1(PORT_Y + PIV_DY + 102), h: 23 }], baseL: 438, baseR: 490 });
+    return SLOT_STAND;
+  }
+  function slotStandOp(w) { return w.bot.kind ? clamp(1 - w.stand, 0, 1) : 0; }
+  function drawSlotStand(w, part) {
+    var a = slotStandOp(w); if (a <= .01) return '';
+    return '<g opacity="' + r1(a * 100) / 100 + '">' + slotStand()[part] + '</g>';
   }
   function standHub() { return '<circle cx="' + STAND.x + '" cy="' + STAND.py + '" r="11" fill="url(#rcMetal)" stroke="#0a0e16" stroke-width="1.3"/><circle cx="' + STAND.x + '" cy="' + STAND.py + '" r="4" fill="#0a1420"/>'; }
 
@@ -1228,8 +1248,8 @@
     // --- equipment (vacuum pump first = behind)
     o += drawVac(w);
     o += drawGSP(w) + drawBooster(w) + drawBooValves(w);
-    o += drawStand(w);
-    o += drawTi(w) + drawBottle(w) + drawPump(w) + drawCell(w);
+    o += drawStand(w) + drawSlotStand(w, 'back');
+    o += drawTi(w) + drawBottle(w) + drawSlotStand(w, 'front') + drawPump(w) + drawCell(w);
     if (w.stand > .01) o += '<g opacity="' + r1(w.stand * 100) / 100 + '">' + standHub() + '</g>';
     o += drawJacketLabel(w);
     o += drawAgCard(w) + drawXfCard(w) + drawRockCard(w);

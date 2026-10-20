@@ -2131,7 +2131,7 @@ const hi_d = (on) => on ? 'opacity:1; transition:opacity .5s ease;' : 'opacity:.
     const pressurised = cStep >= 5 || cStage >= 5;
 
     // drawing: approved Oil Sample Bottle bore y -226..226 (452 units) with a 46-unit floating piston -> 406 units
-    // of fluid, drawn at scale 0.41. Oil above the piston, water below it; the split comes from the shared
+    // of fluid, drawn at scale 0.47. Oil above the piston, water below it; the split comes from the shared
     // bottleModel(), which subtracts the sample drawn to the PVT cell as the transfer pump empties (100 -> 18 mL).
     const cBot = this.bottleModel();
     const C_BORE = 452, C_PIST = 46, C_USE = C_BORE - C_PIST;
@@ -2141,7 +2141,7 @@ const hi_d = (on) => on ? 'opacity:1; transition:opacity .5s ease;' : 'opacity:.
     const chargeWaterH = 226 - chargeWaterY;
     // bottle piston, line fluid and Pump A piston all track the same tween — keep their transitions identical
     const chargePistonStyle = 'transform:translateY(' + pistonDY.toFixed(1) + 'px); transition:transform .12s linear;';
-    const chargePistonLabelStyle = 'transform:translateY(' + (pistonDY * 0.41).toFixed(1) + 'px); transition:transform .12s linear;';
+    const chargePistonLabelStyle = 'transform:translateY(' + (pistonDY * 0.47).toFixed(1) + 'px); transition:transform .12s linear;';
 
     // fluid front along (585,60)->(770,60)->(770,190)->(1030,190)->(1030,215)
     // during the Pump A charge (stage 6) the head sweeps the whole path repeatedly,

@@ -1,12 +1,12 @@
 /* screen: showRestore  (33.1 KB) */
 /* Validation steps 1-3 bottle scene geometry (viewBox 0 22 900 492, floor y 470). One place for the bottle
    centre / scale: the drawing below and Main.js (window.QC_GEO: callout leaders, injection-line length) both
-   read it. The bottle is inverted with its valve outlets on the right (rotate 180 + mirror = vertical flip),
+   read it. The bottle is inverted with its valve outlets on the right (rotate 180 + flip = vertical flip),
    so a bottle-local point (lx, ly) is drawn at (cx + s*lx, cy - s*ly). */
 var QCG = (function () {
   var cx = 300, cy = 254, s = 0.55, r1 = function (v) { return Math.round(v * 10) / 10; };
   var g = { cx: cx, cy: cy, s: s, X: function (lx) { return r1(cx + s * lx); }, Y: function (ly) { return r1(cy + s * ly); }, L: function (d) { return r1(s * d); } };
-  var frame = { x: cx, y: cy, s: s, rot: 180, mirror: true };
+  var frame = { x: cx, y: cy, s: s, rot: 180, flip: true };
   var pB = window.BottleArt.oilPort(frame, 'B');   // driving (water) side valve outlet - top
   var pT = window.BottleArt.oilPort(frame, 'T');   // sample side valve outlet - bottom
   g.portB = pB; g.portT = pT;
@@ -94,7 +94,7 @@ DC.slot('showRestore', `<sc-if value="{{ showRestore }}" hint-placeholder-val="{
             </g>`).join('')}
 
             <!-- ===== PUMP -> UPPER (WATER-SIDE) VALVE ONLY =====
-                 the bottle is the approved Oil Sample Bottle, inverted (rotate 180 + mirror, so its valve outlets face right):
+                 the bottle is the approved Oil Sample Bottle, inverted (rotate 180 + flip, so its valve outlets face right):
                  the driving-side (water) valve is on top; the injection line drops beside it and enters its side port from the right -->
             <path d="${QCG.rsPath}" fill="none" stroke="#0a0e16" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"></path>
             <path d="${QCG.rsPath}" fill="none" stroke="url(#qPipe)" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"></path>
@@ -121,10 +121,10 @@ DC.slot('showRestore', `<sc-if value="{{ showRestore }}" hint-placeholder-val="{
             </g>
 
             <!-- ===== SPS/PDS BOTTLE = approved Oil Sample Bottle, INVERTED for restoration (water side up, oil sample down) =====
-                 centre / scale = QCG (top of this file); rotate 180 + mirror so the valve outlets face right. Bore contents are
+                 centre / scale = QCG (top of this file); rotate 180 + flip so the valve outlets face right. Bore contents are
                  drawn in the screen-aligned bottle frame (x -22..22, y -226..226, y down); Main.js computes fills, piston
                  and step-3 bands in that frame. -->
-            ${BottleArt.oil('q', { x: QCG.cx, y: QCG.cy, s: QCG.s, rot: 180, mirror: true, screen: true, bd: 'oil', ctx: 'SPS/PDS sample bottle · inverted for restoration (driving side up)',
+            ${BottleArt.oil('q', { x: QCG.cx, y: QCG.cy, s: QCG.s, rot: 180, flip: true, screen: true, bd: 'oil', ctx: 'SPS/PDS sample bottle · inverted for restoration (driving side up)',
               ringB: '{{ rsValveRing }}', needleB: '{{ rsNeedleStyle }}', ringT: '{{ qc3SvRing }}', needleT: '{{ qc3SvNeedleStyle }}',
               inner: `<rect x="-22" y="-226" width="44" height="452" fill="url(#qDrive)" style="{{ qcWaterStyle }}"></rect>
               <rect x="-22" y="-226" width="44" height="452" fill="url(#qOil)" style="{{ qcOilStyle }}"></rect>
