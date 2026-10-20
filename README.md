@@ -57,7 +57,7 @@ Three field sampling routes, each with live tool, bottle and flow behaviour.
 The downhole programme runs step by step: running in hole → setting the tool → formation communication → pump-out clean-up → sampling → sealing → pulling out of hole.
 
 ### Sample Transfer
-Transfer of the bottom-hole sample from one **SPMC chamber** (taken from the MDT multisample module, MRMS) into an SPS/PDS laboratory bottle. The SPMC cutaway shows the sample piston sweeping the sample out while the pump fills the buffer side and the nitrogen stays separated; the receiving bottle's floating piston and oil / water levels follow the same transfer clock. **SPMC Details** (or a click on the chamber) opens the MRMS module assembly with its six selectable chambers, the individual SPMC in 2D and 3D, and the four-stage operating principle.
+Transfer of the bottom-hole sample from one **SPMC chamber** (taken from the MDT multisample module, MRMS) into an SPS/PDS laboratory bottle. The pump drives the SPMC through its end connection; the SPMC cutaway shows the piston train sweeping the sample out while the drive fluid stays behind the pistons, and a gauge on the transfer line shows the line pressure. The receiving bottle's floating piston and oil / water levels follow the same transfer clock. **SPMC Details** (or a click on the chamber) opens the MRMS module assembly with its six selectable chambers and the individual SPMC in 2D and 3D.
 
 ### 02 · Validation (Sample Quality Control)
 Run any procedure directly, or the full validation sequence.
@@ -161,7 +161,7 @@ PVT-Nexus-/
 │   ├── OilCalc.js / GasCalc.js   Property calculators
 │   ├── BottleArt.js         Shared sample-bottle drawings for the procedures
 │   ├── BottleDetails.js     Bottle Details overlay
-│   ├── SpmcDetails.js       SPMC Details overlay (MRMS assembly, SPMC chamber, operating principle)
+│   ├── SpmcDetails.js       SPMC Details overlay (MRMS assembly, SPMC chamber)
 │   └── StepGuide.js         Explain panel content
 ├── screens/            One file per screen
 └── PROJECT.md          Detailed developer notes

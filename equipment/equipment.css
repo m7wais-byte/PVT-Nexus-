@@ -161,45 +161,7 @@ html[data-theme="light"] .bd-ov { background:rgba(30,42,60,.38); }
 .mr-sw { width:14px; height:10px; border-radius:3px; border:1px solid rgba(10,14,22,.5); flex:0 0 auto; }
 .mr-sw.metal { background:repeating-linear-gradient(45deg,#aeb3ba 0 2px,#4d535d 2px 3.5px); }
 .mr-sw.fn { background:#1a2029; border:1.5px dashed #d9a514; }
-/* Operating Principle */
-.mr-pr { position:absolute; inset:0; }
-.mr-pr[hidden] { display:none; }
-.mp { position:absolute; inset:0; display:flex; flex-direction:column; padding:6px 14px 10px; gap:6px; }
-.mp-steps { flex:0 0 auto; margin:0; padding:0; list-style:none; display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:8px; }
-.mp-steps button { width:100%; display:flex; align-items:center; gap:8px; text-align:left; cursor:pointer; padding:7px 10px; border-radius:8px; font-family:inherit;
-                   border:1px solid var(--line2); background:var(--chipbg); color:var(--txt2); font-size:12.5px; font-weight:600; }
-.mp-steps b { width:22px; height:22px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; flex:0 0 auto;
-              font:700 11.5px var(--font-mono); border:1.5px solid var(--line2); color:var(--txt2); }
-.mp-steps span { min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-.mp-steps button.done b { border-color:var(--grn); color:var(--grn); }
-.mp-steps button[aria-current="step"] { border-color:var(--blue); color:var(--txt); background:color-mix(in srgb, var(--blue) 14%, transparent); }
-.mp-steps button[aria-current="step"] b { background:var(--blue); border-color:var(--blue); color:#fff; }
-.mp-steps button:focus-visible { outline:2px solid var(--blue); outline-offset:2px; }
-.mp-fig { position:relative; flex:1 1 auto; min-height:0; }
-.mp-fig svg { position:absolute; inset:0; width:100%; height:100%; }
-.mp-note { position:absolute; left:0; right:0; bottom:0; margin:0; text-align:center; font:500 11px var(--font-mono); color:var(--mut); }
-.mp-ctl { flex:0 0 auto; display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
-.mp-ctl .ui-btn { padding:7px 12px; }
-.mp-ctl .mp-play { min-width:76px; justify-content:center; }
-.mp-bar { flex:1 1 120px; height:6px; border-radius:3px; background:var(--track); overflow:hidden; }
-.mp-bar i { display:block; height:100%; width:0; background:var(--blue); }
-.mp-time { font:500 11px var(--font-mono); color:var(--mut); white-space:nowrap; }
-.eq .mp-track { fill:var(--track); }
-.eq .mp-tick { stroke:var(--lbl2); stroke-width:1.2; }
-.eq .mp-mark { fill:var(--lbl); }
-.eq .mp-ghost { stroke:var(--eq-cut); stroke-width:1.4; stroke-dasharray:3 2; }
-.eq .mp-ghost-t { fill:var(--eq-cut); }
-.mr-explain[hidden] { display:none; }
 .eq-side > [hidden] { display:none !important; }
-.mr-legend.mr-legend-side { position:static; pointer-events:auto; background:transparent; border:0; padding:4px 0 0; border-top:1px solid var(--line); border-radius:0; }
-.mr-legend.mr-legend-side li { white-space:normal; }
-.mr-explain h4 { margin:0 0 4px; font-size:16px; font-weight:700; }
-.mr-explain .mp-k { margin:0 0 4px; font:600 10.5px var(--font-mono); letter-spacing:.7px; text-transform:uppercase; color:var(--teal); }
-.mr-explain .mp-s { color:var(--txt); font-weight:600; }
-.mr-explain p { margin:0 0 8px; font-size:13px; line-height:1.5; color:var(--txt2); }
-@media (max-width:1100px) {
-  .mp-steps { grid-template-columns:repeat(2,minmax(0,1fr)); }
-}
 
 /* SPMC Details overlay: view switcher, and the clickable source SPMC in Sample Transfer */
 .sd-subs .eq-seg button { font-weight:600; }

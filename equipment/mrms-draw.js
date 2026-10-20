@@ -10,15 +10,16 @@
                     sequence, not as dimensions): reservoir fluid | sample piston
                     (with the integrated agitation piston) | pressure-compensating
                     fluid | nitrogen piston | nitrogen charge.
-                    o.st = piston positions and function states (STATES.*), so the
-                    same drawing is used for inspection and the Operating Principle.
+                    o.st = piston positions and function states (STATES.*).
      module(ns, o)  MRMS module carrying six SPMC chambers on a common flowline.
                     Placement and routing are simplified (not published).
      xfer(ns, o)    the SPMC cutaway for Validation > Sample Transfer: the same
-                    drawing, with style hooks (o.live) for the sample, the sample
-                    piston, the compensating fluid, the inlet passage and the two
-                    function blocks, so the page can drive them from its transfer
-                    clock. Geometry for the page: XFER.
+                    drawing, with style hooks (o.live) for the sample, the piston
+                    train (sample piston + buffer + nitrogen piston), the drive
+                    fluid behind it, the inlet and end-port passages and the sample
+                    isolation, so the page can drive them from its transfer clock.
+                    The pump connects at the END connection (nitrogen end).
+                    Geometry for the page: XFER.
 
    Dimensions are drawing units, NOT scaled from a product drawing: the chamber is
    drawn shorter and wider than the real tool so the internals are readable.
@@ -32,6 +33,7 @@
     res:   { name: 'Reservoir fluid (sample)', a: '#d39a4c', b: '#9c6526', sw: '#c58a3d' },
     comp:  { name: 'Pressure-compensating fluid', a: '#a596e6', b: '#6c5bb8', sw: '#8e7fd6' },
     n2:    { name: 'Nitrogen charge', a: '#d6e4f6', b: '#a9bfdc', dot: '#4f6f9c', sw: '#b9cde8' },
+    drive: { name: 'Laboratory drive fluid', a: '#5aa6d8', b: '#2f6f9c' },
     open:  '#2fbf7f', shut: '#e0702a', fn: '#d9a514'
   };
   function r1(v) { return Math.round(v * 10) / 10; }
@@ -59,6 +61,7 @@
     o += lg('Res', [[0, COL.res.a], [1, COL.res.b]], true);
     o += lg('Comp', [[0, COL.comp.a], [1, COL.comp.b]], true);
     o += lg('N2', [[0, COL.n2.a, .95], [1, COL.n2.b, .95]], true);
+    o += lg('Drive', [[0, COL.drive.a], [1, COL.drive.b]], true);
     o += lg('Agit', [[0, '#5b4a2a'], [.35, '#b39a5f'], [.5, '#dcc690'], [.75, '#8e7843'], [1, '#463818']]);
     o += '<pattern id="' + ns + 'Hatch" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="6" height="6" fill="#aeb3ba"/><line x1="0" y1="0" x2="0" y2="6" stroke="#4d535d" stroke-width="1.6"/></pattern>';
     o += '<pattern id="' + ns + 'HatchB" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(-45)"><rect width="6" height="6" fill="#bcc1c8"/><line x1="0" y1="0" x2="0" y2="6" stroke="#59606b" stroke-width="1.4"/></pattern>';
@@ -131,8 +134,8 @@
       s += R(-G.R - 7, G.outY - 6, 7, 12, 'fill="' + hb + '" ' + K + ' stroke-width=".6"');
       s += R(-G.R - 7, G.outY - 1.8, G.R + 7 - G.rb, 3.6, 'fill="#0b1018"');
       s += R(-G.R - 10.5, G.outY - 5, 3, 10, 'rx="1" fill="#1a2029" stroke="' + COL.fn + '" stroke-width=".8" stroke-dasharray="2 1.5"');
-      if (lv) s += R(-G.R - 9.8, G.outY - 4.2, 1.6, 8.4, 'fill="' + COL.shut + '"') + R(-G.R - 9.8, G.outY - 4.2, 1.6, 8.4, 'fill="' + COL.open + '" style="' + (lv.outOpen || '') + '"');
-      else s += R(-G.R - 9.8, G.outY - 4.2, 1.6, 8.4, 'fill="' + (out > .5 ? COL.open : COL.shut) + '"');
+      // live (Sample Transfer): the displacement outlet stays closed; the pump uses the end connection
+      s += R(-G.R - 9.8, G.outY - 4.2, 1.6, 8.4, 'fill="' + (!lv && out > .5 ? COL.open : COL.shut) + '"');
     }
     // ---- heads
     s += head(ns, cut, -1, iso, act, lv) + head(ns, cut, 1, iso, act, lv);
@@ -140,6 +143,7 @@
       // inlet + charging passages in section
       s += R(-2.2, G.top, 4.4, G.top * -1 - G.headO + 4, 'fill="#0b1018"');
       s += R(-2.2, G.headO - 4, 4.4, 24, 'fill="#0b1018"');
+      if (lv) s += R(-2.2, G.headO - 4, 4.4, 24, 'fill="' + COL.drive.a + '" style="' + (lv.port || 'opacity:0') + '"');
       // cut-plane edges of the body
       s += P('M' + (-G.R) + ' ' + (-G.body) + ' V' + G.body + ' M' + G.R + ' ' + (-G.body) + ' V' + G.body, 'stroke="#e7752e" stroke-width="1.2" opacity=".5" fill="none"');
       if (!lv) s += flows(ns, st, fx);
@@ -171,6 +175,7 @@
       s += '<g>' + fnBlock(-12, by, 24, 28, 'valve', 0, ns) + '</g><g style="' + (lv.isoOpen || 'opacity:0') + '">' + fnBlock(-12, by, 24, 28, 'valve', 1, ns) + '</g>';
       return s;
     }
+    if (lv) s += R(-2.2, G.chB, 4.4, G.headO - G.chB, 'fill="' + COL.drive.a + '" style="' + (lv.port || 'opacity:0') + '"');   // drive fluid in the end passage
     s += fnBlock(-12, by, 24, 28, sg < 0 ? 'valve' : 'gate', sg < 0 ? iso : act, ns);
     return s;
   }
@@ -200,31 +205,34 @@
     return o.s;
   }
 
-  /* live interior for Sample Transfer (o.live): drawn at the filled state (STATES.filled) with the
-     sample piston at its ready position as the travel limit (no dead volume). The page moves it with
-     CSS transforms in these local units:
-       sample   rect chT .. filled sp + 10           scaleY, origin top      = (sp + 10 - chT) / XFER.resH
-       piston   agitation + sample piston at sp      translateY              = sp - XFER.sp0
-       buffer   rect (ready sp + 40) .. np           scaleY, origin bottom   = (np - sp - 40) / XFER.compH
-     The nitrogen piston and nitrogen charge do not move: the buffer is held at the transfer pressure. */
-  var XFER = { sp0: STATES.filled.sp, spEnd: STATES.ready.sp + 0, np: STATES.filled.np, travel: STATES.filled.sp - STATES.ready.sp,
-               resH: STATES.filled.sp + 10 - G.chT, compH: STATES.filled.np - (STATES.ready.sp + 40) };
+  /* live interior for Sample Transfer (o.live), drawn at the filled state (STATES.filled).
+     The pump is connected at the END connection, so laboratory drive fluid fills the space behind the
+     nitrogen piston (the nitrogen charge is taken as released before the transfer: assumption, see
+     MRMS-SPMC-SOURCES.md). Pumping in pushes the whole piston train toward the inlet: nitrogen piston,
+     the trapped compensating fluid (constant volume) and the sample piston move together, and only
+     the sample leaves through the inlet. The page moves it with CSS transforms in these local units:
+       sample   rect chT .. filled sp + 10            scaleY, origin top      = (sp + 10 - chT) / XFER.resH
+       train    sample piston + buffer + N2 piston    translateY              = sp - XFER.sp0
+       drive    rect (np_end + 26) .. chB             scaleY, origin bottom   = (chB - np - 26) / XFER.driveH
+     with np = XFER.np + (sp - XFER.sp0); the sample piston ends at its ready position (no dead volume). */
+  var XFER = { sp0: STATES.filled.sp, spEnd: STATES.ready.sp, np: STATES.filled.np, travel: STATES.filled.sp - STATES.ready.sp,
+               resH: STATES.filled.sp + 10 - G.chT };
+  XFER.driveH = G.chB - (XFER.np - XFER.travel + 26);
   function insideLive(ns, lv) {
-    var o = { s: '' }, rb = G.rb, sp = XFER.sp0, np = XFER.np, sp1 = STATES.ready.sp;
-    o.s += R(-rb, sp1 + 40, 2 * rb, XFER.compH, 'fill="url(#' + ns + 'Comp)" style="' + (lv.comp || '') + '"');
+    var o = { s: '' }, rb = G.rb, sp = XFER.sp0, np = XFER.np;
+    o.s += R(-rb, G.chB - XFER.driveH, 2 * rb, XFER.driveH, 'fill="url(#' + ns + 'Drive)" style="' + (lv.drive || '') + '"');
     o.s += R(-rb, G.chT, 2 * rb, XFER.resH, 'fill="url(#' + ns + 'Res)" style="' + (lv.res || '') + '"');
-    o.s += R(-rb, np + 26, 2 * rb, G.chB - np - 26, 'fill="url(#' + ns + 'N2)"');
-    o.s += R(-rb, np + 26, 2 * rb, G.chB - np - 26, 'fill="url(#' + ns + 'Dots)"');
     var p = { s: '' };
+    p.s += R(-rb, sp + 40, 2 * rb, np - sp - 40, 'fill="url(#' + ns + 'Comp)"');
     p.s += R(-14, sp, 28, 6, 'rx="1.5" fill="url(#' + ns + 'Agit)" ' + K + ' stroke-width=".6"');
     p.s += R(-6, sp + 6, 12, 4, 'fill="url(#' + ns + 'AlloyD)" ' + K + ' stroke-width=".5"');
     p.s += R(-rb, sp + 10, 2 * rb, 30, 'fill="url(#' + ns + 'AlloyD)" ' + K + ' stroke-width=".9"');
     p.s += R(-rb + 3, sp + 12, 2 * rb - 6, 2, 'fill="#fff" opacity=".35"');
     seals(-rb, rb, sp + 19, p); seals(-rb, rb, sp + 31, p);
+    p.s += R(-rb, np, 2 * rb, 26, 'fill="url(#' + ns + 'AlloyD)" ' + K + ' stroke-width=".9"');
+    p.s += R(-rb + 3, np + 2, 2 * rb - 6, 2, 'fill="#fff" opacity=".35"');
+    seals(-rb, rb, np + 8, p); seals(-rb, rb, np + 18, p);
     o.s += '<g style="' + (lv.piston || '') + '">' + p.s + '</g>';
-    o.s += R(-rb, np, 2 * rb, 26, 'fill="url(#' + ns + 'AlloyD)" ' + K + ' stroke-width=".9"');
-    o.s += R(-rb + 3, np + 2, 2 * rb - 6, 2, 'fill="#fff" opacity=".35"');
-    seals(-rb, rb, np + 8, o); seals(-rb, rb, np + 18, o);
     return o.s;
   }
   // the live SPMC cutaway as one group in page coordinates. o = { x, y, s, rot, live, attrs }

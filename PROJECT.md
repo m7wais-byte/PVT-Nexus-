@@ -204,24 +204,27 @@ closing returns to the same stage and values and the user resumes from the panel
 
 Validation › Sample Transfer (`showXfer`) takes its sample from ONE **SPMC chamber** (removed from the MRMS), not
 from an MPSR. The MRMS/SPMC implementation from commit 5de19e1 (former Equipment Library) was recovered selectively:
-`equipment/mrms-draw.js` (MRDraw), `equipment/mrms3d.js`, `equipment/mrms-principle.js` (MRPrinciple), the
-`EQUIPMENT.mrms` / `EQUIPMENT.spmc` data and the `mr-*` / `mp-*` styles. The Equipment Library page, card and
+`equipment/mrms-draw.js` (MRDraw), `equipment/mrms3d.js`, the `EQUIPMENT.mrms` / `EQUIPMENT.spmc` data and the
+`mr-*` styles. The downhole Operating Principle was not kept (VAPS does not perform that procedure). The Equipment Library page, card and
 navigation entry stay removed. Sources and assumptions: `equipment/MRMS-SPMC-SOURCES.md`.
 - **Scene.** `MRDraw.xfer(ns, o)` draws the same SPMC cutaway (horizontal, inlet left) with style hooks (`o.live`):
-  sample, sample-piston assembly, compensating fluid, inlet passage, sample-isolation and drive-port states.
-  Placement `MX_SPMC`, drive port `MX_SPMC_DRIVE` (MRDraw.toPage) in `screens/showXfer.js`.
+  sample, piston train (sample piston + compensating fluid + nitrogen piston), drive fluid, inlet and end-port
+  passages, sample isolation. Placement `MX_SPMC`, end connection `MX_SPMC_END` (MRDraw.toPage) in `screens/showXfer.js`.
 - **Transfer coupling** (`Main.js`, `mxSp*`): the existing clock is unchanged. The sample piston travels the full
-  sample length (`MRDraw.XFER.travel`, no dead volume) with the existing swept fraction `mxVm`; the buffer grows by
-  the same length; the nitrogen piston does not move (buffer held at transfer pressure). Sample isolation opens with
-  the existing valve (`mxValve`); the drive port opens when the pump starts. Only the sample enters the transfer
-  line; the drive fluid (compensating-fluid colour) only enters the buffer side.
+  sample length (`MRDraw.XFER.travel`, no dead volume) with the existing swept fraction `mxVm`. The pump drives the
+  SPMC END connection: drive fluid fills the space behind the nitrogen piston (nitrogen charge taken as released) and
+  the whole piston train moves toward the inlet; the compensating fluid stays trapped between the pistons. Sample
+  isolation opens with the existing valve (`mxValve`). Only the sample enters the transfer line.
+- **Transfer-line gauge.** The former line valve is a pressure gauge on a tee (`mxLinePText`, `mxLineGaugeStyle`,
+  0–10,000 psi dial) showing the existing transfer pressure; indicator only. The bottle's own valves are unchanged.
 - **SPMC Details** (`components/SpmcDetails.js`): any `#app [data-spmc-open]` (the SPMC drawing, the scene pill and
   the header button) opens an overlay on the individual SPMC chamber, with MRMS module assembly (six selectable
-  chambers, open a chamber / Back to MRMS assembly), SPMC chamber and Operating principle (four stages, own rAF loop).
-  2D / 3D, exterior / cutaway, upright / horizontal, labels, light background, parts; 3D imported on first use and
-  destroyed on close with the principle player. Opening calls `PC.hold(true)` like Bottle Details; Back to Transfer
+  chambers, open a chamber / Back to MRMS assembly) and SPMC chamber.
+  2D / 3D, exterior / cutaway, upright / horizontal, labels, light background, parts, camera controls; 3D imported
+  on first use and destroyed on close. Opening calls `PC.hold(true)` like Bottle Details; Back to Transfer
   returns to the same step and quantities.
 - The 450 cc transfer volume, pressures, temperatures, timing, valve sequence and step order are unchanged.
+  **Open modelling issue:** 450 cc transferred vs the documented 250 cm³ SPMC-T sample (see MRMS-SPMC-SOURCES.md).
 `equipment/build-preview.py OUT.html` bundles the whole app into one file for a hosted review preview.
 
 ## Template syntax

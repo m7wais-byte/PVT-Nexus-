@@ -2,7 +2,7 @@
 
 **MRMS — MDT Multisample Module**, with the inspectable **SPMC — Single-Phase Multisample Chamber**.
 Files: `equipment/equipment-data.js` (text), `equipment/mrms-draw.js` (2D), `equipment/mrms3d.js` (3D),
-`equipment/mrms-principle.js` (Operating Principle), viewer `components/SpmcDetails.js`.
+viewer `components/SpmcDetails.js`.
 
 Built first for the former Equipment Library (commits c7e4ad4 / 5de19e1). Since 2026-10-20 it is reached only from the
 source SPMC in **Validation › Sample Transfer** (SPMC Details); the Equipment Library stays removed.
@@ -77,7 +77,7 @@ they do not all belong to the same generation:
    must be trapped for the nitrogen to pressurize the sample.
 6. **MRMS layout.** Six chambers in three tiers of two, one branch and valve per chamber off the common flowline,
    bay cover plates on the exterior. Placement and routing are **not verified**.
-7. **Operating principle.** Volumes are proportional to lengths in a constant bore. Sample in = fluid displaced out
+7. **Operating principle** (former Equipment Library only, removed). Volumes are proportional to lengths in a constant bore. Sample in = fluid displaced out
    during filling. Sample contraction = nitrogen expansion on retrieval. The contraction is **exaggerated** (12 %
    of the sample length) for visibility. Pressure and temperature indicators are qualitative (no numbers). The
    "without compensation" marker shows the general effect of cooling a non-compensated sample.
@@ -87,21 +87,30 @@ they do not all belong to the same generation:
 The transfer scene draws ONE SPMC chamber (the sample source) with the same cutaway (`MRDraw.xfer`). The laboratory
 transfer connection of an SPMC is not in the accessible references, so these are **assumptions**:
 
-1. **Drive on the buffer side.** The transfer pump is connected to the schematic displacement outlet, used here as a
-   drive port into the pressure-compensating fluid between the two pistons. Pumping there pushes the sample piston
-   toward the inlet, so only the sample leaves through the sample inlet. The drive fluid is drawn in the
-   compensating-fluid colour. The nitrogen is not vented or used in the scene.
-2. **Nitrogen piston fixed.** The buffer is held at the existing transfer pressure, so the nitrogen piston does not
-   move during the transfer.
-3. **Starting state** = the filled state (`STATES.filled`); the retrieval contraction shown in the Operating
-   Principle is not repeated in the laboratory scene. The Operating Principle never runs during the transfer.
+1. **Drive at the end connection.** The transfer pump connects to the SPMC end connection (the nitrogen end, drawn
+   as the nitrogen charging port). Laboratory drive fluid fills the space behind the nitrogen piston; the nitrogen
+   charge is taken as **released before the transfer** (not shown as a step). The schematic displacement outlet is
+   not used and stays closed.
+2. **Piston train.** Pumping in pushes the nitrogen piston, the trapped compensating fluid (constant volume) and the
+   sample piston toward the inlet together. Only the sample leaves through the sample inlet; the drive fluid stays
+   behind the nitrogen piston.
+3. **Starting state** = the filled state (`STATES.filled`).
 4. **Sample isolation** opens together with the existing sampler / transfer valve step.
-5. **Volume.** The scene keeps the app's existing 450 cc transfer into the ~800 cc SPS/PDS bottle. The SPMC-T sheet
-   gives a 250 cm³ sample (table above), so no volume is printed on the SPMC; the transferred volume should be
-   reviewed if the SPMC-T capacity is to be used.
+5. **Transfer-line pressure gauge.** The former line valve on the transfer line is drawn as a pressure gauge on a tee
+   (indicator only). It shows the existing transfer-pressure value.
 
-## 6. Not implemented
+### Unresolved modelling issue — capacity
 
+The app transfers **450 cc** from the SPMC into the ~800 cc SPS/PDS bottle (existing simulation volume, kept
+unchanged). The SPMC-T sheet gives a **250 cm³** sample (table above). These do not agree. No volume is printed on
+the SPMC, but that does not resolve the mismatch: the transferred volume, or the source equipment, still needs a
+decision.
+
+## 6. Not included
+
+- The downhole Operating Principle (capture, isolation, compensation during retrieval) was removed from SPMC
+  Details: VAPS does not perform that procedure. Its former implementation is in commit 5de19e1
+  (`equipment/mrms-principle.js`).
 - SRS (single-phase reservoir sampler).
 - Field Sampling (open hole) still shows the MRMS with MPSR bottles; it is not linked to the SPMC used in Sample
   Transfer.

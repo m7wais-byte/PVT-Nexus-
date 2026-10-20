@@ -99,7 +99,7 @@
     short: 'MRMS',
     type: 'Formation-tester sample module',
     summary: 'Module of the MDT formation tester that carries six individual sample chambers. This entry shows it fitted with SPMC single-phase multisample chambers.',
-    chips: ['Six sample chambers', 'Common flowline', 'SPMC chamber', 'Operating principle'],
+    chips: ['Six sample chambers', 'Common flowline', 'SPMC chamber'],
     about: [
       'The MDT tester is a string of modules. Its probe or packer module opens the formation, the pumpout module draws fluid along the tool flowline, and fluid-analysis modules monitor the fluid until filtrate contamination is low. Only then is a sample taken.',
       'The MRMS is the sample-storage part of that string. Its six chambers sit on the common tool flowline. Each chamber is filled on its own, at its own depth, under control from surface. The samples stay separate: there is no shared storage volume.',
@@ -137,7 +137,7 @@
       headU:    { n: 'Upper head', d: 'End closure on the sample side. It houses the sample isolation function and the inlet passage.' },
       body:     { n: 'Pressure body', d: 'Metallic pressure vessel. SLB lists Inconel or Hastelloy for the SPMC-T, and a Dursan nonreactive coating.' },
       headL:    { n: 'Lower head', d: 'End closure on the nitrogen side. It holds the nitrogen charging connection and the charge-activation function.' },
-      n2Port:   { n: 'Nitrogen charging port', d: 'Connection through which the nitrogen charge is preset before the job (plugged).' },
+      n2Port:   { n: 'Nitrogen charging port', d: 'Connection through which the nitrogen charge is preset before the job (plugged). In the Sample Transfer scene this end connection is used for the laboratory drive fluid, with the nitrogen charge taken as released (an assumption: the laboratory connection is not published).' },
       isoValve: { n: 'Sample isolation (self-closing)', d: 'Closes the sample chamber downhole after capture, so no sample is lost on the way out of the well. Shown as a function block: the internal valve design is not published.', internal: 1 },
       resFluid: { n: 'Reservoir-fluid chamber', d: 'Holds the formation fluid sample. Its volume is zero before sampling (no dead volume) and grows as the sample piston is pushed back.', internal: 1 },
       agit:     { n: 'Agitation piston (integrated)', d: 'Documented for the SPMC-T: used after retrieval, while the sample is restored to reservoir conditions, to mix it. It is not part of pressure compensation. Its exact form and drive are not published; shown schematically at the sample piston.', internal: 1 },
@@ -146,7 +146,7 @@
       nPiston:  { n: 'Nitrogen piston', d: 'Floating piston between the nitrogen charge and the pressure-compensating fluid.', internal: 1 },
       n2:       { n: 'Nitrogen chamber', d: 'Holds the preset nitrogen charge. After activation it expands as the sample cools, keeping the sample above reservoir pressure. It stays sealed from the sample.', internal: 1 },
       activation: { n: 'Nitrogen charge activation', d: 'Keeps the nitrogen charge from acting until the sample is captured, then lets it act (SLB: the independent gas charge activates with sample capture). Function only: the mechanism is not published.', internal: 1 },
-      outlet:   { n: 'Controlled-displacement outlet', d: 'Schematic only. While the chamber fills, fluid behind the sample piston leaves at a controlled rate (controlled displacement). The route and the throttling part are not published. In the Sample Transfer scene the same schematic port is used as the laboratory drive port on the buffer side (an assumption: the laboratory connection is not published).', internal: 1 },
+      outlet:   { n: 'Controlled-displacement outlet', d: 'Schematic only. While the chamber fills, fluid behind the sample piston leaves at a controlled rate (controlled displacement). The route and the throttling part are not published. It stays closed during the laboratory transfer.', internal: 1 },
       seals:    { n: 'Piston seals', d: 'Seal rings on both pistons keep the three fluids apart.', internal: 1 }
     },
     legend: [
@@ -154,32 +154,6 @@
       ['comp', 'Pressure-compensating fluid'],
       ['n2', 'Nitrogen charge'],
       ['metal', 'Metal (section)']
-    ],
-    stages: [
-      { t: 'Ready to capture', b: 'Ready to capture',
-        s: 'Chamber empty, isolated from the flowline',
-        x: [
-          'Before any sample is taken, supporting MDT modules do the formation work: the probe or packer opens the formation, the pumpout module draws fluid through the tool flowline, and fluid-analysis modules monitor it until mud-filtrate contamination is low.',
-          'The SPMC waits closed. Its sample piston sits against the inlet end, so the reservoir-fluid chamber has no dead volume. The nitrogen charge is preset and isolated.'
-        ] },
-      { t: 'Controlled sample filling', b: 'Controlled filling',
-        s: 'Formation fluid pushes the sample piston back',
-        x: [
-          'The chamber valve opens. Clean formation fluid enters the reservoir-fluid chamber at flowing pressure.',
-          'The sample piston moves back by exactly the sample volume, and the same volume of fluid behind it leaves at a controlled rate (controlled displacement). The sample is not flashed. The nitrogen piston does not move.'
-        ] },
-      { t: 'Sample isolation', b: 'Sample isolation',
-        s: 'Self-closure, then the nitrogen charge acts',
-        x: [
-          'The chamber self-closes downhole, trapping the sample. The displacement path is closed.',
-          'The nitrogen charge is activated with capture. Its pressure acts on the nitrogen piston and is carried by the compensating fluid to the sample piston, so the sample is overpressured above reservoir pressure. Pressure is transmitted; no fluid crosses between the regions.'
-        ] },
-      { t: 'Pressure compensation during retrieval', b: 'Compensation on retrieval',
-        s: 'Sample cools and contracts; nitrogen expands',
-        x: [
-          'As the tool is pulled out of the well, the sample cools and contracts. On its own this would drop the sample pressure, possibly below saturation pressure.',
-          'The nitrogen expands, pushing the nitrogen piston, the compensating fluid and the sample piston forward to follow the sample. The sample stays at or above reservoir pressure, in single phase. The nitrogen stays in its own chamber.'
-        ] }
     ]
   };
 })();

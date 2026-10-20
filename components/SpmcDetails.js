@@ -11,14 +11,15 @@
                             common flowline; open a chamber, return to the assembly
      SPMC chamber           2D / 3D, exterior / cutaway, upright / horizontal,
                             labels, part descriptions
-     Operating principle    four-stage educational sequence (MRPrinciple)
-   2D  equipment/mrms-draw.js (MRDraw)      principle  equipment/mrms-principle.js
+   The downhole Operating Principle of the former Equipment Library is not
+   included (VAPS does not perform that procedure).
+   2D  equipment/mrms-draw.js (MRDraw)
    3D  equipment/mrms3d.js, imported on first use; destroyed on close
 
    Opening holds the procedure (PC.hold) exactly as Bottle Details does: the running
    transfer is paused through its own Pause action and its animations freeze;
-   closing returns to the same step and quantities. The Operating Principle runs on
-   its own animation frame loop and never touches the transfer state.
+   closing returns to the same step and quantities. Nothing in the viewer touches
+   the transfer state.
    ========================================================================== */
 (function () {
   'use strict';
@@ -28,7 +29,7 @@
   var ARROW = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M5 12h14M13 6l6 6-6 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>';
   var BACK = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M19 12H5M11 6l-6 6 6 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>';
 
-  var ov = null, root = null, mview = null, mloading = null, player = null, lastFocus = null;
+  var ov = null, root = null, mview = null, mloading = null, lastFocus = null;
   var S = { sub: 'spmc', chamber: 1, ctx: '', mode: '2d', view: 'cutaway', orient: 'upright', labels: true, auto: false, selected: null, bg: '' };
 
   function seg(key, items) {
@@ -44,7 +45,7 @@
         '<button type="button" class="ui-btn ui-btn-primary bd-close" data-act="close">' + BACK + '<span>Back to Transfer</span></button>' +
       '</header>' +
       '<div class="eq-bar">' +
-        '<span class="sd-subs">' + seg('sub', [['module', 'MRMS module assembly'], ['spmc', 'SPMC chamber'], ['principle', 'Operating principle']]) + '</span>' +
+        '<span class="sd-subs">' + seg('sub', [['module', 'MRMS module assembly'], ['spmc', 'SPMC chamber']]) + '</span>' +
         '<span class="mr-insp">' + seg('mode', [['2d', '2D technical view'], ['3d', '3D view']]) +
         seg('view', [['exterior', 'Exterior'], ['cutaway', 'Cutaway']]) +
         seg('orient', [['upright', 'Upright'], ['horizontal', 'Horizontal']]) + '</span>' +
@@ -60,15 +61,12 @@
           '<div class="eq-view">' +
             '<div class="eq-2d" data-ref="d2"></div>' +
             '<div class="eq-3d" data-ref="d3" hidden><div class="v3-canvas" data-ref="canvas"></div><div class="v3-labels" data-ref="labels"></div><p class="eq-msg" data-ref="msg" hidden></p></div>' +
-            '<div class="mr-pr" data-ref="pr" hidden></div>' +
             '<div class="mr-legend" data-ref="legend" hidden></div>' +
             '<p class="eq-help" data-ref="help"></p>' +
           '</div>' +
         '</section>' +
         '<aside class="eq-side" aria-label="Parts">' +
           '<div class="eq-info" data-ref="info" aria-live="polite"></div>' +
-          '<div class="mr-explain" data-ref="explain" hidden></div>' +
-          '<div class="mr-legend mr-legend-side" data-ref="legendSide" hidden></div>' +
           '<h4 class="eq-h" data-ref="partsH">Parts</h4><div class="eq-parts" data-ref="parts"></div>' +
           '<h4 class="eq-h" data-ref="aboutH"></h4><div class="eq-about" data-ref="about"></div>' +
           '<p class="bd-note">General equipment view. It does not show live readings from the transfer.</p>' +
@@ -83,12 +81,11 @@
   }
 
   function render() {
-    var pr = S.sub === 'principle', three = S.mode === '3d' && !pr, mod = S.sub === 'module', cut = S.view === 'cutaway', b = bg();
+    var three = S.mode === '3d', mod = S.sub === 'module', cut = S.view === 'cutaway', b = bg();
     root.querySelectorAll('[data-seg]').forEach(function (g) {
       var v = S[g.getAttribute('data-seg')];
       g.querySelectorAll('button').forEach(function (x) { x.setAttribute('aria-pressed', x.getAttribute('data-v') === v ? 'true' : 'false'); });
     });
-    root.querySelector('.mr-insp').hidden = pr;
     root.querySelector('[data-sw="labels"]').checked = S.labels;
     root.querySelector('[data-sw="lightbg"]').checked = b === 'light';
     root.querySelector('[data-sw="auto"]').checked = S.auto;
@@ -98,36 +95,26 @@
     ref('name').textContent = mod ? 'MRMS — Multisample Module' : 'SPMC — Single-Phase Multisample Chamber';
     ref('ctx').textContent = S.ctx ? 'On this page: ' + S.ctx : '';
     ref('back').hidden = S.sub !== 'spmc';
-    ref('title').textContent = mod ? 'MRMS module assembly' : pr ? 'SPMC — Operating Principle' : 'SPMC chamber';
-    ref('tag').textContent = pr ? 'EDUCATIONAL SEQUENCE' : S.sub === 'spmc' ? 'CHAMBER ' + S.chamber + ' · ' + (cut ? (three ? 'QUARTER SECTION' : 'SECTION ON AXIS') : 'EXTERIOR')
+    ref('title').textContent = mod ? 'MRMS module assembly' : 'SPMC chamber';
+    ref('tag').textContent = !mod ? 'CHAMBER ' + S.chamber + ' · ' + (cut ? (three ? 'QUARTER SECTION' : 'SECTION ON AXIS') : 'EXTERIOR')
       : cut ? (three ? 'CUTAWAY · HALF SECTION' : 'CUTAWAY · SECTION ON AXIS') : 'EXTERIOR';
-    ref('tag').className = 'eq-tag' + (cut && !pr ? ' cut' : '');
+    ref('tag').className = 'eq-tag' + (cut ? ' cut' : '');
     ref('basis').textContent = mod ? 'Educational representation · six chambers' : 'SPMC-T · educational representation';
-    ref('help').textContent = pr ? '' : three ? 'Drag to rotate · scroll or pinch to zoom · right-drag or two-finger drag to pan · click a part to inspect it' + (mod ? ' · double-click a chamber to open it' : '')
+    ref('help').textContent = three ? 'Drag to rotate · scroll or pinch to zoom · right-drag or two-finger drag to pan · click a part to inspect it' + (mod ? ' · double-click a chamber to open it' : '')
       : 'Click a label or a name in the parts list to read about that part' + (mod ? ' · double-click a chamber to open it' : '');
-    ref('d2').hidden = three || pr; ref('d3').hidden = !three; ref('pr').hidden = !pr;
-    legend(pr, cut);
-    ref('info').hidden = pr; ref('explain').hidden = !pr;
-    ref('partsH').hidden = pr; ref('parts').hidden = pr;
+    ref('d2').hidden = three; ref('d3').hidden = !three;
+    legend(cut);
     ref('aboutH').textContent = mod ? 'About the MRMS' : 'About the SPMC';
     ref('about').innerHTML = item.about.map(function (t) { return '<p>' + esc(t) + '</p>'; }).join('') + '<p class="eq-basis2">' + esc(item.basis) + '</p>';
-    if (pr) {
-      if (mview) mview.pause();
-      if (!player) player = window.MRPrinciple.mount(ref('pr'), ref('explain'), { labels: S.labels });
-      else player.labels(S.labels);
-      return;
-    }
-    if (player) { player.destroy(); player = null; }
     if (!three) draw2d();
     partsList(); info();
     if (three) show3d(); else if (mview) mview.pause();
   }
-  function legend(pr, cut) {
+  function legend(cut) {
     var L = ref('legend'), C = window.MRDraw.COL, sw = { res: C.res.sw, comp: C.comp.sw, n2: C.n2.sw, metal: 'metal' };
-    var show = pr || cut, side = ref('legendSide');
-    side.hidden = !pr; if (pr) { L.hidden = true; L = side; } else L.hidden = !show;
-    if (!show) return;
-    var items = S.sub === 'module' && !pr ? [] : E().spmc.legend.map(function (l) { return '<li><i class="mr-sw' + (sw[l[0]] === 'metal' ? ' metal' : '') + '" style="' + (sw[l[0]] === 'metal' ? '' : 'background:' + sw[l[0]]) + '"></i>' + esc(l[1]) + '</li>'; });
+    L.hidden = !cut;
+    if (!cut) return;
+    var items = S.sub === 'module' ? [] : E().spmc.legend.map(function (l) { return '<li><i class="mr-sw' + (sw[l[0]] === 'metal' ? ' metal' : '') + '" style="' + (sw[l[0]] === 'metal' ? '' : 'background:' + sw[l[0]]) + '"></i>' + esc(l[1]) + '</li>'; });
     items.push('<li><i class="mr-sw fn"></i>Function block · design not published</li>');
     L.innerHTML = '<ul>' + items.join('') + '</ul>';
   }
@@ -196,7 +183,7 @@
       if (!mview) { msg.className = 'eq-msg err'; msg.textContent = 'WebGL is not available in this browser, so the 3D view cannot be shown. The 2D technical view is still available.'; return; }
       msg.hidden = true;
       window.EQ3D = mview;                                         // review hook
-      if (S.mode === '3d' && S.sub !== 'principle') sync3d();
+      if (S.mode === '3d') sync3d();
     }).catch(function (e) {
       mloading = null;
       if (!root) return;
@@ -208,7 +195,6 @@
   function onClick(e) {
     var t = e.target;
     if (t === ov) { close(); return; }
-    if (t.closest('.mp')) return;                                  // Operating Principle player handles its own buttons
     var act = t.closest('[data-act]');
     if (act) {
       var a = act.getAttribute('data-act');
@@ -266,7 +252,6 @@
   function close() {
     if (!ov) return;
     if (mview) { mview.destroy(); mview = null; window.EQ3D = null; }
-    if (player) { player.destroy(); player = null; }
     ov.removeEventListener('click', onClick); ov.removeEventListener('keydown', onKey); ov.removeEventListener('change', onChange);
     ov.remove(); ov = null; root = null;
     document.documentElement.classList.remove('bd-open');
@@ -284,5 +269,5 @@
   });
 
   window.SpmcDetails = { open: open, close: close, isOpen: function () { return !!ov; },
-    state: function () { return Object.assign({}, S, { open: !!ov, mview: !!mview, player: !!player }); }, player: function () { return player; } };
+    state: function () { return Object.assign({}, S, { open: !!ov, mview: !!mview }); } };
 })();

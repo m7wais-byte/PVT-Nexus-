@@ -1,11 +1,11 @@
 /* screen: showXfer  (21.4 KB) */
 /* Sample Transfer support stand: rod left, fork ledge under the lower cap, clamp on the barrel (bottle centre 300, 300, scale 0.55) */
 var MX_STAND = BottleArt.stand('mx', { x: 300, rodX: 204, ground: 512, top: 196, clamps: [{ y: 268, h: 19 }], rest: { y: 438, h: 22 }, baseL: 168, baseR: 346 });
-/* Source SPMC chamber: inlet tip at the transfer line (410, 92); drive port on the buffer side, underneath */
+/* Source SPMC chamber: sample inlet tip at the transfer line (410, 92); end connection (nitrogen end) on the right */
 var MX_SPMC = { x: 605.6, y: 92, s: 0.6, rot: -90 };
-var MX_SPMC_DRIVE = MRDraw.toPage(MX_SPMC, -MRDraw.G.R - 11, MRDraw.G.outY);   // (629.6, 114.2)
+var MX_SPMC_END = MRDraw.toPage(MX_SPMC, 0, MRDraw.G.headO + 20);            // (792.8, 92) end-connection tip
 var MX_SPMC_CTX = 'SPMC chamber · source of the sample in this transfer';
-var MX_DRIVE_D = 'M846 404 V196 H' + MX_SPMC_DRIVE[0] + ' V' + MX_SPMC_DRIVE[1];   // pump outlet -> buffer-side drive port
+var MX_DRIVE_D = 'M846 404 V' + MX_SPMC_END[1] + ' H' + MX_SPMC_END[0];        // pump outlet -> SPMC end connection (length 365.2)
 DC.slot('showXfer', `<sc-if value="{{ showXfer }}" hint-placeholder-val="{{ false }}">
     <div data-screen-label="Module 01b — Bottom Hole Sample Transfer" class="pg pg-stack">
 
@@ -40,18 +40,17 @@ DC.slot('showXfer', `<sc-if value="{{ showXfer }}" hint-placeholder-val="{{ fals
             <line x1="0" y1="512" x2="900" y2="512" stroke="#46566f" stroke-width="1.5"></line>
             <rect x="0" y="512" width="900" height="33" fill="rgba(120,150,185,.04)"></rect>
 
-            <!-- ===== PUMP LINE: TRANSFER PUMP -> SPMC BUFFER-SIDE DRIVE PORT =====
-                 drive fluid drawn in the compensating-fluid colour: it only ever enters the buffer side, never the sample line -->
+            <!-- ===== PUMP LINE: TRANSFER PUMP -> SPMC END CONNECTION =====
+                 drive fluid enters behind the nitrogen piston only; it never reaches the sample line -->
             <path d="${MX_DRIVE_D}" fill="none" stroke="#0a0e16" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"></path>
             <path d="${MX_DRIVE_D}" fill="none" stroke="url(#mxPipe)" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"></path>
             <!-- drive line is primed (static); the active flow starts at the pump outlet and travels up to the drive port -->
-            <path d="${MX_DRIVE_D}" fill="none" stroke="#6c5bb8" stroke-width="2.6" stroke-linejoin="round" opacity=".5"></path>
-            <path d="${MX_DRIVE_D}" fill="none" stroke="#a596e6" stroke-width="2.8" stroke-linejoin="round" stroke-dasharray="512 512" style="{{ mxPumpFrontStyle }}"></path>
-            <mask id="mxPumpMask" sc-camel-mask-units="userSpaceOnUse" x="0" y="0" width="900" height="545"><path d="${MX_DRIVE_D}" fill="none" stroke="#ffffff" stroke-width="10" stroke-linejoin="round" stroke-dasharray="512 512" style="{{ mxPumpFrontStyle }}"></path></mask>
-            <path d="${MX_DRIVE_D}" fill="none" stroke="#ece8ff" stroke-width="2.2" stroke-dasharray="6 16" stroke-linecap="round" stroke-linejoin="round" mask="url(#mxPumpMask)" style="{{ mxPumpPulseStyle }}"><animate sc-camel-attribute-name="stroke-dashoffset" values="0;-22" dur="0.22s" sc-camel-repeat-count="indefinite"></animate></path>
-            <polygon points="846,286 840,300 852,300" fill="#a596e6" style="{{ mxArrowPumpStyle }}"></polygon>
-            <text x="858" y="216" font-family="IBM Plex Mono" font-size="10" letter-spacing="1" fill="var(--cap2)" transform="rotate(90 858 216)">BUFFER-SIDE DRIVE</text>
-            <text x="622" y="186" text-anchor="end" font-family="IBM Plex Mono" font-size="9" letter-spacing=".6" fill="var(--cap2)">DRIVE PORT · BUFFER SIDE</text>
+            <path d="${MX_DRIVE_D}" fill="none" stroke="#2f6f9c" stroke-width="2.6" stroke-linejoin="round" opacity=".5"></path>
+            <path d="${MX_DRIVE_D}" fill="none" stroke="#5aa6d8" stroke-width="2.8" stroke-linejoin="round" stroke-dasharray="370 370" style="{{ mxPumpFrontStyle }}"></path>
+            <mask id="mxPumpMask" sc-camel-mask-units="userSpaceOnUse" x="0" y="0" width="900" height="545"><path d="${MX_DRIVE_D}" fill="none" stroke="#ffffff" stroke-width="10" stroke-linejoin="round" stroke-dasharray="370 370" style="{{ mxPumpFrontStyle }}"></path></mask>
+            <path d="${MX_DRIVE_D}" fill="none" stroke="#d6eeff" stroke-width="2.2" stroke-dasharray="6 16" stroke-linecap="round" stroke-linejoin="round" mask="url(#mxPumpMask)" style="{{ mxPumpPulseStyle }}"><animate sc-camel-attribute-name="stroke-dashoffset" values="0;-22" dur="0.22s" sc-camel-repeat-count="indefinite"></animate></path>
+            <polygon points="846,236 840,250 852,250" fill="#5fb0ff" style="{{ mxArrowPumpStyle }}"></polygon>
+            <text x="858" y="270" font-family="IBM Plex Mono" font-size="10" letter-spacing="1" fill="var(--cap2)" transform="rotate(90 858 270)">DRIVE FLUID</text>
 
             <!-- ===== TRANSFER PUMP ===== -->
             <ellipse cx="846" cy="512" rx="52" ry="6" fill="rgba(0,0,0,.35)"></ellipse>
@@ -88,15 +87,15 @@ DC.slot('showXfer', `<sc-if value="{{ showXfer }}" hint-placeholder-val="{{ fals
             <!-- ===== SOURCE: ONE SPMC CHAMBER, removed from the MRMS (equipment/mrms-draw.js MRDraw.xfer) =====
                  Horizontal, sample inlet on the left (to the transfer line), nitrogen end on the right (plugged).
                  Fluids stay separated by the pistons: sample | sample piston | compensating fluid (buffer) |
-                 nitrogen piston | nitrogen. The pump drives the buffer side through the schematic drive port
-                 (MX_SPMC_DRIVE), so only the sample leaves through the inlet. Clicking the chamber opens SPMC Details. -->
+                 nitrogen piston | drive fluid. The pump connects at the end connection (MX_SPMC_END) and pushes the
+                 piston train, so only the sample leaves through the inlet. Clicking the chamber opens SPMC Details. -->
             ${MRDraw.xfer('mxs', Object.assign({ attrs: ' class="sd-hit" data-spmc-open="" data-spmc-ctx="' + MX_SPMC_CTX + '" role="button" tabindex="0" aria-label="SPMC Details"',
-              live: { res: '{{ mxSpResStyle }}', piston: '{{ mxSpPistonStyle }}', comp: '{{ mxSpCompStyle }}', inlet: '{{ mxSpInletStyle }}',
-                      isoOpen: '{{ mxSpIsoStyle }}', outOpen: '{{ mxSpDriveStyle }}' } }, MX_SPMC))}
+              live: { res: '{{ mxSpResStyle }}', piston: '{{ mxSpPistonStyle }}', drive: '{{ mxSpDriveStyle }}', inlet: '{{ mxSpInletStyle }}',
+                      isoOpen: '{{ mxSpIsoStyle }}', port: '{{ mxSpPortStyle }}' } }, MX_SPMC))}
             <g font-family="IBM Plex Sans" font-size="8.5" font-weight="700" letter-spacing=".5" pointer-events="none">
               <text x="530" y="95" text-anchor="middle" fill="#2a1a06" style="{{ mxSampleLabelStyle }}">SAMPLE</text>
               <text x="637" y="94.6" text-anchor="middle" font-size="7.4" fill="#1d1640" style="{{ mxBufferLabelStyle }}">BUFFER</text>
-              <text x="709" y="95" text-anchor="middle" fill="#1f3350">N₂</text>
+              <text x="706" y="95" text-anchor="middle" fill="#07202e">DRIVE</text>
             </g>
             <text x="520" y="148" text-anchor="middle" font-family="IBM Plex Sans" font-size="13" font-weight="600" letter-spacing=".4" fill="var(--lbl)">SPMC Chamber</text>
             <text x="520" y="163" text-anchor="middle" font-family="IBM Plex Mono" font-size="10" fill="var(--mut)">from the MRMS · source</text>
@@ -115,11 +114,17 @@ DC.slot('showXfer', `<sc-if value="{{ showXfer }}" hint-placeholder-val="{{ fals
             <path d="M410 92 H346 V145.5 H326.4" fill="none" stroke="#fff1cf" stroke-width="2.2" stroke-dasharray="6 16" stroke-linecap="round" stroke-linejoin="round" mask="url(#mxXferMask)" style="{{ mxXferPulseStyle }}"><animate sc-camel-attribute-name="stroke-dashoffset" values="0;-22" dur="0.26s" sc-camel-repeat-count="indefinite"></animate></path>
             <polygon points="372,92 384,86 384,98" fill="#e7b15a" style="{{ mxArrowX1Style }}"></polygon>
             <polygon points="346,141 340,131 352,131" fill="#e7b15a" style="{{ mxArrowX2Style }}"></polygon>
-            <rect x="334" y="112" width="24" height="14" rx="3" fill="url(#mxMetal)" stroke="#0a0e16" stroke-width="1"></rect>
-            <circle cx="346" cy="102" r="9" fill="#0c1626" stroke="{{ mxValveRing }}" stroke-width="2.2" style="transition:stroke .3s ease;"></circle>
-            <line x1="338.5" y1="102" x2="353.5" y2="102" stroke="#9fb6d6" stroke-width="1.8" stroke-linecap="round" style="{{ mxValveHandleStyle }}"></line>
-            <text x="332" y="95" text-anchor="end" font-family="IBM Plex Mono" font-size="9.5" letter-spacing=".5" fill="var(--cap2)">{{ mxValveText }}</text>
-            <text x="376" y="72" text-anchor="middle" font-family="IBM Plex Mono" font-size="10" letter-spacing="1" fill="var(--cap2)">TRANSFER LINE</text>
+            <!-- transfer-line pressure gauge on a tee above the line (indicator only, no flow control) -->
+            <rect x="389.4" y="70" width="5.2" height="22" fill="url(#mxMetal)" stroke="#0a0e16" stroke-width=".8"></rect>
+            <rect x="386" y="86" width="12" height="9" rx="1.5" fill="url(#mxMetal)" stroke="#0a0e16" stroke-width=".9"></rect>
+            <circle cx="392" cy="58" r="13" fill="url(#mxGauge)" stroke="#0a0e16" stroke-width="1.4"></circle>
+            <circle cx="392" cy="58" r="10" fill="none" stroke="rgba(174,188,207,.45)" stroke-width="1"></circle>
+            <g stroke="rgba(174,188,207,.7)" stroke-width="1"><line x1="384.9" y1="65.1" x2="386.3" y2="63.7"></line><line x1="392" y1="48" x2="392" y2="50"></line><line x1="399.1" y1="65.1" x2="397.7" y2="63.7"></line></g>
+            <line x1="392" y1="58" x2="392" y2="49.5" stroke="#e7b15a" stroke-width="1.6" stroke-linecap="round" style="{{ mxLineGaugeStyle }}"></line>
+            <circle cx="392" cy="58" r="1.8" fill="#e7b15a"></circle>
+            <text x="374" y="54" text-anchor="end" font-family="IBM Plex Mono" font-size="8.5" letter-spacing=".6" fill="var(--cap2)">LINE PRESSURE</text>
+            <text x="374" y="67" text-anchor="end" font-family="IBM Plex Mono" font-size="10.5" font-weight="600" fill="var(--accb3)">{{ mxLinePText }}</text>
+            <text x="391" y="107" text-anchor="middle" font-family="IBM Plex Mono" font-size="8" letter-spacing=".5" fill="var(--cap2)">TRANSFER LINE</text>
 
             <!-- ===== SPS/PDS BOTTLE = approved Oil Sample Bottle, upright: sample side up, driving (water) side down =====
                  centre (300, 300), scale 0.55, valves face right; Main.js fills / piston are in the bottle's bore units.
