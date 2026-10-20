@@ -28,13 +28,19 @@ Review links: `?preset=charge|pv|agit|xfer|two|plumb` · `&view=cutaway|plumbing
 
 - **Exterior**: the equipment as it looks.
 - **Cutaway**: a training section of the same geometry, showing sample chambers, pistons and internal passages. The real cylinders are opaque.
-- **Plumbing**: a schematic of the built-in plumbing, drawn from the same live state. Colour shows which volumes are connected to the header and pressure sensor in each valve state. **The arrangement is inferred from existing simulator code** and must be confirmed against the real equipment. *Check all 4 valve states* steps through both closed, only A, only B and both open.
+- **Plumbing**: a schematic of the built-in plumbing, drawn from the same live state. Colour shows which volumes are connected to the header and pressure sensor. The Cell Valve position is confirmed. **The cylinder-valve arrangement is still inferred from existing simulator code.** *Check all 4 valve states* steps through both closed, only A, only B and both open.
 
 ## Fixed design (identical in every use)
 
 - Thermal enclosure in a navy frame. **Pump B is on the left and Pump A is on the right**, with a lower mechanical piston drive under each cylinder.
-- **Two cylinder valves**: Pump B valve and Pump A valve, one valve block on top of each cylinder, with a T-handle above the roof. These match the two valves on the Charge page header. Valves show **open/closed only**: a green ring and OPEN/CLOSED tag, plus a red seat bar in the cutaway. The handle does not turn, because the operating mechanism (number of turns, needle type) is not verified.
-- **Built-in header (inferred)**: Port L → Pump B tee → pressure sensor → Pump A tee → Port R. Each cylinder valve isolates only its own cylinder, so **Port L stays connected to Port R in every valve state**. The sensor reads only the header plus whichever cylinders are open.
+- **Three permanent cell valves**:
+  - **Pump B valve** and **Pump A valve**: one valve block on top of each cylinder, with a T-handle above the roof.
+  - **Cell Valve (valve 3)**: at the **upper rear, behind the enclosure** (confirmed). It sits between Port L and the header. Its stem rises at the rear through the roof to a T-handle beside the Pump B handle. In the exterior view its body and rear line are drawn as hidden (dashed) lines behind the back panel. In the cutaway they are revealed in section inside a dashed outline. Its position is the same in every procedure.
+  - All three valves show **open/closed only**: a green ring and OPEN/CLOSED tag, plus a red seat bar in the cutaway. The operating mechanism is not verified, so nothing turns.
+- **Built-in plumbing**: Port L → rear line → **Cell Valve** → header tee → Pump B tee → pressure sensor → Pump A tee → Port R.
+  - **Closing the Cell Valve isolates Port L's external line from the header and from Port R.**
+  - Each cylinder valve isolates only its own cylinder (inferred).
+  - Port R has no valve and is always on the header.
 - **Two fixed ports**: Port L and Port R, on the frame posts. Neither is defined as gas or liquid. Charge feeds the left end and Flash takes sample from the right end.
 - Panel displays: header pressure (psig), sample volume for B and A (cc), and temperature (°C). The controller and computer stand on a desk to the right, behind the cell. Signal cables are dark sheathed curves, never steel tubing.
 
@@ -42,15 +48,23 @@ Only these change between uses: valve states, piston positions, readings, phase,
 
 ## Port rules
 
-Each port is in one of three states: **rated plug** (a pressure-rated closure), **open**, or **tubing**. A plug or tubing comes off only when the header reads 0 psig. The header cannot be pressurized or vacuumed while a port is open. The Port L tubing also cannot be removed while the bottle valve or the Cell Valve is open. Pressurized presets always show unused ports plugged.
+Each port is in one of three states: **rated plug** (a pressure-rated closure), **open**, or **tubing**. A plug or tubing comes off only when **that port** reads 0 psig.
+
+- Port R reads the header pressure.
+- Port L reads the header pressure when the Cell Valve is open, and its own isolated line pressure when the Cell Valve is closed.
+- The header cannot be pressurised while a port is open to it.
+
+**Bottle disconnection**, at the end of the Charge preset:
+1. Close the Pump A valve.
+2. Close the Cell Valve. The cell stays at its pressure.
+3. Close the bottle valve.
+4. Release the isolated Port L line to 0 psig. The release route is not drawn.
+5. Disconnect the tubing.
+6. Fit the rated plug.
 
 ## External equipment in the Charge preset
 
-SPS/PDS bottle (approved Oil Sample Bottle drawing) → bottle valve → **Cell Valve** → Port L. The **transfer pump** feeds driving fluid into the bottle's lower (driving-side) valve, as on the Charge page.
-
-- The Cell Valve stays at its Charge-page location on the external charge line. Its ownership is unconfirmed: it is not drawn as part of the cell, and it is labelled "owner unconfirmed".
-- Transfer pump volumes come from Charge: 100.0 → 98.0 mL (line fill) → 95.0 mL (2.0 cc dead space, equalized at 5,000 psig) → 18.0 mL (80 cc into Pump A).
-- The bottle **sample quantity** (450 cc, then 368 cc) is kept separate from its **drawing scale** (800 cc). Both come from `Main.js bottleModel()`. The drawing scale is not a verified bottle capacity.
+SPS/PDS bottle (approved Oil Sample Bottle drawing) → bottle valve → external tubing → Port L → Cell Valve → header. The **transfer pump** feeds driving fluid into the bottle's lower (driving-side) valve, as on the Charge page. The bottle quantity and drawing scale follow the bottle model the simulator already uses for this drawing (`Main.js bottleModel()`). All displayed numbers are temporary preview values.
 
 ## Volume → piston
 
@@ -72,10 +86,8 @@ Temperature is 114 °C, the project reservoir temperature. The gas share (18 %) 
 
 ## Open items for review
 
-1. **Header arrangement**: inferred from simulator code. Confirm against the real cell that the two cylinder valves sit on tees of one header with no valve between Port L and Port R.
-2. **Cell Valve ownership**: Charge disconnects the bottle after closing the Cell Valve while the cell stays at 5,000 psig. That suggests the Cell Valve isolates Port L. If it belongs to the cell, it becomes a third permanent valve at Port L. If it belongs to the charge line, Port L has no isolation of its own.
-3. **Charge order**: Charge vacuums the cell before connecting the bottle. Here Port L is connected first, so the cell can be vacuumed while Port L is sealed. The vacuum source is not drawn.
-4. **Scale mismatch in the existing pages**: Charge draws 100 cc as 176 px and StagePVTest as 173 px. Using one shared `pistonTop()` will resolve this at integration.
-5. **Drive mechanism**: drawn as a lead-screw drive with a carriage. The real drive type is not specified.
-6. **Receiver at Port R**: a generic placeholder. Flash, viscometers and other equipment will attach to the same fitting.
-7. **Ranges**: the manual limits (−15 to 10,000 psig, 20–200 °C) are preview limits, not equipment ratings.
+1. **Cylinder-valve arrangement**: inferred from simulator code. Confirm against the real cell that the Pump B and Pump A valves sit on tees of the header.
+2. **Port L line release**: the route used to release the isolated line before disconnection is not drawn.
+3. **Drive mechanism**: drawn as a lead-screw drive with a carriage. The real drive type is not specified.
+4. **Receiver at Port R**: a generic placeholder.
+5. **Preview numbers**: all values are temporary. After approval, each procedure keeps its own numbers, sequence and timing, with its connections mapped to Port L, Port R and the three cell valves.

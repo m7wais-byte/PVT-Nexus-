@@ -41,6 +41,8 @@
     rodHW: 5,
     drive: { y0: 494, y1: 706, hw: 40, win0: 497, win1: 703, off: 282 },  // carriage centre = piston top + off
     port: { L: { x: 300, wall: 330 }, R: { x: 930, wall: 900 } },
+    // Cell Valve (valve 3): upper rear, behind the enclosure. Port L line -> rear riser -> valve -> header start (tee)
+    cv: { x: 380, y0: 124, y1: 152, hw: 14, out: 138, tee: 410, stemTop: 66, bar: 58 },
     cap: 100                      // cc per cylinder (project value, see README)
   };
   G.stroke = G.bore.bot - G.bore.top - G.pist;   // 194 units = full capacity
@@ -80,20 +82,21 @@
   BTL.drv = [BTL.x + 48 * BTL.s, BTL.y + 281 * BTL.s];   // side outlet of the driving-side valve (bottom)
   // transfer pump (driving fluid into the bottle's lower side, as on the Charge page) right of the bottle
   var TP = { x0: 190, x1: 300, y0: 600, y1: 706 };
-  // Charge-page "Cell Valve": kept on the external charge line just before Port L (ownership unconfirmed)
-  var CV = { x: 262, y: 262 };
+  var TUBE_X = 262;   // external charge line riser (bottle -> Port L)
   // generic external receiver, right of the cell (placeholder for flash unit, viscometer, ...)
   var RCV = { x: 1000, y0: 300, y1: 470, hw: 30, cap: 100 };
   var ROUTE = {
-    L: [BTL.out, [CV.x, BTL.out[1]], [CV.x, G.hy], [G.port.L.x, G.hy]],
+    L: [BTL.out, [TUBE_X, BTL.out[1]], [TUBE_X, G.hy], [G.port.L.x, G.hy]],
     D: [[TP.x0, BTL.drv[1]], BTL.drv],
     R: [[G.port.R.x, G.hy], [RCV.x, G.hy], [RCV.x, RCV.y0 - 12]]
   };
   // internal flow paths (cylinder bore top -> riser -> header -> ...)
   var BT = G.bore.top;
+  // rear line behind the enclosure: Port L bulkhead -> Cell Valve inlet (bottom) ; outlet (side) -> header tee
+  var REAR = [[G.cv.x, G.hy], [G.cv.x, G.cv.y1], [G.cv.x, G.cv.out], [G.cv.tee, G.cv.out], [G.cv.tee, G.hy]];
   var FLOW = {
     A2B: [[G.x.A, BT], [G.x.A, G.hy], [G.x.B, G.hy], [G.x.B, BT]],
-    L2A: ROUTE.L.concat([[G.x.A, G.hy], [G.x.A, BT]]),
+    L2A: ROUTE.L.concat(REAR, [[G.x.A, G.hy], [G.x.A, BT]]),
     A2R: [[G.x.A, BT], [G.x.A, G.hy]].concat(ROUTE.R)
   };
   FLOW.D = ROUTE.D;   // driving fluid: transfer pump -> bottle (runs with L2A)
@@ -180,12 +183,12 @@
     o += R(c.x0 + c.post, c.mid1, c.x1 - c.x0 - 2 * c.post, c.bot0 - c.mid1, 'fill="url(#pcPanel)" opacity=".85"');
     // enclosure inner shadow + light strip
     o += R(c.x0 + c.post, c.roof1, c.x1 - c.x0 - 2 * c.post, 8, 'fill="#1b2a40" opacity=".10"');
-    o += R(c.x0 + 60, c.roof1 + 6, c.x1 - c.x0 - 120, 3, 'rx="1.5" fill="#ffffff" opacity=".95"');
+    o += R(c.x0 + 100, c.roof1 + 6, c.x1 - c.x0 - 160, 3, 'rx="1.5" fill="#ffffff" opacity=".95"');
     o += R(c.x0 + c.post, c.mid0 - 14, c.x1 - c.x0 - 2 * c.post, 14, 'fill="url(#pcSteelV)" opacity=".9"');   // enclosure floor plate
     // lower bay floor plate
     o += R(c.x0 + c.post, c.bot0 - 8, c.x1 - c.x0 - 2 * c.post, 8, 'fill="url(#pcSteelV)"');
     // panel fixing screws
-    [[c.x0 + 34, c.roof1 + 22], [c.x1 - 34, c.roof1 + 22], [c.x0 + 34, c.mid0 - 24], [c.x1 - 34, c.mid0 - 24]].forEach(function (p) { o += C(p[0], p[1], 2.6, 'fill="#9aa5b3" stroke="#5d6878" stroke-width=".7"'); });
+    [[c.x1 - 34, c.roof1 + 22], [c.x0 + 34, c.mid0 - 24], [c.x1 - 34, c.mid0 - 24]].forEach(function (p) { o += C(p[0], p[1], 2.6, 'fill="#9aa5b3" stroke="#5d6878" stroke-width=".7"'); });
     return o;
   }
   function frameFront() {
@@ -199,6 +202,7 @@
     [c.x0 + 8, c.x1 - 30, G.gx - 11].forEach(function (x) { o += R(x, c.bot1, 22, 6, 'fill="#5d6878"') + R(x - 4, c.bot1 + 6, 30, 10, 'rx="3" fill="url(#pcSteelD)" stroke="#3c4553" stroke-width=".8"'); });
     // roof grommets where the valve stems pass through
     ['B', 'A'].forEach(function (k) { o += R(G.x[k] - 11, c.roof0 - 3, 22, 4, 'rx="2" fill="#11203a"'); });
+    o += R(G.cv.x - 8, c.roof0 - 2, 16, 3, 'rx="1.5" fill="#0c1830"');   // rear stem grommet (Cell Valve)
     // electrical connector plate (signal cables leave here)
     o += R(c.x1 - 2, 598, 10, 28, 'rx="2" fill="url(#pcSteelD)" stroke="#3c4553" stroke-width=".8"');
     // name plate
@@ -210,13 +214,16 @@
   function header(cut) {
     var o = '', y = G.hy, x0 = G.port.L.x, x1 = G.port.R.x;
     // header tube (built-in, fixed): Port L - Pump B block - sensor tee - Pump A block - Port R
-    o += L(G.port.L.wall - 2, y, G.port.R.wall + 2, y, 'stroke="#4a5361" stroke-width="10" stroke-linecap="round"');
-    o += L(G.port.L.wall - 2, y, G.port.R.wall + 2, y, 'stroke="url(#pcSteelV)" stroke-width="7.4"');
-    o += L(G.port.L.wall, y - 2, G.port.R.wall, y - 2, 'stroke="#fff" stroke-width="1.3" opacity=".8"');
+    var h0 = G.cv.tee;   // header begins at the Cell Valve outlet tee (Port L reaches it only through the Cell Valve)
+    o += L(h0, y, G.port.R.wall + 2, y, 'stroke="#4a5361" stroke-width="10" stroke-linecap="round"');
+    o += L(h0, y, G.port.R.wall + 2, y, 'stroke="url(#pcSteelV)" stroke-width="7.4"');
+    o += L(h0 + 2, y - 2, G.port.R.wall, y - 2, 'stroke="#fff" stroke-width="1.3" opacity=".8"');
+    o += R(h0 - 9, y - 9, 18, 18, 'rx="2" fill="url(#pcSteelD)" ' + K + ' stroke-width="1"');   // tee from the rear Cell Valve line
     if (cut) {
-      o += L(G.port.L.wall - 2, y, G.port.R.wall + 2, y, 'stroke="#28313d" stroke-width="3.6"');
-      o += '<line id="pcHdrFluid" x1="' + x0 + '" y1="' + y + '" x2="' + x1 + '" y2="' + y + '" stroke="#d99a30" stroke-width="3.2" opacity="0"/>';
+      o += L(h0, y, G.port.R.wall + 2, y, 'stroke="#28313d" stroke-width="3.6"');
+      o += '<line id="pcHdrFluid" x1="' + h0 + '" y1="' + y + '" x2="' + x1 + '" y2="' + y + '" stroke="#d99a30" stroke-width="3.2" opacity="0"/>';
     }
+    void x0;
     // sensor tee
     o += R(G.gx - 11, y - 10, 22, 20, 'rx="2" fill="url(#pcSteelD)" ' + K + ' stroke-width="1"');
     if (cut) o += R(G.gx - 1.8, y, 3.6, 22, 'fill="#28313d"');
@@ -227,7 +234,7 @@
       var nx = k === 'L' ? xw - 16 : xw;                                                                       // bulkhead nut on the post
       o += R(nx, y - 10, 16, 20, 'rx="2" fill="url(#pcSteelD)" ' + K + ' stroke-width=".9"');
       o += L(nx + 5.3, y - 10, nx + 5.3, y + 10, 'stroke="#3c4553" stroke-width=".6" opacity=".6"') + L(nx + 10.7, y - 10, nx + 10.7, y + 10, 'stroke="#3c4553" stroke-width=".6" opacity=".6"');
-      if (cut) o += R(Math.min(xw, xe), y - 1.6, Math.abs(xe - xw) + (k === 'L' ? 18 : 0), 3.2, 'fill="#28313d"');
+      if (cut) o += R(Math.min(xw, xe), y - 1.6, Math.abs(xe - xw), 3.2, 'fill="#28313d"');
       // pressure-rated plug (unused port while the cell holds pressure or vacuum)
       var capX = k === 'L' ? xe - 14 : xe;
       o += '<g id="pcCap' + k + '">' + R(capX, y - 9.5, 14, 19, 'rx="2" fill="url(#pcSteelD)" stroke="#1d3a66" stroke-width="1.6"') +
@@ -270,6 +277,37 @@
     o += '<g id="pcTag' + k + '">' + R(x + 12, 76, 62, 18, 'rx="9" fill="#e4e8ee" stroke="#9aa6b5" stroke-width="1"') +
       '<text x="' + (x + 43) + '" y="89" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="11" font-weight="600" letter-spacing=".6" fill="#566578">CLOSED</text></g>';
     return o;
+  }
+
+  function cellValve(cut) {
+    var v = G.cv, x = v.x, o = '<g id="pcCellValve">';
+    var hid = 'fill="none" stroke="#5d6878" stroke-width="1.6" stroke-dasharray="6 4"';
+    var line = 'M' + (G.port.L.wall) + ' ' + G.hy + ' H' + x + ' V' + v.y1 + ' M' + (x + v.hw) + ' ' + v.out + ' H' + v.tee + ' V' + (G.hy - 9);
+    if (!cut) {
+      // behind the back panel: hidden-line convention (dashed), with a faint body tint
+      o += P(line, hid);
+      o += R(x - v.hw, v.y0, 2 * v.hw, v.y1 - v.y0, 'rx="3" fill="#8e99a8" fill-opacity=".14" stroke="#5d6878" stroke-width="1.6" stroke-dasharray="6 4"');
+      o += R(x - 10, v.y0 - 12, 20, 12, 'fill="none" stroke="#5d6878" stroke-width="1.2" stroke-dasharray="4 3"');
+    } else {
+      // revealed through the back panel for training: same position, sectioned
+      o += P(line, 'fill="none" stroke="#4a5361" stroke-width="8"') + P(line, 'fill="none" stroke="#28313d" stroke-width="3.6"');
+      o += '<path id="pcRearUp" d="M' + G.port.L.wall + ' ' + G.hy + ' H' + x + ' V' + (v.out + 6) + '" fill="none" stroke="#d99a30" stroke-width="3.2" opacity="0"/>';
+      o += '<path id="pcRearDn" d="M' + x + ' ' + v.out + ' H' + v.tee + ' V' + G.hy + '" fill="none" stroke="#d99a30" stroke-width="3.2" opacity="0"/>';
+      o += R(x - v.hw, v.y0, 2 * v.hw, v.y1 - v.y0, 'rx="3" fill="url(#pcHatch2)" ' + K + ' stroke-width="1.1"');
+      o += R(x - 1.8, v.out, 3.6, v.y1 - v.out, 'fill="#28313d"') + R(x, v.out - 1.8, v.hw, 3.6, 'fill="#28313d"');
+      o += '<rect id="pcSeatC" x="' + (x - 7) + '" y="' + (v.out + 4) + '" width="14" height="4" rx="1" fill="#c0392b"/>';
+      o += R(x - 10, v.y0 - 12, 20, 12, 'fill="url(#pcHatch)" ' + K + ' stroke-width=".8"');
+      o += R(x - v.hw - 8, v.y0 - 16, 2 * v.hw + 16 + (v.tee - x - v.hw), v.y1 - v.y0 + 22, 'rx="6" fill="none" stroke="#1d3a66" stroke-width="1.2" stroke-dasharray="3 3"');
+    }
+    o += '<rect id="pcVringC" x="' + (x - v.hw - 4) + '" y="' + (v.y0 - 4) + '" width="' + (2 * v.hw + 8) + '" height="' + (v.y1 - v.y0 + 8) + '" rx="5" fill="none" stroke="#2fa66f" stroke-width="2.6" opacity="0"' + (cut ? '' : ' stroke-dasharray="6 4"') + '/>';
+    // stem rises at the rear through the roof; T-handle above the roof (slightly smaller and set back)
+    o += R(x - 3, v.stemTop, 6, v.y0 - 12 - v.stemTop, 'fill="url(#pcSteelD)" ' + K + ' stroke-width=".6"');
+    o += R(x - 6.5, v.bar + 5, 13, 8, 'rx="2" fill="url(#pcSteelD)" ' + K + ' stroke-width=".7"');
+    o += R(x - 22, v.bar, 44, 7, 'rx="3.5" fill="url(#pcSteelD)" ' + K + ' stroke-width=".8" opacity=".92"');
+    o += C(x, v.bar - 1, 5, 'fill="url(#pcSteelV)" ' + K + ' stroke-width=".7"');
+    o += '<g id="pcTagC">' + R(x + 12, 74, 62, 18, 'rx="9" fill="#e4e8ee" stroke="#9aa6b5" stroke-width="1"') +
+      '<text x="' + (x + 43) + '" y="87" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="11" font-weight="600" letter-spacing=".6" fill="#566578">CLOSED</text></g>';
+    return o + '</g>';
   }
 
   function cylinder(k, cut) {
@@ -407,25 +445,15 @@
       '<path d="' + d + '" pathLength="1" stroke="url(#pcSteelV)" stroke-width="6" stroke-dasharray="1 1" stroke-dashoffset="1"/>' +
       '<path d="' + d + '" pathLength="1" stroke="#ffffff" stroke-width="1.3" opacity=".75" stroke-dasharray="1 1" stroke-dashoffset="1"/>' +
       '<path id="pcTubeFluid' + k + '" d="' + d + '" stroke="#d99a30" stroke-width="2.6" opacity="0"/>' +
-      (k === 'L' ? cellValve() : '') + '</g>';
+      '</g>';
   }
-  // Charge-page Cell Valve on the external charge line (same inline bowtie + handwheel look); state shown by fill
-  function cellValve() {
-    var x = CV.x, y = CV.y, o = '<g id="pcCV" opacity="0">';
-    o += L(x - 30, y, x - 8, y, 'stroke="#5d6878" stroke-width="3"') + C(x - 34, y, 10, 'fill="#f4f6f9" stroke="#5d6878" stroke-width="2.4"') +
-      L(x - 44, y, x - 24, y, 'stroke="#5d6878" stroke-width="1.6"') + L(x - 34, y - 10, x - 34, y + 10, 'stroke="#5d6878" stroke-width="1.6"');
-    o += '<g id="pcCVbody">' + P('M' + (x - 13) + ' ' + (y - 15) + ' H' + (x + 13) + ' L' + x + ' ' + y + ' Z', 'fill="#c9d0d9" stroke="#2a3443" stroke-width="1.3"') +
-      P('M' + (x - 13) + ' ' + (y + 15) + ' H' + (x + 13) + ' L' + x + ' ' + y + ' Z', 'fill="#c9d0d9" stroke="#2a3443" stroke-width="1.3"') + '</g>';
-    o += C(x, y, 20, 'id="pcCVring" fill="none" stroke="#2fa66f" stroke-width="2.4" opacity="0"');
-    return o + '</g>';
-  }
-
   function labels() {
     var o = '<g id="pcLabels" font-family="IBM Plex Sans, sans-serif" font-size="17" font-weight="600" fill="#1d2836" paint-order="stroke" stroke="#f3f6fa" stroke-width="4" stroke-linejoin="round">';
     var lead = function (x1, y1, x2, y2) { return L(x1, y1, x2, y2, 'stroke="#56657a" stroke-width="1.2" paint-order="normal"'); };
     var sub = 'font-size="14" font-weight="500" fill="#566578"';
     // valves
-    o += lead(G.x.B - 32, 58, 404, 58) + T(400, 54, 'Pump B valve', 'text-anchor="end"') + T(400, 72, 'cylinder valve 1', 'text-anchor="end" ' + sub);
+    o += lead(G.x.B + 32, 58, 504, 58) + T(508, 54, 'Pump B valve') + T(508, 72, 'cylinder valve 1', sub);
+    o += lead(G.cv.x - 24, 58, 346, 58) + T(342, 46, 'Cell Valve', 'text-anchor="end"') + T(342, 64, 'valve 3 · upper rear,', 'text-anchor="end" ' + sub) + T(342, 80, 'behind the enclosure', 'text-anchor="end" ' + sub);
     o += lead(G.x.A + 32, 58, 826, 58) + T(830, 54, 'Pump A valve') + T(830, 72, 'cylinder valve 2', sub);
     // header ports
     o += T(G.port.L.x - 2, 160, 'Port L', 'text-anchor="middle"') + '<text id="pcPortLTxt" x="' + (G.port.L.x - 2) + '" y="210" text-anchor="middle" ' + sub + '>capped</text>';
@@ -439,8 +467,6 @@
     o += T(1190 + DESK_DX, 734, 'Signal cables', 'text-anchor="middle" ' + sub);
     o += '<g id="pcLblBtl" opacity="0">' + T(BTL.x, 322, 'SPS/PDS sample bottle', 'text-anchor="middle"') + T(BTL.out[0] + 6, BTL.out[1] - 14, 'bottle valve', sub) +
       T((TP.x0 + TP.x1) / 2, 782, 'Transfer pump', 'text-anchor="middle"') + T(BTL.drv[0] + 4, BTL.drv[1] + 32, 'pump line', sub) + '</g>';
-    o += '<g id="pcLblCV" opacity="0">' + T(CV.x - 50, CV.y - 26, 'Cell Valve', 'text-anchor="end"') + T(CV.x - 50, CV.y - 9, 'Charge line', 'text-anchor="end" ' + sub) +
-      T(CV.x - 50, CV.y + 7, 'owner unconfirmed', 'text-anchor="end" font-size="13" font-weight="600" fill="#b0701a"') + '<text id="pcCVTxt" x="' + (CV.x - 50) + '" y="' + (CV.y + 24) + '" text-anchor="end" ' + sub + '>closed</text></g>';
     o += '<g id="pcLblRcv" opacity="0">' + T(RCV.x + 14, 238, 'External equipment') + T(RCV.x + 14, 256, 'generic receiver (placeholder)', sub) + '</g>';
     return o + '</g>';
   }
@@ -456,7 +482,11 @@
 
   function layer(cut) {
     var o = '<g class="' + (cut ? 'pc-cut' : 'pc-ext') + '">';
-    o += header(cut);
+    o += header(cut) + cellValve(cut);
+    // training-view note in the free area above the desk (inside the drawing, so the layout never shifts between views)
+    if (cut) o += '<g font-family="IBM Plex Sans, sans-serif" text-anchor="middle">' + R(1010, 92, 340, 54, 'rx="8" fill="#1d3a66" opacity=".94"') +
+      T(1180, 115, 'CUTAWAY · TRAINING VIEW', 'font-family="IBM Plex Mono, monospace" font-size="14" font-weight="700" letter-spacing="1" fill="#ffffff"') +
+      T(1180, 135, 'The real cylinders are opaque stainless steel.', 'font-size="13.5" fill="#dfe8f5"') + '</g>';
     ['B', 'A'].forEach(function (k) { o += cylinder(k, cut) + drive(k, cut) + valveBlock(k, cut); });
     o += sensor();
     o += receiver(cut) + bottle(cut);
@@ -525,7 +555,7 @@
 
     function valve(k, open) {
       // state indication only: ring + tag cross-fade; the seat bar fades out as the valve opens
-      setAll('pcVring' + k, 'opacity', open.toFixed(2));
+      setAll('pcVring' + k, 'opacity', open.toFixed(2));   // k = 'A' | 'B' | 'C' (Cell Valve)
       setAll('pcSeat' + k, 'opacity', (1 - open).toFixed(2));
       var st = open >= .5 ? 'OPEN' : 'CLOSED';
       qa('pcTag' + k).forEach(function (g) {
@@ -549,7 +579,11 @@
         var rz = views.cutaway.querySelector('#pcRiser' + k);
         if (rz) rz.setAttribute('opacity', (S.hdr * (S['v' + k] > .05 || S['valve' + k] > .5 ? 1 : 0)).toFixed(2));
       });
+      valve('C', S.cellValve || 0);
       var hf = views.cutaway.querySelector('#pcHdrFluid'); if (hf) hf.setAttribute('opacity', (S.hdr || 0).toFixed(2));
+      var ru = views.cutaway.querySelector('#pcRearUp'), rd = views.cutaway.querySelector('#pcRearDn');
+      if (ru) ru.setAttribute('opacity', (S.connL >= 1 ? (S.tfL || 0) : 0).toFixed(2));   // Port L side of the Cell Valve
+      if (rd) rd.setAttribute('opacity', (S.hdr || 0).toFixed(2));                       // header side
       // displays (panel, controller, monitor)
       var pTxt = fmt(Math.round(S.P), 0);
       root.querySelectorAll('#pcGaugeP').forEach(function (e) { e.textContent = pTxt; });
@@ -564,20 +598,13 @@
         setAll('pcCap' + k, 'opacity', pl.toFixed(2));
         setAll('pcOpen' + k, 'opacity', ((1 - pl) * (1 - eq)).toFixed(2));
         setAll('pcNut' + k, 'opacity', tube >= .999 ? '1' : '0');
-        if (k === 'L') {
-          var cvo = Math.max(0, Math.min(1, (tube - .62) / .12));
-          q('pcCV').setAttribute('opacity', cvo.toFixed(2)); q('pcLblCV').setAttribute('opacity', cvo.toFixed(2));
-          var cv = S.cellValve || 0;
-          q('pcCVbody').querySelectorAll('path').forEach(function (e) { e.setAttribute('fill', cv >= .5 ? '#7fd1a6' : '#c9d0d9'); });
-          q('pcCVring').setAttribute('opacity', cv.toFixed(2));
-          setTxt('pcCVTxt', cv >= .5 ? 'open' : 'closed');
-        }
         q('pcTube' + k).querySelectorAll('path[pathLength]').forEach(function (p) { p.setAttribute('stroke-dashoffset', (1 - tube).toFixed(4)); });
         q('pcTubeFluid' + k).setAttribute('opacity', (view === 'cutaway' && tube >= .999 ? (S['tf' + k] || 0) : 0).toFixed(2));
         var eqId = k === 'L' ? 'pcBtl' : 'pcRcv';
         setAll(eqId, 'opacity', eq.toFixed(2));
         var lb = q(k === 'L' ? 'pcLblBtl' : 'pcLblRcv'); if (lb) lb.setAttribute('opacity', eq.toFixed(2));
-        setTxt('pcPort' + k + 'Txt', c > 0 ? (tube >= .999 ? 'connected' : 'connecting') : pl >= .5 ? 'rated plug' : 'open · 0 psig');
+        var lineTxt = k === 'L' && (S.cellValve || 0) < .5 && tube >= .999 ? ' · line ' + fmt(Math.round(S.Pext || 0), 0) + ' psig' : '';
+        setTxt('pcPort' + k + 'Txt', c > 0 ? (tube >= .999 ? 'connected' + lineTxt : 'connecting') : pl >= .5 ? 'rated plug' : 'open · 0 psig');
       });
       // bottle (approved Oil Sample Bottle): valve ring colour, needle lift, sample above the piston
       var bo = Math.max(0, Math.min(1, S.btlValve || 0));

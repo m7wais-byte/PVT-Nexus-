@@ -28,7 +28,6 @@
   <main class="body">
     <section class="stage card">
       <div id="stage" class="stage-svg"></div>
-      <p id="cutNote" class="cut-note" hidden>Cutaway — training view. The real cylinders are opaque stainless steel.</p>
       <footer class="foot">
         <div class="read">
           <div><span>Pressure</span><b id="rP">0</b><i>psig</i></div>
@@ -57,7 +56,7 @@
 
       <div class="grp">
         <div class="gh">Cell valves <small>open / closed indication only</small></div>
-        <div class="row2"><button class="btn tg" id="btnVB" type="button">Pump B valve</button><button class="btn tg" id="btnVA" type="button">Pump A valve</button></div>
+        <div class="row3"><button class="btn tg" id="btnCV" type="button">Cell Valve</button><button class="btn tg" id="btnVB" type="button">Pump B valve</button><button class="btn tg" id="btnVA" type="button">Pump A valve</button></div>
         <div class="row4" id="vstates"><button class="btn" type="button" data-a="0" data-b="0">Both closed</button><button class="btn" type="button" data-a="1" data-b="0">Only A</button><button class="btn" type="button" data-a="0" data-b="1">Only B</button><button class="btn" type="button" data-a="1" data-b="1">Both open</button></div>
         <button class="btn" id="btnFour" type="button">Check all 4 valve states in the Plumbing view</button>
       </div>
@@ -72,10 +71,10 @@
         <div class="row3"><button class="btn" id="pVent" type="button">Vent to 0 psig</button><button class="btn tg" id="ph1" type="button">Single-phase</button><button class="btn tg" id="ph2" type="button">Two-phase (illus.)</button></div>
       </div>
       <div class="grp">
-        <div class="gh">Ports <small>plug off / tubing off only at 0 psig</small></div>
+        <div class="gh">Ports <small>plug / tubing off only at 0 psig at that port</small></div>
         <div class="prow"><span>Port L</span><div class="seg" id="portL"><button type="button" data-v="plug">Rated plug</button><button type="button" data-v="open">Open</button><button type="button" data-v="tube">Tubing</button></div></div>
         <div class="prow"><span>Port R</span><div class="seg" id="portR"><button type="button" data-v="plug">Rated plug</button><button type="button" data-v="open">Open</button><button type="button" data-v="tube">Tubing</button></div></div>
-        <div class="row2"><button class="btn tg" id="btnBV" type="button">Bottle valve</button><button class="btn tg" id="btnCV" type="button">Cell Valve</button></div>
+        <div class="row2"><button class="btn tg" id="btnBV" type="button">Bottle valve</button><button class="btn" id="btnVent" type="button">Release Port L line</button></div>
       </div>
 
     </aside>

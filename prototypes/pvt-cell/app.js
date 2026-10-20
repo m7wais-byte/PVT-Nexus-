@@ -22,7 +22,7 @@
   var GAS_ILLUS = 0.18;   // gas share of the chamber in the illustrative two-phase state (NOT calculated)
 
   var BASE = { vA: 0, vB: 0, cap: CAP, P: 0, T: T_RES, valveA: 0, valveB: 0, connL: 0, connR: 0, plugL: 1, plugR: 1,
-    cellValve: 0, gas: 0, hdr: 0, tfL: 0, tfR: 0, btlValve: 0, btlV: 450, btlDraw: 800, tpV: 100, rcvV: 0, flow: null };
+    cellValve: 0, Pext: 0, gas: 0, hdr: 0, tfL: 0, tfR: 0, btlValve: 0, btlV: 450, btlDraw: 800, tpV: 100, rcvV: 0, flow: null };
   var S = {}, preset = null;
 
   /* ---- movement queue: each step tweens numeric keys; pausing freezes the clock */
@@ -54,6 +54,9 @@
       if (cur.during) cur.during(e);
       if (p >= 1) { var done = cur; finishCur(false); if (done.end) done.end(); }
     }
+    // Port L side of the Cell Valve (rear line + external tubing): follows the header while the Cell Valve is open,
+    // holds its own pressure while it is closed
+    if (S.cellValve >= .5) S.Pext = S.P;
   }
   function frame(now) {
     advance(Math.min(.1, (now - last) / 1000)); last = now;
@@ -63,16 +66,19 @@
   }
 
   /* ---- checks (a movement only runs through an open, connected path; ports open only at 0 psig) */
-  var zeroP = function () { return Math.abs(S.P) < .5; };
-  var openPort = function () { return ['L', 'R'].filter(function (k) { return S['plug' + k] < .5 && S['conn' + k] < 1; })[0]; };
+  // pressure seen at a port: Port R is always on the header; Port L only through the Cell Valve
+  var portP = function (k) { return k === 'L' && S.cellValve < .5 ? S.Pext : S.P; };
+  var zeroAt = function (k) { return Math.abs(portP(k)) < .5; };
+  var openPort = function () { return ['L', 'R'].filter(function (k) { return S['plug' + k] < .5 && S['conn' + k] < 1 && (k === 'R' || S.cellValve >= .5); })[0]; };
   var need = {
     AB: function () { return S.valveA > .98 && S.valveB > .98 ? '' : 'Open both cylinder valves first (Pump B and Pump A).'; },
     A: function () { return S.valveA > .98 ? '' : 'Open the Pump A valve first.'; },
     L: function () { return S.connL >= 1 ? '' : 'Connect the tubing at Port L first.'; },
     R: function () { return S.connR >= 1 ? '' : 'Connect the tubing at Port R first.'; },
     BTL: function () { return S.btlValve > .98 ? '' : 'Open the bottle valve first.'; },
-    CV: function () { return S.cellValve > .98 ? '' : 'Open the Cell Valve on the charge line first.'; },
-    sealed: function () { var k = openPort(); return k ? 'Port ' + k + ' is open. Fit its rated plug or tubing before changing the pressure.' : ''; }
+    CV: function () { return S.cellValve > .98 ? '' : 'Open the Cell Valve first.'; },
+    sealed: function () { var k = openPort(); return k ? 'Port ' + k + ' is open to the header. ' + (k === 'L' ? 'Close the Cell Valve or fit' : 'Fit') + ' its rated plug or tubing before changing the pressure.' : ''; },
+    cvOpenOk: function () { return S.connL < 1 && S.plugL < .5 && Math.abs(S.P) >= .5 ? 'Port L is open. Fit its rated plug or tubing before opening the Cell Valve to a pressurised header.' : ''; }
   };
   function all() { var f = [].slice.call(arguments); return function () { for (var i = 0; i < f.length; i++) { var m = f[i](); if (m) return m; } return ''; }; }
 
@@ -82,11 +88,15 @@
     return step((open ? 'Open' : 'Close') + ' Pump ' + k + ' valve', VALVE, to);
   }
   function mBtlValve(open) { return step((open ? 'Open' : 'Close') + ' bottle valve', VALVE, { btlValve: open ? 1 : 0 }, { check: open ? need.L : null }); }
-  function mCellValve(open) { return step((open ? 'Open' : 'Close') + ' Cell Valve (charge line)', VALVE, { cellValve: open ? 1 : 0 }, { check: open ? need.L : null }); }
+  function mCellValve(open) { return step((open ? 'Open' : 'Close') + ' Cell Valve (valve 3, rear)', VALVE, { cellValve: open ? 1 : 0 }, { check: open ? need.cvOpenOk : null }); }
+  function mVentL() {
+    return step('Release pressure from the isolated Port L line (Cell Valve closed; release route not drawn)', COND, { Pext: 0 },
+      { check: function () { return S.cellValve < .5 ? '' : 'Close the Cell Valve first, so the cell stays pressurised.'; } });
+  }
   // port changes: the plug comes off or the tubing comes away only at 0 psig
   function mUnplug(k) {
     var to = {}; to['plug' + k] = 0;
-    return step('Remove the rated plug from Port ' + k + ' (0 psig)', PORT, to, { check: function () { return zeroP() ? '' : 'Port ' + k + ' is under pressure. Vent the header to 0 psig before removing the plug.'; } });
+    return step('Remove the rated plug from Port ' + k + ' (0 psig)', PORT, to, { check: function () { return zeroAt(k) ? '' : 'Port ' + k + ' is under pressure. ' + (k === 'L' ? 'Close the Cell Valve and vent the Port L line' : 'Vent the header') + ' to 0 psig first.'; } });
   }
   function mPlug(k) { var to = {}; to['plug' + k] = 1; return step('Fit the rated plug to Port ' + k, PORT, to); }
   function mConn(k, on) {
@@ -95,8 +105,8 @@
     if (on) s.check = function () { return S['plug' + k] >= .5 ? 'Remove the Port ' + k + ' plug first.' : ''; };
     else {
       s.check = function () {
-        if (!zeroP()) return 'Port ' + k + ' is under pressure. Vent the header to 0 psig before disconnecting.';
-        if (k === 'L' && (S.btlValve > .02 || S.cellValve > .02)) return 'Close the bottle valve and the Cell Valve before disconnecting.';
+        if (k === 'L' && (S.btlValve > .02 || S.cellValve > .02)) return 'Close the Cell Valve and the bottle valve before disconnecting.';
+        if (!zeroAt(k)) return 'Port ' + k + ' is under pressure. ' + (k === 'L' ? 'Release the isolated Port L line' : 'Vent the header') + ' to 0 psig before disconnecting.';
         return '';
       };
       s.end = function () { S['tf' + k] = 0; };
@@ -160,18 +170,19 @@
   /* ---- presets: same cell; only attached equipment, tubing, valves and readings change */
   var PRESETS = {
     charge: {
-      name: 'Charge', desc: 'SPS/PDS bottle (driven by the transfer pump) → Cell Valve → Port L → Pump A, 80 cc at 5,000 psig. Order and values follow the Charge page; Port L is connected first so the cell can be vacuumed with it sealed.',
+      name: 'Charge', desc: 'SPS/PDS bottle (driven by the transfer pump) → Port L → Cell Valve (rear) → header → Pump A. After charging, the Cell Valve isolates the line, the line is released and the bottle is disconnected; the cell stays pressurised. Values are temporary preview values.',
       init: { P: 0, T: T_RES },
       seq: function () {
         return [
-          mUnplug('L'), mConn('L', true),
+          mUnplug('L'), mConn('L', true), mCellValve(true),
           step('Vacuum the cell to −15 psig (vacuum source not drawn)', COND, { P: -15 }, { check: need.sealed }),
-          mBtlValve(true), mCellValve(true),
+          mBtlValve(true),
           step('Fill the charge line (transfer pump 100.0 → 98.0 mL)', 3, { tpV: 98, btlV: 448, tfL: 1 }, { flow: 'L2A', check: all(need.BTL, need.CV) }),
           step('Equalize with the bottle: dead space 2.0 cc, header −15 → 5,000 psig', COND, { P: 5000, hdr: 1, tpV: 95, btlV: 445 }, { check: all(need.BTL, need.CV) }),
           mValve('A', true),
           step('Charge 80 cc into Pump A — piston moves down (pump 95.0 → 18.0 mL)', MOVE, { vA: 80, tpV: 18, btlV: 368 }, { flow: 'L2A', check: all(need.A, need.L, need.BTL, need.CV) }),
-          mValve('A', false), mCellValve(false), mBtlValve(false)
+          mValve('A', false), mCellValve(false), mBtlValve(false),
+          mVentL(), mConn('L', false), mPlug('L')
         ];
       }
     },
@@ -238,13 +249,13 @@
     $('rB').textContent = fmt(S.vB, 1);
     $('rS').textContent = fmt(S.vA + S.vB, 1);
     $('rPh').textContent = S.gas > .005 ? 'Two-phase (illustrative)' : 'Single-phase liquid';
-    $('btnVB').textContent = 'Pump B valve · ' + vtxt(S.valveB);
-    $('btnVA').textContent = 'Pump A valve · ' + vtxt(S.valveA);
+    $('btnVB').textContent = 'Pump B · ' + vtxt(S.valveB);
+    $('btnVA').textContent = 'Pump A · ' + vtxt(S.valveA);
     $('btnVB').classList.toggle('on', S.valveB >= .5); $('btnVA').classList.toggle('on', S.valveA >= .5);
     ['L', 'R'].forEach(function (k) { var st = portState(k); document.querySelectorAll('#port' + k + ' button').forEach(function (b) { b.classList.toggle('on', b.dataset.v === st); }); });
     $('btnBV').textContent = 'Bottle valve · ' + vtxt(S.btlValve);
-    $('btnCV').textContent = 'Cell Valve · ' + vtxt(S.cellValve);
-    $('btnBV').disabled = $('btnCV').disabled = S.connL < 1;
+    $('btnCV').textContent = 'Cell · ' + vtxt(S.cellValve);
+    $('btnBV').disabled = $('btnVent').disabled = S.connL < 1;
     $('btnBV').classList.toggle('on', S.btlValve >= .5); $('btnCV').classList.toggle('on', S.cellValve >= .5);
     $('ph1').classList.toggle('on', S.gas <= .005); $('ph2').classList.toggle('on', S.gas > .005);
     $('btnPause').textContent = paused ? 'Resume' : 'Pause';
@@ -272,6 +283,7 @@
   });
   on('btnBV', function () { run([mBtlValve(S.btlValve < .5)]); });
   on('btnCV', function () { run([mCellValve(S.cellValve < .5)]); });
+  on('btnVent', function () { run([mVentL()]); });
   document.querySelectorAll('#vstates button').forEach(function (b) {
     b.addEventListener('click', function () { run([mValve('A', b.dataset.a === '1'), mValve('B', b.dataset.b === '1')]); });
   });
@@ -281,7 +293,6 @@
   function setView(v) {
     CELL.setView(v);
     document.querySelectorAll('#viewSeg button').forEach(function (x) { x.classList.toggle('on', x.dataset.v === v); });
-    $('cutNote').hidden = v !== 'cutaway';
   }
   document.querySelectorAll('#viewSeg button').forEach(function (b) { b.addEventListener('click', function () { setView(b.dataset.v); }); });
   $('lblChk').addEventListener('change', function (e) { CELL.setLabels(e.target.checked); });
