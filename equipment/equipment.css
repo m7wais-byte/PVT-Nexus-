@@ -134,3 +134,43 @@ html[data-theme="light"] .bd-ov { background:rgba(30,42,60,.38); }
                        font:700 9px var(--font-mono); line-height:1; }
 #app .bd-btn:hover, #app .bd-btn:focus-visible { background:color-mix(in srgb, var(--teal) 14%, transparent); outline:none; }
 #app .bd-btn.bd-inline { margin-left:0; }
+
+/* ---- MRMS / SPMC viewer (components/SpmcDetails.js, equipment/mrms-*.js), recovered from the former Equipment Library ---- */
+/* stage background override (Dark bg / Light bg): only the drawing stage changes, not the app theme */
+.eq-stage.eq-bg-dark  { --eq-stage:#070d18; --eq-grid:rgba(150,180,220,.035); --eq-lead:rgba(150,180,215,.62); --eq-cut:#e7752e;
+                        --lbl:#dbe6f5; --lbl2:#7a90ad; --txt:#e8eef7; --txt2:#a9b8cc; --mut:#71829b; --line2:rgba(150,180,220,.2); --chipbg:rgba(15,24,40,.6); --track:rgba(160,190,230,.12); --panel:#0f1828; }
+.eq-stage.eq-bg-light { --eq-stage:#f8fafc; --eq-grid:rgba(40,70,110,.05); --eq-lead:rgba(38,56,80,.55); --eq-cut:#c8571b;
+                        --lbl:#1d2836; --lbl2:#5c6c80; --txt:#16202d; --txt2:#45556a; --mut:#6b7a8e; --line2:rgba(40,60,90,.18); --chipbg:rgba(228,234,243,.9); --track:rgba(40,60,90,.12); --panel:#ffffff; }
+.eq-stage.eq-bg-dark, .eq-stage.eq-bg-light { color:var(--txt); }
+.eq-stage-head .mr-back { padding:6px 10px; gap:6px; display:inline-flex; align-items:center; }
+.eq-stage-head .mr-back[hidden] { display:none; }
+.eq-stage-head .mr-cam { display:inline-flex; align-items:center; gap:10px; flex:0 0 auto; }
+.eq-stage-head .mr-cam .ui-btn { padding:6px 10px; }
+.eq-stage-head .mr-cam[hidden] { display:none; }
+.mr-insp { display:inline-flex; flex-wrap:wrap; gap:8px 12px; }
+.mr-insp[hidden] { display:none; }
+.eq .mr-hit { cursor:pointer; }
+.eq .mr-ch:hover > g, .eq .mr-ch:focus-visible > g { filter:drop-shadow(0 0 4px rgba(47,120,224,.9)); }
+.eq .mr-ch:focus { outline:none; }
+.eq-info .mr-open { margin-top:4px; display:inline-flex; align-items:center; gap:8px; padding:8px 12px; }
+.mr-legend { position:absolute; right:12px; bottom:10px; z-index:2; pointer-events:none; padding:8px 10px; border-radius:8px;
+             background:color-mix(in srgb, var(--eq-stage) 86%, transparent); border:1px solid var(--line2); }
+.mr-legend[hidden] { display:none; }
+.mr-legend ul { margin:0; padding:0; list-style:none; display:grid; gap:4px; }
+.mr-legend li { display:flex; align-items:center; gap:8px; font:500 11px var(--font-main); color:var(--txt2); white-space:nowrap; }
+.mr-sw { width:14px; height:10px; border-radius:3px; border:1px solid rgba(10,14,22,.5); flex:0 0 auto; }
+.mr-sw.metal { background:repeating-linear-gradient(45deg,#aeb3ba 0 2px,#4d535d 2px 3.5px); }
+.mr-sw.fn { background:#1a2029; border:1.5px dashed #d9a514; }
+.eq-side > [hidden] { display:none !important; }
+
+/* SPMC Details overlay: view switcher, and the clickable source SPMC in Sample Transfer */
+.sd-subs .eq-seg button { font-weight:600; }
+#app .sd-hit { cursor:pointer; }
+#app .sd-hit:hover, #app .sd-hit:focus-visible { filter:drop-shadow(0 0 3px rgba(56,205,184,.75)); outline:none; }
+#app .sd-pill { cursor:pointer; }
+#app .sd-pill rect { fill:var(--panel); stroke:var(--teal); stroke-width:1.3; }
+#app .sd-pill text { font:600 11px var(--font-main, 'IBM Plex Sans', sans-serif); fill:var(--teal); }
+#app .sd-pill circle, #app .sd-pill path { stroke:var(--teal); }
+#app .sd-pill:hover rect, #app .sd-pill:focus-visible rect { fill:color-mix(in srgb, var(--teal) 16%, var(--panel)); }
+#app .sd-pill:focus { outline:none; }
+#app .sd-pill:focus-visible rect { stroke-width:2.2; }

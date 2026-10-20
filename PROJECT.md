@@ -118,7 +118,7 @@ screens/                one file per screen, each registers a named slot
   showSplash.js         splash
   showDash.js           dashboard
   showModule01.js       field sampling  (largest: bottom hole, wellhead, separator)
-  showXfer.js           MPSR -> SPS/PDS transfer
+  showXfer.js           SPMC chamber -> SPS/PDS transfer (source SPMC drawn by MRDraw.xfer, SPMC Details)
   showRestore.js        sample restoration
   showTest.js           charging + flash test
   showValidation.js     validation control centre
@@ -188,7 +188,8 @@ uniform scale) through `components/BottleArt.js` (window.BottleArt). There are n
 | Analysis · Single-phase viscosity (`StageViscSingle`) | SPS/PDS rig | `oil` |
 | Analysis · GC gas (`StageGC`) | active and spare gas bottles in the balloon oven | `gas` |
 
-Not sample bottles (unchanged): MDT/MPSR downhole bottles (BottomHoleSim, the MPSR tool on showXfer), titanium
+Not sample bottles (unchanged): MDT/MPSR downhole bottles (BottomHoleSim), the source SPMC chamber on showXfer
+(see "SPMC source and SPMC Details" below), titanium
 transfer cylinder (RecombSim), PVT cells, pumps, flash balloon, helium cylinder.
 
 **Bottle Details** (`components/BottleDetails.js`): any element with `data-bd-open="oil|gas"` (both types separated
@@ -198,6 +199,32 @@ exterior / cutaway, upright / horizontal, labels, clickable parts and operating 
 (`EQUIPMENT.*.principle` in `equipment/equipment-data.js`).
 Opening calls `PC.hold(true)` (ProcCtl.js): a running stage is paused through its own Pause action, animations freeze;
 closing returns to the same stage and values and the user resumes from the panel. General equipment view only.
+
+## SPMC source and SPMC Details (2026-10-20)
+
+Validation › Sample Transfer (`showXfer`) takes its sample from ONE **SPMC chamber** (removed from the MRMS), not
+from an MPSR. The MRMS/SPMC implementation from commit 5de19e1 (former Equipment Library) was recovered selectively:
+`equipment/mrms-draw.js` (MRDraw), `equipment/mrms3d.js`, the `EQUIPMENT.mrms` / `EQUIPMENT.spmc` data and the
+`mr-*` styles. The downhole Operating Principle was not kept (VAPS does not perform that procedure). The Equipment Library page, card and
+navigation entry stay removed. Sources and assumptions: `equipment/MRMS-SPMC-SOURCES.md`.
+- **Scene.** `MRDraw.xfer(ns, o)` draws the same SPMC cutaway (horizontal, inlet left) with style hooks (`o.live`):
+  sample, piston train (sample piston + compensating fluid + nitrogen piston), drive fluid, inlet and end-port
+  passages, sample isolation. Placement `MX_SPMC`, end connection `MX_SPMC_END` (MRDraw.toPage) in `screens/showXfer.js`.
+- **Transfer coupling** (`Main.js`, `mxSp*`): the existing clock is unchanged. The sample piston travels the full
+  sample length (`MRDraw.XFER.travel`, no dead volume) with the existing swept fraction `mxVm`. The pump drives the
+  SPMC END connection: drive fluid fills the space behind the nitrogen piston (nitrogen charge taken as released) and
+  the whole piston train moves toward the inlet; the compensating fluid stays trapped between the pistons. Sample
+  isolation opens with the existing valve (`mxValve`). Only the sample enters the transfer line.
+- **Transfer-line gauge.** The former line valve is a pressure gauge on a tee (`mxLinePText`, `mxLineGaugeStyle`,
+  0–10,000 psi dial) showing the existing transfer pressure; indicator only. The bottle's own valves are unchanged.
+- **SPMC Details** (`components/SpmcDetails.js`): any `#app [data-spmc-open]` (the SPMC drawing, the scene pill and
+  the header button) opens an overlay on the individual SPMC chamber, with MRMS module assembly (six selectable
+  chambers, open a chamber / Back to MRMS assembly) and SPMC chamber.
+  2D / 3D, exterior / cutaway, upright / horizontal, labels, light background, parts, camera controls; 3D imported
+  on first use and destroyed on close. Opening calls `PC.hold(true)` like Bottle Details; Back to Transfer
+  returns to the same step and quantities.
+- The 450 cc transfer volume, pressures, temperatures, timing, valve sequence and step order are unchanged.
+  **Open modelling issue:** 450 cc transferred vs the documented 250 cm³ SPMC-T sample (see MRMS-SPMC-SOURCES.md).
 `equipment/build-preview.py OUT.html` bundles the whole app into one file for a hosted review preview.
 
 ## Template syntax
