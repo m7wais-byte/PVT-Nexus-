@@ -1311,7 +1311,7 @@ const hi_d = (on) => on ? 'opacity:1; transition:opacity .5s ease;' : 'opacity:.
     const oilWater_d = 'transform:scaleY(' + (1 - oilG_d).toFixed(3) + '); transform-box:fill-box; transform-origin:bottom center; transition:transform calc(2.8s * var(--pm, 1)) ease;';
     const oilPiston_d = 'transform:translateY(' + (oilG_d * 105).toFixed(1) + 'px); transition:transform calc(2.8s * var(--pm, 1)) ease;';
     const panPiston_d = 'transform:translateY(' + (oilG_d * 216).toFixed(1) + 'px); transition:transform calc(2.8s * var(--pm, 1)) ease;';
-    // wellhead bottle: tall oil chamber above, smaller driving-fluid (back-pressure) chamber below
+    // wellhead bottle (approved Oil Sample Bottle): oil sample above the piston, driving-fluid chamber below
     const whOilG_d = 0.12 + 0.70 * f_d;
     const whOilFill_d = 'transform:scaleY(' + whOilG_d.toFixed(3) + '); transform-box:fill-box; transform-origin:top center; opacity:' + (f_d > 0.02 ? '1' : '0') + '; transition:transform calc(2.8s * var(--pm, 1)) ease, opacity calc(1.2s * var(--pm, 1)) ease;';
     const whDriveFill_d = 'transform:scaleY(' + (1 - whOilG_d).toFixed(3) + '); transform-box:fill-box; transform-origin:bottom center; transition:transform calc(2.8s * var(--pm, 1)) ease;';

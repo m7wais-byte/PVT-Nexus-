@@ -173,8 +173,12 @@ uniform scale) through `components/BottleArt.js` (window.BottleArt). There are n
 - `components/SampleBottle.js` (Sampling pages) places the same oil / gas drawings in the old Sampling frame.
 - Tubing was re-routed to the approved side outlets; flow connections, valve states, values, timing and stage
   order are unchanged. Line valves that belong to the rig stay separate from the bottle's own valves.
-- The wellhead guide text now describes driving-fluid back-pressure (no nitrogen chamber), matching the drawing
-  (2026-10-20). The SRS downhole tool keeps its N₂ compensation: it is a tool feature, not a sample bottle.
+- Nitrogen is removed from the sample-bottle drawings only. OPEN FOR REVIEW: the wellhead Explain text
+  (components/StepGuide.js, WH stages 5-6 and WH_OVERVIEW: cards, step label "N₂ back-pressure", note "N₂ at 2,000 psig
+  behind the piston") still describes a nitrogen back-pressure chamber that the approved bottle does not show. The
+  approved design only names a generic "driving (hydraulic) fluid" (type not specified - prototypes/bottles/README.md
+  note 8), and nothing in the project documents 2,000 psig for it, so the text is left unchanged until the wording and
+  value are confirmed. The SRS downhole tool keeps its N₂ compensation (separate tool, not a sample bottle).
 
 | Page | Bottle | Bottle Details |
 |---|---|---|
@@ -740,7 +744,8 @@ Drawing / layout only: pressures, temperatures, volumes, valve states, stage ord
   each side. Sample risers (x 1110 gas, 1120 oil) and overview markers unchanged. Hover hit areas follow the new runs.
 - **Wellhead / Separator pages** frame their own working area of the same drawing (`fieldVB` in Main.renderVals:
   wellhead `0 76 740 420`, separator `560 46 780 420`; overview unchanged). Wellhead bottle k 0.30, standing on the
-  ground beside the flowline, mirrored (outlets face the wellhead), tubing over the choke into the top port.
+  ground beside the flowline, mirrored (outlets face the wellhead), tubing over the choke into the top port; the
+  side-panel figure is mirrored the same way.
   Separator: gas bottle k 0.26 lying above the gas line (left end connection), oil bottle k 0.26 standing right of
   the outlets, mirrored; tubing from the existing sample valves.
 - **Sample Transfer** (`showXfer.js`): geometry block `MXG` / `window.MX_GEO` (centre 300, 304, scale 0.55; was 0.49)

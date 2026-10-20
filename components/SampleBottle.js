@@ -20,7 +20,7 @@
   function frame(o) {
     var gas = o.mode === 'gas';
     if (o.k) return { x: o.cx, y: o.cy, s: o.k, rot: o.rot || 0, mirror: !!o.mirror };
-    return { x: o.x, y: o.y + 171.5 * o.s, s: +(o.s * (gas ? K_GAS * 343 / 496 : K_OIL)).toFixed(4), rot: o.rot || 0 };
+    return { x: o.x, y: o.y + 171.5 * o.s, s: +(o.s * (gas ? K_GAS * 343 / 496 : K_OIL)).toFixed(4), rot: o.rot || 0, mirror: !!o.mirror };
   }
   function defs(p) { return window.BottleArt.defs(p); }
   function markup(o) {

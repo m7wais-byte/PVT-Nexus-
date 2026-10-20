@@ -233,12 +233,13 @@ DC.slot('showModule01', `<sc-if value="{{ showModule01 }}" hint-placeholder-val=
           </sc-if>
 
 
-          <!-- WELLHEAD: the field bottle = approved Oil Sample Bottle (components/SampleBottle.js) -->
+          <!-- WELLHEAD: the field bottle = approved Oil Sample Bottle (components/SampleBottle.js), mirrored like the scene bottle:
+               valve outlets face left, toward the wellhead; labels stay on the right and read normally -->
           <sc-if value="{{ actWh }}" hint-placeholder-val="{{ false }}">
           <div class="m01-card m01-fig">
             <svg sc-camel-view-box="200 62 390 372" sc-camel-preserve-aspect-ratio="xMidYMid meet" style="display:block; width:100%; height:100%;">
               <defs>${SampleBottle.defs('wp')}</defs>
-              ${SampleBottle.markup({ p:'wp', x:300, y:74, s:1, bd:'oil', bdCtx:'Wellhead sampling bottle', sample:'{{ whBtlSample }}', buffer:'{{ whBtlBuffer }}', piston:'{{ whBtlPiston }}' })}
+              ${SampleBottle.markup({ p:'wp', x:300, y:74, s:1, mirror:true, bd:'oil', bdCtx:'Wellhead sampling bottle', sample:'{{ whBtlSample }}', buffer:'{{ whBtlBuffer }}', piston:'{{ whBtlPiston }}' })}
               <g font-family="IBM Plex Sans, sans-serif">
                 <line x1="324" y1="118.7" x2="372" y2="118.7" stroke="rgba(120,170,230,.5)" stroke-width="1"></line>
                 <circle cx="374" cy="118.7" r="2.6" fill="var(--accb)"></circle>
