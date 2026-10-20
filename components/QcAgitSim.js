@@ -195,7 +195,7 @@
     s += hose;
     s += '<g transform="' + tr + '">' + bottle(st, o.waterFrac) + '</g>';
     s += '<circle cx="' + r1(port[0]) + '" cy="' + r1(port[1]) + '" r="4.2" fill="url(#qMetal)" stroke="#0a0e16" stroke-width="0.8"/>';
-    s += T(PX - BW - 10, 452, 'INVERSION STAND', { a: 'end', s: 8.5, ls: 1, c: 'var(--cap2)' }) + T(PX - BW - 10, 464, 'SPS/PDS · ~800 cc', { a: 'end', s: 8, c: 'var(--cap)' });
+    s += T(PX - BW - 10, 452, 'INVERSION STAND', { a: 'end', s: 8.5, ls: 1, c: 'var(--cap2)' }) + T(PX - BW - 10, 464, 'SPS/PDS', { a: 'end', s: 8, c: 'var(--cap)' });
 
     // ---- compact readout card: angle, cycle, pressure, temperature ----
     var cx0 = 640, cy0 = 34, cw = 188, chh = 150;   // top-right: clear of the rotating bottle at every angle

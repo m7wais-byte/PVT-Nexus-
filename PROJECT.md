@@ -178,7 +178,11 @@ uniform scale) through `components/BottleArt.js` (window.BottleArt). There are n
   so the wellhead text names no buffer fluid and no pressure: stages 5-6, the overview cards and the step list
   describe the sample entering the bottle and moving the piston. The former note "N₂ at 2,000 psig behind the piston
   ... Bottle 600 cc" was removed: neither value has a documented source. The Validation source labels in Main.js valSrcMap
-  likewise dropped their unsourced "~600 cc" (now "Piston bottle" / "Oil piston bottle"); no simulation volume changed. The SRS downhole tool keeps its N₂ compensation (separate tool, not a sample bottle).
+  likewise dropped their unsourced "~600 cc" (now "Piston bottle" / "Oil piston bottle"); no simulation volume changed.
+  The SPS/PDS capacity text "~800 cc" (bottom-hole source label, Transfer and Steps 1-3 bottle labels, Step 4
+  stand caption) was removed as well: no equipment or documentation source gives it. 800 cc remains only as the
+  illustrative modelling volume in Main.bottleModel() (CC), unchanged, so piston split, free-water band and
+  transfer fill are exactly as before. The SRS downhole tool keeps its N₂ compensation (separate tool, not a sample bottle).
 
 | Page | Bottle | Bottle Details |
 |---|---|---|

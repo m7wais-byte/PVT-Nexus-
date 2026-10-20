@@ -138,7 +138,6 @@ DC.slot('showRestore', `<sc-if value="{{ showRestore }}" hint-placeholder-val="{
               </sc-if>
               <g style="{{ qcPistonStyle }}">${PBDraw.piston('q', -226)}</g>` })}
             <text x="${QCG.X(-66)}" y="${QCG.Y(-205)}" text-anchor="end" font-family="IBM Plex Sans" font-size="12" font-weight="600" letter-spacing=".4" fill="var(--lbl)">SPS/PDS</text>
-            <text x="${QCG.X(-66)}" y="${QCG.Y(-205) + 13}" text-anchor="end" font-family="IBM Plex Mono" font-size="9" fill="var(--mut)">~800 cc</text>
 
             <!-- ===== RESTORATION WATER FLOW: pump outlet -> up -> left along the injection line -> down onto the water-side valve side port ===== -->
             <path d="${QCG.rsPath}" fill="none" stroke="#5aa6d8" stroke-width="2.8" stroke-linejoin="round" stroke-dasharray="${QCG.rsDash} ${QCG.rsDash}" style="{{ rsFrontStyle }}"></path>

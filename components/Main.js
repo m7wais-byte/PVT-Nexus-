@@ -621,7 +621,7 @@ class Component extends DCLogic {
       // resvP - reservoir pressure quoted for the sample (null when the source has none)
       // restP - working / restoration pressure the bottle is taken to in step 2
       // restT - restoration temperature held by the heating jacket
-      bottomhole: { key:'bottomhole', name:'Bottom Hole', sample:'Bottom Hole Sample', bottle:'SPS/PDS \u00b7 ~800 cc', open:4500, openT:22,
+      bottomhole: { key:'bottomhole', name:'Bottom Hole', sample:'Bottom Hole Sample', bottle:'SPS/PDS', open:4500, openT:22,
         src:'transferred from the MDT / MPSR tool', resvP:3000, resvT:114, restP:5000, restT:114, atResv:true,
         pLabel:'BOTTOM-HOLE PRESSURE', pVal:(4200).toLocaleString('en-US'), pUnit:'psia',
         tLabel:'BOTTOM-HOLE TEMPERATURE', tVal:'114', btLabel:'BOTTLE TEMP.' },
@@ -646,6 +646,8 @@ class Component extends DCLogic {
   // Assumed fluid coefficients (illustrative, same order as a light reservoir oil):
   //   isothermal compressibility ~1e-5 /psi, thermal expansion ~5e-4 /degC.
   bottleModel() {
+    // CC = 800: illustrative modelling volume (no equipment / documentation source) - drives the drawing only,
+    // so it is not shown as a bottle capacity on screen
     const CC = 800, OIL0 = 450, FREEW_CC = 30, DRAWN_CC = 82;
     const clamp01 = (v) => Math.min(1, Math.max(0, v));
     const _src = this.valSrcMap()[this.valSource()];

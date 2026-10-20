@@ -157,7 +157,6 @@ DC.slot('showXfer', `<sc-if value="{{ showXfer }}" hint-placeholder-val="{{ fals
               sample: '{{ mxBotFluidStyle }}', drive: '{{ mxBotWaterStyle }}', piston: '{{ mxBotPistonStyle }}',
               ringT: '{{ mxValveRing }}', needleT: '{{ mxBotNeedleT }}', ringB: '{{ mxValveRing }}', needleB: '{{ mxBotNeedleT }}' })}
             <text x="${MXG.rodX - 16}" y="300" text-anchor="end" font-family="IBM Plex Sans" font-size="13" font-weight="600" letter-spacing=".4" fill="var(--lbl)">SPS/PDS</text>
-            <text x="${MXG.rodX - 16}" y="316" text-anchor="end" font-family="IBM Plex Mono" font-size="10" fill="var(--mut)">~800 cc</text>
 
             <!-- displaced water out of the driving-side valve side port to the receiver -->
             <path d="${MXG.wPath}" fill="none" stroke="#0a0e16" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"></path>
