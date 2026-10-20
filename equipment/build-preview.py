@@ -3,11 +3,11 @@
 hosted review preview (claude.ai Artifact), separate from GitHub Pages.
 
 Inlines theme.css, equipment.css, every <script src> of index.html, both 3D modules
-(bottle3d.js) and the logo. The hosted page may load scripts only from approved
+(bottle3d.js, mrms3d.js) and the logo. The hosted page may load scripts only from approved
 CDNs, so its import map points "three" at the same pinned release on jsDelivr
 (three@0.160.0) instead of vendor/. The repository version always uses vendor/.
-In the bundle the 3D modules are evaluated on page load (window.PB3DReady);
-Bottle Details still creates the 3D viewer only when its 3D view is opened.
+In the bundle the 3D modules are evaluated on page load (window.PB3DReady / MR3DReady);
+Bottle Details / SPMC Details still create the 3D viewers only when a 3D view is opened.
 
     python3 equipment/build-preview.py OUTPUT.html
 """
@@ -43,10 +43,10 @@ out = ('<title>PVT Nexus Preview</title>\n' + '\n'.join(head_links) + '\n'
        '<script type="importmap">\n{ "imports": { "three": "' + CDN + 'build/three.module.min.js", '
        '"three/addons/": "' + CDN + 'examples/jsm/" } }\n</script>\n'
        '<div id="app"></div>\n'
-       + ready('PB3DReady', 'pb3dResolve')
+       + ready('PB3DReady', 'pb3dResolve') + ready('MR3DReady', 'mr3dResolve')
        + ''.join(js(s) for s in scripts)
        + '<script>' + mount + '</script>\n'
-       + module('equipment/bottle3d.js', 'pb3dResolve')
+       + module('equipment/bottle3d.js', 'pb3dResolve') + module('equipment/mrms3d.js', 'mr3dResolve')
 )
 open(sys.argv[1], 'w', encoding='utf-8').write(out)
 print('wrote', sys.argv[1], len(out), 'bytes')

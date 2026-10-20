@@ -597,7 +597,7 @@ class Component extends DCLogic {
     const ph = this.state.xfrPhase;
     if (ph === 'heat' || ph === 'run') return;      // already heating / transferring
     this.clearTimers();
-    // --- Step 1: heating. The jacket closes over the MPSR and the sample is
+    // --- Step 1: heating. The jacket closes over the SPMC and the sample is
     // brought from lab temperature up to the 114 degC reservoir temperature.
     this.setState({ xfrPhase: 'heat', xfrH: 0, xfrP: 0 });
     this.tweenVal('xfrH', 100, 900, 4200);          // jacket seats (0.9 s), then the ramp
@@ -622,7 +622,7 @@ class Component extends DCLogic {
       // restP - working / restoration pressure the bottle is taken to in step 2
       // restT - restoration temperature held by the heating jacket
       bottomhole: { key:'bottomhole', name:'Bottom Hole', sample:'Bottom Hole Sample', bottle:'SPS/PDS \u00b7 ~800 cc', open:4500, openT:22,
-        src:'transferred from the MDT / MPSR tool', resvP:3000, resvT:114, restP:5000, restT:114, atResv:true,
+        src:'transferred from the SPMC chamber (MDT MRMS)', resvP:3000, resvT:114, restP:5000, restT:114, atResv:true,
         pLabel:'BOTTOM-HOLE PRESSURE', pVal:(4200).toLocaleString('en-US'), pUnit:'psia',
         tLabel:'BOTTOM-HOLE TEMPERATURE', tVal:'114', btLabel:'BOTTLE TEMP.' },
       wellhead: { key:'wellhead', name:'Wellhead', sample:'Wellhead Sample', bottle:'Piston bottle \u00b7 ~600 cc', open:1450, openT:22,
@@ -780,7 +780,7 @@ class Component extends DCLogic {
     // Bottom-hole samples arrive in the MPSR tool and must be transferred to the SPS/PDS
     // bottle before validation starts. Wellhead / separator samples are already in their bottle.
     if (this.valSource() === 'bottomhole') {
-      list.unshift({ id:'transfer', name:'Sample Transfer', desc:'Transfer the bottom-hole sample from the MPSR tool into the SPS/PDS bottle', icon:'M4 6h5v14H4zM15 10h5v10h-5zM10.2 12h3.6M13.8 12l-1.7-1.7M13.8 12l-1.7 1.7', tint:'#5f6fd8' });
+      list.unshift({ id:'transfer', name:'Sample Transfer', desc:'Transfer the bottom-hole sample from the SPMC chamber into the SPS/PDS bottle', icon:'M4 6h5v14H4zM15 10h5v10h-5zM10.2 12h3.6M13.8 12l-1.7-1.7M13.8 12l-1.7 1.7', tint:'#5f6fd8' });
     }
     return list;
   }
@@ -1600,7 +1600,7 @@ const hi_d = (on) => on ? 'opacity:1; transition:opacity .5s ease;' : 'opacity:.
     };
     const backTo = BACK_PARENT[scr] || null;
 
-    // ===== Module 01b — Bottom-hole MDT/MPSR -> SPS/PDS transfer (bottom hole only) =====
+    // ===== Module 01b — Bottom-hole SPMC chamber (from the MDT MRMS) -> SPS/PDS transfer (bottom hole only) =====
     const xfP = (this.state.xfrP || 0) / 100;
     const xfH = (this.state.xfrH || 0) / 100;          // heating progress, 0..1
     const xfPh = this.state.xfrPhase || 'idle';
@@ -1617,9 +1617,9 @@ const hi_d = (on) => on ? 'opacity:1; transition:opacity .5s ease;' : 'opacity:.
     // Each fluid starts at its real source and travels to its destination; all
     // volumes stop together when the pump stops (xfP = 1).
     //   valve    0.00-0.05  bottle top valve opens (before any sample arrives)
-    //   F1       0.03-0.15  pump water front: pump outlet -> up the drive line -> MPSR water side
-    //   Vm       0.15-1.00  MPSR piston sweeps the sample out (water side grows)
-    //   F2       0.15-0.27  sample front: MPSR outlet -> transfer line -> valve -> bottle top
+    //   F1       0.03-0.15  pump drive front: pump outlet -> drive line -> SPMC buffer-side drive port
+    //   Vm       0.15-1.00  SPMC sample piston sweeps the sample out (buffer side grows)
+    //   F2       0.15-0.27  sample front: SPMC sample inlet -> transfer line -> valve -> bottle top
     //   Vb       0.27-1.00  sample enters SPS/PDS, piston moves down, water side shrinks by the same volume
     //   F3       0.27-0.37  displaced-water front: bottle water port -> lower line -> receiver
     //   Vr       0.37-1.00  receiver fills with the displaced water (ends equal to the sample volume)
@@ -1637,10 +1637,10 @@ const hi_d = (on) => on ? 'opacity:1; transition:opacity .5s ease;' : 'opacity:.
     const mxFrontStyle = (L, f) => `stroke-dashoffset:${(L + 4 - f * L).toFixed(2)}; opacity:${f > 0.001 ? 1 : 0}; transition:stroke-dashoffset .12s linear;`;
     const mxPulseStyle = (f) => `opacity:${(mxRunning && f > 0.001) ? 1 : 0}; transition:opacity .35s ease;`;
     const mxArrowStyle = (f, at) => `opacity:${f >= at ? 0.95 : 0.22}; transition:opacity .25s ease;`;
-    const mxPumpFrontStyle = mxFrontStyle(368, mxF1),   mxPumpPulseStyle = mxPulseStyle(mxF1);
+    const mxPumpFrontStyle = mxFrontStyle(506.2, mxF1), mxPumpPulseStyle = mxPulseStyle(mxF1);
     const mxXferFrontStyle = mxFrontStyle(175, mxF2),   mxXferPulseStyle = mxPulseStyle(mxF2);
     const mxWoutFrontStyle = mxFrontStyle(86.8, mxF3), mxWoutPulseStyle = mxPulseStyle(mxF3);
-    const mxArrowPumpStyle = mxArrowStyle(mxF1, 160 / 368);
+    const mxArrowPumpStyle = mxArrowStyle(mxF1, 118 / 506.2);
     const mxArrowX1Style = mxArrowStyle(mxF2, 38 / 175);
     const mxArrowX2Style = mxArrowStyle(mxF2, 1);
     const mxArrowWStyle = mxArrowStyle(mxF3, 28.5 / 86.8);
@@ -1649,18 +1649,25 @@ const hi_d = (on) => on ? 'opacity:1; transition:opacity .5s ease;' : 'opacity:.
     const mxValveRing = mxValve >= 1 ? '#46d39a' : '#8fa3c2';
     const mxValveText = mxValve >= 1 ? 'VALVE · OPEN' : 'VALVE · CLOSED';
 
-    // ---- MPSR (horizontal): bore x 446..754 (308 wide). Sample fills 94% of the bore
-    // at rest (= the ~450 cc charge) and is fully swept by the floating piston at 100%.
-    const mxMFrac = 0.94 * (1 - mxVm);
-    const mxMpsrFluidStyle = `transform:scaleX(${mxMFrac.toFixed(4)}); transform-box:fill-box; transform-origin:left center; transition:${mxEase};`;
-    const mxMpsrWaterStyle = `transform:scaleX(${(1 - mxMFrac).toFixed(4)}); transform-box:fill-box; transform-origin:right center; transition:${mxEase};`;
-    // Piston rides the sample/water interface: bore x = 446 + 308*frac; piston centre at rest = 750.5.
-    const mxPistonX = Math.max(-300, 308 * mxMFrac - 304.5);
-    const mxMpsrPistonStyle = `transform:translateX(${mxPistonX.toFixed(1)}px); transition:${mxEase};`;
-    const mxSampleLabelStyle = `opacity:${mxMFrac > 0.22 ? 1 : 0}; transition:opacity .3s ease;`;
-    const mxWaterLabelStyle = `opacity:${(1 - mxMFrac) > 0.22 ? 1 : 0}; transition:opacity .3s ease;`;
+    // ---- Source SPMC chamber (equipment/mrms-draw.js MRDraw.xfer, local chamber units).
+    // The sample piston sweeps the full sample length (no dead volume at the inlet end) as the
+    // swept fraction mxVm goes 0 -> 1, so the sample left in the SPMC always equals the volume
+    // that has left it. The pump fills the buffer (compensating fluid) side by the same amount;
+    // the buffer is held at the transfer pressure, so the nitrogen piston does not move.
+    const MXS = window.MRDraw ? window.MRDraw.XFER : { sp0: -21, travel: 200, np: 86, resH: 211, compH: 267 };
+    const mxChT = window.MRDraw ? window.MRDraw.G.chT : -222;
+    const mxSp = MXS.sp0 - MXS.travel * mxVm;                         // sample-piston face (agitation piston)
+    const mxSpResStyle = `transform:scaleY(${((mxSp + 10 - mxChT) / MXS.resH).toFixed(4)}); transform-box:fill-box; transform-origin:top; transition:${mxEase};`;
+    const mxSpCompStyle = `transform:scaleY(${((MXS.np - mxSp - 40) / MXS.compH).toFixed(4)}); transform-box:fill-box; transform-origin:bottom; transition:${mxEase};`;
+    const mxSpPistonStyle = `transform:translateY(${(mxSp - MXS.sp0).toFixed(2)}px); transition:${mxEase};`;
+    // sample isolation opens with the sampler/transfer valves; the drive port opens when the pump starts
+    const mxSpIsoStyle = `opacity:${mxValve.toFixed(3)}; transition:opacity .3s ease;`;
+    const mxSpInletStyle = `opacity:${mxF2 > 0.001 ? 1 : 0}; transition:opacity .3s ease;`;
+    const mxSpDriveStyle = `opacity:${(mxRunning || mxDone) && xfP >= 0.03 ? 1 : 0}; transition:opacity .3s ease;`;
+    const mxSampleLabelStyle = `opacity:${mxVm < 0.3 ? 1 : 0}; transition:opacity .3s ease;`;
+    const mxBufferLabelStyle = 'opacity:1;';
 
-    // Heating step: the jacket is fitted on the MPSR at all times - it never moves.
+    // Heating step: the jacket is fitted on the SPMC at all times - it never moves.
     // Only its heat (fill sweep, glow and the temperature readout) changes.
     const mxHeatFrac = mxHeated ? 1 : (mxHeating ? xfH : 0);
     const mxJacketStyle = `opacity:${(mxHeating || mxRunning || mxDone) ? 1 : 0.75}; transition:opacity .5s ease;`;
@@ -1693,12 +1700,12 @@ const hi_d = (on) => on ? 'opacity:1; transition:opacity .5s ease;' : 'opacity:.
     const mxStatusText = mxDone
       ? 'Transfer complete \u2014 sample secured in the SPS/PDS bottle at 5,000 psi \u00b7 114 \u00b0C. Ready for laboratory QC.'
       : mxRunning
-        ? 'Transferring \u2014 pump pressurising the MPSR water side, sample displacing into the SPS/PDS bottle\u2026'
+        ? 'Transferring \u2014 pump driving the SPMC buffer side, sample piston displacing the sample into the SPS/PDS bottle\u2026'
         : mxHeated
           ? 'Heated \u2014 sample stabilised at 114 \u00b0C (reservoir temperature). Starting the transfer\u2026'
           : mxHeating
-            ? 'Heating \u2014 jacket closed over the MPSR, sample warming from lab temperature to 114 \u00b0C\u2026'
-            : 'Ready \u2014 MPSR docked, transfer line connected to the bottle top valve, pump on the MPSR water side.';
+            ? 'Heating \u2014 jacket closed over the SPMC, sample warming from lab temperature to 114 \u00b0C\u2026'
+            : 'Ready \u2014 SPMC chamber docked, sample inlet connected to the bottle top valve, pump on the SPMC buffer side.';
     const mxBarStyle = `width:100%; height:100%; border-radius:3px; background:linear-gradient(90deg,#3f8ae0,#46d39a); transform:scaleX(${(0.02 + 0.98 * xfP).toFixed(4)}); transform-origin:left center; transition:transform .2s linear;`;
     const mxSampleId = 'BHS-001';
     const mxRows = [
@@ -1708,9 +1715,9 @@ const hi_d = (on) => on ? 'opacity:1; transition:opacity .5s ease;' : 'opacity:.
       { l:'RESERVOIR TEMPERATURE',v:'114',                                               u:'°C', c:'#e7752e' },
     ];
     const mxSteps = [
-      { label:'Heating jacket closed over the MPSR \u00b7 sample at 114 \u00b0C', th:-1 },
-      { label:'Transfer pump pressurises the MPSR water side', th:0.12 },
-      { label:'Sample fluid displaced out of the MPSR', th:0.55 },
+      { label:'Heating jacket closed over the SPMC \u00b7 sample at 114 \u00b0C', th:-1 },
+      { label:'Transfer pump pressurises the SPMC buffer side', th:0.12 },
+      { label:'Sample fluid displaced out of the SPMC', th:0.55 },
       { label:'Sample enters the SPS/PDS bottle \u00b7 water displaced', th:0.99 },
     ].map((s, i_) => {
       const isDone = s.th < 0 ? mxHeated : (mxDone || xfP >= s.th);
@@ -2852,7 +2859,7 @@ const hi_d = (on) => on ? 'opacity:1; transition:opacity .5s ease;' : 'opacity:.
       mxStart: () => this.xfrRun(),
       mxBack: () => { this.clearTimers(); this.setState({ screen: 'validation' }); },
       mxNext: () => { this.clearTimers(); this.setState({ screen: 'module02', qcStep: 1, qcPhase: 'idle', xfer: 1, resP: 0, resT: 22, water: 0, qcSettle: 0, qcDk: 0, agitate: false, agitP: 0, qcFromBH: true, valSrc: 'bottomhole', qcDone: { 1:false, 2:false, 3:false, 4:false } }); },
-      mxMpsrFluidStyle, mxMpsrWaterStyle, mxMpsrPistonStyle, mxSampleLabelStyle, mxWaterLabelStyle,
+      mxSpResStyle, mxSpCompStyle, mxSpPistonStyle, mxSpIsoStyle, mxSpInletStyle, mxSpDriveStyle, mxSampleLabelStyle, mxBufferLabelStyle,
       mxJacketStyle, mxJacketFillStyle, mxJacketGlowStyle, mxTempBoxText,
       mxBotFluidTextStyle, mxBotFluidStyle, mxBotWaterStyle, mxBotPistonStyle, mxBotNeedleT,
       mxBeakerStyle, mxFlowStyle, mxPumpFrontStyle, mxPumpPulseStyle, mxXferFrontStyle, mxXferPulseStyle, mxWoutFrontStyle, mxWoutPulseStyle, mxArrowPumpStyle, mxArrowX1Style, mxArrowX2Style, mxArrowWStyle, mxValveHandleStyle, mxValveRing, mxValveText, mxLed, mxLedStyle, mxLiveColor, mxLiveLabel, mxStatusText, mxXferText, mxBarStyle,
@@ -3231,7 +3238,7 @@ DC.define('Main', {
 
 
 
-    <!-- ===== MODULE 01b SCREEN — BOTTOM HOLE SAMPLE TRANSFER (MDT / MPSR -> SPS/PDS) ===== -->
+    <!-- ===== MODULE 01b SCREEN — BOTTOM HOLE SAMPLE TRANSFER (SPMC chamber -> SPS/PDS) ===== -->
     <sc-slot name="showXfer"></sc-slot>
 
     <!-- ===== MODULE 02 SCREEN — QUALITY CHECK (QC) ===== -->

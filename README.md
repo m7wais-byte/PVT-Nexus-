@@ -57,7 +57,7 @@ Three field sampling routes, each with live tool, bottle and flow behaviour.
 The downhole programme runs step by step: running in hole → setting the tool → formation communication → pump-out clean-up → sampling → sealing → pulling out of hole.
 
 ### Sample Transfer
-Transfer of the bottom-hole sample from the MPSR tool into an SPS/PDS laboratory bottle, with a visible floating piston and synchronised oil / water levels and volumes.
+Transfer of the bottom-hole sample from one **SPMC chamber** (taken from the MDT multisample module, MRMS) into an SPS/PDS laboratory bottle. The SPMC cutaway shows the sample piston sweeping the sample out while the pump fills the buffer side and the nitrogen stays separated; the receiving bottle's floating piston and oil / water levels follow the same transfer clock. **SPMC Details** (or a click on the chamber) opens the MRMS module assembly with its six selectable chambers, the individual SPMC in 2D and 3D, and the four-stage operating principle.
 
 ### 02 · Validation (Sample Quality Control)
 Run any procedure directly, or the full validation sequence.
@@ -141,7 +141,7 @@ PVT-Nexus-/
 ├── timing.js           Global process-animation speed (PROCESS_SPEED_MULTIPLIER)
 ├── runtime.js          Lightweight template / component engine
 ├── assets/             Logo
-├── equipment/          Bottle Details: bottle data, 2D drawings (bottle-draw.js), 3D viewer (bottle3d.js), styles
+├── equipment/          Bottle / SPMC Details: equipment data, 2D drawings (bottle-draw.js, mrms-draw.js), 3D viewers (bottle3d.js, mrms3d.js), SPMC principle, styles
 ├── vendor/             three.js r160 (MIT) for the 3D viewer, loaded on demand
 ├── prototypes/bottles/ Standalone bottle design review page (uses equipment/ and vendor/)
 ├── data/
@@ -161,6 +161,7 @@ PVT-Nexus-/
 │   ├── OilCalc.js / GasCalc.js   Property calculators
 │   ├── BottleArt.js         Shared sample-bottle drawings for the procedures
 │   ├── BottleDetails.js     Bottle Details overlay
+│   ├── SpmcDetails.js       SPMC Details overlay (MRMS assembly, SPMC chamber, operating principle)
 │   └── StepGuide.js         Explain panel content
 ├── screens/            One file per screen
 └── PROJECT.md          Detailed developer notes

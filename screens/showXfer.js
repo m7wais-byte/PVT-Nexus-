@@ -1,6 +1,11 @@
 /* screen: showXfer  (21.4 KB) */
 /* Sample Transfer support stand: rod left, fork ledge under the lower cap, clamp on the barrel (bottle centre 300, 300, scale 0.55) */
 var MX_STAND = BottleArt.stand('mx', { x: 300, rodX: 204, ground: 512, top: 196, clamps: [{ y: 268, h: 19 }], rest: { y: 438, h: 22 }, baseL: 168, baseR: 346 });
+/* Source SPMC chamber: inlet tip at the transfer line (410, 92); drive port on the buffer side, underneath */
+var MX_SPMC = { x: 605.6, y: 92, s: 0.6, rot: -90 };
+var MX_SPMC_DRIVE = MRDraw.toPage(MX_SPMC, -MRDraw.G.R - 11, MRDraw.G.outY);   // (629.6, 114.2)
+var MX_SPMC_CTX = 'SPMC chamber · source of the sample in this transfer';
+var MX_DRIVE_D = 'M846 404 V196 H' + MX_SPMC_DRIVE[0] + ' V' + MX_SPMC_DRIVE[1];   // pump outlet -> buffer-side drive port
 DC.slot('showXfer', `<sc-if value="{{ showXfer }}" hint-placeholder-val="{{ false }}">
     <div data-screen-label="Module 01b — Bottom Hole Sample Transfer" class="pg pg-stack">
 
@@ -10,9 +15,9 @@ DC.slot('showXfer', `<sc-if value="{{ showXfer }}" hint-placeholder-val="{{ fals
           <span class="pg-eyebrow">Validation</span>
           <h2 class="pg-title">Bottom Hole Sample Transfer</h2>
           <span style="align-self:center; flex:0 0 auto; display:inline-flex; align-items:center; gap:7px; font-family:'IBM Plex Mono'; font-size:11px; color:{{ mxLiveColor }};"><span style="width:7px; height:7px; border-radius:50%; background:{{ mxLiveColor }}; box-shadow:0 0 8px {{ mxLiveColor }};"></span>{{ mxLiveLabel }}</span>
-          <p class="pg-desc">MDT / MPSR tool → SPS/PDS bottle, before laboratory QC.</p>
+          <p class="pg-desc">SPMC chamber (from the MDT MRMS) → SPS/PDS bottle, before laboratory QC.</p>
         </div>
-        <div class="pg-end"><button type="button" class="bd-btn" data-bd-open="oil" data-bd-ctx="SPS/PDS receiving bottle">Bottle Details</button></div>
+        <div class="pg-end"><button type="button" class="bd-btn" data-spmc-open="" data-spmc-ctx="${MX_SPMC_CTX}">SPMC Details</button><button type="button" class="bd-btn bd-inline" data-bd-open="oil" data-bd-ctx="SPS/PDS receiving bottle">Bottle Details</button></div>
       </div>
 
       <div class="lab-body">
@@ -29,21 +34,24 @@ DC.slot('showXfer', `<sc-if value="{{ showXfer }}" hint-placeholder-val="{{ fals
               <linearGradient id="mxWater" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#5aa6d8"></stop><stop offset="1" stop-color="#2f6f9c"></stop></linearGradient>
               <radialGradient id="mxGauge" cx="50%" cy="42%" r="60%"><stop offset="0" stop-color="#13202f"></stop><stop offset="1" stop-color="#0a1018"></stop></radialGradient>
               ${BottleArt.defs('mx')}
+              ${BottleArt.tpl(MRDraw.defs('mxs'))}
             </defs>
 
             <line x1="0" y1="512" x2="900" y2="512" stroke="#46566f" stroke-width="1.5"></line>
             <rect x="0" y="512" width="900" height="33" fill="rgba(120,150,185,.04)"></rect>
 
-            <!-- ===== PUMP LINE: TRANSFER PUMP -> MPSR WATER SIDE ===== -->
-            <path d="M790 92 H846 V404" fill="none" stroke="#0a0e16" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"></path>
-            <path d="M790 92 H846 V404" fill="none" stroke="url(#mxPipe)" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"></path>
-            <!-- drive line is primed with water (static); the active flow starts at the pump outlet and travels up to the MPSR -->
-            <path d="M846 404 V92 H790" fill="none" stroke="#2f6f9c" stroke-width="2.6" stroke-linejoin="round" opacity=".5"></path>
-            <path d="M846 404 V92 H790" fill="none" stroke="#5aa6d8" stroke-width="2.8" stroke-linejoin="round" stroke-dasharray="372 372" style="{{ mxPumpFrontStyle }}"></path>
-            <mask id="mxPumpMask" sc-camel-mask-units="userSpaceOnUse" x="0" y="0" width="900" height="545"><path d="M846 404 V92 H790" fill="none" stroke="#ffffff" stroke-width="10" stroke-linejoin="round" stroke-dasharray="372 372" style="{{ mxPumpFrontStyle }}"></path></mask>
-            <path d="M846 404 V92 H790" fill="none" stroke="#d6eeff" stroke-width="2.2" stroke-dasharray="6 16" stroke-linecap="round" stroke-linejoin="round" mask="url(#mxPumpMask)" style="{{ mxPumpPulseStyle }}"><animate sc-camel-attribute-name="stroke-dashoffset" values="0;-22" dur="0.22s" sc-camel-repeat-count="indefinite"></animate></path>
-            <polygon points="846,236 840,250 852,250" fill="#5fb0ff" style="{{ mxArrowPumpStyle }}"></polygon>
-            <text x="858" y="300" font-family="IBM Plex Mono" font-size="10" letter-spacing="1" fill="var(--cap2)" transform="rotate(90 858 300)">WATER-SIDE DRIVE</text>
+            <!-- ===== PUMP LINE: TRANSFER PUMP -> SPMC BUFFER-SIDE DRIVE PORT =====
+                 drive fluid drawn in the compensating-fluid colour: it only ever enters the buffer side, never the sample line -->
+            <path d="${MX_DRIVE_D}" fill="none" stroke="#0a0e16" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"></path>
+            <path d="${MX_DRIVE_D}" fill="none" stroke="url(#mxPipe)" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"></path>
+            <!-- drive line is primed (static); the active flow starts at the pump outlet and travels up to the drive port -->
+            <path d="${MX_DRIVE_D}" fill="none" stroke="#6c5bb8" stroke-width="2.6" stroke-linejoin="round" opacity=".5"></path>
+            <path d="${MX_DRIVE_D}" fill="none" stroke="#a596e6" stroke-width="2.8" stroke-linejoin="round" stroke-dasharray="512 512" style="{{ mxPumpFrontStyle }}"></path>
+            <mask id="mxPumpMask" sc-camel-mask-units="userSpaceOnUse" x="0" y="0" width="900" height="545"><path d="${MX_DRIVE_D}" fill="none" stroke="#ffffff" stroke-width="10" stroke-linejoin="round" stroke-dasharray="512 512" style="{{ mxPumpFrontStyle }}"></path></mask>
+            <path d="${MX_DRIVE_D}" fill="none" stroke="#ece8ff" stroke-width="2.2" stroke-dasharray="6 16" stroke-linecap="round" stroke-linejoin="round" mask="url(#mxPumpMask)" style="{{ mxPumpPulseStyle }}"><animate sc-camel-attribute-name="stroke-dashoffset" values="0;-22" dur="0.22s" sc-camel-repeat-count="indefinite"></animate></path>
+            <polygon points="846,286 840,300 852,300" fill="#a596e6" style="{{ mxArrowPumpStyle }}"></polygon>
+            <text x="858" y="216" font-family="IBM Plex Mono" font-size="10" letter-spacing="1" fill="var(--cap2)" transform="rotate(90 858 216)">BUFFER-SIDE DRIVE</text>
+            <text x="622" y="186" text-anchor="end" font-family="IBM Plex Mono" font-size="9" letter-spacing=".6" fill="var(--cap2)">DRIVE PORT · BUFFER SIDE</text>
 
             <!-- ===== TRANSFER PUMP ===== -->
             <ellipse cx="846" cy="512" rx="52" ry="6" fill="rgba(0,0,0,.35)"></ellipse>
@@ -55,7 +63,7 @@ DC.slot('showXfer', `<sc-if value="{{ showXfer }}" hint-placeholder-val="{{ fals
             <circle cx="822" cy="418" r="3.6" fill="{{ mxLed }}" style="{{ mxLedStyle }}"></circle>
             <text x="846" y="534" text-anchor="middle" font-family="IBM Plex Sans" font-size="11" font-weight="600" letter-spacing=".4" fill="var(--hdb)">TRANSFER PUMP</text>
 
-            <!-- ===== MPSR HEATING JACKET ===== -->
+            <!-- ===== HEATING JACKET (around the SPMC body) ===== -->
             <g style="{{ mxJacketStyle }}">
               <rect x="440" y="54" width="320" height="76" rx="19" fill="none" stroke="#e7752e" stroke-width="6" style="{{ mxJacketGlowStyle }}"></rect>
               <rect x="444" y="58" width="312" height="68" rx="16" fill="rgba(231,117,46,.09)" stroke="#e7752e" stroke-width="1.8"></rect>
@@ -77,31 +85,31 @@ DC.slot('showXfer', `<sc-if value="{{ showXfer }}" hint-placeholder-val="{{ fals
               <text x="600" y="23" text-anchor="middle" font-family="IBM Plex Mono" font-size="10.5" font-weight="600" letter-spacing=".3" fill="var(--accb3)">Transfer Pressure — 5,000 psi</text>
             </g>
 
-            <!-- ===== MPSR TOOL (HORIZONTAL) ===== -->
-            <path d="M440 69 C 424 72, 414 82, 410 92 C 414 102, 424 112, 440 115 Z" fill="url(#mxCylH)" stroke="#0a0e16" stroke-width="1"></path>
-            <path d="M760 69 C 776 72, 786 82, 790 92 C 786 102, 776 112, 760 115 Z" fill="url(#mxCylH)" stroke="#0a0e16" stroke-width="1"></path>
-            <rect x="440" y="69" width="320" height="46" rx="3" fill="url(#mxCylH)" stroke="#0a0e16" stroke-width="1.1"></rect>
-            <rect x="446" y="73" width="308" height="38" rx="2" fill="#0b1220"></rect>
-            <clipPath id="mxMpsrClip"><rect x="446" y="73" width="308" height="38"></rect></clipPath>
-            <g clip-path="url(#mxMpsrClip)">
-              <rect x="446" y="73" width="308" height="38" fill="url(#mxSample)" style="{{ mxMpsrFluidStyle }}"></rect>
-              <rect x="446" y="73" width="308" height="38" fill="url(#mxWater)" style="{{ mxMpsrWaterStyle }}"></rect>
+            <!-- ===== SOURCE: ONE SPMC CHAMBER, removed from the MRMS (equipment/mrms-draw.js MRDraw.xfer) =====
+                 Horizontal, sample inlet on the left (to the transfer line), nitrogen end on the right (plugged).
+                 Fluids stay separated by the pistons: sample | sample piston | compensating fluid (buffer) |
+                 nitrogen piston | nitrogen. The pump drives the buffer side through the schematic drive port
+                 (MX_SPMC_DRIVE), so only the sample leaves through the inlet. Clicking the chamber opens SPMC Details. -->
+            ${MRDraw.xfer('mxs', Object.assign({ attrs: ' class="sd-hit" data-spmc-open="" data-spmc-ctx="' + MX_SPMC_CTX + '" role="button" tabindex="0" aria-label="SPMC Details"',
+              live: { res: '{{ mxSpResStyle }}', piston: '{{ mxSpPistonStyle }}', comp: '{{ mxSpCompStyle }}', inlet: '{{ mxSpInletStyle }}',
+                      isoOpen: '{{ mxSpIsoStyle }}', outOpen: '{{ mxSpDriveStyle }}' } }, MX_SPMC))}
+            <g font-family="IBM Plex Sans" font-size="8.5" font-weight="700" letter-spacing=".5" pointer-events="none">
+              <text x="530" y="95" text-anchor="middle" fill="#2a1a06" style="{{ mxSampleLabelStyle }}">SAMPLE</text>
+              <text x="637" y="94.6" text-anchor="middle" font-size="7.4" fill="#1d1640" style="{{ mxBufferLabelStyle }}">BUFFER</text>
+              <text x="709" y="95" text-anchor="middle" fill="#1f3350">N₂</text>
             </g>
-            <g style="{{ mxMpsrPistonStyle }}">
-              <rect x="746" y="66" width="9" height="52" rx="1.5" fill="url(#mxMetal)" stroke="#05080f" stroke-width="1"></rect>
-              <rect x="749.4" y="66" width="2" height="52" fill="#eef4fb" opacity=".4"></rect>
+            <text x="520" y="148" text-anchor="middle" font-family="IBM Plex Sans" font-size="13" font-weight="600" letter-spacing=".4" fill="var(--lbl)">SPMC Chamber</text>
+            <text x="520" y="163" text-anchor="middle" font-family="IBM Plex Mono" font-size="10" fill="var(--mut)">from the MRMS · source</text>
+            <g class="sd-pill" data-spmc-open="" data-spmc-ctx="${MX_SPMC_CTX}" role="button" tabindex="0" aria-label="SPMC Details" transform="translate(652 137)">
+              <rect x="0" y="0" width="104" height="22" rx="11"></rect>
+              <circle cx="12" cy="11" r="5.2" fill="none" stroke-width="1.4"></circle><path d="M12 9.6 V14 M12 7.6 V7.7" stroke-width="1.5" stroke-linecap="round" fill="none"></path>
+              <text x="59" y="15" text-anchor="middle">SPMC Details</text>
             </g>
-            <rect x="450" y="76" width="300" height="3.5" rx="1.5" fill="#ffffff" opacity="0.13"></rect>
-            <rect x="446" y="73" width="308" height="38" rx="2" fill="none" stroke="rgba(150,175,210,.4)" stroke-width="0.9"></rect>
-            <text x="490" y="96" font-family="IBM Plex Sans" font-size="10.5" font-weight="600" letter-spacing=".4" fill="#2a1a06" style="{{ mxSampleLabelStyle }}">SAMPLE</text>
-            <text x="700" y="96" text-anchor="end" font-family="IBM Plex Sans" font-size="10.5" font-weight="600" letter-spacing=".4" fill="#07202e" style="{{ mxWaterLabelStyle }}">WATER</text>
-            <text x="600" y="140" text-anchor="middle" font-family="IBM Plex Sans" font-size="13" font-weight="600" letter-spacing=".4" fill="var(--lbl)">MPSR · Floating Piston</text>
-            <text x="600" y="156" text-anchor="middle" font-family="IBM Plex Mono" font-size="10" fill="var(--mut)">~450 cc</text>
 
-            <!-- ===== TRANSFER LINE: MPSR FLUID SIDE -> SIDE PORT OF THE BOTTLE SAMPLE VALVE (approved right-angle valve) ===== -->
+            <!-- ===== TRANSFER LINE: SPMC SAMPLE INLET -> SIDE PORT OF THE BOTTLE SAMPLE VALVE (approved right-angle valve) ===== -->
             <path d="M410 92 H346 V145.5 H326.4" fill="none" stroke="#0a0e16" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"></path>
             <path d="M410 92 H346 V145.5 H326.4" fill="none" stroke="url(#mxPipe)" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"></path>
-            <!-- sample front: starts at the MPSR outlet, travels through the line and line valve to the bottle sample valve -->
+            <!-- sample front: starts at the SPMC sample inlet, travels through the line and line valve to the bottle sample valve -->
             <path d="M410 92 H346 V145.5 H326.4" fill="none" stroke="#e7b15a" stroke-width="2.8" stroke-linejoin="round" stroke-dasharray="138 138" style="{{ mxXferFrontStyle }}"></path>
             <mask id="mxXferMask" sc-camel-mask-units="userSpaceOnUse" x="0" y="0" width="900" height="545"><path d="M410 92 H346 V145.5 H326.4" fill="none" stroke="#ffffff" stroke-width="10" stroke-linejoin="round" stroke-dasharray="138 138" style="{{ mxXferFrontStyle }}"></path></mask>
             <path d="M410 92 H346 V145.5 H326.4" fill="none" stroke="#fff1cf" stroke-width="2.2" stroke-dasharray="6 16" stroke-linecap="round" stroke-linejoin="round" mask="url(#mxXferMask)" style="{{ mxXferPulseStyle }}"><animate sc-camel-attribute-name="stroke-dashoffset" values="0;-22" dur="0.26s" sc-camel-repeat-count="indefinite"></animate></path>
