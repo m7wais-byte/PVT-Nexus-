@@ -162,7 +162,7 @@ function roundPts(pts, r) {
 }
 const G_PTSR = roundPts(G_PTS, 16);
 const D_G = dOf(G_PTSR), D_R = dOf(R_PTS), D_ST = dOf(P_ST);
-const D_GT = dOf(roundPts([CW(1090, 190), [GLASS.cx, GAS_Y], [GLASS.cx, GLASS.tube]], 16));   // external gas tubing (frame edge -> glass)
+const D_GT = dOf(roundPts([CW(1147.6, 190), [GLASS.cx, GAS_Y], [GLASS.cx, GLASS.tube]], 16));   // external gas tubing (Port R outward fitting -> glass)
 function arrowD(x, y, dir) {
   const s = 6.5, a = (dir === 'r' ? 0 : dir === 'd' ? 90 : dir === 'u' ? -90 : dir === 'l' ? 180 : dir) * Math.PI / 180;
   const c = Math.cos(a), n = Math.sin(a);
@@ -196,7 +196,7 @@ function geo(th) {
   const CL = arcPt(rot);
   const g = {
     th, T: devT(rot), IN_A, P_IN, P_TAILR,
-    D_IN: dOf(P_IN), D_INX: dOf(roundPts([CW(806, 190), [IN_X, MAN_Y], [IN_X, IN_A[1]], IN_A, Wr(620, 592)], 20)),   // external tubing (cell wall -> inlet nipple)
+    D_IN: dOf(P_IN), D_INX: dOf(roundPts([CW(748, 190), [IN_X, MAN_Y], [IN_X, IN_A[1]], IN_A, Wr(620, 592)], 20)),   // external tubing (cell wall -> inlet nipple)
     D_TAIL: dOf(P_TAILR),
     low: Math.max(BW[0][1], BW[1][1]), high: Math.min(BW[2][1], BW[3][1]),
     bx0: r1(Math.min.apply(null, BW.map(p => p[0])) - 4), bx1: r1(Math.max.apply(null, BW.map(p => p[0])) + 4),
@@ -806,6 +806,8 @@ class Component extends DCLogic {
 
       /* cell */
       v2CellTr: 'translate(' + CELL_DX + ',' + CELL_DY + ')',
+      // approved PVT cell valve indication (presentation only)
+      v2VLopen: (st.vO || 0) > 0.5, v2VRopen: (st.vG || 0) > 0.5, v2ValveB: st.agDir === 'a2b' || st.agDir === 'hold' || st.agDir === 'b2a',
       v2GasH: f(capH), v2LiqY: f(oilY), v2LiqH: f(oilH), v2PistY: f(pistY), v2IfOn: capH > 1 && oilH > 1, v2IfY: f(oilY),
       v2Bubs: bubsA, v2BubsB: bubsB,
       v2GasHB: f(capHB), v2LiqYB: f(oilYB), v2LiqHB: f(oilHB), v2PistYB: f(pistYB), v2IfOnB: capHB > 1 && oilHB > 1, v2IfYB: f(oilYB),
@@ -816,7 +818,7 @@ class Component extends DCLogic {
       v2AgArrow: st.agDir === 'b2a' ? 'M 980 184 l 12 6 l -12 6 Z' : 'M 916 184 l -12 6 l 12 6 Z', v2AgArrowOn: 'opacity:' + (agOn ? 1 : 0) + '; transition:opacity .35s ease;', v2DissStyle: 'opacity:' + (G < 0.01 && !(g.k === 0 && g.s === 0) ? 0 : .5) + ';',
       v2NeedleX: f(948 + 12 * Math.cos(ang)), v2NeedleY: f(240 + 12 * Math.sin(ang)),
       v2SensorPulse: 'opacity:' + (st.pump === 'retract' && !st.paused ? .8 : 0) + '; transition:opacity .3s;',
-      v2P: fmtP(st.P) + ' psig', v2V: cc(V) + ' cc',
+      v2P: fmtP(st.P) + ' psig', v2V: cc(V) + ' cc', v2PNum: fmtP(st.P),
       v2PumpA: cc(vA) + ' cc', v2PhaseTxt: phaseTxt, v2PhaseCol: phaseCol,
       v2PumpTxt: pumpTxt, v2PumpCol: pumpCol,
 
@@ -1002,6 +1004,7 @@ DC.define('StageViscTwo', {
       </div>
       <svg sc-camel-view-box="${VB}" preserveAspectRatio="xMidYMid meet" style="flex:1 1 auto; min-height:0; width:100%; height:100%; display:block; padding:4px 6px; box-sizing:border-box;">
         <defs>
+          ${PVTCellArt.defs('v2c')}
           <linearGradient id="v2Metal" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#283750"></stop><stop offset=".42" stop-color="#b3c1d8"></stop><stop offset=".58" stop-color="#7e90b0"></stop><stop offset="1" stop-color="#1f2a3e"></stop></linearGradient>
           <linearGradient id="v2Cyl" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#3a485f"></stop><stop offset=".2" stop-color="#8094b2"></stop><stop offset=".5" stop-color="#aebcd2"></stop><stop offset=".8" stop-color="#54657f"></stop><stop offset="1" stop-color="#222c3e"></stop></linearGradient>
           <linearGradient id="v2SS" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#6d7b92"></stop><stop offset=".18" stop-color="#b9c5d6"></stop><stop offset=".42" stop-color="#e9eef5"></stop><stop offset=".62" stop-color="#c3cddb"></stop><stop offset=".85" stop-color="#dfe6ef"></stop><stop offset="1" stop-color="#76849a"></stop></linearGradient>
@@ -1133,74 +1136,39 @@ DC.define('StageViscTwo', {
 
         <!-- ================= dual-cylinder PVT cell (DL drawing, placed RIGHT of the viscometer) ================= -->
         <g transform="{{ v2CellTr }}">
-          <text x="948" y="132" text-anchor="middle" style="font-family:'IBM Plex Sans',sans-serif; font-size:18px; font-weight:700; fill:var(--txt);">PVT Cell</text>
-          <rect x="806" y="150" width="284" height="12" fill="url(#v2Metal)" stroke="#0a0e16" stroke-width="1"></rect>
-          <rect x="806" y="454" width="284" height="12" fill="url(#v2Metal)" stroke="#0a0e16" stroke-width="1"></rect>
-          <rect x="806" y="150" width="12" height="316" fill="url(#v2Metal)" stroke="#0a0e16" stroke-width="1"></rect>
-          <rect x="1078" y="150" width="12" height="316" fill="url(#v2Metal)" stroke="#0a0e16" stroke-width="1"></rect>
-          <line x1="822" y1="190" x2="1030" y2="190" stroke="#0a0e16" stroke-width="6" stroke-linecap="round"></line>
-          <line x1="822" y1="190" x2="1030" y2="190" stroke="#9fb0c8" stroke-width="3.4" stroke-linecap="round"></line>
-          <circle cx="822" cy="190" r="4.5" fill="url(#v2Metal)" stroke="#0a0e16" stroke-width="0.8"></circle>
-          <line x1="866" y1="190" x2="866" y2="215" stroke="#9fb0c8" stroke-width="3"></line>
-          <line x1="948" y1="190" x2="948" y2="212" stroke="#9fb0c8" stroke-width="3"></line>
-          <line x1="1030" y1="190" x2="1030" y2="215" stroke="#9fb0c8" stroke-width="3"></line>
-          <text x="920" y="182" text-anchor="middle" style="${MONO} font-size:10px; letter-spacing:.5px; fill:var(--cap2);">SAMPLE MANIFOLD</text>
-
-          <!-- Pump B : empty at rest (piston at the top); receives the whole sample during agitation (A -> B -> A) -->
-          <rect x="838" y="206" width="56" height="12" rx="2" fill="url(#v2Metal)" stroke="#0a0e16" stroke-width="1"></rect>
-          <rect x="846" y="215" width="40" height="190" rx="4" fill="url(#v2Cyl)" stroke="#0a0e16" stroke-width="1.2"></rect>
-          <g clip-path="url(#v2BClip)">
-            <rect x="848" y="219" width="36" height="182" fill="#0a1420"></rect>
+          <!-- approved PVT cell (PVTCellArt) on the legacy frame. Port L valve = the oil transfer valve (oil leaves at Port L),
+               Port R valve = the gas outlet valve (gas leaves at Port R); Pump A valve open to the sensor, Pump B valve open
+               while the sample is in transit / held in Pump B -->
+          ${PVTCellArt.cell('v2c', {
+            innerB: `<rect x="848" y="219" width="36" height="182" fill="#0a1420"></rect>
             <rect x="848" y="219" width="36" height="{{ v2GasHB }}" fill="url(#v2Gas)"></rect>
             <rect x="848" y="{{ v2LiqYB }}" width="36" height="{{ v2LiqHB }}" fill="url(#v2Oil)"></rect>
             <sc-if value="{{ v2IfOnB }}" hint-placeholder-val="{{ false }}"><rect x="848" y="{{ v2IfYB }}" width="36" height="1.4" fill="#eafff4"></rect></sc-if>
             <sc-for list="{{ v2BubsB }}" as="b" hint-placeholder-count="16">
               <circle cx="{{ b.x }}" cy="{{ b.y }}" r="{{ b.r }}" fill="#bff3da" opacity="{{ b.o }}"></circle>
-            </sc-for>
-            <rect x="848" y="{{ v2PistYB }}" width="36" height="9" rx="1.5" fill="url(#v2Metal)" stroke="#05080f" stroke-width="1.1"></rect>
-          </g>
-          <line x1="856" y1="222" x2="856" y2="398" stroke="#eef4fb" stroke-width="1.2" opacity=".3"></line>
-          <rect x="838" y="405" width="56" height="14" rx="2" fill="url(#v2Metal)" stroke="#0a0e16" stroke-width="1"></rect>
-          <foreignObject x="790" y="470" width="152" height="18"><div style="${FO} font-family:'IBM Plex Sans',sans-serif; font-size:12.5px; color:var(--txt2);">Pump B &#183;&#160;<span style="font-family:'IBM Plex Mono',monospace; font-weight:600; color:var(--amb);">{{ v2PumpB }}</span></div></foreignObject>
-
-          <!-- pressure sensor + live readouts -->
-          <rect x="942" y="210" width="12" height="11" rx="1.5" fill="url(#v2Metal)" stroke="#0a0e16" stroke-width="1"></rect>
-          <circle cx="948" cy="240" r="20" fill="url(#v2Metal)" stroke="#0a0e16" stroke-width="1.3"></circle>
-          <circle cx="948" cy="240" r="14.5" fill="#0c1626" stroke="#2a3852" stroke-width="1"></circle>
-          <line x1="948" y1="240" x2="{{ v2NeedleX }}" y2="{{ v2NeedleY }}" stroke="#46e0ff" stroke-width="1.8" stroke-linecap="round"></line>
-          <circle cx="948" cy="240" r="2.4" fill="#8fa3c2"></circle>
-          <circle cx="948" cy="240" r="23.5" fill="none" stroke="#46e0ff" stroke-width="1.6" style="{{ v2SensorPulse }}"></circle>
-          <text x="948" y="282" text-anchor="middle" style="${MONO} font-size:10px; letter-spacing:.5px; fill:var(--mut);">CELL PRESSURE</text>
-          <rect x="902" y="288" width="92" height="22" rx="4" fill="#0a1420" stroke="#3a9d63" stroke-width="1.2"></rect>
-          <foreignObject x="902" y="290" width="92" height="18"><div style="${FO} font-family:'IBM Plex Mono',monospace; font-size:12px; font-weight:600; color:#46d39a;">{{ v2P }}</div></foreignObject>
-          <text x="948" y="330" text-anchor="middle" style="${MONO} font-size:10px; letter-spacing:.5px; fill:var(--mut);">CELL VOLUME</text>
-          <rect x="902" y="336" width="92" height="22" rx="4" fill="#0a1420" stroke="#8a6a20" stroke-width="1.2"></rect>
-          <foreignObject x="902" y="338" width="92" height="18"><div style="${FO} font-family:'IBM Plex Mono',monospace; font-size:12px; font-weight:600; color:#e7b15a;">{{ v2V }}</div></foreignObject>
-          <text x="948" y="380" text-anchor="middle" style="${MONO} font-size:9px; letter-spacing:.5px; font-weight:700; fill:{{ v2PumpCol }};">{{ v2PumpTxt }}</text>
-
-          <!-- Pump A : gas cap on top, oil below, piston beneath -->
-          <rect x="1002" y="206" width="56" height="12" rx="2" fill="url(#v2Metal)" stroke="#0a0e16" stroke-width="1"></rect>
-          <rect x="1010" y="215" width="40" height="190" rx="4" fill="url(#v2Cyl)" stroke="#0a0e16" stroke-width="1.2"></rect>
-          <g clip-path="url(#v2AClip)">
-            <rect x="1012" y="219" width="36" height="182" fill="#0a1420"></rect>
+            </sc-for>`,
+            innerA: `<rect x="1012" y="219" width="36" height="182" fill="#0a1420"></rect>
             <rect x="1012" y="219" width="36" height="{{ v2GasH }}" fill="url(#v2Gas)"></rect>
             <rect x="1012" y="{{ v2LiqY }}" width="36" height="{{ v2LiqH }}" fill="url(#v2Oil)"></rect>
             <rect x="1012" y="{{ v2LiqY }}" width="36" height="{{ v2LiqH }}" fill="url(#v2Diss)" style="{{ v2DissStyle }}"></rect>
             <sc-if value="{{ v2IfOn }}" hint-placeholder-val="{{ false }}"><rect x="1012" y="{{ v2IfY }}" width="36" height="1.4" fill="#eafff4"></rect></sc-if>
             <sc-for list="{{ v2Bubs }}" as="b" hint-placeholder-count="16">
               <circle cx="{{ b.x }}" cy="{{ b.y }}" r="{{ b.r }}" fill="#bff3da" opacity="{{ b.o }}"></circle>
-            </sc-for>
-            <rect x="1012" y="{{ v2PistY }}" width="36" height="9" rx="1.5" fill="url(#v2Metal)" stroke="#05080f" stroke-width="1.1"></rect>
-          </g>
-          <line x1="1020" y1="222" x2="1020" y2="398" stroke="#eef4fb" stroke-width="1.2" opacity=".3"></line>
-          <rect x="1002" y="405" width="56" height="14" rx="2" fill="url(#v2Metal)" stroke="#0a0e16" stroke-width="1"></rect>
-          <!-- GAS OUTLET: sample manifold continues RIGHT from the Pump A tee, out through the frame -->
-          <line x1="1030" y1="190" x2="1090" y2="190" stroke="#0a0e16" stroke-width="6" stroke-linecap="round"></line>
-          <line x1="1030" y1="190" x2="1090" y2="190" stroke="#9fb0c8" stroke-width="3.4" stroke-linecap="round"></line>
-          <circle cx="1030" cy="190" r="4" fill="url(#v2Metal)" stroke="#0a0e16" stroke-width=".8"></circle>
-          <foreignObject x="952" y="470" width="156" height="18"><div style="${FO} font-family:'IBM Plex Sans',sans-serif; font-size:12.5px; color:var(--txt2);">Pump A &#183;&#160;<span style="font-family:'IBM Plex Mono',monospace; font-weight:600; color:var(--amb);">{{ v2PumpA }}</span></div></foreignObject>
-          <foreignObject x="798" y="494" width="300" height="16"><div style="${FO} font-family:'IBM Plex Mono',monospace; font-size:10.5px; letter-spacing:.6px; color:{{ v2PhaseCol }};">{{ v2PhaseTxt }}</div></foreignObject>
-          <text x="948" y="528" text-anchor="middle" style="${MONO} font-size:11px; letter-spacing:.9px; fill:var(--cap2);">DUAL-CYLINDER PVT CELL</text>
+            </sc-for>`,
+            pistonB: 'v2PistYB', pistonA: 'v2PistY',
+            valves: { A: 'true', B: 'v2ValveB', L: 'v2VLopen', R: 'v2VRopen' },
+            ports: { L: { plug: 'false', nut: 'true' }, R: { plug: 'false', nut: 'true' } },
+            disp: { P: '{{ v2PNum }}', B: '{{ v2PumpB }}', A: '{{ v2PumpA }}' },
+ })}
+          <text x="948" y="104" text-anchor="middle" style="font-family:'IBM Plex Sans',sans-serif; font-size:17px; font-weight:700; fill:var(--txt);">PVT Cell</text>
+          <text x="742" y="176" text-anchor="end" style="${MONO} font-size:10px; font-weight:600; letter-spacing:.4px; fill:var(--cap2);">OIL TRANSFER</text>
+          <text x="1154" y="176" text-anchor="start" style="${MONO} font-size:10px; font-weight:600; letter-spacing:.4px; fill:var(--cap2);">GAS OUTLET</text>
+          <circle cx="948" cy="217.7" r="24" fill="none" stroke="#46e0ff" stroke-width="1.6" style="{{ v2SensorPulse }}"></circle>
+          <text x="920" y="174" text-anchor="middle" style="${MONO} font-size:10px; letter-spacing:.5px; fill:var(--cap2);">SAMPLE MANIFOLD</text>
+          <text x="948" y="346" text-anchor="middle" style="${MONO} font-size:9px; letter-spacing:.5px; font-weight:700; fill:{{ v2PumpCol }};">{{ v2PumpTxt }}</text>
+          <foreignObject x="790" y="520" width="152" height="18"><div style="${FO} font-family:'IBM Plex Sans',sans-serif; font-size:12.5px; color:var(--txt2);">Pump B &#183;&#160;<span style="font-family:'IBM Plex Mono',monospace; font-weight:600; color:var(--amb);">{{ v2PumpB }}</span></div></foreignObject>
+          <foreignObject x="952" y="520" width="156" height="18"><div style="${FO} font-family:'IBM Plex Sans',sans-serif; font-size:12.5px; color:var(--txt2);">Pump A &#183;&#160;<span style="font-family:'IBM Plex Mono',monospace; font-weight:600; color:var(--amb);">{{ v2PumpA }}</span></div></foreignObject>
+          <foreignObject x="798" y="540" width="300" height="16"><div style="${FO} font-family:'IBM Plex Mono',monospace; font-size:10.5px; letter-spacing:.6px; color:{{ v2PhaseCol }};">{{ v2PhaseTxt }}</div></foreignObject>
         </g>
 
 
@@ -1225,14 +1193,10 @@ DC.define('StageViscTwo', {
         </sc-for>
         <path d="{{ v2DR }}" fill="none" stroke="#e0b53a" stroke-width="3" sc-camel-path-length="1000" stroke-dasharray="{{ v2Riser }}"></path>
 
-        <!-- ================= oil transfer valve (cell left side, horizontal run) ================= -->
-        <circle cx="${VO.x}" cy="${VO.y}" r="19" fill="#46d39a" style="{{ v2HaloVO }}"></circle>
-        <g style="{{ v2DimIn }}">${valveSvg(VO.x, VO.y, false, 'v2VO', 'Oil Transfer Valve', VO.x, VO.y - 62, 'middle')}</g>
-        <text x="${VO.x}" y="${MAN_Y - 86}" text-anchor="middle" style="${MONO} font-size:11px; font-weight:600; letter-spacing:.3px; fill:{{ v2XferCol }};">{{ v2XferLbl }}</text>
-
-        <!-- ================= gas outlet valve (on the side gas line) ================= -->
-        <circle cx="${VG.x}" cy="${VG.y}" r="19" fill="#46d39a" style="{{ v2HaloVG }}"></circle>
-        <g style="{{ v2DimGas }}">${valveSvg(VG.x, VG.y, false, 'v2VG', 'Gas Outlet Valve', VG.x + 20, VG.y - 62, 'middle')}</g>
+        <!-- ================= oil transfer = Port L valve, gas outlet = Port R valve (on the cell) : activity halos + status ================= -->
+        <circle cx="${CW(765.3, 190)[0]}" cy="${MAN_Y}" r="17" fill="#46d39a" style="{{ v2HaloVO }}"></circle>
+        <text x="${CW(765.3, 190)[0] - 34}" y="${MAN_Y - 80}" text-anchor="end" style="${MONO} font-size:11px; font-weight:600; letter-spacing:.3px; fill:{{ v2XferCol }};">{{ v2XferLbl }}</text>
+        <circle cx="${CW(1130.7, 190)[0]}" cy="${MAN_Y}" r="17" fill="#46d39a" style="{{ v2HaloVG }}"></circle>
         <!-- first oil drop at the valve outlet -->
         <sc-if value="{{ v2DropOn }}" hint-placeholder-val="{{ false }}">
           <g style="{{ v2DropO }}">

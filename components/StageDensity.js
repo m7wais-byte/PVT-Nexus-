@@ -401,6 +401,7 @@ class Component extends DCLogic {
       dnRhoText: (both && st.verified ? avg : r) == null ? '—' : (both && st.verified ? avg : r).toFixed(4) + ' g/cc',
       dnRhoColor: r == null ? 'var(--mut)' : 'var(--grn)',
       dnPressureText: D.PRESSURE.toLocaleString() + ' psi',
+      dnPNum: D.PRESSURE.toLocaleString(), dnFlowOn: !!st.flow, dnCoilAtCell: st.coilPos === 'cell',
       dnActionText: st.action, dnActionColor: busy ? 'var(--blue)' : 'var(--mut)',
 
       /* ---- schematic ---- */
@@ -558,8 +559,9 @@ DC.define('StageDensity', {
         <div style="font-family:'IBM Plex Mono',ui-monospace,monospace; font-size:9px; letter-spacing:.5px; color:var(--mut); white-space:nowrap;">PVT CELL &#8594; DENSITY COIL &#8594; BALANCE</div>
       </div>
       <div style="font-family:'IBM Plex Mono',ui-monospace,monospace; font-size:9.5px; letter-spacing:.3px; line-height:1.35; color:{{ dnActionColor }}; margin-top:3px; padding:4px 8px; border-radius:6px; background:var(--icard); border:1px solid var(--line); flex:0 0 auto; min-height:22px;">{{ dnActionText }}</div>
-      <svg viewBox="792 128 632 446" preserveAspectRatio="xMidYMid meet" style="display:block; width:100%; height:100%; flex:1 1 auto; min-height:0;">
+      <svg viewBox="700 92 724 482" preserveAspectRatio="xMidYMid meet" style="display:block; width:100%; height:100%; flex:1 1 auto; min-height:0;">
         <defs>
+          ${PVTCellArt.defs('dnc')}
           <linearGradient id="dn-metal" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#283750"></stop><stop offset=".42" stop-color="#b3c1d8"></stop><stop offset=".58" stop-color="#7e90b0"></stop><stop offset="1" stop-color="#1f2a3e"></stop></linearGradient>
           <linearGradient id="dn-metalv" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#e3eaf4"></stop><stop offset=".35" stop-color="#b3c1d8"></stop><stop offset=".7" stop-color="#7e90b0"></stop><stop offset="1" stop-color="#3a4a64"></stop></linearGradient>
           <linearGradient id="dn-valve" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#dfe6f0"></stop><stop offset=".5" stop-color="#a9b7cc"></stop><stop offset="1" stop-color="#5c6c86"></stop></linearGradient>
@@ -571,80 +573,33 @@ DC.define('StageDensity', {
           <clipPath id="dn-pumpb-clip"><rect x="848" y="219" width="36" height="182" rx="3"></rect></clipPath>
         </defs>
 
-        <!-- open-frame rack -->
-        <rect x="806" y="150" width="284" height="12" fill="url(#dn-metal)" stroke="#0a0e16" stroke-width="1"></rect>
-        <rect x="806" y="454" width="284" height="12" fill="url(#dn-metal)" stroke="#0a0e16" stroke-width="1"></rect>
-        <rect x="806" y="150" width="12" height="316" fill="url(#dn-metal)" stroke="#0a0e16" stroke-width="1"></rect>
-        <rect x="1078" y="150" width="12" height="316" fill="url(#dn-metal)" stroke="#0a0e16" stroke-width="1"></rect>
-        <rect x="812" y="466" width="10" height="28" fill="url(#dn-metal)" stroke="#0a0e16" stroke-width="1"></rect>
-        <rect x="1074" y="466" width="10" height="28" fill="url(#dn-metal)" stroke="#0a0e16" stroke-width="1"></rect>
-
-        <!-- sample manifold, out of the frame to the coil connection -->
-        <line x1="866" y1="190" x2="1112" y2="190" stroke="#0a0e16" stroke-width="6" stroke-linecap="round"></line>
-        <line x1="866" y1="190" x2="1112" y2="190" stroke="#9fb0c8" stroke-width="3.4" stroke-linecap="round"></line>
-        <circle cx="1030" cy="190" r="4.5" fill="url(#dn-metal)" stroke="#0a0e16" stroke-width="0.8"></circle>
-        <line x1="866" y1="190" x2="866" y2="215" stroke="#9fb0c8" stroke-width="3"></line>
-        <line x1="948" y1="190" x2="948" y2="212" stroke="#9fb0c8" stroke-width="3"></line>
-        <line x1="1030" y1="190" x2="1030" y2="215" stroke="#9fb0c8" stroke-width="3"></line>
-        <!-- cell isolation valve + line end fitting -->
-        <rect x="1094" y="181" width="14" height="17" rx="2" fill="url(#dn-metal)" stroke="#0a0e16" stroke-width="1"></rect>
-        <circle cx="1101" cy="189.5" r="3.3" fill="{{ dnValveFill }}"></circle>
-        <rect x="1108" y="182" width="10" height="16" rx="1.6" fill="url(#dn-metalv)" stroke="#0a0e16" stroke-width="1"></rect>
-
+        <!-- approved PVT cell (PVTCellArt) + its overlays, shifted so the Port R outward fitting sits at the coil inlet (1118, 190).
+             Port R valve = the former cell isolation valve on the sample line (open while the sample flows to the coil) -->
+        <g transform="translate(-29.6 0)">
+        ${PVTCellArt.cell('dnc', {
+          innerA: `<rect x="1012" y="219" width="36" height="{{ dnSampleH }}" fill="url(#dn-sample)"></rect><rect x="1012" y="219" width="36" height="{{ dnSampleH }}" fill="url(#dn-diss)" opacity=".45"></rect><rect x="1012" y="219" width="36" height="3.5" fill="#ffffff" opacity=".18"></rect><g style="{{ dnSweptStyle }}"><rect x="1012" y="{{ dnTickLoY }}" width="36" height="35" fill="rgba(47,111,208,.38)"></rect><text x="1030" y="{{ dnDvTxtY }}" text-anchor="middle" font-family="IBM Plex Mono" font-size="9" font-weight="600" fill="#dcebff">&#916;V</text></g>`,
+          pistonB: '219', pistonA: 'dnPistonY',
+          valves: { A: 'true', R: 'dnFlowOn' },
+          ports: { R: { plug: '!dnCoilAtCell', nut: 'dnCoilAtCell' } },
+          disp: { P: '{{ dnPNum }}', Pu: 'psi', B: '0.0 cc', A: '{{ dnCellVText }}' } })}
         <!-- live flow : pump A -> manifold -> coil -->
         <g style="{{ dnFlowStyle }}">
-          <path d="M1030 215 V190 H1118" fill="none" stroke="#ffcf3f" stroke-width="2.4" stroke-dasharray="3 9" stroke-linecap="round" style="animation:dndash calc(.7s * var(--pm, 1)) linear infinite;"></path>
+          <path d="M1030 212 V190 H1147.6" fill="none" stroke="#ffcf3f" stroke-width="2.4" stroke-dasharray="3 9" stroke-linecap="round" style="animation:dndash calc(.7s * var(--pm, 1)) linear infinite;"></path>
         </g>
-        <foreignObject x="872" y="168" width="150" height="13"><div style="margin:0; display:flex; align-items:center; justify-content:flex-start; height:100%; white-space:nowrap; line-height:1.1; font-family:'IBM Plex Mono',ui-monospace,monospace; font-size:8.5px; letter-spacing:.5px; color:{{ dnLineLabelColor }};">{{ dnLineLabel }}</div></foreignObject>
+        <foreignObject x="848" y="540" width="200" height="13"><div style="margin:0; display:flex; align-items:center; justify-content:center; height:100%; white-space:nowrap; line-height:1.1; font-family:'IBM Plex Mono',ui-monospace,monospace; font-size:8.5px; letter-spacing:.5px; color:{{ dnLineLabelColor }};">{{ dnLineLabel }}</div></foreignObject>
 
-        <!-- Pump B : empty -->
-        <rect x="838" y="206" width="56" height="12" rx="2" fill="url(#dn-metal)" stroke="#0a0e16" stroke-width="1"></rect>
-        <rect x="846" y="215" width="40" height="190" rx="4" fill="url(#dn-cyl)" stroke="#0a0e16" stroke-width="1.2"></rect>
-        <g clip-path="url(#dn-pumpb-clip)">
-          <rect x="848" y="219" width="36" height="9" rx="1.5" fill="url(#dn-metal)" stroke="#05080f" stroke-width="1.1"></rect>
-        </g>
-        <line x1="856" y1="222" x2="856" y2="398" stroke="#eef4fb" stroke-width="1.2" opacity=".3"></line>
-        <line x1="846" y1="252" x2="886" y2="252" stroke="#0a0e16" stroke-width="1" opacity=".28"></line>
-        <line x1="846" y1="352" x2="886" y2="352" stroke="#0a0e16" stroke-width="1" opacity=".28"></line>
-        <rect x="838" y="405" width="56" height="14" rx="2" fill="url(#dn-metal)" stroke="#0a0e16" stroke-width="1"></rect>
-        <foreignObject x="822" y="422" width="88" height="30"><div style="margin:0; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:1px; height:100%; white-space:nowrap; line-height:1.1; font-family:'IBM Plex Sans',sans-serif; font-size:11.5px; color:var(--txt2);">Pump B<span style="font-family:'IBM Plex Mono',ui-monospace,monospace; font-size:11px; font-weight:600; color:var(--amb);">0.0 cc</span></div></foreignObject>
-
-        <!-- Pressure sensor + digital readouts -->
-        <rect x="942" y="210" width="12" height="11" rx="1.5" fill="url(#dn-metal)" stroke="#0a0e16" stroke-width="1"></rect>
-        <circle cx="948" cy="240" r="20" fill="url(#dn-metal)" stroke="#0a0e16" stroke-width="1.3"></circle>
-        <circle cx="948" cy="240" r="14.5" fill="#0c1626" stroke="#2a3852" stroke-width="1"></circle>
-        <path d="M939.9 231.9 A 11.5 11.5 0 0 1 956.1 231.9" fill="none" stroke="#4a6088" stroke-width="1.3" stroke-dasharray="1 3.5" stroke-linecap="round"></path>
-        <line x1="948" y1="240" x2="937" y2="231" stroke="#46e0ff" stroke-width="1.8" stroke-linecap="round"></line>
-        <circle cx="948" cy="240" r="2.4" fill="#8fa3c2"></circle>
-        <text x="948" y="280" text-anchor="middle" font-family="IBM Plex Sans" font-size="12.5" fill="var(--txt2)">Pressure Sensor</text>
-        <text x="948" y="303" text-anchor="middle" font-family="IBM Plex Mono" font-size="10" letter-spacing=".5" fill="var(--mut)">CELL PRESSURE</text>
-        <rect x="912" y="309" width="72" height="21" rx="4" fill="#0a1420" stroke="#3a9d63" stroke-width="1.2"></rect>
-        <foreignObject x="912" y="311" width="72" height="17"><div style="margin:0; display:flex; align-items:center; justify-content:center; height:100%; white-space:nowrap; line-height:1.1; font-family:'IBM Plex Mono',ui-monospace,monospace; font-size:11.5px; font-weight:600; color:var(--grn);">{{ dnPressureText }}</div></foreignObject>
-        <text x="948" y="352" text-anchor="middle" font-family="IBM Plex Mono" font-size="10" letter-spacing=".5" fill="var(--mut)">CELL VOLUME</text>
-        <rect x="912" y="358" width="72" height="21" rx="4" fill="#0a1420" stroke="#8a6a20" stroke-width="1.2"></rect>
-        <foreignObject x="912" y="360" width="72" height="17"><div style="margin:0; display:flex; align-items:center; justify-content:center; height:100%; white-space:nowrap; line-height:1.1; font-family:'IBM Plex Mono',ui-monospace,monospace; font-size:11.5px; font-weight:600; color:var(--amb);">{{ dnCellVText }}</div></foreignObject>
-
-        <!-- Pump A : holds the sample; the piston rises as the cell volume falls 30 -> 23 cc -->
-        <rect x="1002" y="206" width="56" height="12" rx="2" fill="url(#dn-metal)" stroke="#0a0e16" stroke-width="1"></rect>
-        <rect x="1010" y="215" width="40" height="190" rx="4" fill="url(#dn-cyl)" stroke="#0a0e16" stroke-width="1.2"></rect>
-        <g style="{{ dnSweptStyle }}"><rect x="1012" y="{{ dnTickLoY }}" width="36" height="35" fill="rgba(47,111,208,.38)"></rect><text x="1030" y="{{ dnDvTxtY }}" text-anchor="middle" font-family="IBM Plex Mono" font-size="9" font-weight="600" fill="#dcebff">&#916;V</text></g>
-        <g clip-path="url(#dn-pumpa-clip)">
-          <rect x="1012" y="219" width="36" height="{{ dnSampleH }}" fill="url(#dn-sample)"></rect>
-          <rect x="1012" y="219" width="36" height="{{ dnSampleH }}" fill="url(#dn-diss)" opacity=".45"></rect>
-          <rect x="1012" y="219" width="36" height="3.5" fill="#ffffff" opacity=".18"></rect>
-          <rect x="1012" y="{{ dnPistonY }}" width="36" height="9" rx="1.5" fill="url(#dn-metal)" stroke="#05080f" stroke-width="1.1"></rect>
-        </g>
-        <line x1="1020" y1="222" x2="1020" y2="398" stroke="#eef4fb" stroke-width="1.2" opacity=".3"></line>
+        <g transform="${PVTCellArt.oldMap({}, 'A')}">
         <!-- Vi / Vf level marks (active run) -->
-        <line x1="1008" y1="{{ dnTickHiY }}" x2="1054" y2="{{ dnTickHiY }}" stroke="#b9831f" stroke-width="1" stroke-dasharray="3 2"></line>
+        <line x1="1012" y1="{{ dnTickHiY }}" x2="1050" y2="{{ dnTickHiY }}" stroke="#b9831f" stroke-width="1" stroke-dasharray="3 2"></line>
         <text x="1056" y="{{ dnTickHiT }}" font-family="IBM Plex Mono" font-size="8.5" font-weight="600" fill="var(--amb)">{{ dnTickHi }}</text>
         <g style="{{ dnSweptStyle }}">
-          <line x1="1008" y1="{{ dnTickLoY }}" x2="1054" y2="{{ dnTickLoY }}" stroke="#2f6fd0" stroke-width="1" stroke-dasharray="3 2"></line>
+          <line x1="1012" y1="{{ dnTickLoY }}" x2="1050" y2="{{ dnTickLoY }}" stroke="#2f6fd0" stroke-width="1" stroke-dasharray="3 2"></line>
           <text x="1056" y="{{ dnTickLoT }}" font-family="IBM Plex Mono" font-size="8.5" font-weight="600" fill="var(--blue)">{{ dnTickLo }}</text>
         </g>
-        <rect x="1002" y="405" width="56" height="14" rx="2" fill="url(#dn-metal)" stroke="#0a0e16" stroke-width="1"></rect>
-        <foreignObject x="986" y="422" width="88" height="30"><div style="margin:0; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:1px; height:100%; white-space:nowrap; line-height:1.1; font-family:'IBM Plex Sans',sans-serif; font-size:11.5px; color:var(--txt2);">Pump A<span style="font-family:'IBM Plex Mono',ui-monospace,monospace; font-size:11px; font-weight:600; color:var(--amb);">{{ dnCellVText }}</span></div></foreignObject>
-        <text x="948" y="512" text-anchor="middle" font-family="IBM Plex Mono" font-size="11" letter-spacing=".9" fill="var(--cap2)">DUAL-CYLINDER PVT CELL</text>
+        </g>
+        <foreignObject x="822" y="518" width="88" height="30"><div style="margin:0; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:1px; height:100%; white-space:nowrap; line-height:1.1; font-family:'IBM Plex Sans',sans-serif; font-size:11.5px; color:var(--txt2);">Pump B<span style="font-family:'IBM Plex Mono',ui-monospace,monospace; font-size:11px; font-weight:600; color:var(--amb);">0.0 cc</span></div></foreignObject>
+        <foreignObject x="986" y="518" width="88" height="30"><div style="margin:0; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:1px; height:100%; white-space:nowrap; line-height:1.1; font-family:'IBM Plex Sans',sans-serif; font-size:11.5px; color:var(--txt2);">Pump A<span style="font-family:'IBM Plex Mono',ui-monospace,monospace; font-size:11px; font-weight:600; color:var(--amb);">{{ dnCellVText }}</span></div></foreignObject>
+        </g>
 
         <!-- transferred volume readout -->
         <text x="1368" y="146" text-anchor="middle" font-family="IBM Plex Mono" font-size="9.5" letter-spacing=".6" fill="var(--mut)">TRANSFERRED &#916;V</text>
