@@ -40,9 +40,10 @@
     pist: 14,                     // piston height
     rodHW: 5,
     drive: { y0: 494, y1: 706, hw: 40, win0: 497, win1: 703, off: 282 },  // carriage centre = piston top + off
-    port: { L: { x: 300, wall: 330 }, R: { x: 930, wall: 900 } },
-    // Cell Valve (valve 3): upper rear, behind the enclosure. Port L line -> rear riser -> valve -> header start (tee)
-    cv: { x: 380, y0: 124, y1: 152, hw: 14, out: 138, tee: 410, stemTop: 66, bar: 58 },
+    // fixed ports on the frame posts; each has an isolation valve OUTSIDE the enclosure (v = valve axis).
+    // x = outward-facing end of the valve: external tubing or the rated plug attaches here
+    port: { L: { x: 262, wall: 330, v: 292 }, R: { x: 968, wall: 900, v: 938 } },
+    pv: { hw: 14, hh: 14, bonnet: 12, stemTop: 132, bar: 126 },   // port isolation valve body / stem / T-handle
     cap: 100                      // cc per cylinder (project value, see README)
   };
   G.stroke = G.bore.bot - G.bore.top - G.pist;   // 194 units = full capacity
@@ -82,7 +83,7 @@
   BTL.drv = [BTL.x + 48 * BTL.s, BTL.y + 281 * BTL.s];   // side outlet of the driving-side valve (bottom)
   // transfer pump (driving fluid into the bottle's lower side, as on the Charge page) right of the bottle
   var TP = { x0: 190, x1: 300, y0: 600, y1: 706 };
-  var TUBE_X = 262;   // external charge line riser (bottle -> Port L)
+  var TUBE_X = 236;   // external charge line riser (bottle -> Port L valve)
   // generic external receiver, right of the cell (placeholder for flash unit, viscometer, ...)
   var RCV = { x: 1000, y0: 300, y1: 470, hw: 30, cap: 100 };
   var ROUTE = {
@@ -92,11 +93,9 @@
   };
   // internal flow paths (cylinder bore top -> riser -> header -> ...)
   var BT = G.bore.top;
-  // rear line behind the enclosure: Port L bulkhead -> Cell Valve inlet (bottom) ; outlet (side) -> header tee
-  var REAR = [[G.cv.x, G.hy], [G.cv.x, G.cv.y1], [G.cv.x, G.cv.out], [G.cv.tee, G.cv.out], [G.cv.tee, G.hy]];
   var FLOW = {
     A2B: [[G.x.A, BT], [G.x.A, G.hy], [G.x.B, G.hy], [G.x.B, BT]],
-    L2A: ROUTE.L.concat(REAR, [[G.x.A, G.hy], [G.x.A, BT]]),
+    L2A: ROUTE.L.concat([[G.x.A, G.hy], [G.x.A, BT]]),
     A2R: [[G.x.A, BT], [G.x.A, G.hy]].concat(ROUTE.R)
   };
   FLOW.D = ROUTE.D;   // driving fluid: transfer pump -> bottle (runs with L2A)
@@ -202,7 +201,6 @@
     [c.x0 + 8, c.x1 - 30, G.gx - 11].forEach(function (x) { o += R(x, c.bot1, 22, 6, 'fill="#5d6878"') + R(x - 4, c.bot1 + 6, 30, 10, 'rx="3" fill="url(#pcSteelD)" stroke="#3c4553" stroke-width=".8"'); });
     // roof grommets where the valve stems pass through
     ['B', 'A'].forEach(function (k) { o += R(G.x[k] - 11, c.roof0 - 3, 22, 4, 'rx="2" fill="#11203a"'); });
-    o += R(G.cv.x - 8, c.roof0 - 2, 16, 3, 'rx="1.5" fill="#0c1830"');   // rear stem grommet (Cell Valve)
     // electrical connector plate (signal cables leave here)
     o += R(c.x1 - 2, 598, 10, 28, 'rx="2" fill="url(#pcSteelD)" stroke="#3c4553" stroke-width=".8"');
     // name plate
@@ -214,27 +212,33 @@
   function header(cut) {
     var o = '', y = G.hy, x0 = G.port.L.x, x1 = G.port.R.x;
     // header tube (built-in, fixed): Port L - Pump B block - sensor tee - Pump A block - Port R
-    var h0 = G.cv.tee;   // header begins at the Cell Valve outlet tee (Port L reaches it only through the Cell Valve)
-    o += L(h0, y, G.port.R.wall + 2, y, 'stroke="#4a5361" stroke-width="10" stroke-linecap="round"');
-    o += L(h0, y, G.port.R.wall + 2, y, 'stroke="url(#pcSteelV)" stroke-width="7.4"');
-    o += L(h0 + 2, y - 2, G.port.R.wall, y - 2, 'stroke="#fff" stroke-width="1.3" opacity=".8"');
-    o += R(h0 - 9, y - 9, 18, 18, 'rx="2" fill="url(#pcSteelD)" ' + K + ' stroke-width="1"');   // tee from the rear Cell Valve line
+    var h0 = G.port.L.wall - 2, h1 = G.port.R.wall + 2;
+    o += L(h0, y, h1, y, 'stroke="#4a5361" stroke-width="10" stroke-linecap="round"');
+    o += L(h0, y, h1, y, 'stroke="url(#pcSteelV)" stroke-width="7.4"');
+    o += L(h0 + 2, y - 2, h1 - 2, y - 2, 'stroke="#fff" stroke-width="1.3" opacity=".8"');
     if (cut) {
-      o += L(h0, y, G.port.R.wall + 2, y, 'stroke="#28313d" stroke-width="3.6"');
-      o += '<line id="pcHdrFluid" x1="' + h0 + '" y1="' + y + '" x2="' + x1 + '" y2="' + y + '" stroke="#d99a30" stroke-width="3.2" opacity="0"/>';
+      o += L(h0, y, h1, y, 'stroke="#28313d" stroke-width="3.6"');
+      // header fluid reaches each port valve seat (inner side of the valve)
+      o += '<line id="pcHdrFluid" x1="' + (G.port.L.v + 3) + '" y1="' + y + '" x2="' + (G.port.R.v - 3) + '" y2="' + y + '" stroke="#d99a30" stroke-width="3.2" opacity="0"/>';
     }
-    void x0;
+    void x0; void x1;
     // sensor tee
     o += R(G.gx - 11, y - 10, 22, 20, 'rx="2" fill="url(#pcSteelD)" ' + K + ' stroke-width="1"');
     if (cut) o += R(G.gx - 1.8, y, 3.6, 22, 'fill="#28313d"');
     // fixed bulkhead ports in the frame posts (Port L, Port R)
     ['L', 'R'].forEach(function (k) {
       var pp = G.port[k], s = k === 'L' ? -1 : 1, xw = pp.wall, xe = pp.x;
-      o += R(Math.min(xw, xe), y - 3.6, Math.abs(xe - xw), 7.2, 'fill="url(#pcSteelV)" ' + K + ' stroke-width=".8"');      // tube stub
+      o += R(Math.min(xw, xe), y - 3.6, Math.abs(xe - xw), 7.2, 'fill="url(#pcSteelV)" ' + K + ' stroke-width=".8"');      // stub: post -> valve -> outer end
       var nx = k === 'L' ? xw - 16 : xw;                                                                       // bulkhead nut on the post
       o += R(nx, y - 10, 16, 20, 'rx="2" fill="url(#pcSteelD)" ' + K + ' stroke-width=".9"');
       o += L(nx + 5.3, y - 10, nx + 5.3, y + 10, 'stroke="#3c4553" stroke-width=".6" opacity=".6"') + L(nx + 10.7, y - 10, nx + 10.7, y + 10, 'stroke="#3c4553" stroke-width=".6" opacity=".6"');
-      if (cut) o += R(Math.min(xw, xe), y - 1.6, Math.abs(xe - xw), 3.2, 'fill="#28313d"');
+      if (cut) {
+        o += R(Math.min(xw, xe), y - 1.6, Math.abs(xe - xw), 3.2, 'fill="#28313d"');
+        // outer side of the port valve (valve seat -> outward end): filled only by the external line
+        var a0 = k === 'L' ? xe : pp.v + 3, a1 = k === 'L' ? pp.v - 3 : xe;
+        o += '<line id="pcOut' + k + '" x1="' + a0 + '" y1="' + y + '" x2="' + a1 + '" y2="' + y + '" stroke="#d99a30" stroke-width="3.2" opacity="0"/>';
+      }
+      o += portValve(k, cut);
       // pressure-rated plug (unused port while the cell holds pressure or vacuum)
       var capX = k === 'L' ? xe - 14 : xe;
       o += '<g id="pcCap' + k + '">' + R(capX, y - 9.5, 14, 19, 'rx="2" fill="url(#pcSteelD)" stroke="#1d3a66" stroke-width="1.6"') +
@@ -279,35 +283,26 @@
     return o;
   }
 
-  function cellValve(cut) {
-    var v = G.cv, x = v.x, o = '<g id="pcCellValve">';
-    var hid = 'fill="none" stroke="#5d6878" stroke-width="1.6" stroke-dasharray="6 4"';
-    var line = 'M' + (G.port.L.wall) + ' ' + G.hy + ' H' + x + ' V' + v.y1 + ' M' + (x + v.hw) + ' ' + v.out + ' H' + v.tee + ' V' + (G.hy - 9);
-    if (!cut) {
-      // behind the back panel: hidden-line convention (dashed), with a faint body tint
-      o += P(line, hid);
-      o += R(x - v.hw, v.y0, 2 * v.hw, v.y1 - v.y0, 'rx="3" fill="#8e99a8" fill-opacity=".14" stroke="#5d6878" stroke-width="1.6" stroke-dasharray="6 4"');
-      o += R(x - 10, v.y0 - 12, 20, 12, 'fill="none" stroke="#5d6878" stroke-width="1.2" stroke-dasharray="4 3"');
-    } else {
-      // revealed through the back panel for training: same position, sectioned
-      o += P(line, 'fill="none" stroke="#4a5361" stroke-width="8"') + P(line, 'fill="none" stroke="#28313d" stroke-width="3.6"');
-      o += '<path id="pcRearUp" d="M' + G.port.L.wall + ' ' + G.hy + ' H' + x + ' V' + (v.out + 6) + '" fill="none" stroke="#d99a30" stroke-width="3.2" opacity="0"/>';
-      o += '<path id="pcRearDn" d="M' + x + ' ' + v.out + ' H' + v.tee + ' V' + G.hy + '" fill="none" stroke="#d99a30" stroke-width="3.2" opacity="0"/>';
-      o += R(x - v.hw, v.y0, 2 * v.hw, v.y1 - v.y0, 'rx="3" fill="url(#pcHatch2)" ' + K + ' stroke-width="1.1"');
-      o += R(x - 1.8, v.out, 3.6, v.y1 - v.out, 'fill="#28313d"') + R(x, v.out - 1.8, v.hw, 3.6, 'fill="#28313d"');
-      o += '<rect id="pcSeatC" x="' + (x - 7) + '" y="' + (v.out + 4) + '" width="14" height="4" rx="1" fill="#c0392b"/>';
-      o += R(x - 10, v.y0 - 12, 20, 12, 'fill="url(#pcHatch)" ' + K + ' stroke-width=".8"');
-      o += R(x - v.hw - 8, v.y0 - 16, 2 * v.hw + 16 + (v.tee - x - v.hw), v.y1 - v.y0 + 22, 'rx="6" fill="none" stroke="#1d3a66" stroke-width="1.2" stroke-dasharray="3 3"');
+  // isolation valve directly at a port, outside the enclosure: inline body on the port stub, stem and T-handle on top
+  function portValve(k, cut) {
+    var x = G.port[k].v, v = G.pv, y = G.hy, o = '';
+    o += R(x - v.hw, y - v.hh, 2 * v.hw, 2 * v.hh, 'rx="3" fill="url(#pcSteelD)" ' + K + ' stroke-width="1.1"');
+    o += R(x - v.hw + 3, y - v.hh + 3, 4, 2 * v.hh - 6, 'rx="2" fill="#fff" opacity=".35"');
+    if (cut) {
+      o += R(x - v.hw + 1, y - v.hh + 1, 2 * v.hw - 2, 2 * v.hh - 2, 'fill="url(#pcHatch2)" opacity=".85"');
+      o += R(x - v.hw, y - 1.8, 2 * v.hw, 3.6, 'fill="#28313d"');                                         // through-bore
+      o += '<rect id="pcSeat' + k + '" x="' + (x - 2) + '" y="' + (y - 7) + '" width="4" height="14" rx="1" fill="#c0392b"/>';   // seat bar (closed)
     }
-    o += '<rect id="pcVringC" x="' + (x - v.hw - 4) + '" y="' + (v.y0 - 4) + '" width="' + (2 * v.hw + 8) + '" height="' + (v.y1 - v.y0 + 8) + '" rx="5" fill="none" stroke="#2fa66f" stroke-width="2.6" opacity="0"' + (cut ? '' : ' stroke-dasharray="6 4"') + '/>';
-    // stem rises at the rear through the roof; T-handle above the roof (slightly smaller and set back)
-    o += R(x - 3, v.stemTop, 6, v.y0 - 12 - v.stemTop, 'fill="url(#pcSteelD)" ' + K + ' stroke-width=".6"');
+    o += R(x - 9, y - v.hh - v.bonnet, 18, v.bonnet, 'rx="2" fill="url(#pcSteelD)" ' + K + ' stroke-width=".9"');
+    if (cut) o += R(x - 8, y - v.hh - v.bonnet + 1, 16, v.bonnet - 2, 'fill="url(#pcHatch)" opacity=".8"');
+    o += R(x - 3, v.stemTop, 6, y - v.hh - v.bonnet - v.stemTop, 'fill="url(#pcSteelD)" ' + K + ' stroke-width=".6"');
     o += R(x - 6.5, v.bar + 5, 13, 8, 'rx="2" fill="url(#pcSteelD)" ' + K + ' stroke-width=".7"');
-    o += R(x - 22, v.bar, 44, 7, 'rx="3.5" fill="url(#pcSteelD)" ' + K + ' stroke-width=".8" opacity=".92"');
+    o += R(x - 22, v.bar, 44, 7, 'rx="3.5" fill="url(#pcSteelD)" ' + K + ' stroke-width=".8"');
     o += C(x, v.bar - 1, 5, 'fill="url(#pcSteelV)" ' + K + ' stroke-width=".7"');
-    o += '<g id="pcTagC">' + R(x + 12, 74, 62, 18, 'rx="9" fill="#e4e8ee" stroke="#9aa6b5" stroke-width="1"') +
-      '<text x="' + (x + 43) + '" y="87" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="11" font-weight="600" letter-spacing=".6" fill="#566578">CLOSED</text></g>';
-    return o + '</g>';
+    o += '<rect id="pcVring' + k + '" x="' + (x - v.hw - 4) + '" y="' + (y - v.hh - 4) + '" width="' + (2 * v.hw + 8) + '" height="' + (2 * v.hh + 8) + '" rx="5" fill="none" stroke="#2fa66f" stroke-width="2.6" opacity="0"/>';
+    o += '<g id="pcTag' + k + '">' + R(x - 31, 100, 62, 18, 'rx="9" fill="#e4e8ee" stroke="#9aa6b5" stroke-width="1"') +
+      '<text x="' + x + '" y="113" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="11" font-weight="600" letter-spacing=".6" fill="#566578">CLOSED</text></g>';
+    return o;
   }
 
   function cylinder(k, cut) {
@@ -453,11 +448,15 @@
     var sub = 'font-size="14" font-weight="500" fill="#566578"';
     // valves
     o += lead(G.x.B + 32, 58, 504, 58) + T(508, 54, 'Pump B valve') + T(508, 72, 'cylinder valve 1', sub);
-    o += lead(G.cv.x - 24, 58, 346, 58) + T(342, 46, 'Cell Valve', 'text-anchor="end"') + T(342, 64, 'valve 3 · upper rear,', 'text-anchor="end" ' + sub) + T(342, 80, 'behind the enclosure', 'text-anchor="end" ' + sub);
+
     o += lead(G.x.A + 32, 58, 826, 58) + T(830, 54, 'Pump A valve') + T(830, 72, 'cylinder valve 2', sub);
     // header ports
-    o += T(G.port.L.x - 2, 160, 'Port L', 'text-anchor="middle"') + '<text id="pcPortLTxt" x="' + (G.port.L.x - 2) + '" y="210" text-anchor="middle" ' + sub + '>capped</text>';
-    o += T(G.port.R.x + 2, 160, 'Port R', 'text-anchor="middle"') + '<text id="pcPortRTxt" x="' + (G.port.R.x + 2) + '" y="210" text-anchor="middle" ' + sub + '>capped</text>';
+    ['L', 'R'].forEach(function (k) {
+      var x = G.port[k].v;
+      // name below the valve (the space above is shared with the cylinder-valve labels); state line under it
+      o += T(x, 226, 'Port ' + k + ' valve', 'text-anchor="middle"');
+      o += '<text id="pcPort' + k + 'Txt" x="' + x + '" y="244" text-anchor="middle" ' + sub + '>rated plug</text>';
+    });
     o += T(G.gx, 154, 'Pressure sensor', 'text-anchor="middle" font-size="15"');
     o += T(G.gx, 460, 'Thermal enclosure', 'text-anchor="middle" ' + sub);
     o += T(G.x.B, 790, 'Pump B · piston drive', 'text-anchor="middle"');
@@ -482,7 +481,7 @@
 
   function layer(cut) {
     var o = '<g class="' + (cut ? 'pc-cut' : 'pc-ext') + '">';
-    o += header(cut) + cellValve(cut);
+    o += header(cut);
     // training-view note in the free area above the desk (inside the drawing, so the layout never shifts between views)
     if (cut) o += '<g font-family="IBM Plex Sans, sans-serif" text-anchor="middle">' + R(1010, 92, 340, 54, 'rx="8" fill="#1d3a66" opacity=".94"') +
       T(1180, 115, 'CUTAWAY · TRAINING VIEW', 'font-family="IBM Plex Mono, monospace" font-size="14" font-weight="700" letter-spacing="1" fill="#ffffff"') +
@@ -555,7 +554,7 @@
 
     function valve(k, open) {
       // state indication only: ring + tag cross-fade; the seat bar fades out as the valve opens
-      setAll('pcVring' + k, 'opacity', open.toFixed(2));   // k = 'A' | 'B' | 'C' (Cell Valve)
+      setAll('pcVring' + k, 'opacity', open.toFixed(2));   // k = 'A' | 'B' (cylinder valves) | 'L' | 'R' (port valves)
       setAll('pcSeat' + k, 'opacity', (1 - open).toFixed(2));
       var st = open >= .5 ? 'OPEN' : 'CLOSED';
       qa('pcTag' + k).forEach(function (g) {
@@ -579,11 +578,11 @@
         var rz = views.cutaway.querySelector('#pcRiser' + k);
         if (rz) rz.setAttribute('opacity', (S.hdr * (S['v' + k] > .05 || S['valve' + k] > .5 ? 1 : 0)).toFixed(2));
       });
-      valve('C', S.cellValve || 0);
+      valve('L', S.valveL || 0); valve('R', S.valveR || 0);
       var hf = views.cutaway.querySelector('#pcHdrFluid'); if (hf) hf.setAttribute('opacity', (S.hdr || 0).toFixed(2));
-      var ru = views.cutaway.querySelector('#pcRearUp'), rd = views.cutaway.querySelector('#pcRearDn');
-      if (ru) ru.setAttribute('opacity', (S.connL >= 1 ? (S.tfL || 0) : 0).toFixed(2));   // Port L side of the Cell Valve
-      if (rd) rd.setAttribute('opacity', (S.hdr || 0).toFixed(2));                       // header side
+      ['L', 'R'].forEach(function (k) {   // outer side of each port valve: sample only once the external line is filled
+        var e = views.cutaway.querySelector('#pcOut' + k); if (e) e.setAttribute('opacity', (S['conn' + k] >= 1 ? (S['tf' + k] || 0) : 0).toFixed(2));
+      });
       // displays (panel, controller, monitor)
       var pTxt = fmt(Math.round(S.P), 0);
       root.querySelectorAll('#pcGaugeP').forEach(function (e) { e.textContent = pTxt; });
@@ -603,7 +602,7 @@
         var eqId = k === 'L' ? 'pcBtl' : 'pcRcv';
         setAll(eqId, 'opacity', eq.toFixed(2));
         var lb = q(k === 'L' ? 'pcLblBtl' : 'pcLblRcv'); if (lb) lb.setAttribute('opacity', eq.toFixed(2));
-        var lineTxt = k === 'L' && (S.cellValve || 0) < .5 && tube >= .999 ? ' · line ' + fmt(Math.round(S.Pext || 0), 0) + ' psig' : '';
+        var lineTxt = (S['valve' + k] || 0) < .5 && tube >= .999 ? ' · line ' + fmt(Math.round(S['Pext' + k] || 0), 0) + ' psig' : '';
         setTxt('pcPort' + k + 'Txt', c > 0 ? (tube >= .999 ? 'connected' + lineTxt : 'connecting') : pl >= .5 ? 'rated plug' : 'open · 0 psig');
       });
       // bottle (approved Oil Sample Bottle): valve ring colour, needle lift, sample above the piston
@@ -631,8 +630,8 @@
     function flowOpen(k, S) {
       var A = S.valveA > .98, B = S.valveB > .98;
       if (k === 'A2B' || k === 'B2A') return A && B;
-      if (k === 'L2A' || k === 'A2L') return A && S.connL >= 1 && S.btlValve > .98 && S.cellValve > .98;
-      if (k === 'A2R' || k === 'R2A') return A && S.connR >= 1;
+      if (k === 'L2A' || k === 'A2L') return A && S.connL >= 1 && S.btlValve > .98 && S.valveL > .98;
+      if (k === 'A2R' || k === 'R2A') return A && S.connR >= 1 && S.valveR > .98;
       return false;
     }
 
