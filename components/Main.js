@@ -2155,16 +2155,21 @@ const hi_d = (on) => on ? 'opacity:1; transition:opacity .5s ease;' : 'opacity:.
     const chargePistonStyle = 'transform:translateY(' + pistonDY.toFixed(1) + 'px); transition:transform .12s linear;';
     const chargePistonLabelStyle = 'transform:translateY(' + (pistonDY * 0.47).toFixed(1) + 'px); transition:transform .12s linear;';
 
-    // fluid front along (585,60)->(730,60)->(730,190)->Port L outward end (748,190)->Port L valve (765)->header->(1030,190)->(1030,215)
-    // (same 600-unit line as before; only the drop to the cell moved to x 730 for the approved cell's Port L fitting)
+    // fluid front: bottle sample-valve outlet (585,197.9) -> (730,197.9) -> (730,190) -> Port L outward end (748,190) -> Port L valve (765)
+    // -> header -> (1030,190) -> (1030,215). Same 600-unit front as before (Port L outward end = 293): the short external
+    // charge line (170.9 drawn units) is scaled onto front units 0..293, the cell part keeps 1 unit = 1 drawn unit
     // during the Pump A charge (stage 6) the head sweeps the whole path repeatedly,
     // driven by the same tween that empties the bottle and fills Pump A
     const _charging6 = cBusy && cStage === 6 && cFlowOn;
     const cFrontDraw = _charging6 ? (((pumpA / 80) * 3) % 1) * 600 : cFront;
-    let cHeadX = 585, cHeadY = 60;
-    if (cFrontDraw <= 145) { cHeadX = 585 + cFrontDraw; cHeadY = 60; }
-    else if (cFrontDraw <= 275) { cHeadX = 730; cHeadY = 60 + (cFrontDraw - 145); }
-    else if (cFrontDraw <= 575) { cHeadX = 730 + (cFrontDraw - 275); cHeadY = 190; }
+    let cHeadX = 585, cHeadY = 197.9;
+    const _ext = cFrontDraw * 170.9 / 293;
+    if (cFrontDraw <= 293) {
+      if (_ext <= 145) { cHeadX = 585 + _ext; cHeadY = 197.9; }
+      else if (_ext <= 152.9) { cHeadX = 730; cHeadY = 197.9 - (_ext - 145); }
+      else { cHeadX = 730 + (_ext - 152.9); cHeadY = 190; }
+    }
+    else if (cFrontDraw <= 575) { cHeadX = 748 + (cFrontDraw - 293); cHeadY = 190; }
     else { cHeadX = 1030; cHeadY = 190 + (cFrontDraw - 575); }
     const chargeHeadX = cHeadX, chargeHeadY = cHeadY;
     const draining = !!this.state.drainBack;
