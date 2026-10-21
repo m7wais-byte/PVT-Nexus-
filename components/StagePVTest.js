@@ -76,9 +76,26 @@ class Component extends DCLogic {
   state = { pvN: 0, pvCount: 0, pvRunning: false, pvPressure: 5000, pvVolume: 30.0, pvConfirmed: false, pvReturned: false, pvPhase: 'idle', pvStep: 0, pvXfer: 0,
     pvAgit: 0, pvFront: 0, pvTail: 0, pvFlowD: 0, pvSig: 0, pvFit: false, pvSetDone: false, pvTick: 0 };
 
-  componentWillUnmount() { this.stop(); }
-  componentDidMount() { this.syncHost(); }
-  componentDidUpdate() { this.syncHost(); }
+  componentWillUnmount() { this.stop(); if (this._gRO) { this._gRO.disconnect(); this._gRO = null; } }
+  componentDidMount() { this.syncHost(); this.syncGraphBox(); }
+  componentDidUpdate() { this.syncHost(); this.syncGraphBox(); }
+  // Validation PV (standalone): the P-V graph is drawn at the measured size of its area (1 SVG unit = 1 px), so it
+  // fills the panel width and the height left under the point table. Embedded (DL / Separator) keeps 460 x 360.
+  pvGraphRef = { current: null };
+  syncGraphBox() {
+    const el = this.pvGraphRef.current;
+    if (!el || !el.isConnected || typeof ResizeObserver === 'undefined') return;
+    if (this._gEl === el) return;
+    if (this._gRO) this._gRO.disconnect();
+    this._gEl = el;
+    const read = () => {
+      const r = el.getBoundingClientRect(), W = Math.round(r.width), H = Math.round(r.height);
+      if (W > 40 && H > 40 && (W !== this._gW || H !== this._gH)) { this._gW = W; this._gH = H; this.setState({ pvGBox: W + 'x' + H }); }
+    };
+    this._gRO = new ResizeObserver(read);
+    this._gRO.observe(el);
+    read();
+  }
   // host control (embedded use only): run-key starts a run, reset-key resets, show-done shows the finished test;
   // on-sync mirrors the live P / V / point count to the host, on-done fires once the cell is back at the start condition
   syncHost() {
@@ -470,7 +487,10 @@ class Component extends DCLogic {
     const pvCompStyle = (embedded ? 'width:100px; height:78px; ' : '') + 'transition:filter .3s ease;' + (_sOn && _sig > 0.86 ? ' filter:drop-shadow(0 0 5px rgba(70,211,154,.85));' : '');
 
     const xMin = C.xMin, xMax = C.xMax, yMin = C.yMin, yMax = C.yMax;
-    const left = 56, top = 14, w = 368, h = 310;
+    // plot frame: embedded = the original 460 x 360 drawing; standalone = measured graph area (see syncGraphBox)
+    const SA = !embedded, GW = SA ? (this._gW || 640) : 460, GH = SA ? (this._gH || 300) : 360;
+    const left = SA ? 64 : 56, top = SA ? 12 : 14;
+    const w = SA ? Math.max(160, GW - left - 20) : 368, h = SA ? Math.max(90, GH - top - 46) : 310;
     const px = (v) => (left + (v - xMin) / (xMax - xMin) * w).toFixed(1);
     const py = (p) => (top + (1 - (p - yMin) / (yMax - yMin)) * h).toFixed(1);
 
@@ -479,7 +499,7 @@ class Component extends DCLogic {
 
     const revealed = DATA.slice(0, n);
     const pvGraphPoints = revealed.map(([p, v], i) => ({
-      x: px(v), y: py(p), r: _isPsatPt(i) && confirmed ? 5.5 : 4,
+      x: px(v), y: py(p), r: _isPsatPt(i) && confirmed ? (SA ? 7 : 5.5) : (SA ? 5.5 : 4),
       fill: 'var(--panel2)',
       stroke: (_isPsatPt(i) && confirmed) ? 'var(--red)' : (_isAbove(i) ? 'var(--blue)' : 'var(--amb)'),
       style: 'transform-box:fill-box; transform-origin:center; animation:pvtpin calc(.7s * var(--pm, 1)) ease-out;'
@@ -530,7 +550,7 @@ class Component extends DCLogic {
       _lAe = _len(a1[0], a1[1], ae[0], ae[1]) + 2; _lBe = _len(b0[0], b0[1], be[0], be[1]) + 2;
       pvShowBubbleMark = true;
       pvBubbleX = px(vI); pvBubbleY = py(pI);
-      _gLen = Math.max(1, +pvBubbleX - 56);
+      _gLen = Math.max(1, +pvBubbleX - left);
     } else if (n >= NPTS && this.state.pvFit) {
       const aboveFit = linfit(DATA.slice(0, BUBBLE_IDX + 1));
       const belowFit = linfit(DATA.slice(BUBBLE_IDX, NPTS));
@@ -569,11 +589,11 @@ class Component extends DCLogic {
     const pvPsatMarkTitle = C.psatMarkTitle || 'Psat \u2014 Bubble Point';
     // compact label sits just off the intersection, clamped inside the plot frame
     const _bx = parseFloat(pvBubbleX), _by = parseFloat(pvBubbleY);
-    const LW = C.psatBoxW || 116, LH = 27;
-    const pvPsatLabelX = Math.max(60, Math.min(420 - LW, _bx + 14)).toFixed(1);
-    const pvPsatLabelY = Math.max(18, Math.min(320 - LH, _by - 40)).toFixed(1);
-    const pvPsatLabelTitleY = (parseFloat(pvPsatLabelY) + 3).toFixed(1);
-    const pvPsatLabelValY = (parseFloat(pvPsatLabelY) + 13).toFixed(1);
+    const LW = (C.psatBoxW || 116) + (SA ? 24 : 0), LH = SA ? 34 : 27;
+    const pvPsatLabelX = Math.max(left + 4, Math.min(left + w - 4 - LW, _bx + 14)).toFixed(1);
+    const pvPsatLabelY = Math.max(top + 4, Math.min(top + h - 4 - LH, _by - (SA ? 48 : 40))).toFixed(1);
+    const pvPsatLabelTitleY = (parseFloat(pvPsatLabelY) + (SA ? 4 : 3)).toFixed(1);
+    const pvPsatLabelValY = (parseFloat(pvPsatLabelY) + (SA ? 17 : 13)).toFixed(1);
     const pvPsatLeader = _bx + ',' + _by + ' ' + (parseFloat(pvPsatLabelX) + 8).toFixed(1) + ',' + (parseFloat(pvPsatLabelY) + LH).toFixed(1);
 
     // recorded-point worksheet — same DATA that drives the graph, shown as a B/V data sheet
@@ -592,6 +612,22 @@ class Component extends DCLogic {
         numStyle: "padding:0 5px; height:" + _rh + "px; display:flex; align-items:center; justify-content:center; font-family:'IBM Plex Mono',ui-monospace,monospace; font-size:" + (embedded ? 10 : 8.5) + "px; color:" + (rev ? 'var(--mut)' : 'var(--dis)') + '; background:var(--icard);',
         bStyle: cell + 'justify-content:flex-end; font-weight:600; color:' + (isBubble ? 'var(--red)' : rev ? 'var(--txt)' : 'var(--dis)') + ';',
         vStyle: cell + 'justify-content:flex-end; color:' + (isBubble ? 'var(--red)' : rev ? 'var(--txt2)' : 'var(--dis)') + ';'
+      };
+    });
+
+    // Validation PV: compact horizontal point table (columns = points 01-12, rows = P and V), same DATA / reveal as the sheet
+    // value type follows the measured panel width so '5,000' always fits its column (1366 wide: ~10.5 px; 1920: 12.5 px)
+    const _hColW = ((this._gW || 640) - 58) / NPTS, pvHFs = Math.max(9, Math.min(12.5, _hColW / 3.25)).toFixed(1);
+    const pvHCols = 'grid-template-columns:58px repeat(' + NPTS + ',minmax(0,1fr));';
+    const pvHTable = DATA.map(([p, v], i) => {
+      const rev = i < n, isBubble = _isPsatPt(i) && confirmed && rev, isNew = phase === 'rec' && i === n - 1, isActive = busy && i === n - 1;
+      const bg = isBubble ? 'rgba(195,58,82,.10)' : isActive ? 'rgba(47,111,208,.12)' : rev ? 'var(--panel)' : 'transparent';
+      const col = 'background:' + bg + '; transition:background .25s ease;' + (isNew ? ' animation:pvtrow calc(1.6s * var(--pm, 1)) ease-out;' : '') + (isActive ? ' box-shadow:inset 0 0 0 1.5px var(--blue);' : isBubble ? ' box-shadow:inset 0 0 0 1.5px var(--red);' : '');
+      return {
+        n: (i < 9 ? '0' : '') + (i + 1), p: rev ? p.toLocaleString('en-US') : '\u2013', v: rev ? v.toFixed(dec) : '\u2013',
+        hStyle: col + ' color:' + (isBubble ? 'var(--red)' : isActive ? 'var(--blue)' : rev ? 'var(--txt2)' : 'var(--dis)') + ';',
+        pStyle: col + ' font-weight:600; color:' + (isBubble ? 'var(--red)' : rev ? 'var(--txt)' : 'var(--dis)') + ';',
+        vStyle: col + ' color:' + (isBubble ? 'var(--red)' : rev ? 'var(--txt2)' : 'var(--dis)') + ';'
       };
     });
 
@@ -720,7 +756,17 @@ class Component extends DCLogic {
       pvFitAboveExt, pvFitBelowExt, pvFitAboveExtStyle, pvFitBelowExtStyle, pvPsatGuideStyle, pvPsatVGuideStyle, pvPsatLabelStyle, pvPsatAxisTxt, pvPsatMarkTitle,
       pvGraphPoints, pvLineAbove, pvLineBelow, pvShowBubbleMark, pvBubbleX, pvBubbleY, pvPsatMarkStyle,
       pvPsatLabelX, pvPsatLabelY, pvPsatLabelTitleY, pvPsatLabelValY, pvPsatLeader,
-      pvSheet, pvWorkflow,
+      pvSheet, pvWorkflow, pvHTable, pvHCols, pvHFs, pvGraphRef: this.pvGraphRef,
+      // graph frame + type (embedded values = the original drawing)
+      pvGVB: '0 0 ' + GW + ' ' + GH, pvGL: left, pvGT: top, pvGW: w, pvGH: h, pvGR: left + w, pvGB: top + h,
+      pvGTickX: left - 6, pvGTickY: top + h + (SA ? 17 : 13), pvGAxX: left + w / 2, pvGAxY: top + h + (SA ? 37 : 29),
+      pvGYLX: SA ? 15 : 15, pvGYLY: top + h / 2, pvGFs: SA ? 12 : 9.5, pvGAxFs: SA ? 13 : 11, pvGPsatX: left - 4,
+      pvGFitW: SA ? 2.8 : 2.2, pvGExtW: SA ? 2.3 : 1.8, pvGPtR: SA ? 6 : 4.5, pvGPsR: SA ? 9 : 7.5, pvGPsDot: SA ? 3.2 : 2.6,
+      pvGLabH: LH, pvGLabTH: SA ? 13 : 11, pvGLabVH: SA ? 15 : 12, pvGLabTFs: SA ? 10.5 : 8.5, pvGLabVFs: SA ? 13 : 10.5,
+      pvGWrapStyle: SA ? 'flex:1 1 auto; min-height:0; min-width:0; position:relative;' : 'display:contents;',
+      pvGSvgStyle: SA ? 'position:absolute; inset:0; display:block; width:100%; height:100%;' : 'display:block; flex:1 1 auto; min-width:0; min-height:0; width:100%;',
+      pvGRowStyle: SA ? 'display:flex; flex-direction:column; align-items:stretch; gap:6px; flex:1 1 auto; min-height:0; min-width:0;'
+        : 'display:flex; flex-direction:row; align-items:stretch; gap:10px; flex:1 1 auto; min-height:0; min-width:0; flex-wrap:nowrap;',
       pvPointsOfText, pvPointsColor, pvPsatText, pvBubbleStatColor, pvTestStatusText, pvTestStatusColor,
       pvBtnText, pvBtnBg, pvBtnBorder, pvBtnColor, pvBtnCursor,
       pvNextBg, pvNextBorder, pvNextColor, pvNextCursor, pvHintText, pvHintColor,
@@ -858,8 +904,32 @@ DC.define('StagePVTest', {
           <span style="display:inline-flex; align-items:center; gap:4px;"><span style="width:7px; height:7px; border-radius:50%; background:var(--red); display:inline-block;"></span>Psat</span>
         </div>
       </div>
-      <div style="display:flex; flex-direction:row; align-items:stretch; gap:10px; flex:1 1 auto; min-height:0; min-width:0; flex-wrap:nowrap;">
-      <!-- recorded P/V worksheet -->
+      <div style="{{ pvGRowStyle }}">
+      <!-- Validation PV: compact horizontal point table (points 01-12 across, P and V rows), counter on the right -->
+      <sc-if value="{{ pvStandalone }}" hint-placeholder-val="{{ true }}">
+      <div style="flex:0 0 auto; display:flex; flex-direction:column; border:1px solid var(--line2); border-radius:8px; overflow:hidden; background:var(--panel2); font-family:'IBM Plex Mono',ui-monospace,monospace; font-variant-numeric:tabular-nums;">
+        <div style="display:grid; {{ pvHCols }} background:var(--icard); border-bottom:1px solid var(--line2);">
+          <span title="Recorded points" style="height:22px; display:flex; align-items:center; padding:0 8px; font-size:10.5px; font-weight:700; color:{{ pvPointsColor }}; white-space:nowrap;">{{ pvPointsOfText }}</span>
+          <sc-for list="{{ pvHTable }}" as="c" hint-placeholder-count="12">
+            <span style="height:22px; display:flex; align-items:center; justify-content:center; border-left:1px solid var(--line); font-size:10.5px; font-weight:600; {{ c.hStyle }}">{{ c.n }}</span>
+          </sc-for>
+        </div>
+        <div style="display:grid; {{ pvHCols }} border-bottom:1px solid var(--line);">
+          <span style="height:24px; display:flex; align-items:center; padding:0 8px; font-size:11px; font-weight:700; color:var(--txt2); background:var(--icard); white-space:nowrap;">P <span style="font-size:9px; font-weight:400; color:var(--mut2); margin-left:4px;">{{ pvPU }}</span></span>
+          <sc-for list="{{ pvHTable }}" as="c" hint-placeholder-count="12">
+            <span style="height:24px; display:flex; align-items:center; justify-content:center; border-left:1px solid var(--line); font-size:{{ pvHFs }}px; white-space:nowrap; overflow:hidden; {{ c.pStyle }}">{{ c.p }}</span>
+          </sc-for>
+        </div>
+        <div style="display:grid; {{ pvHCols }}">
+          <span style="height:24px; display:flex; align-items:center; padding:0 8px; font-size:11px; font-weight:700; color:var(--txt2); background:var(--icard); white-space:nowrap;">V <span style="font-size:9px; font-weight:400; color:var(--mut2); margin-left:4px;">cc</span></span>
+          <sc-for list="{{ pvHTable }}" as="c" hint-placeholder-count="12">
+            <span style="height:24px; display:flex; align-items:center; justify-content:center; border-left:1px solid var(--line); font-size:{{ pvHFs }}px; white-space:nowrap; overflow:hidden; {{ c.vStyle }}">{{ c.v }}</span>
+          </sc-for>
+        </div>
+      </div>
+      </sc-if>
+      <!-- recorded P/V worksheet (embedded: Differential Liberation / Separator Test) -->
+      <sc-if value="{{ pvEmbedded }}" hint-placeholder-val="{{ false }}">
       <div style="flex:0 0 {{ pvSheetW }}; min-width:0; align-self:flex-start; max-height:100%; display:flex; flex-direction:column; border:1px solid var(--line2); border-radius:8px; overflow:hidden; background:var(--panel2);">
         <div style="display:flex; align-items:center; justify-content:space-between; gap:6px; padding:5px 7px; background:var(--icard); border-bottom:1px solid var(--line2);">
           <span style="font-family:'IBM Plex Mono'; font-size:7.5px; letter-spacing:.6px; text-transform:uppercase; white-space:nowrap; color:var(--mut);">Recorded Points</span>
@@ -885,53 +955,56 @@ DC.define('StagePVTest', {
           </sc-for>
         </div>
       </div>
+      </sc-if>
 
-      <svg viewBox="0 0 460 360" preserveAspectRatio="xMidYMid meet" style="display:block; flex:1 1 auto; min-width:0; min-height:0; width:100%;">
-        <rect x="56" y="14" width="368" height="310" fill="var(--panel2)" stroke="var(--line)" stroke-width="1"></rect>
+      <div ref="{{ pvGraphRef }}" style="{{ pvGWrapStyle }}">
+      <svg sc-camel-view-box="{{ pvGVB }}" sc-camel-preserve-aspect-ratio="xMidYMid meet" style="{{ pvGSvgStyle }}">
+        <rect x="{{ pvGL }}" y="{{ pvGT }}" width="{{ pvGW }}" height="{{ pvGH }}" fill="var(--panel2)" stroke="var(--line)" stroke-width="1"></rect>
         <sc-for list="{{ pvYTicks }}" as="t" hint-placeholder-count="4">
-          <line x1="56" y1="{{ t.y }}" x2="424" y2="{{ t.y }}" stroke="var(--line)" stroke-width="1"></line>
-          <text x="50" y="{{ t.y }}" text-anchor="end" dominant-baseline="middle" font-family="IBM Plex Mono" font-size="9.5" fill="var(--mut)">{{ t.label }}</text>
+          <line x1="{{ pvGL }}" y1="{{ t.y }}" x2="{{ pvGR }}" y2="{{ t.y }}" stroke="var(--line)" stroke-width="1"></line>
+          <text x="{{ pvGTickX }}" y="{{ t.y }}" text-anchor="end" dominant-baseline="middle" font-family="IBM Plex Mono" font-size="{{ pvGFs }}" fill="var(--mut)">{{ t.label }}</text>
         </sc-for>
         <sc-for list="{{ pvXTicks }}" as="t" hint-placeholder-count="4">
-          <line x1="{{ t.x }}" y1="14" x2="{{ t.x }}" y2="324" stroke="var(--line)" stroke-width="1"></line>
-          <text x="{{ t.x }}" y="337" text-anchor="middle" font-family="IBM Plex Mono" font-size="9.5" fill="var(--mut)">{{ t.label }}</text>
+          <line x1="{{ t.x }}" y1="{{ pvGT }}" x2="{{ t.x }}" y2="{{ pvGB }}" stroke="var(--line)" stroke-width="1"></line>
+          <text x="{{ t.x }}" y="{{ pvGTickY }}" text-anchor="middle" font-family="IBM Plex Mono" font-size="{{ pvGFs }}" fill="var(--mut)">{{ t.label }}</text>
         </sc-for>
-        <line x1="56" y1="14" x2="56" y2="324" stroke="var(--line2)" stroke-width="1.3"></line>
-        <line x1="56" y1="324" x2="424" y2="324" stroke="var(--line2)" stroke-width="1.3"></line>
-        <text x="240" y="353" text-anchor="middle" font-family="IBM Plex Sans" font-size="11" fill="var(--txt2)">Volume (cc)</text>
-        <text x="15" y="169" text-anchor="middle" font-family="IBM Plex Sans" font-size="11" fill="var(--txt2)" transform="rotate(-90 15 169)">{{ pvPAxis }}</text>
+        <line x1="{{ pvGL }}" y1="{{ pvGT }}" x2="{{ pvGL }}" y2="{{ pvGB }}" stroke="var(--line2)" stroke-width="1.3"></line>
+        <line x1="{{ pvGL }}" y1="{{ pvGB }}" x2="{{ pvGR }}" y2="{{ pvGB }}" stroke="var(--line2)" stroke-width="1.3"></line>
+        <text x="{{ pvGAxX }}" y="{{ pvGAxY }}" text-anchor="middle" font-family="IBM Plex Sans" font-size="{{ pvGAxFs }}" fill="var(--txt2)">Volume (cc)</text>
+        <text x="{{ pvGYLX }}" y="{{ pvGYLY }}" text-anchor="middle" font-family="IBM Plex Sans" font-size="{{ pvGAxFs }}" fill="var(--txt2)" transform="rotate(-90 {{ pvGYLX }} {{ pvGYLY }})">{{ pvPAxis }}</text>
 
         <polyline points="{{ pvLineAbove }}" fill="none" stroke="var(--blue)" stroke-width="1.4" stroke-linejoin="round" stroke-linecap="round" opacity=".55"></polyline>
         <polyline points="{{ pvLineBelow }}" fill="none" stroke="var(--amb)" stroke-width="1.4" stroke-linejoin="round" stroke-linecap="round" opacity=".55"></polyline>
-        <polyline points="{{ pvFitAbove }}" fill="none" stroke="var(--blue)" stroke-width="2.2" stroke-linecap="round" style="{{ pvFitAboveStyle }}"></polyline>
-        <polyline points="{{ pvFitBelow }}" fill="none" stroke="var(--amb)" stroke-width="2.2" stroke-linecap="round" style="{{ pvFitBelowStyle }}"></polyline>
-        <polyline points="{{ pvFitAboveExt }}" fill="none" stroke="var(--blue)" stroke-width="1.8" stroke-linecap="round" opacity=".8" style="{{ pvFitAboveExtStyle }}"></polyline>
-        <polyline points="{{ pvFitBelowExt }}" fill="none" stroke="var(--amb)" stroke-width="1.8" stroke-linecap="round" opacity=".8" style="{{ pvFitBelowExtStyle }}"></polyline>
+        <polyline points="{{ pvFitAbove }}" fill="none" stroke="var(--blue)" stroke-width="{{ pvGFitW }}" stroke-linecap="round" style="{{ pvFitAboveStyle }}"></polyline>
+        <polyline points="{{ pvFitBelow }}" fill="none" stroke="var(--amb)" stroke-width="{{ pvGFitW }}" stroke-linecap="round" style="{{ pvFitBelowStyle }}"></polyline>
+        <polyline points="{{ pvFitAboveExt }}" fill="none" stroke="var(--blue)" stroke-width="{{ pvGExtW }}" stroke-linecap="round" opacity=".8" style="{{ pvFitAboveExtStyle }}"></polyline>
+        <polyline points="{{ pvFitBelowExt }}" fill="none" stroke="var(--amb)" stroke-width="{{ pvGExtW }}" stroke-linecap="round" opacity=".8" style="{{ pvFitBelowExtStyle }}"></polyline>
 
         <sc-for list="{{ pvGraphPoints }}" as="pt" hint-placeholder-count="12">
           <circle cx="{{ pt.x }}" cy="{{ pt.y }}" r="{{ pt.r }}" fill="{{ pt.fill }}" stroke="{{ pt.stroke }}" stroke-width="1.7" style="{{ pt.style }}"></circle>
         </sc-for>
         <sc-if value="{{ pvNewPtOn }}" hint-placeholder-val="{{ false }}">
-          <circle cx="{{ pvNewPtX }}" cy="{{ pvNewPtY }}" r="4.5" fill="none" stroke="{{ pvNewPtStroke }}" stroke-width="1.4" style="{{ pvNewPtStyle }}"></circle>
+          <circle cx="{{ pvNewPtX }}" cy="{{ pvNewPtY }}" r="{{ pvGPtR }}" fill="none" stroke="{{ pvNewPtStroke }}" stroke-width="1.4" style="{{ pvNewPtStyle }}"></circle>
         </sc-if>
 
         <sc-if value="{{ pvShowBubbleMark }}" hint-placeholder-val="{{ false }}">
         <g style="{{ pvPsatMarkStyle }}">
-          <line x1="56" y1="{{ pvBubbleY }}" x2="{{ pvBubbleX }}" y2="{{ pvBubbleY }}" stroke="var(--red)" stroke-width="1.1" stroke-dasharray="3 4" opacity=".7" style="{{ pvPsatGuideStyle }}"></line>
-          <line x1="{{ pvBubbleX }}" y1="{{ pvBubbleY }}" x2="{{ pvBubbleX }}" y2="324" stroke="var(--red)" stroke-width="1" stroke-dasharray="3 4" opacity=".45" style="{{ pvPsatVGuideStyle }}"></line>
-          <text x="52" y="{{ pvBubbleY }}" dy="3.3" text-anchor="end" font-family="IBM Plex Mono" font-size="9.5" font-weight="700" fill="var(--red)" style="{{ pvPsatLabelStyle }}">{{ pvPsatAxisTxt }}</text>
-          <circle cx="{{ pvBubbleX }}" cy="{{ pvBubbleY }}" r="7.5" fill="none" stroke="var(--red)" stroke-width="1.6"></circle>
-          <circle cx="{{ pvBubbleX }}" cy="{{ pvBubbleY }}" r="7.5" fill="none" stroke="var(--red)" stroke-width="1.2" style="{{ pvPsatRingStyle }}"></circle>
-          <circle cx="{{ pvBubbleX }}" cy="{{ pvBubbleY }}" r="2.6" fill="var(--red)"></circle>
+          <line x1="{{ pvGL }}" y1="{{ pvBubbleY }}" x2="{{ pvBubbleX }}" y2="{{ pvBubbleY }}" stroke="var(--red)" stroke-width="1.1" stroke-dasharray="3 4" opacity=".7" style="{{ pvPsatGuideStyle }}"></line>
+          <line x1="{{ pvBubbleX }}" y1="{{ pvBubbleY }}" x2="{{ pvBubbleX }}" y2="{{ pvGB }}" stroke="var(--red)" stroke-width="1" stroke-dasharray="3 4" opacity=".45" style="{{ pvPsatVGuideStyle }}"></line>
+          <text x="{{ pvGPsatX }}" y="{{ pvBubbleY }}" dy="3.3" text-anchor="end" font-family="IBM Plex Mono" font-size="{{ pvGFs }}" font-weight="700" fill="var(--red)" style="{{ pvPsatLabelStyle }}">{{ pvPsatAxisTxt }}</text>
+          <circle cx="{{ pvBubbleX }}" cy="{{ pvBubbleY }}" r="{{ pvGPsR }}" fill="none" stroke="var(--red)" stroke-width="1.6"></circle>
+          <circle cx="{{ pvBubbleX }}" cy="{{ pvBubbleY }}" r="{{ pvGPsR }}" fill="none" stroke="var(--red)" stroke-width="1.2" style="{{ pvPsatRingStyle }}"></circle>
+          <circle cx="{{ pvBubbleX }}" cy="{{ pvBubbleY }}" r="{{ pvGPsDot }}" fill="var(--red)"></circle>
           <g style="{{ pvPsatLabelStyle }}">
           <polyline points="{{ pvPsatLeader }}" fill="none" stroke="var(--red)" stroke-width="1" opacity=".7"></polyline>
-          <rect x="{{ pvPsatLabelX }}" y="{{ pvPsatLabelY }}" width="{{ pvPsatBoxW }}" height="27" rx="5" fill="var(--panel)" stroke="var(--red)" stroke-width="1"></rect>
-          <foreignObject x="{{ pvPsatLabelX }}" y="{{ pvPsatLabelTitleY }}" width="{{ pvPsatBoxW }}" height="11"><div style="margin:0; display:flex; align-items:center; justify-content:center; height:100%; white-space:nowrap; line-height:1; font-family:'IBM Plex Mono',ui-monospace,monospace; font-size:8.5px; letter-spacing:.4px; font-weight:600; color:var(--red);">{{ pvPsatMarkTitle }}</div></foreignObject>
-          <foreignObject x="{{ pvPsatLabelX }}" y="{{ pvPsatLabelValY }}" width="{{ pvPsatBoxW }}" height="12"><div style="margin:0; display:flex; align-items:center; justify-content:center; height:100%; white-space:nowrap; line-height:1; font-family:'IBM Plex Mono',ui-monospace,monospace; font-size:10.5px; font-weight:700; color:var(--txt);">{{ pvPsatLabel }}</div></foreignObject>
+          <rect x="{{ pvPsatLabelX }}" y="{{ pvPsatLabelY }}" width="{{ pvPsatBoxW }}" height="{{ pvGLabH }}" rx="5" fill="var(--panel)" stroke="var(--red)" stroke-width="1"></rect>
+          <foreignObject x="{{ pvPsatLabelX }}" y="{{ pvPsatLabelTitleY }}" width="{{ pvPsatBoxW }}" height="{{ pvGLabTH }}"><div style="margin:0; display:flex; align-items:center; justify-content:center; height:100%; white-space:nowrap; line-height:1; font-family:'IBM Plex Mono',ui-monospace,monospace; font-size:{{ pvGLabTFs }}px; letter-spacing:.4px; font-weight:600; color:var(--red);">{{ pvPsatMarkTitle }}</div></foreignObject>
+          <foreignObject x="{{ pvPsatLabelX }}" y="{{ pvPsatLabelValY }}" width="{{ pvPsatBoxW }}" height="{{ pvGLabVH }}"><div style="margin:0; display:flex; align-items:center; justify-content:center; height:100%; white-space:nowrap; line-height:1; font-family:'IBM Plex Mono',ui-monospace,monospace; font-size:{{ pvGLabVFs }}px; font-weight:700; color:var(--txt);">{{ pvPsatLabel }}</div></foreignObject>
           </g>
         </g>
         </sc-if>
       </svg>
+      </div>
 
       </div>
       </div>

@@ -520,6 +520,9 @@ Every Validation procedure page uses one frame, taken from Restoration (CSS at t
   and all rig coordinates are unchanged and the bottle matches the Restoration bottle size; the bottle stays on
   the bench (dimmed, disconnected) after stage 8. Computer / controller to the right of the cell (s 0.40). The
   live monitor card and the agitation readouts moved from the drawing into the sidebar.
+- PV (Validation only): the Pressure-Volume panel shows a horizontal point table (points 01-12 across, P and V rows,
+  counter in the corner, the point just recorded outlined) above the graph. The graph is drawn at the measured size of
+  its area (`syncGraphBox`, 1 SVG unit = 1 px) so it fills the panel; embedded PV keeps the 460 x 360 drawing.
 
 ## Sampling section layout (module01, 2026-09-28)
 
