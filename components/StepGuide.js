@@ -1005,17 +1005,16 @@
   '@media (max-width:900px){.sgOvFlow{grid-template-columns:repeat(2,minmax(0,1fr));}.sgOvFoot{grid-template-columns:1fr;}}' +
   '@media (max-width:900px){#sgPanel{width:calc(100vw - 20px);min-width:0;max-height:46vh;}' +
   '#sgBtnStep{display:none;}}' +
-  /* ==== LAYOUT v2 (2026-09-28): Explain lives in the top bar; the card is a docked side
-     drawer that RESERVES its width (the page reflows next to it) - it never covers the
-     schematic, the readouts or any control, and scrolls internally. ==== */
-  '#sgWrap{position:fixed;left:auto;right:0;top:52px;bottom:0;width:var(--sg-w);z-index:40;display:block;pointer-events:none;}' +
+  /* ==== LAYOUT v3 (2026-10-21): one overlay drawer for every page. It is placed (JS, anchor())
+     exactly over the procedure sidebar, or at the right edge at the sidebar width on pages
+     without one. Nothing is reserved on <main>, so opening / closing never resizes or moves
+     the simulation, equipment, graphs or calculation panels. The card scrolls internally;
+     the head (title, stage / status, close) stays pinned at its top. ==== */
+  '#sgWrap{position:fixed;left:auto;right:12px;top:62px;bottom:12px;width:clamp(280px,21vw,330px);z-index:60;display:block;pointer-events:none;}' +
   '#sgWrap.open{pointer-events:auto;}' +
-  '#sgWrap.dock{right:0;}' +
-  '#sgPanel,#sgWrap.dock #sgPanel{width:100%;min-width:0;height:100%;max-height:none !important;margin:0 !important;border-radius:0;' +
-  'border:none;border-left:1px solid var(--line2);box-shadow:-10px 0 28px rgba(10,20,40,.10);transform:translateX(24px);overflow-y:auto;overscroll-behavior:contain;}' +
+  '#sgPanel,#sgWrap.dock #sgPanel{width:100%;min-width:0;height:100%;max-height:none !important;margin:0 !important;box-sizing:border-box;' +
+  'border:1px solid var(--line2);border-radius:12px;box-shadow:-8px 0 24px rgba(10,20,40,.16);transform:translateX(24px);overflow-y:auto;overscroll-behavior:contain;}' +
   '#sgWrap.open #sgPanel{transform:none;}' +
-  'html.sg-open main{margin-right:var(--sg-w);transition:margin-right .22s ease;}' +
-  'html{--sg-w:clamp(300px,24vw,400px);}' +
   '#sgIn{padding:14px 16px 18px;}' +
   '#sgHead,#sgWrap.ov #sgHead{position:sticky;top:-14px;z-index:2;background:var(--panel);padding-top:14px;margin-top:-14px;}' +
   '.sgGrid{grid-template-columns:1fr;gap:12px;}' +
@@ -1028,10 +1027,9 @@
   '#sgBtn.busy #sgDot{background:var(--blue);animation:sgPulse 1.15s ease-in-out infinite;}' +
   '#sgBtnStep{max-width:180px;}' +
   '@media (max-width:1180px){#sgBtnStep{display:none;}}' +
-  /* narrow windows: the drawer becomes a bottom sheet over the page (no room to reserve) */
-  '@media (max-width:1000px){html.sg-open main{margin-right:0;margin-bottom:min(52vh,420px);}' +
-  '#sgWrap{left:0;right:0;top:auto;width:auto;height:min(52vh,420px);}' +
-  '#sgPanel,#sgWrap.dock #sgPanel{border-left:none;border-top:1px solid var(--line2);box-shadow:0 -10px 28px rgba(10,20,40,.18);transform:translateY(24px);}}';
+  /* narrow windows: a bottom sheet over the page (still an overlay - the page is not resized) */
+  '@media (max-width:1000px){#sgWrap{left:0;right:0;top:auto;bottom:0;width:auto;height:min(52vh,420px);}' +
+  '#sgPanel,#sgWrap.dock #sgPanel{border-radius:12px 12px 0 0;border-bottom:none;box-shadow:0 -10px 28px rgba(10,20,40,.18);transform:translateY(24px);}}';
 
   var elOv, ovBuilt = false;
   var wrap, btn, btnStep, panel, elTitle, elTag, elNow, elWhy, elEq, elWatch, elVals, elPath, elNote, elProc;
@@ -1143,11 +1141,42 @@
     wrap.classList.toggle('pc-none', !on);
     btn.classList.toggle('on', !!open);
     var ho = open && on;
-    if (document.documentElement.classList.contains('sg-open') !== ho) {
-      document.documentElement.classList.toggle('sg-open', ho);
-      /* SVG / canvas pages size from their box: let them re-measure after the reflow */
-      setTimeout(function () { try { window.dispatchEvent(new Event('resize')); } catch (e) {} }, 260);
+    if (document.documentElement.classList.contains('sg-open') !== ho) document.documentElement.classList.toggle('sg-open', ho);
+    if (on) anchor();
+  }
+
+  /* drawer box: the procedure sidebar of the page on screen (the column that holds a side-layout
+     procedure panel), else the right edge at the standard sidebar width. Measured only - the
+     page layout is never changed. Narrow windows use the CSS bottom sheet instead. */
+  var lastBox = '';
+  function anchor() {
+    var W = window.innerWidth, H = window.innerHeight, box = null;
+    if (W > 1000) {
+      var hosts = document.querySelectorAll('.pc-host[data-pc][data-pc-layout="side"]');
+      for (var i = 0; i < hosts.length && !box; i++) {
+        var el = hosts[i];
+        if (!el.getClientRects().length) continue;
+        while (el.parentElement && el.parentElement !== document.body && el.parentElement.getBoundingClientRect().width <= 480) el = el.parentElement;
+        var r = el.getBoundingClientRect();
+        if (r.width >= 220 && r.left > W * 0.5 && r.top < H * 0.5 && Math.min(r.bottom, H) - Math.max(r.top, 0) > 240)
+          box = [r.left, Math.max(r.top, 0), r.width, Math.min(r.bottom, H) - Math.max(r.top, 0)];
+      }
+      if (!box) {
+        var m = document.querySelector('main'), top = Math.max(m ? m.getBoundingClientRect().top : 52, 0) + 10;
+        var w = Math.max(280, Math.min(330, W * 0.21)), pad = Math.max(12, Math.min(22, W * 0.0125));
+        /* keep a bottom procedure bar (Pause / Explain) clear of the drawer */
+        var bar = document.querySelector('.pc-host[data-pc][data-pc-layout="bar"]'), bt = H - 12;
+        if (bar && bar.getClientRects().length) { var br = bar.getBoundingClientRect(); if (br.top > H * 0.5 && br.top < H) bt = br.top - 8; }
+        box = [W - pad - w, top, w, bt - top];
+      }
     }
+    var sig = box ? box.map(Math.round).join(',') : '';
+    if (sig === lastBox) return;
+    lastBox = sig;
+    if (box) {
+      wrap.style.left = box[0] + 'px'; wrap.style.top = box[1] + 'px'; wrap.style.width = box[2] + 'px'; wrap.style.height = box[3] + 'px';
+      wrap.style.right = 'auto'; wrap.style.bottom = 'auto';
+    } else ['left', 'top', 'width', 'height', 'right', 'bottom'].forEach(function (k) { wrap.style.removeProperty(k); });
   }
 
   function toggle(force) {

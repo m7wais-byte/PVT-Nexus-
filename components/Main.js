@@ -1092,6 +1092,8 @@ class Component extends DCLogic {
     if ((s.qcStep || 1) === 3) back.qcPhase = 'idle';
     this.setState(back);
   }
+  /* Flash scene framing in the shared Validation layout (2026-10-21): equipment extent only, no empty margins */
+  flashViewBox() { return '36 84 1280 525'; }
   pcChargeNext() { return Math.min(12, (this.state.chargeStep || 0) + 1); }
   pcInfo(which) {
     const s = this.state, names = this.pcNames(which), N = names.length;
@@ -2288,10 +2290,11 @@ const hi_d = (on) => on ? 'opacity:1; transition:opacity .5s ease;' : 'opacity:.
     const bottleOff = !bottleOn;
     // once the bottle rig leaves the bench, pull the computer/control-box desk across to the
     // cell so the pressurising + agitation stages stay one connected system instead of two islands
-    // rig view: bottle + transfer pump left, approved PVT cell, computer/controller right; later stages zoom on cell + desk
-    const chargeViewBox = showBottleRig ? '250 38 1100 528' : '700 60 660 480';
+    // one fixed view for all 12 stages (Validation layout 2026-10-21): bottle rig + transfer pump left (enlarged about the
+    // bottle outlet to the Restoration bottle size), approved PVT cell, computer/controller right; the bottle stays on the bench
+    const chargeViewBox = '362 58 912 572';
     const chargeDeskStyle = { transform: showBottleRig ? 'translate(0px,0px)' : 'translate(560px,150px)', transition: 'transform calc(.7s * var(--pm, 1)) cubic-bezier(.4,0,.2,1)' };
-    const chargeMonWrapStyle = { animation: 'monFade .4s ease', transform: showBottleRig ? 'translate(0px,0px)' : 'translate(0px,190px)', transition: 'transform calc(.7s * var(--pm, 1)) cubic-bezier(.4,0,.2,1)' };
+    const chargeMonWrapStyle = { animation: 'monFade .4s ease' };   // monitor card now sits in the sidebar
     const chargeSigD = showBottleRig ? 'M210 222 H500' : 'M770 372 H806';
     const chargeSig2D = showBottleRig ? 'M670 300 H860' : 'M506 300 H600';
     const chargeSigStyle = { strokeWidth: showBottleRig ? 1.6 : 2.6, opacity: showBottleRig ? 0.7 : 0.95, transition: 'opacity .4s ease' };
@@ -2993,7 +2996,7 @@ const hi_d = (on) => on ? 'opacity:1; transition:opacity .5s ease;' : 'opacity:.
       pumpBValveHotStyle, pumpBValveLeverStyle, pumpBValveLabelColor, pumpBHeldStyle, seg4bFlowStyle,
       cbPsi, cbPsiColor, cbMl, initReadText, initReadStroke, initReadColor,
       vacBig, vacBarW, vacPanelColor, vacPanelStroke, vacHeadline, connPipeStyle, connRevealStyle, bottleOff,
-      chargeViewBox, chargeDeskStyle, chargeMonWrapStyle, chargeSigD, chargeSig2D, chargeSigStyle, chargeSig2Style, agMarkX, agMarkTrans,
+      chargeViewBox, flashViewBox: this.flashViewBox(), chargeDeskStyle, chargeMonWrapStyle, chargeSigD, chargeSig2D, chargeSigStyle, chargeSig2Style, agMarkX, agMarkTrans,
       showBottleRig, monShow, monLabel, monBig, monUnit, monStartText, monTargetText, monBarW, monColor, monStroke,
       pumpAText, pumpBText, pumpAColor, pumpBColor, showPumpASealed, pumpAPistonY, pumpBPistonY, pumpPistonTrans, tpText, vacText, deadText, showDead,
       agFlowStyle, agDashStyle, agArrowD, agDirText, agCycleText, agHalfText, cellPText,
