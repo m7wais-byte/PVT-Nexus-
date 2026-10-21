@@ -210,8 +210,7 @@ DC.slot('showTest', `<sc-if value="{{ showTest }}" hint-placeholder-val="{{ fals
                 pistonB: 'pumpBPistonY', pistonA: 'pumpAPistonY',
                 valves: { A: 'cellV.A', B: 'cellV.B', L: 'cellV.L' },
                 ports: { L: { plug: '!cellV.Lconn', nut: 'cellV.Lconn' } },
-                disp: { P: '{{ cbPsi }}', Pu: 'psi', B: '{{ pumpBVal }} cc', A: '{{ pumpAVal }} cc' },
-                portLabel: { L: 'Port L · cell valve' } })}
+                disp: { P: '{{ cbPsi }}', Pu: 'psi', B: '{{ pumpBVal }} cc', A: '{{ pumpAVal }} cc' } })}
               <!-- page overlays on the approved cell: header flow, branch fluid, agitation, evacuated / dead volume -->
               <line x1="748" y1="190" x2="765" y2="190" stroke="#ffcf3f" stroke-width="1.8" stroke-dasharray="2 10" mask="url(#c-fluid-mask)" style="{{ seg2FlowStyle }}"></line>
               <line x1="765" y1="190" x2="806" y2="190" stroke="#ffcf3f" stroke-width="1.8" stroke-dasharray="2 10" mask="url(#c-fluid-mask)" style="{{ seg3FlowStyle }}"></line>
