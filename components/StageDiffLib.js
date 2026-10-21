@@ -708,6 +708,8 @@ class Component extends DCLogic {
       dlResetText: 'Reset ' + lbl,
 
       dlnPvInit: pvInit, dlnPvSt: pvSt, dlnCellOn: !pvOn, dlnSideOn: !isInit,
+      // embedded PV brings its own cards; the cell / Flash Unit scene uses the shared simulation frame
+      dlnSimCls: pvOn ? '' : 'vl-sim',
       dlnPvCfg: PV_INIT_CFG, dlnPvStCfg: c && c.pvOK ? c.pvCfg : PV_INIT_CFG, dlnRunKey: st.runKey || 0,
       dlnShowDone: stageDn && !pend && !st.pvRun,
       dlnOnSync: (ps) => this.pvSync(ps), dlnOnDone: () => this.pvDone(),
@@ -799,17 +801,17 @@ DC.define('StageDiffLib', {
   #dc-root > .sc-host > [data-screen-label="Differential Liberation"] * { box-sizing:border-box; }
   @keyframes dldash { to { stroke-dashoffset:-24; } }
   @keyframes dlnFadeIn { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:none; } }`,
-  template: `<div data-screen-label="Differential Liberation" style="display:flex; flex-direction:column; height:var(--page-h); overflow:hidden; padding:var(--page-pad-y) var(--page-pad-x) 12px; gap:8px; box-sizing:border-box;">
+  template: `<div data-screen-label="Differential Liberation" class="pg pg-stack">
 
-  <!-- header -->
-  <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap; flex:0 0 auto;">
-    <div style="flex:1 1 260px; min-width:0; display:flex; align-items:baseline; gap:8px; flex-wrap:wrap;">
+  <!-- header (shared .pg-head, same treatment as Validation): eyebrow · title · status · description · equipment details -->
+  <div class="pg-head">
+    <div class="pg-titles">
+      <span class="pg-eyebrow">Analysis</span>
       <h2 class="pg-title">Differential Liberation</h2>
-      <div class="pg-desc">Initial PV determination on an 80 cc charge, then stage-wise pressure reduction with liberated-gas removal</div>
+      <span style="align-self:center; display:inline-flex; align-items:center; gap:6px; flex:0 0 auto; padding:3px 11px; border-radius:999px; background:{{ dlPillBg }}; border:1px solid {{ dlPillBorder }}; font-family:'IBM Plex Mono'; font-size:10px; letter-spacing:.7px; text-transform:uppercase; color:{{ dlPillColor }}; white-space:nowrap;"><span style="{{ dlPillDot }}"></span>{{ dlPillText }}</span>
+      <p class="pg-desc">Initial PV determination on an 80 cc charge, then stage-wise pressure reduction with liberated-gas removal</p>
     </div>
-    <div style="display:flex; align-items:center; gap:6px; flex:0 0 auto; padding:5px 11px; border-radius:999px; background:{{ dlPillBg }}; border:1px solid {{ dlPillBorder }}; font-family:'IBM Plex Mono'; font-size:10px; letter-spacing:.7px; text-transform:uppercase; color:{{ dlPillColor }}; white-space:nowrap;">
-      <span style="{{ dlPillDot }}"></span>{{ dlPillText }}
-    </div>
+    <div class="pg-end"><button type="button" class="bd-btn" data-cd-open="" data-cd-ctx="Differential Liberation · cell outlet at Port R">Cell Details</button></div>
   </div>
 
   <!-- stage navigation : every stage is always reachable, regardless of completion -->
@@ -822,6 +824,8 @@ DC.define('StageDiffLib', {
     </sc-for>
   </div>
 
+  <div class="lab-body">
+  <div class="lab-schem {{ dlnSimCls }}" style="gap:8px;">
   <!-- ===== Initial PV + Stage 1 : one connected schematic (Validation PV cell + Validation Flash Unit) ===== -->
   <!-- Initial PV · PV Determination : the Validation PV Test itself (cell, P-V table, P-V graph, 12-point sequence) on the 80 cc configuration -->
   <sc-if value="{{ dlnPvInit }}" hint-placeholder-val="{{ false }}">
@@ -837,7 +841,7 @@ DC.define('StageDiffLib', {
   </sc-if>
 
   <sc-if value="{{ dlnCellOn }}" hint-placeholder-val="{{ true }}">
-  <div style="display:flex; gap:12px; flex:1 1 auto; min-height:0; background:var(--panel); border:1px solid var(--line); border-radius:12px; box-shadow:0 1px 2px rgba(20,35,60,.05); overflow:hidden; padding:8px 12px 8px;">
+  <div style="display:flex; flex:1 1 auto; min-height:0; min-width:0;">
     <div style="flex:1 1 auto; min-width:0; min-height:0; display:flex; flex-direction:column;">
       <div style="flex:0 0 auto; display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
         <div style="min-width:0;">
@@ -845,7 +849,6 @@ DC.define('StageDiffLib', {
           <div style="font-size:10px; color:var(--mut); margin-top:1px;">{{ dlnTitleSub }}</div>
         </div>
         <div style="flex:1 1 10px;"></div>
-        <button type="button" class="bd-btn bd-inline" data-cd-open="" data-cd-ctx="Differential Liberation · cell outlet at Port R">Cell Details</button>
         <span style="display:inline-flex; align-items:center; padding:3px 10px; border-radius:999px; background:{{ dlnTagBg }}; border:1px solid {{ dlnTagBd }}; font-family:'IBM Plex Mono'; font-size:10px; letter-spacing:.5px; color:{{ dlnTagCol }}; white-space:nowrap;">{{ dlnTag }}</span>
       </div>
       <svg viewBox="{{ dlnVb }}" preserveAspectRatio="xMidYMid meet" style="display:block; width:100%; flex:1 1 auto; min-height:0; margin-top:4px;">
@@ -1042,9 +1045,24 @@ DC.define('StageDiffLib', {
       </svg>
     </div>
 
+  </div>
+  </sc-if>
+  </div>
+
+  <!-- sidebar (shared Validation layout): live readings · stage record · agitation log above the procedure dock -->
+  <div class="lab-side">
+    <div class="vl-scroll">
+      <div class="vl-sec">
+        <div class="vl-k">Live readings</div>
+        <div class="vl-cards">
+          <sc-for list="{{ dlStrip }}" as="r" hint-placeholder-count="6">
+            <div class="vl-c"><div class="vl-cl" style="white-space:normal;">{{ r.k }}</div><div class="vl-cv" style="color:{{ r.color }}; font-size:12px; white-space:normal; line-height:1.25;">{{ r.v }}</div></div>
+          </sc-for>
+        </div>
+      </div>
     <!-- side panel : live step record (Stage 1) -->
     <sc-if value="{{ dlnSideOn }}" hint-placeholder-val="{{ false }}">
-    <div style="{{ dlnSideW }} min-width:0; min-height:0; display:flex; flex-direction:column; gap:8px; overflow:hidden;">
+    <div style="flex:0 0 auto; min-width:0; display:flex; flex-direction:column; gap:8px;">
       <sc-if value="{{ dlnBigOn }}" hint-placeholder-val="{{ false }}">
         <div style="flex:0 0 auto; border:1.4px solid {{ dlnBigCol }}; border-radius:9px; padding:6px 10px; background:var(--icard);">
           <div style="font-family:'IBM Plex Mono'; font-size:9.5px; font-weight:600; letter-spacing:.6px; color:{{ dlnBigCol }};">{{ dlnBigT }}</div>
@@ -1057,7 +1075,7 @@ DC.define('StageDiffLib', {
         <div style="flex:0 0 auto; border:1px solid var(--line); border-radius:9px; padding:5px 0;">
           <div style="padding:2px 11px 4px; font-size:11.5px; font-weight:600; color:var(--txt);">{{ dlnRecTitle }}</div>
           <sc-for list="{{ dlnS1Rec }}" as="r" hint-placeholder-count="7">
-            <div style="display:flex; justify-content:space-between; gap:8px; padding:2px 11px; font-family:'IBM Plex Mono'; font-size:10px;"><span style="color:var(--mut); white-space:nowrap;">{{ r.k }}</span><span style="font-weight:600; color:{{ r.c }}; white-space:nowrap;">{{ r.v }}</span></div>
+            <div style="display:flex; justify-content:space-between; align-items:baseline; gap:8px; padding:2px 11px; font-family:'IBM Plex Mono'; font-size:10px;"><span style="color:var(--mut); min-width:0;">{{ r.k }}</span><span style="font-weight:600; color:{{ r.c }}; text-align:right; flex:0 1 auto;">{{ r.v }}</span></div>
           </sc-for>
         </div>
       </sc-if>
@@ -1083,12 +1101,12 @@ DC.define('StageDiffLib', {
       </sc-if>
     </div>
     </sc-if>
+    </div>
+    <div class="vl-dock">
+      <div class="pc-host" data-pc="StageDiffLib" data-pc-layout="side"></div>
+      <div class="vl-fwd"></div>
+    </div>
   </div>
-  </sc-if>
-
-  <!-- actions: shared procedure panel (components/ProcCtl.js) -->
-  <div style="display:flex; align-items:center; gap:8px; flex:0 0 auto;">
-    <div class="pc-host" data-pc="StageDiffLib" data-pc-layout="bar" style="flex:1 1 auto;"></div>
   </div>
 </div>`,
   logic: Component

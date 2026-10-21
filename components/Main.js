@@ -3054,9 +3054,10 @@ const hi_d = (on) => on ? 'opacity:1; transition:opacity .5s ease;' : 'opacity:.
           vtName: t.name, vtDesc: t.pageDesc, vtIcon: t.icon, vtStatus: st,
           vtPillStyle: this.viscPillStyle(st),
           vtIconStyle: 'background:' + tint + '1f; color:' + tint + ';',
-          vtWorkStyle: 'flex:1 1 auto; min-height:0; border-radius:14px; background:var(--panel); border:1px solid var(--line); border-bottom:2.5px solid ' + tint + '; display:flex; flex-direction:column; ' +
-            (scr === 'viscKin' || scr === 'viscSingle' || scr === 'viscTwo' ? 'align-items:stretch; justify-content:flex-start; text-align:left; padding:8px 10px;' : 'align-items:center; justify-content:center; text-align:center; padding:24px;') +
-            ' box-shadow:0 1px 2px rgba(10,20,40,.04), 0 8px 20px rgba(10,20,40,.03);'
+          // the three tests use the shared Validation layout (tabs + simulation area + sidebar dock) without an extra frame
+          vtWorkStyle: (scr === 'viscKin' || scr === 'viscSingle' || scr === 'viscTwo') ? 'flex:1 1 auto; min-height:0; min-width:0; display:flex; flex-direction:column; text-align:left;'
+            : 'flex:1 1 auto; min-height:0; border-radius:14px; background:var(--panel); border:1px solid var(--line); border-bottom:2.5px solid ' + tint + '; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; padding:24px; box-shadow:0 1px 2px rgba(10,20,40,.04), 0 8px 20px rgba(10,20,40,.03);',
+          vtIsTwoCell: scr === 'viscTwo', vtIsSingleBtl: scr === 'viscSingle'
         };
       })(),
       viscBackToMenu: () => { this.clearTimers(); this.viscGoUp('viscMenu'); },

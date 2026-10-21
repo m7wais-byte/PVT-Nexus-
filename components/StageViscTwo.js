@@ -962,12 +962,11 @@ DC.define('StageViscTwo', {
   @keyframes v2Drip { from { transform:translateY(0); opacity:1; } to { transform:translateY(40px); opacity:0; } }
   .v2-drip { animation:v2Drip calc(.9s * var(--pm,1)) ease-in infinite; }
   .v2-paused .v2-drip { animation-play-state:paused; }
-  .v2-halo text { paint-order:stroke; stroke:var(--panel2); stroke-width:4px; stroke-linejoin:round; }
+  .v2-halo text { paint-order:stroke; stroke:var(--bg); stroke-width:4px; stroke-linejoin:round; }
   @media (max-width:1400px) { .v2-demo { display:none; } }
   .v2-paused .v2-flow, .v2-paused .v2-up path, .v2-paused .v2-ring { animation-play-state:paused; }
-  .v2-root:not(.v2-res) .v2-side { flex-basis:clamp(262px,18vw,290px) !important; }
-  .v2-root.v2-res .v2-side { flex-basis:clamp(300px,23vw,380px) !important; }
-  @media (max-height:900px) { .v2-root.v2-res .v2-pills { display:none !important; } }
+  /* 2026-10-21: shared sidebar layout - the results column (graph + table) sits in the simulation area */
+  .v2-resc { flex:0 0 clamp(280px,22vw,340px); min-width:0; display:flex; flex-direction:column; gap:6px; padding:8px 10px 8px 0; box-sizing:border-box; }
   @media (max-height:820px) {
     .v2-side { gap:5px !important; padding:7px 10px !important; }
     .v2-side > div:not(.v2-hdr) { padding:6px 10px !important; }
@@ -993,16 +992,18 @@ DC.define('StageViscTwo', {
     </sc-for>
   </div>
 
-  <div style="flex:1 1 auto; min-height:0; display:flex; gap:10px;">
+  <!-- shared Validation layout: simulation area (.vl-sim: action line, schematic | results) | sidebar (readouts, settings, dock) -->
+  <div class="lab-body">
 
     <!-- ============ schematic ============ -->
-    <div style="flex:1 1 auto; min-width:0; display:flex; flex-direction:column; border:1px solid var(--line); border-radius:12px; background:var(--panel2); overflow:hidden;">
+    <div class="lab-schem vl-sim" style="padding:0;">
       <div style="flex:0 0 auto; display:flex; align-items:center; gap:9px; padding:7px 12px; border-bottom:1px solid var(--line);">
         <span style="{{ v2MsgDot }}"></span>
         <span style="flex:1 1 auto; min-width:0; font-size:12.5px; font-weight:500; color:{{ v2MsgCol }};">{{ v2Msg }}</span>
         <span style="flex:0 0 auto; font-family:'IBM Plex Mono',monospace; font-size:9.5px; letter-spacing:.8px; font-weight:600; color:var(--mut); padding:2px 8px; border:1px solid var(--line2); border-radius:6px; background:var(--chipbg);">{{ v2StepTag }}</span>
       </div>
-      <svg sc-camel-view-box="${VB}" preserveAspectRatio="xMidYMid meet" style="flex:1 1 auto; min-height:0; width:100%; height:100%; display:block; padding:4px 6px; box-sizing:border-box;">
+      <div style="flex:1 1 auto; min-height:0; min-width:0; display:flex;">
+      <svg sc-camel-view-box="${VB}" preserveAspectRatio="xMidYMid meet" style="flex:1 1 auto; min-height:0; min-width:0; width:100%; height:100%; display:block; padding:4px 6px; box-sizing:border-box;">
         <defs>
           ${PVTCellArt.defs('v2c')}
           <linearGradient id="v2Metal" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#283750"></stop><stop offset=".42" stop-color="#b3c1d8"></stop><stop offset=".58" stop-color="#7e90b0"></stop><stop offset="1" stop-color="#1f2a3e"></stop></linearGradient>
@@ -1341,43 +1342,12 @@ DC.define('StageViscTwo', {
           <path d="{{ a.d }}" fill="{{ a.col }}" stroke="#0a0e16" stroke-width="1" style="{{ a.style }}"></path>
         </sc-for>
       </svg>
-    </div>
-
-    <!-- ============ live readouts + result ============ -->
-    <div class="v2-side" style="flex:0 0 330px; min-width:0; display:flex; flex-direction:column; gap:7px; border:1px solid var(--line); border-radius:12px; background:var(--panel2); padding:10px 12px; overflow:hidden;">
-      <div class="v2-hdr" style="font-family:'IBM Plex Mono',monospace; font-size:9.5px; letter-spacing:1.4px; font-weight:600; color:var(--mut); text-transform:uppercase;">Test Conditions &amp; Result</div>
-
-      <div style="display:flex; flex-direction:column; gap:4px; padding:8px 12px; border-radius:10px; background:var(--icard); border:1px solid var(--line);">
-        <div style="display:flex; align-items:center; justify-content:space-between; gap:8px;">
-          <span style="font-size:11px; color:var(--mut); font-weight:500;">PVT Cell Pressure</span>
-          <span style="font-family:'IBM Plex Mono',monospace; font-size:9px; font-weight:700; letter-spacing:.8px; color:{{ v2PCol }};">{{ v2PState }}</span>
-        </div>
-        <span class="v2-big" style="font-family:'IBM Plex Mono',monospace; font-size:26px; font-weight:700; color:{{ v2PCol }}; line-height:1.1;">{{ v2PTxt }} <span style="font-size:12px; color:var(--mut);">psig</span></span>
-        <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:6px; font-family:'IBM Plex Mono',monospace; font-size:10.5px; color:var(--txt2);">
-          <span><span style="display:block; font-family:'IBM Plex Sans',sans-serif; font-size:9.5px; color:var(--mut);">Target</span>{{ v2Tgt }}</span>
-          <span><span style="display:block; font-family:'IBM Plex Sans',sans-serif; font-size:9.5px; color:var(--mut);">Viscometer PT</span>{{ v2PvTxt }}</span>
-          <span><span style="display:block; font-family:'IBM Plex Sans',sans-serif; font-size:9.5px; color:var(--mut);">Current</span>{{ v2PtTxt }}</span>
-        </div>
-        <span style="font-size:9.5px; color:var(--mut);">{{ v2Temp }} °C · Psat {{ v2Psat }} psig · viscometer {{ v2PvState }}</span>
-      </div>
-
-      <div style="display:flex; flex-direction:column; gap:3px; padding:8px 12px; border-radius:10px; background:var(--icard); border:1px solid var(--line);">
-        <div style="display:flex; align-items:center; justify-content:space-between; gap:8px;">
-          <span style="font-size:11px; color:var(--mut); font-weight:500;">Measured Viscosity · μ = K × t</span>
-          <span style="font-family:'IBM Plex Mono',monospace; font-size:9px; font-weight:700; letter-spacing:.8px; color:{{ v2MeasCol }};">{{ v2MeasTag }}</span>
-        </div>
-        <div style="display:flex; align-items:baseline; justify-content:space-between; gap:8px;">
-          <span style="font-family:'IBM Plex Mono',monospace; font-size:12px; color:var(--txt2);">t = {{ v2TTxt }} {{ v2TUnit }}</span>
-          <span class="v2-big" style="font-family:'IBM Plex Mono',monospace; font-size:24px; font-weight:700; color:#e0b53a;">{{ v2MuTxt }} <span style="font-size:11px; color:var(--mut);">{{ v2MuUnit }}</span></span>
-        </div>
-        <span style="font-size:9.5px; color:var(--mut);">K = {{ v2K }} cP/s (device calibration)</span>
-      </div>
-
       <!-- results (graph + table): only once the first viscosity measurement starts -->
       <sc-if value="{{ v2ResOn }}" hint-placeholder-val="{{ false }}">
-      <div style="flex:1 1 auto; min-height:150px; display:flex; flex-direction:column; gap:3px; padding:8px 10px; border-radius:10px; background:var(--icard); border:1px solid var(--line);">
+      <div class="v2-resc">
+      <div style="flex:0 0 auto; display:flex; flex-direction:column; gap:3px; padding:8px 10px; border-radius:10px; background:var(--icard); border:1px solid var(--line);">
         <span style="font-size:11px; color:var(--mut); font-weight:500;">Pressure vs Viscosity · {{ v2Temp }} °C</span>
-        <svg sc-camel-view-box="0 0 300 168" preserveAspectRatio="xMidYMid meet" style="width:100%; flex:1 1 auto; min-height:110px; display:block;">
+        <svg sc-camel-view-box="0 0 300 168" preserveAspectRatio="xMidYMid meet" style="width:100%; height:auto; aspect-ratio:300 / 168; flex:0 0 auto; display:block;">
           <sc-for list="{{ v2Yt }}" as="g" hint-placeholder-count="5">
             <line x1="42" y1="{{ g.y }}" x2="292" y2="{{ g.y }}" stroke="var(--v2-grid)"></line>
             <text x="37" y="{{ g.ty }}" text-anchor="end" style="${MONO} font-size:8.5px; fill:var(--mut);">{{ g.lbl }}</text>
@@ -1414,7 +1384,43 @@ DC.define('StageViscTwo', {
         </sc-for>
         <span style="font-family:'IBM Plex Sans',sans-serif; font-size:8.5px; color:var(--mut); margin-top:2px;">Illustrative simulation data — report sub-Psat trend (scaled to 4.80 cP at Psat), not lab data</span>
       </div>
+      </div>
       </sc-if>
+
+      </div>
+    </div>
+
+    <!-- ============ live readouts + result ============ -->
+    <div class="lab-side">
+    <div class="vl-scroll">
+    <div class="v2-side" style="flex:0 0 auto; min-width:0; display:flex; flex-direction:column; gap:7px; border:1px solid var(--line); border-radius:12px; background:var(--panel); padding:10px 12px;">
+      <div class="v2-hdr" style="font-family:'IBM Plex Mono',monospace; font-size:9.5px; letter-spacing:1.4px; font-weight:600; color:var(--mut); text-transform:uppercase;">Test Conditions &amp; Result</div>
+
+      <div style="display:flex; flex-direction:column; gap:4px; padding:8px 12px; border-radius:10px; background:var(--icard); border:1px solid var(--line);">
+        <div style="display:flex; align-items:center; justify-content:space-between; gap:8px;">
+          <span style="font-size:11px; color:var(--mut); font-weight:500;">PVT Cell Pressure</span>
+          <span style="font-family:'IBM Plex Mono',monospace; font-size:9px; font-weight:700; letter-spacing:.8px; color:{{ v2PCol }};">{{ v2PState }}</span>
+        </div>
+        <span class="v2-big" style="font-family:'IBM Plex Mono',monospace; font-size:26px; font-weight:700; color:{{ v2PCol }}; line-height:1.1;">{{ v2PTxt }} <span style="font-size:12px; color:var(--mut);">psig</span></span>
+        <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:6px; font-family:'IBM Plex Mono',monospace; font-size:10.5px; color:var(--txt2);">
+          <span><span style="display:block; font-family:'IBM Plex Sans',sans-serif; font-size:9.5px; color:var(--mut);">Target</span>{{ v2Tgt }}</span>
+          <span><span style="display:block; font-family:'IBM Plex Sans',sans-serif; font-size:9.5px; color:var(--mut);">Viscometer PT</span>{{ v2PvTxt }}</span>
+          <span><span style="display:block; font-family:'IBM Plex Sans',sans-serif; font-size:9.5px; color:var(--mut);">Current</span>{{ v2PtTxt }}</span>
+        </div>
+        <span style="font-size:9.5px; color:var(--mut);">{{ v2Temp }} °C · Psat {{ v2Psat }} psig · viscometer {{ v2PvState }}</span>
+      </div>
+
+      <div style="display:flex; flex-direction:column; gap:3px; padding:8px 12px; border-radius:10px; background:var(--icard); border:1px solid var(--line);">
+        <div style="display:flex; align-items:center; justify-content:space-between; gap:8px;">
+          <span style="font-size:11px; color:var(--mut); font-weight:500;">Measured Viscosity · μ = K × t</span>
+          <span style="font-family:'IBM Plex Mono',monospace; font-size:9px; font-weight:700; letter-spacing:.8px; color:{{ v2MeasCol }};">{{ v2MeasTag }}</span>
+        </div>
+        <div style="display:flex; align-items:baseline; justify-content:space-between; gap:8px;">
+          <span style="font-family:'IBM Plex Mono',monospace; font-size:12px; color:var(--txt2);">t = {{ v2TTxt }} {{ v2TUnit }}</span>
+          <span class="v2-big" style="font-family:'IBM Plex Mono',monospace; font-size:24px; font-weight:700; color:#e0b53a;">{{ v2MuTxt }} <span style="font-size:11px; color:var(--mut);">{{ v2MuUnit }}</span></span>
+        </div>
+        <span style="font-size:9.5px; color:var(--mut);">K = {{ v2K }} cP/s (device calibration)</span>
+      </div>
 
       <div class="v2-pills" style="display:flex; flex-wrap:wrap; gap:5px;">
         <span style="{{ v2PillG.style }}">{{ v2PillG.txt }}</span>
@@ -1422,19 +1428,19 @@ DC.define('StageViscTwo', {
         <span style="{{ v2PillT.style }}">{{ v2PillT.txt }}</span>
       </div>
     </div>
-  </div>
-
-  <!-- controls -->
-  <div style="flex:0 0 auto; display:flex; align-items:center; gap:8px 10px; flex-wrap:wrap;">
-    <div class="pc-host" data-pc="StageViscTwo" data-pc-layout="bar" style="flex:1 1 100%; min-width:0;"></div>
-    <!-- view tools (demonstration only) -->
-    <div style="flex:0 0 auto; display:flex; align-items:center; gap:8px; margin-left:auto;">
-    <button class="ui-btn ui-btn-ghost act" onclick="{{ v2Comp }}" style="{{ v2CompBtn }}">{{ v2CompTxt }}</button>
-    <div title="{{ v2InclTip }}" style="flex:0 0 auto; display:flex; align-items:center; gap:8px; height:34px; padding:0 12px; border-radius:10px; background:var(--panel2); border:1px solid var(--line2); box-sizing:border-box; {{ v2InclRow }}">
+      <div class="vl-sec" style="gap:7px;">
+        <div class="vl-k">View settings · demonstration only</div>
+    <button class="ui-btn ui-btn-ghost act" onclick="{{ v2Comp }}" style="{{ v2CompBtn }}; width:100%;">{{ v2CompTxt }}</button>
+    <div title="{{ v2InclTip }}" style="flex:0 0 auto; display:flex; width:100%; align-items:center; gap:8px; height:34px; padding:0 12px; border-radius:10px; background:var(--panel2); border:1px solid var(--line2); box-sizing:border-box; {{ v2InclRow }}">
       <span style="font-size:12.5px; font-weight:600; color:var(--txt2);">Inclination</span>
-      <input type="range" min="${INCL_MIN}" max="${INCL_MAX}" step="0.5" value="{{ v2Incl }}" oninput="{{ v2InclIn }}" disabled="{{ v2InclDis }}" style="width:100px; margin:0; accent-color:var(--blue); cursor:pointer;">
+      <input type="range" min="${INCL_MIN}" max="${INCL_MAX}" step="0.5" value="{{ v2Incl }}" oninput="{{ v2InclIn }}" disabled="{{ v2InclDis }}" style="flex:1 1 auto; min-width:0; width:auto; margin:0; accent-color:var(--blue); cursor:pointer;">
       <span style="font-family:'IBM Plex Mono',monospace; font-size:13px; font-weight:700; color:var(--txt); min-width:34px;">{{ v2InclTxt }}</span>
-      <span class="v2-demo" style="font-size:11px; color:var(--mut); white-space:nowrap;">demo only</span>
+    </div>
+      </div>
+    </div>
+    <div class="vl-dock">
+      <div class="pc-host" data-pc="StageViscTwo" data-pc-layout="side"></div>
+      <div class="vl-fwd"></div>
     </div>
     </div>
   </div>
