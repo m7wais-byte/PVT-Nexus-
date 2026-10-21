@@ -174,3 +174,25 @@ html[data-theme="light"] .bd-ov { background:rgba(30,42,60,.38); }
 #app .sd-pill:hover rect, #app .sd-pill:focus-visible rect { fill:color-mix(in srgb, var(--teal) 16%, var(--panel)); }
 #app .sd-pill:focus { outline:none; }
 #app .sd-pill:focus-visible rect { stroke-width:2.2; }
+
+/* ---- Cell Details overlay (components/CellDetails.js): approved PVT cell, Exterior / Cutaway / Plumbing ---- */
+.cd-2d svg { width:100%; height:100%; display:block; }
+.eq .cd-svg .lab-n { font-size:21px; }
+.eq .cd-svg .lab-s { font-size:15px; }
+.eq .cd-svg .lead { stroke-width:1.4; }
+.eq .cd-svg .lab-n, .eq .cd-svg .lab-s { stroke-width:6px; }
+.cd-floor { stroke:var(--line2); stroke-width:2; }
+.cd-banner { fill:color-mix(in srgb, var(--eq-cut) 12%, var(--eq-stage)); stroke:var(--eq-cut); stroke-width:1.4; }
+.cd-ban-h { font:700 15px var(--font-mono); letter-spacing:.5px; fill:var(--eq-cut); }
+.cd-ban-s { font:500 14px var(--font-main); fill:var(--txt2); }
+.cd-note { font:italic 500 13px var(--font-main); fill:var(--lbl2); }
+.cd-encl { fill:none; stroke:var(--lbl2); stroke-width:2; stroke-dasharray:9 7; }
+.cd-line { fill:none; stroke:#2f78e0; stroke-width:7; stroke-linecap:round; stroke-linejoin:round; }
+.cd-ext { fill:none; stroke:#2f78e0; stroke-width:5; stroke-dasharray:10 7; stroke-linecap:round; opacity:.55; }
+.cd-valve, .cd-end { fill:var(--eq-stage); stroke:var(--lbl); stroke-width:2.2; stroke-linejoin:round; }
+.cd-tee { fill:var(--lbl); }
+.cd-pt { font:700 16px var(--font-mono); fill:var(--lbl); }
+.cd-cyl { fill:none; stroke:var(--lbl2); stroke-width:3; }
+.cd-pist { fill:var(--lbl2); }
+.cd-rod { stroke:var(--lbl2); stroke-width:6; }
+.cd-drv { fill:color-mix(in srgb, var(--lbl2) 22%, transparent); stroke:var(--lbl2); stroke-width:2; }

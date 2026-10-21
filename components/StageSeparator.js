@@ -74,11 +74,13 @@ const D_CHARGE = 14, D_COOL = 11, D_REDUCE = 13, D_CONN = 5.5, D_DISC = 2.4, TS 
 const PUMP_CAP = 100;
 const DL_BUBS = Array.from({ length: 16 }, (_, k) => ({ fx: (k * 0.618034 + 0.07) % 1, ph: (k * 0.381966 + 0.13) % 1,
   sp: 0.75 + ((k * 0.7549) % 1) * 0.5, r: 1.0 + ((k * 0.5698) % 1) * 1.1, th: k / 16 }));
-const LANE_PTS = [[584, 206], [584, 170], [672, 170], [672, 215], [930, 215], [930, 256]];
-const S_STOP = 434, S_TEE = 427;
+// Pump A -> header -> Port R valve -> outlet line -> Flash Unit manifold (approved cell, legacy frame shifted -506,-20)
+const LANE_PTS = [[524, 192], [524, 170], [672, 170], [672, 215], [930, 215], [930, 256]];
+const S_STOP = 480, S_TEE = 473;
 // charge route (cell coordinates): inlet port above the manifold -> manifold -> Pump A port
-const CH_ROUTE = [[892, 120], [892, 190], [1030, 190], [1030, 215]];
-const CH_L = 70 + 138 + 25;
+// sample inlet -> Port L outward fitting -> Port L valve -> header -> Pump A (approved cell)
+const CH_ROUTE = [[730, 120], [730, 190], [1030, 190], [1030, 215]];
+const CH_L = 70 + 300 + 25;
 
 // explain-panel meaning of every non-PV step
 const SEPSTEP = {
@@ -525,7 +527,7 @@ class Component extends DCLogic {
 
     // ---- Flash Unit : DL sketch + transfer lanes ----
     const flashOn = id === 'flash' || (id === 'pv2' && !st.pvRun && !stageDn);
-    const conn = C(st.conn || 0), LINE1 = 161;
+    const conn = C(st.conn || 0), LINE1 = 103.4;   // outlet line length from the Port R fitting
     const pl = { dur: 18.0, balEnd: 0.70, gaso: true };
     const gasStep = st.xStep === 'gas', u = gasStep ? st.xU || 0 : 0;
     const vCell = gasStep ? E(R(0.07, 0.13, u)) * (1 - E(R(0.95, 1, u))) : 0;
@@ -668,11 +670,11 @@ class Component extends DCLogic {
       dlnShowDone: stageDn && !st.pvRun,
       dlnOnSync: (ps) => this.pvSync(ps), dlnOnDone: () => this.pvDone(),
 
-      dlnVb: flashOn ? '160 86 1160 520' : '199 96 480 416',
+      dlnVb: flashOn ? '0 76 1330 530' : '290 72 580 490',
       dlnCtlTr: flashOn ? 'translate(144,64) scale(.72)' : 'translate(180,44) scale(.72)',
       dlnSigD: flashOn ? 'M284 323 H326' : 'M320 303 H360',
       dlnSigLbl: flashOn ? { x: '305', y: '317' } : { x: '340', y: '297' },
-      dlnCellTr: flashOn ? 'translate(584,170) scale(1.15) translate(-1030,-190)' : 'translate(-446,-20)',
+      dlnCellTr: flashOn ? 'translate(-506,-20)' : 'translate(-446,-20)',
       dlnSideW: 'flex:0 0 ' + (flashOn ? 290 : 304) + 'px;',
       dlnTitleSub: flashOn ? 'PVT Cell → outlet line → Flash Unit → Balloon → Gasometer (excess gas)'
         : id === 'charge' ? 'Sample inlet → Dual-Cylinder PVT Cell (air bath at 114 °C) · Computer → Control Box'
@@ -680,7 +682,8 @@ class Component extends DCLogic {
       dlnTag: tag, dlnTagCol: tagCol,
       dlnTagBg: tone === 'good' ? 'rgba(29,138,90,.10)' : 'rgba(47,111,208,.10)',
       dlnTagBd: tone === 'good' ? 'rgba(29,138,90,.30)' : 'rgba(47,111,208,.32)',
-      dlnP: pTxt, dlnV: vTxt, dlnT: tTxt,
+      dlnP: pTxt, dlnV: vTxt, dlnT: tTxt, dlnPNum: Math.round(P).toLocaleString('en-US'),
+      dlnValveA: true, dlnValveB: st.pvPhase === 'a2b' || st.pvPhase === 'hold' || st.pvPhase === 'b2a',
       dlnTCol: 'rgb(' + rgb + ')', dlnBathFill: 'rgba(' + rgb + ',.10)', dlnBathStroke: 'rgba(' + rgb + ',.55)',
       dlnBathLbl: (cooling ? 'AIR BATH · COOLING · ' : 'AIR BATH · ') + T.toFixed(1) + ' °C',
       dlnBathSt: cooling ? 'animation:pvtpulse calc(1.6s * var(--pm, 1)) ease-in-out infinite;' : '',
@@ -811,10 +814,12 @@ DC.define('StageSeparator', {
           <div style="font-size:10px; color:var(--mut); margin-top:1px;">{{ dlnTitleSub }}</div>
         </div>
         <div style="flex:1 1 10px;"></div>
+        <button type="button" class="bd-btn bd-inline" data-cd-open="" data-cd-ctx="Separator Test · sample inlet at Port L, outlet at Port R">Cell Details</button>
         <span style="display:inline-flex; align-items:center; padding:3px 10px; border-radius:999px; background:{{ dlnTagBg }}; border:1px solid {{ dlnTagBd }}; font-family:'IBM Plex Mono'; font-size:10px; letter-spacing:.5px; color:{{ dlnTagCol }}; white-space:nowrap;">{{ dlnTag }}</span>
       </div>
       <svg viewBox="{{ dlnVb }}" preserveAspectRatio="xMidYMid meet" style="display:block; width:100%; flex:1 1 auto; min-height:0; margin-top:4px;">
         <defs>
+          ${PVTCellArt.defs('spc')}
           <linearGradient id="spn-metal" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#283750"></stop><stop offset=".42" stop-color="#b3c1d8"></stop><stop offset=".58" stop-color="#7e90b0"></stop><stop offset="1" stop-color="#1f2a3e"></stop></linearGradient>
           <linearGradient id="spn-cyl" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#3a485f"></stop><stop offset=".2" stop-color="#8094b2"></stop><stop offset=".5" stop-color="#aebcd2"></stop><stop offset=".8" stop-color="#54657f"></stop><stop offset="1" stop-color="#222c3e"></stop></linearGradient>
           <linearGradient id="spn-gcyl" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#1b2637"></stop><stop offset=".35" stop-color="#43556f"></stop><stop offset=".62" stop-color="#2c3a4f"></stop><stop offset="1" stop-color="#161f2e"></stop></linearGradient>
@@ -825,45 +830,53 @@ DC.define('StageSeparator', {
           <clipPath id="spn-b-clip"><rect x="848" y="219" width="36" height="182" rx="3"></rect></clipPath>
         </defs>
 
-        <g transform="{{ dlnCtlTr }}">
-        <!-- 1. computer -->
-        <rect x="44" y="120" width="150" height="106" rx="5" fill="#0d1728" stroke="#3a4c66" stroke-width="1.5"></rect>
-        <rect x="54" y="130" width="130" height="82" rx="2" fill="#06101e" stroke="{{ dlnBoxGlow }}" stroke-width="1"></rect>
-        <polyline points="64,196 84,172 104,182 124,152 144,164 172,136" fill="none" stroke="#46d39a" stroke-width="1.8"></polyline>
-        <rect x="111" y="226" width="16" height="18" fill="#26344a" stroke="#3a4c66" stroke-width="1"></rect>
-        <rect x="79" y="244" width="80" height="7" rx="2" fill="#26344a" stroke="#3a4c66" stroke-width="1"></rect>
-        <text x="119" y="272" text-anchor="middle" font-family="'IBM Plex Sans','Segoe UI',Arial,sans-serif" font-size="14" font-weight="600" fill="var(--txt)">Computer</text>
-        <!-- 2. control box : live cell pressure + volume -->
-        <path d="M119 282 V310" fill="none" stroke="#5fb0ff" stroke-width="1.5" opacity=".65" stroke-dasharray="2 5"></path>
-        <rect x="44" y="310" width="150" height="114" rx="5" fill="#0d1728" stroke="#3a4c66" stroke-width="1.5"></rect>
-        <rect x="56" y="324" width="126" height="32" rx="3" fill="#06101e" stroke="{{ dlnBoxGlow }}" stroke-width="1"></rect>
-        <foreignObject x="56" y="327" width="126" height="26"><div style="margin:0; display:flex; align-items:center; justify-content:flex-end; height:100%; padding:0 9px; box-sizing:border-box; white-space:nowrap; line-height:1.1; font-family:'IBM Plex Mono',ui-monospace,monospace; font-size:14px; font-weight:600; color:#46d39a;">{{ dlnP }}</div></foreignObject>
-        <rect x="56" y="364" width="126" height="32" rx="3" fill="#06101e" stroke="{{ dlnBoxGlow }}" stroke-width="1"></rect>
-        <foreignObject x="56" y="367" width="126" height="26"><div style="margin:0; display:flex; align-items:center; justify-content:flex-end; height:100%; padding:0 9px; box-sizing:border-box; white-space:nowrap; line-height:1.1; font-family:'IBM Plex Mono',ui-monospace,monospace; font-size:14px; font-weight:600; color:#e7b15a;">{{ dlnV }}</div></foreignObject>
-        <rect x="58" y="404" width="8" height="8" rx="4" fill="#46d39a" opacity=".8"></rect>
-        <rect x="72" y="404" width="8" height="8" rx="4" fill="#3a4c66"></rect>
-        <text x="119" y="450" text-anchor="middle" font-family="'IBM Plex Sans','Segoe UI',Arial,sans-serif" font-size="14" font-weight="600" fill="var(--txt)">Control Box</text>
-        </g>
-        <path d="{{ dlnSigD }}" fill="none" stroke="#5fb0ff" stroke-width="1.5" opacity=".65" stroke-dasharray="2 5"></path>
-        <text x="{{ dlnSigLbl.x }}" y="{{ dlnSigLbl.y }}" text-anchor="middle" font-family="IBM Plex Mono" font-size="8" letter-spacing=".4" fill="var(--mut2)">SIGNAL</text>
+        <!-- 1-2. computer + controller (approved desk) + signal cable from the cell -->
+        <sc-if value="{{ dlnFlashOn }}" hint-placeholder-val="{{ false }}">
+          <path d="M607.7 412.6 C 636 468, 628 506, 566 506 L 210 506 C 168 506, 154 430, 148 306" fill="none" stroke="#1e2733" stroke-width="3.2" stroke-linecap="round"></path>
+          ${PVTCellArt.desk('spc', { x: 44, y: 230, s: .4, legs: 409, ctl: '{{ dlnPNum }}', rows: [['P', '{{ dlnP }}', '#7ff0bf'], ['V', '{{ dlnV }}', '#ffc56b'], ['T', '{{ dlnT }}', '#7ff0bf']] })}
+        </sc-if>
+        <sc-if value="{{ !dlnFlashOn }}" hint-placeholder-val="{{ true }}">
+          ${PVTCellArt.cable({ at: { x: PVTCellArt.LEGACY.x - 446, y: PVTCellArt.LEGACY.y - 20, s: PVTCellArt.LEGACY.s } }, { x: 716, y: 250, s: .38 }, 24)}
+          ${PVTCellArt.desk('spc', { x: 716, y: 250, s: .38, legs: 393, ctl: '{{ dlnPNum }}', rows: [['P', '{{ dlnP }}', '#7ff0bf'], ['V', '{{ dlnV }}', '#ffc56b'], ['T', '{{ dlnT }}', '#7ff0bf']] })}
+        </sc-if>
 
         <!-- 3. dual-cylinder PVT cell (Validation PV cell geometry, true-scale 100 cc bore) -->
         <g transform="{{ dlnCellTr }}">
-          <!-- air bath : tint follows the cell temperature (114 °C warm -> 35 °C cool) -->
-          <rect x="797" y="145" width="302" height="327" rx="10" fill="{{ dlnBathFill }}" stroke="{{ dlnBathStroke }}" stroke-width="1.6" stroke-dasharray="6 4" style="{{ dlnBathSt }}"></rect>
-          <text x="1096" y="141" text-anchor="end" font-family="IBM Plex Mono" font-size="9" letter-spacing=".4" fill="{{ dlnTCol }}">{{ dlnBathLbl }}</text>
-          <text x="948" y="132" text-anchor="middle" font-family="'IBM Plex Sans','Segoe UI',Arial,sans-serif" font-size="18" font-weight="700" fill="var(--txt)">PVT Cell</text>
-          <rect x="806" y="150" width="284" height="12" fill="url(#spn-metal)" stroke="#0a0e16" stroke-width="1"></rect>
-          <rect x="806" y="454" width="284" height="12" fill="url(#spn-metal)" stroke="#0a0e16" stroke-width="1"></rect>
-          <rect x="806" y="150" width="12" height="316" fill="url(#spn-metal)" stroke="#0a0e16" stroke-width="1"></rect>
-          <rect x="1078" y="150" width="12" height="316" fill="url(#spn-metal)" stroke="#0a0e16" stroke-width="1"></rect>
-          <line x1="822" y1="190" x2="1030" y2="190" stroke="#0a0e16" stroke-width="6" stroke-linecap="round"></line>
-          <line x1="822" y1="190" x2="1030" y2="190" stroke="#9fb0c8" stroke-width="3.4" stroke-linecap="round"></line>
-          <circle cx="822" cy="190" r="4.5" fill="url(#spn-metal)" stroke="#0a0e16" stroke-width="0.8"></circle>
-          <circle cx="1030" cy="190" r="4.5" fill="url(#spn-metal)" stroke="#0a0e16" stroke-width="0.8"></circle>
-          <line x1="866" y1="190" x2="866" y2="215" stroke="#9fb0c8" stroke-width="3"></line>
-          <line x1="948" y1="190" x2="948" y2="212" stroke="#9fb0c8" stroke-width="3"></line>
-          <line x1="1030" y1="190" x2="1030" y2="215" stroke="#9fb0c8" stroke-width="3"></line>
+          <!-- approved PVT cell (PVTCellArt). Its thermal enclosure is the air bath: the tint follows the cell temperature.
+               Pump A valve open to the sensor, Pump B valve open while the sample is in transit / held in Pump B,
+               Port L valve = the sample inlet valve (charge), Port R valve = the PVT-cell outlet valve (flash stage) -->
+          <rect x="736" y="104" width="424" height="420" rx="12" fill="none" stroke="{{ dlnBathStroke }}" stroke-width="1.6" stroke-dasharray="6 4" style="{{ dlnBathSt }}"></rect>
+          <text x="1156" y="99" text-anchor="end" font-family="IBM Plex Mono" font-size="9" letter-spacing=".4" fill="{{ dlnTCol }}">{{ dlnBathLbl }}</text>
+          <sc-if value="{{ dlnChOn }}" hint-placeholder-val="{{ false }}">
+            <path d="M730 120 V190 H748" fill="none" stroke="#0a0e16" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"></path>
+            <path d="M730 120 V190 H748" fill="none" stroke="#9fb0c8" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"></path>
+            <text x="722" y="124" text-anchor="end" font-family="IBM Plex Mono" font-size="9" letter-spacing=".3" fill="var(--mut)">SAMPLE IN · 5,000 psig</text>
+            <text x="722" y="138" text-anchor="end" font-family="IBM Plex Mono" font-size="9" letter-spacing=".3" fill="{{ dlnChValveCol }}">{{ dlnChValveText }}</text>
+          </sc-if>
+          ${PVTCellArt.cell('spc', {
+            innerB: `<rect x="848" y="219" width="36" height="{{ dlnBGasH }}" fill="url(#spn-gas)"></rect>
+            <rect x="848" y="{{ dlnBLiqY }}" width="36" height="{{ dlnBLiqH }}" fill="url(#spn-sample)"></rect>
+            <rect x="848" y="{{ dlnBLiqY }}" width="36" height="{{ dlnBLiqH }}" fill="url(#spn-diss)" style="{{ dlnDissStyle }}"></rect>
+            <sc-for list="{{ dlnBubsB }}" as="bb" hint-placeholder-count="10">
+              <circle cx="{{ bb.x }}" cy="{{ bb.y }}" r="{{ bb.r }}" fill="#bff3da" opacity="{{ bb.o }}"></circle>
+            </sc-for>`,
+            innerA: `<rect x="1012" y="219" width="36" height="{{ dlnGasH }}" fill="url(#spn-gas)"></rect>
+            <rect x="1012" y="{{ dlnLiqY }}" width="36" height="{{ dlnLiqH }}" fill="url(#spn-sample)"></rect>
+            <rect x="1012" y="{{ dlnLiqY }}" width="36" height="{{ dlnLiqH }}" fill="url(#spn-diss)" style="{{ dlnDissStyle }}"></rect>
+            <rect x="1012" y="{{ dlnLiqY }}" width="36" height="1.4" fill="#eafff4" style="{{ dlnIfStyle }}"></rect>
+            <rect x="1012" y="219" width="36" height="3.5" fill="#ffffff" opacity=".18"></rect>
+            <sc-for list="{{ dlnBubsA }}" as="ba" hint-placeholder-count="10">
+              <circle cx="{{ ba.x }}" cy="{{ ba.y }}" r="{{ ba.r }}" fill="#bff3da" opacity="{{ ba.o }}"></circle>
+            </sc-for>`,
+            pistonB: 'dlnBPistonY', pistonA: 'dlnPistonY',
+            valves: { A: 'dlnValveA', B: 'dlnValveB', L: "dlnChValve.c === '#46d39a'", R: "dlnVC.c === '#46d39a'" },
+            ports: { L: { plug: '!dlnChOn', nut: 'dlnChOn' }, R: { plug: '!(dlnFlashOn && !dlnDisc)', nut: 'dlnFlashOn && !dlnDisc' } },
+            disp: { P: '{{ dlnPNum }}', B: '{{ dlnPumpB }}', A: '{{ dlnPumpA }}', T: '{{ dlnT }}' } })}
+          <rect x="797" y="153" width="302" height="199" fill="{{ dlnBathFill }}" style="{{ dlnBathSt }}; pointer-events:none; mix-blend-mode:multiply;"></rect>
+          <sc-if value="{{ dlnChOn }}" hint-placeholder-val="{{ false }}">
+            <path d="{{ dlnChD }}" fill="none" stroke="#d9ad2f" stroke-width="3.4" stroke-linejoin="round" stroke-dasharray="{{ dlnChDash }}" style="{{ dlnChStyle }}"></path>
+            <circle cx="{{ dlnChHead.x }}" cy="{{ dlnChHead.y }}" r="5" fill="none" stroke="#ffcf3f" stroke-width="1.4" style="{{ dlnChHead.st }}"></circle>
+          </sc-if>
           <g style="{{ dlnXferStyle }}">
             <path d="{{ dlnRouteD }}" fill="none" stroke="#d9ad2f" stroke-width="3.4" stroke-linecap="butt" stroke-linejoin="round" stroke-dasharray="{{ dlnFluidDash }}" style="{{ dlnFluidStyle }}"></path>
             <path d="{{ dlnRouteD }}" fill="none" stroke="#fff0b8" stroke-width="1.1" stroke-linecap="butt" stroke-linejoin="round" stroke-dasharray="{{ dlnFluidDash }}" opacity=".55" style="{{ dlnFluidStyle }}"></path>
@@ -873,86 +886,23 @@ DC.define('StageSeparator', {
             <path d="{{ dlnArrowD }}" fill="#ffcf3f"></path>
             <circle cx="{{ dlnSlugX }}" cy="{{ dlnSlugY }}" r="5.5" fill="none" stroke="#ffcf3f" stroke-width="1.4" style="{{ dlnSlugStyle }}"></circle>
           </g>
-          <text x="948" y="178" text-anchor="middle" font-family="IBM Plex Mono" font-size="10.5" letter-spacing=".5" fill="var(--cap2)">SAMPLE MANIFOLD</text>
-          <!-- Stage 1 · charge inlet : SPS/PDS sample line -> inlet valve -> manifold -> Pump A -->
-          <sc-if value="{{ dlnChOn }}" hint-placeholder-val="{{ false }}">
-            <line x1="892" y1="120" x2="892" y2="190" stroke="#0a0e16" stroke-width="6" stroke-linecap="round"></line>
-            <line x1="892" y1="120" x2="892" y2="190" stroke="#9fb0c8" stroke-width="3.4" stroke-linecap="round"></line>
-            <path d="{{ dlnChD }}" fill="none" stroke="#d9ad2f" stroke-width="3.4" stroke-linejoin="round" stroke-dasharray="{{ dlnChDash }}" style="{{ dlnChStyle }}"></path>
-            <circle cx="{{ dlnChHead.x }}" cy="{{ dlnChHead.y }}" r="5" fill="none" stroke="#ffcf3f" stroke-width="1.4" style="{{ dlnChHead.st }}"></circle>
-            <rect x="884" y="132" width="16" height="16" rx="3" fill="url(#spn-metal)" stroke="#0a0e16" stroke-width="1"></rect>
-            <circle cx="892" cy="140" r="6.5" fill="#0c1626" stroke="{{ dlnChValve.c }}" stroke-width="1.6"></circle>
-            <g stroke="{{ dlnChValve.c }}" stroke-width="1.5" stroke-linecap="round" transform="{{ dlnChValve.tr }}"><line x1="892" y1="133.5" x2="892" y2="146.5"></line></g>
-            <text x="880" y="124" text-anchor="end" font-family="IBM Plex Mono" font-size="9" letter-spacing=".3" fill="var(--mut)">SAMPLE IN · 5,000 psig</text>
-            <text x="880" y="138" text-anchor="end" font-family="IBM Plex Mono" font-size="9" letter-spacing=".3" fill="{{ dlnChValveCol }}">{{ dlnChValveText }}</text>
-          </sc-if>
-
-          <!-- Pump B -->
-          <rect x="838" y="206" width="56" height="12" rx="2" fill="url(#spn-metal)" stroke="#0a0e16" stroke-width="1"></rect>
-          <rect x="846" y="215" width="40" height="190" rx="4" fill="url(#spn-cyl)" stroke="#0a0e16" stroke-width="1.2"></rect>
-          <g clip-path="url(#spn-b-clip)">
-            <rect x="848" y="219" width="36" height="{{ dlnBGasH }}" fill="url(#spn-gas)"></rect>
-            <rect x="848" y="{{ dlnBLiqY }}" width="36" height="{{ dlnBLiqH }}" fill="url(#spn-sample)"></rect>
-            <rect x="848" y="{{ dlnBLiqY }}" width="36" height="{{ dlnBLiqH }}" fill="url(#spn-diss)" style="{{ dlnDissStyle }}"></rect>
-            <sc-for list="{{ dlnBubsB }}" as="bb" hint-placeholder-count="10">
-              <circle cx="{{ bb.x }}" cy="{{ bb.y }}" r="{{ bb.r }}" fill="#bff3da" opacity="{{ bb.o }}"></circle>
-            </sc-for>
-            <rect x="848" y="{{ dlnBPistonY }}" width="36" height="9" rx="1.5" fill="url(#spn-metal)" stroke="#05080f" stroke-width="1.1"></rect>
-          </g>
-          <line x1="856" y1="222" x2="856" y2="398" stroke="#eef4fb" stroke-width="1.2" opacity=".3"></line>
-          <rect x="838" y="405" width="56" height="14" rx="2" fill="url(#spn-metal)" stroke="#0a0e16" stroke-width="1"></rect>
-          <foreignObject x="790" y="470" width="152" height="18"><div style="margin:0; display:flex; align-items:center; justify-content:center; height:100%; white-space:nowrap; line-height:1.1; font-family:'IBM Plex Sans',sans-serif; font-size:12.5px; color:var(--txt2);">Pump B &#183;&#160;<span style="font-family:'IBM Plex Mono',ui-monospace,monospace; font-weight:600; color:var(--amb);">{{ dlnPumpB }}</span></div></foreignObject>
-
-          <!-- pressure sensor + live readouts -->
-          <rect x="942" y="210" width="12" height="11" rx="1.5" fill="url(#spn-metal)" stroke="#0a0e16" stroke-width="1"></rect>
-          <circle cx="948" cy="240" r="20" fill="url(#spn-metal)" stroke="#0a0e16" stroke-width="1.3"></circle>
-          <circle cx="948" cy="240" r="14.5" fill="#0c1626" stroke="#2a3852" stroke-width="1"></circle>
-          <line x1="948" y1="240" x2="{{ dlnNeedleX }}" y2="{{ dlnNeedleY }}" stroke="#46e0ff" stroke-width="1.8" stroke-linecap="round"></line>
-          <circle cx="948" cy="240" r="2.4" fill="#8fa3c2"></circle>
-          <circle cx="948" cy="240" r="23.5" fill="none" stroke="#46e0ff" stroke-width="1.6" style="{{ dlnSensorPulse }}"></circle>
-          <text x="948" y="282" text-anchor="middle" font-family="IBM Plex Mono" font-size="10" letter-spacing=".5" fill="var(--mut)">CELL PRESSURE</text>
-          <rect x="902" y="288" width="92" height="22" rx="4" fill="#0a1420" stroke="#3a9d63" stroke-width="1.2"></rect>
-          <foreignObject x="902" y="290" width="92" height="18"><div style="margin:0; display:flex; align-items:center; justify-content:center; height:100%; white-space:nowrap; line-height:1.1; font-family:'IBM Plex Mono',ui-monospace,monospace; font-size:12px; font-weight:600; color:#46d39a;">{{ dlnP }}</div></foreignObject>
-          <text x="948" y="330" text-anchor="middle" font-family="IBM Plex Mono" font-size="10" letter-spacing=".5" fill="var(--mut)">CELL VOLUME</text>
-          <rect x="902" y="336" width="92" height="22" rx="4" fill="#0a1420" stroke="#8a6a20" stroke-width="1.2"></rect>
-          <foreignObject x="902" y="338" width="92" height="18"><div style="margin:0; display:flex; align-items:center; justify-content:center; height:100%; white-space:nowrap; line-height:1.1; font-family:'IBM Plex Mono',ui-monospace,monospace; font-size:12px; font-weight:600; color:#e7b15a;">{{ dlnV }}</div></foreignObject>
-          <text x="948" y="378" text-anchor="middle" font-family="IBM Plex Mono" font-size="10" letter-spacing=".5" fill="var(--mut)">CELL TEMPERATURE</text>
-          <rect x="902" y="384" width="92" height="22" rx="4" fill="#0a1420" stroke="{{ dlnTCol }}" stroke-width="1.2"></rect>
-          <foreignObject x="902" y="386" width="92" height="18"><div style="margin:0; display:flex; align-items:center; justify-content:center; height:100%; white-space:nowrap; line-height:1.1; font-family:'IBM Plex Mono',ui-monospace,monospace; font-size:12px; font-weight:600; color:{{ dlnTCol }};">{{ dlnT }}</div></foreignObject>
-
-          <!-- Pump A : sample at the top of the cylinder, piston directly beneath it -->
-          <rect x="1002" y="206" width="56" height="12" rx="2" fill="url(#spn-metal)" stroke="#0a0e16" stroke-width="1"></rect>
-          <rect x="1010" y="215" width="40" height="190" rx="4" fill="url(#spn-cyl)" stroke="#0a0e16" stroke-width="1.2"></rect>
-          <g clip-path="url(#spn-a-clip)">
-            <rect x="1012" y="219" width="36" height="{{ dlnGasH }}" fill="url(#spn-gas)"></rect>
-            <rect x="1012" y="{{ dlnLiqY }}" width="36" height="{{ dlnLiqH }}" fill="url(#spn-sample)"></rect>
-            <rect x="1012" y="{{ dlnLiqY }}" width="36" height="{{ dlnLiqH }}" fill="url(#spn-diss)" style="{{ dlnDissStyle }}"></rect>
-            <rect x="1012" y="{{ dlnLiqY }}" width="36" height="1.4" fill="#eafff4" style="{{ dlnIfStyle }}"></rect>
-            <rect x="1012" y="219" width="36" height="3.5" fill="#ffffff" opacity=".18"></rect>
-            <sc-for list="{{ dlnBubsA }}" as="ba" hint-placeholder-count="10">
-              <circle cx="{{ ba.x }}" cy="{{ ba.y }}" r="{{ ba.r }}" fill="#bff3da" opacity="{{ ba.o }}"></circle>
-            </sc-for>
-            <rect x="1012" y="{{ dlnPistonY }}" width="36" height="9" rx="1.5" fill="url(#spn-metal)" stroke="#05080f" stroke-width="1.1"></rect>
-          </g>
-          <line x1="1020" y1="222" x2="1020" y2="398" stroke="#eef4fb" stroke-width="1.2" opacity=".3"></line>
-          <rect x="1002" y="405" width="56" height="14" rx="2" fill="url(#spn-metal)" stroke="#0a0e16" stroke-width="1"></rect>
-          <foreignObject x="952" y="470" width="156" height="18"><div style="margin:0; display:flex; align-items:center; justify-content:center; height:100%; white-space:nowrap; line-height:1.1; font-family:'IBM Plex Sans',sans-serif; font-size:12.5px; color:var(--txt2);">Pump A &#183;&#160;<span style="font-family:'IBM Plex Mono',ui-monospace,monospace; font-weight:600; color:var(--amb);">{{ dlnPumpA }}</span></div></foreignObject>
-          <foreignObject x="798" y="494" width="300" height="16"><div style="margin:0; display:flex; align-items:center; justify-content:center; height:100%; white-space:nowrap; line-height:1.1; font-family:'IBM Plex Mono',ui-monospace,monospace; font-size:10.5px; letter-spacing:.6px; color:{{ dlnPhaseColor }};">{{ dlnPhaseText }}</div></foreignObject>
-          <text x="948" y="528" text-anchor="middle" font-family="IBM Plex Mono" font-size="11" letter-spacing=".9" fill="var(--cap2)">DUAL-CYLINDER PVT CELL</text>
+          <circle cx="948" cy="217.7" r="24" fill="none" stroke="#46e0ff" stroke-width="1.6" style="{{ dlnSensorPulse }}"></circle>
+          <text x="948" y="174" text-anchor="middle" font-family="IBM Plex Mono" font-size="10" letter-spacing=".5" fill="var(--cap2)">SAMPLE MANIFOLD</text>
+          <foreignObject x="790" y="520" width="152" height="18"><div style="margin:0; display:flex; align-items:center; justify-content:center; height:100%; white-space:nowrap; line-height:1.1; font-family:'IBM Plex Sans',sans-serif; font-size:12.5px; color:var(--txt2);">Pump B &#183;&#160;<span style="font-family:'IBM Plex Mono',ui-monospace,monospace; font-weight:600; color:var(--amb);">{{ dlnPumpB }}</span></div></foreignObject>
+          <foreignObject x="952" y="520" width="156" height="18"><div style="margin:0; display:flex; align-items:center; justify-content:center; height:100%; white-space:nowrap; line-height:1.1; font-family:'IBM Plex Sans',sans-serif; font-size:12.5px; color:var(--txt2);">Pump A &#183;&#160;<span style="font-family:'IBM Plex Mono',ui-monospace,monospace; font-weight:600; color:var(--amb);">{{ dlnPumpA }}</span></div></foreignObject>
+          <foreignObject x="798" y="540" width="300" height="16"><div style="margin:0; display:flex; align-items:center; justify-content:center; height:100%; white-space:nowrap; line-height:1.1; font-family:'IBM Plex Mono',ui-monospace,monospace; font-size:10.5px; letter-spacing:.6px; color:{{ dlnPhaseColor }};">{{ dlnPhaseText }}</div></foreignObject>
         </g>
 
         <!-- ===== Stage 1 : Flash Unit (Validation sketch) connected to the PVT cell outlet ===== -->
         <sc-if value="{{ dlnFlashOn }}" hint-placeholder-val="{{ false }}">
-          <!-- cell outlet fitting (capped until the line is made up) -->
-          <rect x="584" y="164" width="10" height="12" rx="2" fill="url(#spn-metal)" stroke="#0a0e16" stroke-width="0.9"></rect>
           <sc-if value="{{ dlnDisc }}" hint-placeholder-val="{{ true }}">
             <text text-anchor="middle" font-family="IBM Plex Mono" font-size="8.5" letter-spacing=".3" fill="var(--amb)"><tspan x="672" y="251">NOT</tspan><tspan x="672" y="262">CONNECTED</tspan></text>
-            <line x1="604" y1="170" x2="686" y2="215" stroke="var(--mut2)" stroke-width="1" stroke-dasharray="3 5" opacity=".6"></line>
+            <line x1="652" y1="170" x2="686" y2="215" stroke="var(--mut2)" stroke-width="1" stroke-dasharray="3 5" opacity=".6"></line>
           </sc-if>
           <!-- outlet line : PVT cell -> Flash Unit inlet (drawn as it is made up) -->
           <sc-if value="{{ dlnConnOn }}" hint-placeholder-val="{{ false }}">
-            <path d="M584 170 H672 V215 H700" fill="none" stroke="#0a0e16" stroke-width="8" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="{{ dlnConnDash }}"></path>
-            <path d="M584 170 H672 V215 H700" fill="none" stroke="#8ea0b8" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="{{ dlnConnDash }}"></path>
+            <path d="M641.6 170 H672 V215 H700" fill="none" stroke="#0a0e16" stroke-width="8" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="{{ dlnConnDash }}"></path>
+            <path d="M641.6 170 H672 V215 H700" fill="none" stroke="#8ea0b8" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="{{ dlnConnDash }}"></path>
           </sc-if>
           
           <!-- Flash Unit body -->
@@ -1059,13 +1009,7 @@ DC.define('StageSeparator', {
             <path d="M-4 -4.5 L2 0 L-4 4.5" transform="{{ ga2.tr }}" fill="none" stroke="#f4f8ff" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" style="{{ ga2.st }}"></path>
           </sc-for>
           <circle cx="{{ dlnHead.x }}" cy="{{ dlnHead.y }}" r="{{ dlnHead.r }}" fill="#8cc4ff" stroke="#ffffff" stroke-width="1" style="{{ dlnHead.st }}"></circle>
-          <!-- PVT-cell outlet valve : sits directly on the outlet line -->
-          <sc-if value="{{ dlnValveOn }}" hint-placeholder-val="{{ false }}">
-            <rect x="648" y="162" width="16" height="16" rx="3" fill="url(#spn-metal)" stroke="#0a0e16" stroke-width="1"></rect>
-            <circle cx="656" cy="170" r="6.5" fill="#0c1626" stroke="{{ dlnVC.c }}" stroke-width="1.6"></circle>
-            <g stroke="{{ dlnVC.c }}" stroke-width="1.5" stroke-linecap="round" transform="{{ dlnVC.tr }}"><line x1="656" y1="163.5" x2="656" y2="176.5"></line></g>
-            <text text-anchor="middle" font-family="IBM Plex Mono" font-size="8.5" letter-spacing=".3" fill="{{ dlnCellValveCol }}"><tspan x="672" y="240">CELL</tspan><tspan x="672" y="251">OUTLET</tspan><tspan x="672" y="262">{{ dlnCellValveText }}</tspan></text>
-          </sc-if>
+          <!-- (PVT-cell outlet valve = the cell's Port R isolation valve; its OPEN/CLOSED tag is on the cell) -->
           <!-- phase panel (Validation Flash status panel) -->
           <sc-if value="{{ dlnXOn }}" hint-placeholder-val="{{ false }}">
             <rect x="690" y="93" width="330" height="50" rx="7" fill="{{ dlnXBg }}" stroke="{{ dlnXBd }}" stroke-width="1.4"></rect>

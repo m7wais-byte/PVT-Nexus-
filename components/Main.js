@@ -15,9 +15,9 @@ const FX = {
                { kind: 'gas', col: '#6fc7f0', f: [0.36, 0.52], pts: [[982, 215], [730, 215]] }],
        src: [1130, 190, 118, 262], dst: [694, 144, 322, 346] },
   4: { name: 'SAMPLE TRANSFER', col: '#e7b15a', bg: '#1c1a12', recv: 0.287,
-       lanes: [{ kind: 'liq', col: '#e6c04a', f: [0.15, 0.42], pts: [[584, 212], [584, 170], [672, 170], [672, 215], [790, 215], [790, 322]] },
+       lanes: [{ kind: 'liq', col: '#e6c04a', f: [0.15, 0.42], pts: [[524, 192], [524, 170], [672, 170], [672, 215], [790, 215], [790, 322]] },   // Pump A -> header -> Port R valve -> sample line
                { kind: 'gas', col: '#8be8d0', f: [0.35, 0.47], pts: [[790, 215], [1140, 215]] }],
-       src: [557, 188, 54, 204], dst: [694, 144, 322, 346] },
+       src: [490, 150, 68, 190], dst: [694, 144, 322, 346] },
   5: { name: 'GAS COLLECTION', col: '#8cc4ff', bg: '#0f1a2c', recv: 0.40,
        lanes: [{ kind: 'gas', col: '#8cc4ff', f: [0.15, 0.40], pts: [[1140, 215], [930, 215], [930, 256]] }],
        src: [1130, 190, 118, 262], dst: [896, 240, 114, 162] }
@@ -257,13 +257,13 @@ class Component extends DCLogic {
       S({ vBottle: true, vAct: 'bottle:opening', cFlow: false, cellStatus: 'Opening Sample Flow Path · Bottle Valve Opening' });
       this.cAt(1000, () => {
         S({ vAct: '', cFlow: true, cellStatus: 'Opening Sample Flow Path · Sample Flowing to Cell Valve' });
-        this.cTween(2.2, (p) => S({ chargeFront: 270 * p }), () => {
+        this.cTween(2.2, (p) => S({ chargeFront: 310 * p }), () => {
           S({ cFlow: false, cellStatus: 'Flow Stopped at Closed Cell Valve' });
           this.cAt(900, () => {
             S({ vCell: true, chargeValveOpen: true, vAct: 'cell:opening', cellStatus: 'Opening Sample Flow Path · Cell Valve Opening' });
             this.cAt(1000, () => {
               S({ vAct: '', cFlow: true, cellStatus: 'Opening Sample Flow Path · Sample Flowing to Pump B Valve' });
-              this.cTween(2.0, (p) => S({ chargeFront: 270 + 141 * p }), () => {
+              this.cTween(2.0, (p) => S({ chargeFront: 310 + 101 * p }), () => {
                 S({ cFlow: false, cellStatus: 'Flow Stopped at Closed Pump B Valve' });
                 this.cAt(900, () => fin({ chargeFront: 411, cFlow: false, cellStatus: 'Flow Path Open · Stopped at Closed Pump B Valve' }));
               });
@@ -2155,15 +2155,21 @@ const hi_d = (on) => on ? 'opacity:1; transition:opacity .5s ease;' : 'opacity:.
     const chargePistonStyle = 'transform:translateY(' + pistonDY.toFixed(1) + 'px); transition:transform .12s linear;';
     const chargePistonLabelStyle = 'transform:translateY(' + (pistonDY * 0.47).toFixed(1) + 'px); transition:transform .12s linear;';
 
-    // fluid front along (585,60)->(770,60)->(770,190)->(1030,190)->(1030,215)
+    // fluid front: bottle sample-valve outlet (585,197.9) -> (730,197.9) -> (730,190) -> Port L outward end (748,190) -> Port L valve (765)
+    // -> header -> (1030,190) -> (1030,215). Same 600-unit front as before (Port L outward end = 293): the short external
+    // charge line (170.9 drawn units) is scaled onto front units 0..293, the cell part keeps 1 unit = 1 drawn unit
     // during the Pump A charge (stage 6) the head sweeps the whole path repeatedly,
     // driven by the same tween that empties the bottle and fills Pump A
     const _charging6 = cBusy && cStage === 6 && cFlowOn;
     const cFrontDraw = _charging6 ? (((pumpA / 80) * 3) % 1) * 600 : cFront;
-    let cHeadX = 585, cHeadY = 60;
-    if (cFrontDraw <= 185) { cHeadX = 585 + cFrontDraw; cHeadY = 60; }
-    else if (cFrontDraw <= 315) { cHeadX = 770; cHeadY = 60 + (cFrontDraw - 185); }
-    else if (cFrontDraw <= 575) { cHeadX = 770 + (cFrontDraw - 315); cHeadY = 190; }
+    let cHeadX = 585, cHeadY = 197.9;
+    const _ext = cFrontDraw * 170.9 / 293;
+    if (cFrontDraw <= 293) {
+      if (_ext <= 145) { cHeadX = 585 + _ext; cHeadY = 197.9; }
+      else if (_ext <= 152.9) { cHeadX = 730; cHeadY = 197.9 - (_ext - 145); }
+      else { cHeadX = 730 + (_ext - 152.9); cHeadY = 190; }
+    }
+    else if (cFrontDraw <= 575) { cHeadX = 748 + (cFrontDraw - 293); cHeadY = 190; }
     else { cHeadX = 1030; cHeadY = 190 + (cFrontDraw - 575); }
     const chargeHeadX = cHeadX, chargeHeadY = cHeadY;
     const draining = !!this.state.drainBack;
@@ -2190,7 +2196,8 @@ const hi_d = (on) => on ? 'opacity:1; transition:opacity .5s ease;' : 'opacity:.
     const chargeValveWheelStyle = { transform: vCell ? 'rotate(90deg)' : 'rotate(0deg)', transformOrigin: '770px 111px', transition: 'transform .9s ease' };
     const chargeLineFluidStyle = { opacity: cFront >= 8 ? 1 : 0, transition: 'opacity .3s ease' };
     // horizontal charge line (bottle top -> cell valve inlet, 215 units of the 600 path) fills and empties with the front
-    const chargeHLineStyle = { strokeDasharray: 215, strokeDashoffset: (215 - Math.max(0, Math.min(215, cFront))).toFixed(1), opacity: cFront > 0.5 ? 1 : 0 };
+    // external charge line bottle top -> Port L outward fitting: 293 units of the 600 path
+    const chargeHLineStyle = { strokeDasharray: 293, strokeDashoffset: (293 - Math.max(0, Math.min(293, cFront))).toFixed(1), opacity: cFront > 0.5 ? 1 : 0 };
     const chargeArrowStyle = { opacity: (cFront >= 8 && !draining) ? 1 : 0, transition: 'opacity .3s ease' };
     const chargePumpFlowStyle = { opacity: flowing ? 1 : 0, animation: flowing ? 'dashflow calc(1s * var(--pm, 1)) linear infinite' : 'none' };
     const pumpLineFluidStyle = { opacity: bottleOn ? 1 : 0, transition: 'opacity .3s ease' };
@@ -2281,7 +2288,8 @@ const hi_d = (on) => on ? 'opacity:1; transition:opacity .5s ease;' : 'opacity:.
     const bottleOff = !bottleOn;
     // once the bottle rig leaves the bench, pull the computer/control-box desk across to the
     // cell so the pressurising + agitation stages stay one connected system instead of two islands
-    const chargeViewBox = showBottleRig ? '38 38 1044 528' : '200 142 906 372';
+    // rig view: bottle + transfer pump left, approved PVT cell, computer/controller right; later stages zoom on cell + desk
+    const chargeViewBox = showBottleRig ? '250 38 1100 528' : '700 60 660 480';
     const chargeDeskStyle = { transform: showBottleRig ? 'translate(0px,0px)' : 'translate(560px,150px)', transition: 'transform calc(.7s * var(--pm, 1)) cubic-bezier(.4,0,.2,1)' };
     const chargeMonWrapStyle = { animation: 'monFade .4s ease', transform: showBottleRig ? 'translate(0px,0px)' : 'translate(0px,190px)', transition: 'transform calc(.7s * var(--pm, 1)) cubic-bezier(.4,0,.2,1)' };
     const chargeSigD = showBottleRig ? 'M210 222 H500' : 'M770 372 H806';
@@ -2977,6 +2985,8 @@ const hi_d = (on) => on ? 'opacity:1; transition:opacity .5s ease;' : 'opacity:.
       chargePumpLabel, chargePumpLabelColor, chargePumpFlowStyle, chargePumpAFillStyle,
       chargePumpAFillH, chargePumpAFillY, chargePumpBFillH, chargePumpBFillY, chargePumpBFillStyle,
       chargeHeadX, chargeHeadY, chargeHeadStyle, chargeRevealStyle,
+      // approved PVT cell (PVTCellArt): Pump A / Pump B valves, Port L isolation valve = the Charge cell valve; Port L tubing while the bottle is connected
+      cellV: { A: vPumpA, B: vPumpB, L: vCell, Lconn: bottleOn },
       seg1FlowStyle, seg2FlowStyle, seg3FlowStyle, seg4FlowStyle, chargeValveHotStyle, chargeValveWheelStyle,
       chargeLineFluidStyle, pumpLineFluidStyle,
       pumpABranchFluidStyle, pumpBBranchFluidStyle, pumpABranchFlowStyle, pumpBBranchFlowStyle,

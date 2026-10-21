@@ -22,6 +22,8 @@ data/pure-components.js pure-component reference table (MW, Pc, Tc)
 data/report-data.js     Final Report data set (window.PVT_REPORT) - all report tables/figures
 
 components/
+  PVTCellArt.js         the approved shared PVT cell drawing (see "PVT Cell — approved shared design")
+  CellDetails.js        "Cell Details" overlay for the approved PVT cell (Exterior / Cutaway / Plumbing)
   Main.js               app shell markup + ALL process logic (41 methods)
   StageDiffLib.js       differential liberation
   StageSeparator.js     separator test (rebuilt 2026-09-30) - see "Separator Test" section below
@@ -200,6 +202,36 @@ exterior / cutaway, upright / horizontal, labels, clickable parts and operating 
 Opening calls `PC.hold(true)` (ProcCtl.js): a running stage is paused through its own Pause action, animations freeze;
 closing returns to the same stage and values and the user resumes from the panel. General equipment view only.
 
+## PVT Cell — approved shared design (2026-10-20)
+
+Every PVT cell in the procedures is the ONE approved dual-cylinder cell from the design review
+(`prototypes/pvt-cell/`), drawn by `components/PVTCellArt.js` (window.PVTCellArt). There are no other cell drawings.
+- **Fixed design:** thermal enclosure + navy frame, lower piston drives, Pump B LEFT / Pump A RIGHT (never mirrored),
+  two cylinder valves above the cylinders, matching isolation valves outside the enclosure at **Port L** and **Port R**
+  (external tubing attaches to their outward ends), pressure sensor, sample-volume and temperature displays.
+  `PVTCellArt.desk()` = computer + controller on their table, `PVTCellArt.cable()` = signal cable from the cell.
+- **Placement:** `PVTCellArt.LEGACY` lands the cell on the coordinate frame the pages already used (header y 190,
+  Pump B tee x 866, Pump A tee x 1030, sensor x 948), so page flow overlays keep their coordinates. Pages move it only
+  with their existing group transforms.
+- **Live state only from the page:** `innerA` / `innerB` = the page's own bore contents in its old bore frame
+  (x 846-886 / 1010-1050, y 219-401), mapped onto the approved bore; `pistonA` / `pistonB` = the page's piston-top y in
+  that frame (approved piston, rod and drive carriage follow); `valves { A, B, L, R }`, `ports { L/R: { plug, nut } }`,
+  `disp { P, B, A, T }`. Template pages pass `{{ }}` expressions; RecombSim passes values (`raw: true`).
+  `oldMap()` gives the same old-frame mapping for overlays outside the bore (Density Vi/Vf marks).
+- Calculations, datasets, quantities, timing, sequences and controls are unchanged; only drawing geometry constants
+  moved (connection points, lane points / path lengths, viewBoxes).
+
+| Page | File | Port L | Port R | Valve mapping (existing action -> cell valve) |
+|---|---|---|---|---|
+| Charge | `screens/showTest.js`, `Main.js` | SPS/PDS charge line | rated plug | Cell Valve -> Port L valve; Pump A / Pump B valves |
+| Flash | `screens/showTest.js`, `Main.js` | rated plug | sample line -> Flash Unit | Pump A outlet valve -> Pump A + Port R valves |
+| PV test (Validation, DL embedded) | `StagePVTest.js` | plug | plug | Pump A open (sensor); Pump B open while the sample is in Pump B / in transit |
+| Differential Liberation | `StageDiffLib.js` | plug | outlet line -> Flash Unit (Stage 1-6) | PVT-cell outlet valve -> Port R valve |
+| Separator Test | `StageSeparator.js` | sample inlet (charge) | outlet line -> Flash Unit | inlet valve -> Port L, outlet valve -> Port R |
+| Direct Density | `StageDensity.js` | plug | density coil inlet | cell isolation valve -> Port R |
+| Two-Phase Viscosity | `StageViscTwo.js` | oil transfer line | gas outlet line | oil transfer valve -> Port L, gas outlet valve -> Port R |
+| Recombination | `RecombSim.js` | cell inlet (sample + vacuum lines) | plug | cell inlet valve -> Port L; Pump A / Pump B valves |
+
 ## SPMC source and SPMC Details (2026-10-20)
 
 Validation › Sample Transfer (`showXfer`) takes its sample from ONE **SPMC chamber** (removed from the MRMS), not
@@ -223,6 +255,11 @@ navigation entry stay removed. Sources and assumptions: `equipment/MRMS-SPMC-SOU
   2D / 3D, exterior / cutaway, upright / horizontal, labels, light background, parts, camera controls; 3D imported
   on first use and destroyed on close. Opening calls `PC.hold(true)` like Bottle Details; Back to Transfer
   returns to the same step and quantities.
+- **Cell Details** (`components/CellDetails.js`): any `#app [data-cd-open]` (a `bd-btn` in the cell heading, or
+  `PVTCellArt.pill()` in the drawing on Charge and Two-Phase Viscosity) opens one shared overlay on the approved cell:
+  Exterior / Cutaway (complete device with drives, stand, computer, controller, signal cable) and Plumbing (built-in
+  routing, marked as a schematic assumption). Labels and parts list; no live readings, valve states or prototype
+  numbers. Opening calls `PC.hold(true, true)`: the procedure pauses, and on close it resumes only if it was running.
 - The 450 cc transfer volume, pressures, temperatures, timing, valve sequence and step order are unchanged.
   **Open modelling issue:** 450 cc transferred vs the documented 250 cm³ SPMC-T sample (see MRMS-SPMC-SOURCES.md).
 `equipment/build-preview.py OUT.html` bundles the whole app into one file for a hosted review preview.

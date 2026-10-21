@@ -394,19 +394,25 @@
   /* hold (Bottle Details overlay): pause every running procedure through its own Pause action, so its
      panel shows Resume and the user resumes it; keep animations frozen while the overlay is open.
      A running timeline without a pausable panel is paused on the clock and resumed on release. */
-  var holdOn = false, holdClock = false;
-  function hold(on) {
+  /* restore (Cell Details): on release, resume what the hold paused, so the previous playback state returns */
+  var holdOn = false, holdClock = false, holdRestore = false, holdPaused = [];
+  function hold(on, restore) {
     on = !!on;
     if (on === holdOn) return;
     holdOn = on;
     if (on) {
       var done = false;
+      holdRestore = !!restore; holdPaused = [];
       [].forEach.call(document.querySelectorAll('.pc-host[data-pc]'), function (h) {
         var W = h.__pc, inf = W && update(W);
-        if (inf && inf.status === 'running' && inf.canPause !== false) { click(W, 'pause'); done = true; }
+        if (inf && inf.status === 'running' && inf.canPause !== false) { click(W, 'pause'); done = true; holdPaused.push(W); }
       });
       if (!done && !PCLK.paused() && PCLK.busy()) { PCLK.pause(); holdClock = true; }
-    } else if (holdClock) { holdClock = false; PCLK.resume(); }
+    } else {
+      if (holdClock) { holdClock = false; PCLK.resume(); }
+      if (holdRestore) holdPaused.forEach(function (W) { var inf = W.root.isConnected && update(W); if (inf && inf.status === 'paused') click(W, 'resume'); });
+      holdRestore = false; holdPaused = [];
+    }
     tick();
   }
   function tick() {
@@ -439,7 +445,7 @@
     freeze: freeze,
     noJump: noJump,
     refresh: function () { tick(); },
-    hold: function (on) { hold(on); },
+    hold: function (on, restore) { hold(on, restore); },
     held: function () { return holdOn; },
     /* generic stage helpers for PCLK timeline modules */
     seek: function (reset, startFn, reached) {

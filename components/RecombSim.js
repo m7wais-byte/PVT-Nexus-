@@ -154,11 +154,10 @@
   var GSP_X = 130;
   // vertical air-driven booster: air drive on top, gas head below; gas IN on the left wall, OUT on the right wall
   var BOO = { x: 430, inX: 380, outX: 480, portY: 330, riseX: 300, dropX: 600, vIn: 215, vOut: 700 };
-  var CELL_S = 1.18;                        // PVT cell drawing (Direct Density / DL coordinates) scaled + placed
+  var CELL_S = 1.06;                        // approved PVT cell (PVTCellArt legacy frame) scaled + placed; Port R and labels inside the scene
   var CELL_T = 'translate(' + r1(800 - 806 * CELL_S) + ',' + r1(120 - 150 * CELL_S) + ') scale(' + CELL_S + ')';
   var CW = function (x, y) { return [x * CELL_S + 800 - 806 * CELL_S, y * CELL_S + 120 - 150 * CELL_S]; };
-  var CELL_IN = CW(790, 190);               // manifold end outside the frame (world)
-  var CELL_VALVE_X = 748;
+  var CELL_IN = CW(748, 190);               // Port L outward fitting of the approved PVT cell (world): sample + vacuum lines end here
   var PXC = 182 / CFG.CELL_CAP;             // px per cc in the cell pump bore (local): 182 px = 105 cc
   /* sample bottle = approved Oil Sample Bottle (equipment/bottle-draw.js, local units: bore -226..226, 46-unit
      piston -> 406-unit stroke). (b.x, b.y) is the side outlet of its sample valve, where the line connects;
@@ -849,22 +848,29 @@
       if (f === 'gas') o += '<rect x="' + x + '" y="219" width="36" height="' + r1(h) + '" fill="url(#rcGasG)"/><rect x="' + x + '" y="219" width="36" height="' + r1(h) + '" fill="url(#rcGasDots)"/>';
       else o += '<rect x="' + x + '" y="219" width="36" height="' + r1(h) + '" fill="url(#rcOilPat)"/>';
     }
-    o += '<rect x="' + x + '" y="' + r1(Math.min(219 + h, 219 + 182 - 9)) + '" width="36" height="9" rx="1.5" fill="url(#rcMetal)" stroke="#05080f" stroke-width="1.1"/>';
     return o + '</g>';
   }
+  // piston-top y (old bore frame) for the same fill rule
+  function pumpPist(v) { var h = Math.max(0, v * PXC); if (v >= .5 && h < 4) h = 4; return Math.min(219 + h, 219 + 182 - 9); }
   function drawCell(w) {
     var c = w.cell; if (c.a <= .01) return '';
     var o = '<g opacity="' + r1(c.a * 100) / 100 + '">';
     var tot = c.A + c.B;
     o += '<g transform="' + CELL_T + '">';
-    if (hl(w, 'cell')) o += '<rect x="796" y="140" width="304" height="400" rx="14" fill="rgba(77,157,255,.06)" stroke="var(--blue)" stroke-width="1.2" stroke-dasharray="5 4"/>';
-    [[806, 150, 284, 12], [806, 454, 284, 12], [806, 150, 12, 316], [1078, 150, 12, 316], [812, 466, 10, 28], [1074, 466, 10, 28]].forEach(function (r) {
-      o += '<rect x="' + r[0] + '" y="' + r[1] + '" width="' + r[2] + '" height="' + r[3] + '" fill="url(#rcMetalH)" stroke="#0a0e16"/>'; });
-    o += '<line x1="790" y1="190" x2="1030" y2="190" stroke="#0a0e16" stroke-width="6" stroke-linecap="round"/><line x1="790" y1="190" x2="1030" y2="190" stroke="#9fb0c8" stroke-width="3.4" stroke-linecap="round"/>';
-    [866, 948, 1030].forEach(function (xx) { o += '<line x1="' + xx + '" y1="190" x2="' + xx + '" y2="' + (xx === 948 ? 212 : 215) + '" stroke="#0a0e16" stroke-width="5"/><line x1="' + xx + '" y1="190" x2="' + xx + '" y2="' + (xx === 948 ? 212 : 215) + '" stroke="#9fb0c8" stroke-width="3"/>'; });
+    if (hl(w, 'cell')) o += '<rect x="736" y="100" width="424" height="425" rx="14" fill="rgba(77,157,255,.06)" stroke="var(--blue)" stroke-width="1.2" stroke-dasharray="5 4"/>';
+    // approved PVT cell (PVTCellArt) on the legacy frame: Pump A / Pump B valves from the scene state, Port L valve = the cell inlet valve
+    var linesOn = w.L.cellL.part > 0 || w.L.vacL.part > 0;
+    o += PVTCellArt.cell('rcc', { raw: true,
+      innerB: '<rect x="848" y="219" width="36" height="182" rx="3" fill="' + (c.P < -.05 ? '#070d16' : '#0a1420') + '"/>' + pumpFluid(848, c.B, 'oil', 'rcPumpB'),
+      innerA: '<rect x="1012" y="219" width="36" height="182" rx="3" fill="' + (c.P < -.05 ? '#070d16' : '#0a1420') + '"/>' + pumpFluid(1012, c.A, c.Af || 'gas', 'rcPumpA'),
+      pistonB: pumpPist(c.B), pistonA: pumpPist(c.A),
+      valves: { A: !!c.aV, B: !!c.bV, L: !!c.valve },
+      ports: { L: { plug: !linesOn, nut: linesOn } },
+      disp: { P: pf(c.P), B: f2(c.B) + ' cc', A: f2(c.A) + ' cc', T: CFG.LAB_T + ' °C' },
+      portLabel: { L: 'Port L' } });
     if (c.man) {
       var col = FL[c.man].line;
-      var segs = c.manSeg === 'ab' ? ['M866 215 V190 H1030 V215'] : c.manSeg === 'toB' ? ['M790 190 H866 V215'] : c.manSeg === 'all' ? ['M790 190 H1030 V215', 'M866 190 V215'] : ['M790 190 H1030 V215'];
+      var segs = c.manSeg === 'ab' ? ['M866 212 V190 H1030 V212'] : c.manSeg === 'toB' ? ['M748 190 H866 V212'] : c.manSeg === 'all' ? ['M748 190 H1030 V212', 'M866 190 V212'] : ['M748 190 H1030 V212'];
       segs.forEach(function (seg) {
         o += '<path d="' + seg + '" fill="none" stroke="' + col + '" stroke-width="2.6" stroke-linejoin="round"/>';
         if (c.manDir) o += '<path d="' + seg + '" fill="none" stroke="' + FL[c.man].dash + '" stroke-width="1.8" stroke-dasharray="3 8" stroke-dashoffset="' + r1(c.manDir * (c.manSeg === 'ab' ? 1 : -1) * w.tt * 22) + '"/>';
@@ -876,37 +882,13 @@
         o += '<g transform="translate(' + xx + ',190) rotate(' + (toB ? 180 : 0) + ')"><circle r="7" fill="' + FL[c.man].line + '" stroke="#0a0e16" stroke-width=".9"/><path d="M-2.5 -3.4 L2.2 0 L-2.5 3.4" fill="none" stroke="#fff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></g>';
       });
     }
-    o += '<g transform="translate(866,203) scale(.62)">' + valveV(0, 0, c.bV) + '</g>';
-    o += '<g transform="translate(1030,203) scale(.62)">' + valveV(0, 0, c.aV) + '</g>';
-    o += T(852, 184, 'B VALVE', { a: 'middle', m: 1, s: 7.5, c: c.bV ? 'var(--grn)' : 'var(--mut)' }) + T(1044, 184, 'A VALVE', { a: 'middle', m: 1, s: 7.5, c: c.aV ? 'var(--grn)' : 'var(--mut)' });
-    // Pump B
-    o += '<rect x="838" y="206" width="56" height="12" rx="2" fill="url(#rcMetalH)" stroke="#0a0e16"/><rect x="846" y="215" width="40" height="190" rx="4" fill="url(#rcCyl)" stroke="#0a0e16" stroke-width="1.2"/>';
-    o += '<rect x="848" y="219" width="36" height="182" rx="3" fill="' + (c.P < -.05 ? '#070d16' : '#0a1420') + '"/>' + pumpFluid(848, c.B, 'oil', 'rcPumpB');
-    o += '<rect x="838" y="405" width="56" height="14" rx="2" fill="url(#rcMetalH)" stroke="#0a0e16"/>';
-    // Pump A
-    o += '<rect x="1002" y="206" width="56" height="12" rx="2" fill="url(#rcMetalH)" stroke="#0a0e16"/><rect x="1010" y="215" width="40" height="190" rx="4" fill="url(#rcCyl)" stroke="#0a0e16" stroke-width="1.2"/>';
-    o += '<rect x="1012" y="219" width="36" height="182" rx="3" fill="' + (c.P < -.05 ? '#070d16' : '#0a1420') + '"/>' + pumpFluid(1012, c.A, c.Af || 'gas', 'rcPumpA');
-    o += '<rect x="1002" y="405" width="56" height="14" rx="2" fill="url(#rcMetalH)" stroke="#0a0e16"/>';
-    o += '<line x1="856" y1="222" x2="856" y2="398" stroke="#eef4fb" stroke-width="1.2" opacity=".25"/><line x1="1020" y1="222" x2="1020" y2="398" stroke="#eef4fb" stroke-width="1.2" opacity=".25"/>';
-    // sensor + readouts
-    o += '<rect x="942" y="210" width="12" height="11" rx="1.5" fill="url(#rcMetalH)" stroke="#0a0e16"/><circle cx="948" cy="240" r="20" fill="url(#rcMetalH)" stroke="#0a0e16" stroke-width="1.3"/><circle cx="948" cy="240" r="14.5" fill="#0c1626" stroke="#2a3852"/>';
-    var ang = -140 + 280 * clamp(c.P / 6000, 0, 1), a = ang * Math.PI / 180;
-    o += '<line x1="948" y1="240" x2="' + r1(948 + 11 * Math.sin(a)) + '" y2="' + r1(240 - 11 * Math.cos(a)) + '" stroke="#46e0ff" stroke-width="1.8" stroke-linecap="round"/><circle cx="948" cy="240" r="2.4" fill="#8fa3c2"/>';
-    o += T(948, 280, 'Pressure Sensor', { a: 'middle', s: 12, c: 'var(--txt2)' });
-    o += T(948, 302, 'CELL PRESSURE', { a: 'middle', m: 1, s: 9.5, ls: .5, c: 'var(--mut)' });
-    o += '<rect x="906" y="307" width="84" height="21" rx="4" fill="#0a1420" stroke="#3a9d63" stroke-width="1.2"/>' + T(948, 321.5, pf(c.P) + ' psig', { a: 'middle', m: 1, s: 11.5, w: 600, c: '#46d39a' });
-    o += T(948, 348, 'CELL VOLUME', { a: 'middle', m: 1, s: 9.5, ls: .5, c: 'var(--mut)' });
-    o += '<rect x="906" y="353" width="84" height="21" rx="4" fill="#0a1420" stroke="#8a6a20" stroke-width="1.2"/>' + T(948, 367.5, f2(tot) + ' cc', { a: 'middle', m: 1, s: 11.5, w: 600, c: '#e2c65a' });
-    o += T(948, 392, 'TEMP ' + CFG.LAB_T + ' °C', { a: 'middle', m: 1, s: 9.5, ls: .5, c: 'var(--mut)' });
-    o += T(866, 434, 'Pump B · ' + f2(c.B) + ' cc', { a: 'middle', s: 10, c: 'var(--txt2)' });
-    o += T(1030, 434, 'Pump A · ' + f2(c.A) + ' cc', { a: 'middle', s: 10, c: 'var(--txt2)' });
-    o += T(948, 449, 'capacity ' + CFG.CELL_CAP + ' cc per pump', { a: 'middle', m: 1, s: 8.5, c: 'var(--mut)' });
-    o += T(948, 514, 'PVT CELL · CALIBRATED', { a: 'middle', m: 1, s: 11, ls: .9, c: 'var(--txt2)' });
+    o += T(866, 524, 'Pump B · ' + f2(c.B) + ' cc', { a: 'middle', s: 10, c: 'var(--txt2)' });
+    o += T(1030, 524, 'Pump A · ' + f2(c.A) + ' cc', { a: 'middle', s: 10, c: 'var(--txt2)' });
+    o += T(948, 538, 'capacity ' + CFG.CELL_CAP + ' cc per pump', { a: 'middle', m: 1, s: 8.5, c: 'var(--mut)' });
+    o += T(948, 556, 'PVT CELL · CALIBRATED', { a: 'middle', m: 1, s: 11, ls: .9, c: 'var(--txt2)' });
     var cont = c.P < -.05 && tot < .01 ? 'EMPTY · VACUUM' : tot < .01 ? 'EMPTY' : (c.Af === 'oil' ? 'SEPARATOR OIL' : 'SEPARATOR GAS') + ' · ' + (c.stab >= 1 ? 'STABLE' : c.stab > 0 ? 'STABILIZING' : 'TRANSFER');
-    o += T(948, 529, cont, { a: 'middle', m: 1, s: 9, ls: .5, c: tot < .01 ? 'var(--mut)' : c.Af === 'oil' ? '#c07f2e' : '#2f9d72' });
+    o += T(948, 571, cont, { a: 'middle', m: 1, s: 9, ls: .5, c: tot < .01 ? 'var(--mut)' : c.Af === 'oil' ? '#c07f2e' : '#2f9d72' });
     o += '</g>';
-    o += valveH(CELL_VALVE_X, CELL_IN[1], c.valve) + vtag(CELL_VALVE_X, CELL_IN[1] + 20, c.valve, 'middle');
-    o += T(CELL_VALVE_X, CELL_IN[1] - 28, 'Cell inlet valve', { a: 'middle', s: 10.5, c: 'var(--txt2)' });
     return o + '</g>';
   }
 
@@ -1262,7 +1244,7 @@
 
   function defs() {
     var sb = window.SampleBottle ? BottleArt.raw(SampleBottle.defs('rcb')) : '';
-    return '<defs>' + sb +
+    return '<defs>' + sb + PVTCellArt.defs('rcc', { raw: true }) +
       '<linearGradient id="rcMetal" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#b3c1d8"/><stop offset=".5" stop-color="#7e90b0"/><stop offset="1" stop-color="#3a485f"/></linearGradient>' +
       '<linearGradient id="rcMetalH" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#283750"/><stop offset=".42" stop-color="#b3c1d8"/><stop offset=".58" stop-color="#7e90b0"/><stop offset="1" stop-color="#1f2a3e"/></linearGradient>' +
       '<linearGradient id="rcCyl" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#3a485f"/><stop offset=".2" stop-color="#8094b2"/><stop offset=".5" stop-color="#aebcd2"/><stop offset=".8" stop-color="#54657f"/><stop offset="1" stop-color="#222c3e"/></linearGradient>' +

@@ -697,6 +697,9 @@ class Component extends DCLogic {
       pvBoxX: String(948 - (C.boxW || 72) / 2), pvBoxW: String(C.boxW || 72),
       pvPsatLabel: C.psatMarkTxt || C.psatLabel || _psatTxt, pvPsatBoxW: String(LW), pvPsatVolText: C.psatVolTxt || (DATA[BUBBLE_IDX][1].toFixed(Math.min(dec, 2)) + ' cc'), pvPU: pu, pvPAxis: 'Pressure (' + pu + ')',
       pvPressureText, pvVolumeText, pvPressureBox, pvVolumeBox,
+      // approved PVT cell displays / valve indication (presentation only)
+      pvCellPNum: Math.round(pressure).toLocaleString('en-US'), pvCellTempTxt: C.tempTxt || '—',
+      pvValveB: phase === 'a2b' || phase === 'hold' || phase === 'b2a',
       pvSampleH, pvPistonY, pvSampleTrans, pvPistonLabelY, pvPistonLabelText,
       pvBubbleGasStyle, pvBubsA, pvBubsB,
       pvGasH, pvLiquidY, pvLiquidH, pvInterfaceStyle, pvPhaseText, pvPhaseColor,
@@ -803,56 +806,42 @@ DC.define('StagePVTest', {
 
       <div style="{{ pvSetupRowStyle }}">
 
-        <!-- Computer -> Control Box -->
-        <div style="{{ pvCtlColStyle }}">
-          <div style="{{ pvCtlTopStyle }}">
-          <div style="display:flex; flex-direction:column; align-items:center; gap:3px;">
-            <svg width="66" height="52" viewBox="0 0 72 56" style="{{ pvCompStyle }}"><rect x="2" y="2" width="68" height="42" rx="3" fill="#0d1728" stroke="#3a4c66" stroke-width="1.4"></rect><rect x="8" y="8" width="56" height="30" rx="2" fill="#06101e" stroke="#1d3350" stroke-width="0.8"></rect><polyline points="14,30 24,20 34,25 46,10 56,17" fill="none" stroke="#46d39a" stroke-width="1.8"></polyline><rect x="30" y="44" width="12" height="6" fill="#26344a"></rect><rect x="20" y="50" width="32" height="4" rx="1" fill="#26344a"></rect></svg>
-            <span style="{{ pvCompLblStyle }}">Computer</span>
-          </div>
-          <span style="{{ pvSigVStyle }}"></span>
-          </div>
-          <div style="display:flex; flex-direction:column; gap:5px; flex:0 0 auto; min-width:0; background:#0d1728; border:1.4px solid #3a4c66; border-radius:7px; padding:8px 9px;">
-            <div style="{{ pvDispPStyle }}"><span style="font-family:'IBM Plex Mono'; font-size:12px; font-weight:600; color:var(--grn); white-space:nowrap;">{{ pvPressureBox }}</span></div>
-            <div style="{{ pvDispVStyle }}"><span style="font-family:'IBM Plex Mono'; font-size:12px; font-weight:600; color:var(--amb); white-space:nowrap;">{{ pvVolumeBox }}</span></div>
-            <span style="font-family:'IBM Plex Mono'; font-size:8px; letter-spacing:.7px; color:var(--mut); text-align:center;">CONTROL BOX</span>
-          </div>
-          <div style="{{ pvCtlBotStyle }}"></div>
-        </div>
-
-        <!-- signal link : control box -> cell -->
-        <div style="{{ pvSigColStyle }}">
-          <span style="{{ pvSigHStyle }}"></span>
-          <span style="{{ pvSigLblStyle }}">SIGNAL</span>
-        </div>
-
-        <!-- PVT Cell -->
+        <!-- PVT Cell (approved shared design, PVTCellArt) centred, computer + controller to the right: one drawing -->
         <div style="{{ pvCellColStyle }}">
           <div style="display:flex; align-items:center; justify-content:center; gap:8px; flex:0 0 auto;">
             <span style="font-size:15px; font-weight:700; color:var(--txt); letter-spacing:-.2px; white-space:nowrap;">PVT Cell</span>
+            <button type="button" class="bd-btn bd-inline" data-cd-open="" data-cd-ctx="PV / Bsat · closed cell, Pump A open to the pressure sensor">Cell Details</button>
             <span style="display:inline-flex; align-items:center; padding:2px 9px; border-radius:999px; background:{{ pvCellTagBg }}; border:1px solid {{ pvCellTagBorder }}; font-family:'IBM Plex Mono'; font-size:9.5px; letter-spacing:.5px; color:{{ pvCellTagColor }}; white-space:nowrap;">{{ pvCellTag }}</span>
           </div>
-          <svg viewBox="{{ pvCellVb }}" preserveAspectRatio="xMidYMid meet" style="{{ pvCellSvgStyle }}">
+          <svg viewBox="735 96 628 470" preserveAspectRatio="xMidYMid meet" style="display:block; width:100%; height:100%; flex:1 1 auto; min-height:0;">
         <defs>
-          <linearGradient id="pv-metal" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#283750"></stop><stop offset=".42" stop-color="#b3c1d8"></stop><stop offset=".58" stop-color="#7e90b0"></stop><stop offset="1" stop-color="#1f2a3e"></stop></linearGradient>
-          <linearGradient id="pv-cyl" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#3a485f"></stop><stop offset=".2" stop-color="#8094b2"></stop><stop offset=".5" stop-color="#aebcd2"></stop><stop offset=".8" stop-color="#54657f"></stop><stop offset="1" stop-color="#222c3e"></stop></linearGradient>
           <pattern id="pv-sample" width="9" height="9" patternUnits="userSpaceOnUse"><rect width="9" height="9" fill="#c7a233"></rect><circle cx="4.5" cy="4.5" r="1.15" fill="#f2d879" opacity=".7"></circle></pattern>
           <pattern id="pv-diss" width="13" height="13" patternUnits="userSpaceOnUse"><circle cx="3" cy="4" r=".8" fill="#eafff4"></circle><circle cx="9.5" cy="8.5" r=".65" fill="#eafff4"></circle><circle cx="6" cy="11.5" r=".5" fill="#eafff4"></circle><circle cx="11.5" cy="2" r=".55" fill="#eafff4"></circle></pattern>
           <linearGradient id="pv-gas" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#7fe3b4" stop-opacity=".34"></stop><stop offset="1" stop-color="#3fbf8c" stop-opacity=".62"></stop></linearGradient>
+          ${PVTCellArt.defs('pvc')}
         </defs>
-
-        <!-- open-frame rack -->
-        <rect x="806" y="150" width="284" height="12" fill="url(#pv-metal)" stroke="#0a0e16" stroke-width="1"></rect>
-        <rect x="806" y="454" width="284" height="12" fill="url(#pv-metal)" stroke="#0a0e16" stroke-width="1"></rect>
-        <rect x="806" y="150" width="12" height="316" fill="url(#pv-metal)" stroke="#0a0e16" stroke-width="1"></rect>
-        <rect x="1078" y="150" width="12" height="316" fill="url(#pv-metal)" stroke="#0a0e16" stroke-width="1"></rect>
-        <line x1="822" y1="190" x2="1030" y2="190" stroke="#0a0e16" stroke-width="6" stroke-linecap="round"></line>
-        <line x1="822" y1="190" x2="1030" y2="190" stroke="#9fb0c8" stroke-width="3.4" stroke-linecap="round"></line>
-        <circle cx="822" cy="190" r="4.5" fill="url(#pv-metal)" stroke="#0a0e16" stroke-width="0.8"></circle>
-        <circle cx="1030" cy="190" r="4.5" fill="url(#pv-metal)" stroke="#0a0e16" stroke-width="0.8"></circle>
-        <line x1="866" y1="190" x2="866" y2="215" stroke="#9fb0c8" stroke-width="3"></line>
-        <line x1="948" y1="190" x2="948" y2="212" stroke="#9fb0c8" stroke-width="3"></line>
-        <line x1="1030" y1="190" x2="1030" y2="215" stroke="#9fb0c8" stroke-width="3"></line>
+        ${PVTCellArt.cable({}, { x: 1168, y: 300, s: .5 }, 26)}
+        ${PVTCellArt.desk('pvc', { x: 1168, y: 300, s: .5, legs: 178, ctl: '{{ pvCellPNum }}',
+          rows: [['P {{ pvPU }}', '{{ pvCellPNum }}', '#7ff0bf'], ['V cc', '{{ pvVolumeText }}', '#ffc56b'], ['PUMP A', '{{ pvVolumeAText }}', '#ffc56b'], ['PUMP B', '{{ pvVolumeBText }}', '#ffc56b']] })}
+        ${PVTCellArt.cell('pvc', {
+          pistonB: 'pvBPistonY', pistonA: 'pvPistonY',
+          // the sensor reads the sample in Pump A (valve open); Pump B's valve is open while the sample moves to / sits in / returns from Pump B
+          valves: { A: 'true', B: 'pvValveB' },
+          innerB: `<rect x="848" y="219" width="36" height="{{ pvBGasH }}" fill="url(#pv-gas)" style="{{ pvSampleTrans }}"></rect>
+          <rect x="848" y="{{ pvBLiquidY }}" width="36" height="{{ pvBLiquidH }}" fill="url(#pv-sample)" style="{{ pvSampleTrans }}"></rect>
+          <rect x="848" y="{{ pvBLiquidY }}" width="36" height="{{ pvBLiquidH }}" fill="url(#pv-diss)" style="{{ pvDissStyle }}"></rect>
+          <sc-for list="{{ pvBubsB }}" as="bb" hint-placeholder-count="10">
+            <circle cx="{{ bb.x }}" cy="{{ bb.y }}" r="{{ bb.r }}" fill="#bff3da" opacity="{{ bb.o }}"></circle>
+          </sc-for>`,
+          innerA: `<rect x="1012" y="219" width="36" height="{{ pvGasH }}" fill="url(#pv-gas)" style="{{ pvSampleTrans }}"></rect>
+          <rect x="1012" y="{{ pvLiquidY }}" width="36" height="{{ pvLiquidH }}" fill="url(#pv-sample)" style="{{ pvSampleTrans }}"></rect>
+          <rect x="1012" y="{{ pvLiquidY }}" width="36" height="{{ pvLiquidH }}" fill="url(#pv-diss)" style="{{ pvDissStyle }}"></rect>
+          <rect x="1012" y="{{ pvLiquidY }}" width="36" height="1.4" fill="#eafff4" style="{{ pvInterfaceStyle }}"></rect>
+          <rect x="1012" y="219" width="36" height="3.5" fill="#ffffff" opacity=".18"></rect>
+          <sc-for list="{{ pvBubsA }}" as="ba" hint-placeholder-count="10">
+            <circle cx="{{ ba.x }}" cy="{{ ba.y }}" r="{{ ba.r }}" fill="#bff3da" opacity="{{ ba.o }}"></circle>
+          </sc-for>`,
+          disp: { P: '{{ pvCellPNum }}', Pu: '{{ pvPU }}', B: '{{ pvVolumeBText }}', A: '{{ pvVolumeAText }}', T: '{{ pvCellTempTxt }}' } })}
         <g style="{{ pvXferFlowStyle }}">
           <path d="{{ pvRouteD }}" fill="none" stroke="#d9ad2f" stroke-width="3.4" stroke-linecap="butt" stroke-linejoin="round" stroke-dasharray="{{ pvFluidDash }}" style="{{ pvFluidStyle }}"></path>
           <path d="{{ pvRouteD }}" fill="none" stroke="#fff0b8" stroke-width="1.1" stroke-linecap="butt" stroke-linejoin="round" stroke-dasharray="{{ pvFluidDash }}" opacity=".55" style="{{ pvFluidStyle }}"></path>
@@ -862,65 +851,11 @@ DC.define('StagePVTest', {
           <path d="{{ pvXferArrowD }}" fill="#ffcf3f"></path>
           <circle cx="{{ pvSlugX }}" cy="{{ pvSlugY }}" r="5.5" fill="none" stroke="#ffcf3f" stroke-width="1.4" style="{{ pvSlugTrans }}"></circle>
         </g>
-        <text x="1006" y="176" text-anchor="middle" font-family="IBM Plex Mono" font-size="11" letter-spacing=".5" fill="var(--cap2)">SAMPLE</text>
-        <text x="948" y="{{ pvPhaseY }}" text-anchor="middle" font-family="IBM Plex Mono" font-size="10" letter-spacing=".8" fill="{{ pvPhaseColor }}">{{ pvPhaseText }}</text>
-
-        <!-- Pump B : empty, left -->
-        <rect x="838" y="206" width="56" height="12" rx="2" fill="url(#pv-metal)" stroke="#0a0e16" stroke-width="1"></rect>
-        <rect x="846" y="215" width="40" height="190" rx="4" fill="url(#pv-cyl)" stroke="#0a0e16" stroke-width="1.2"></rect>
-        <clipPath id="pv-pumpb-clip"><rect x="848" y="219" width="36" height="182" rx="3"></rect></clipPath>
-        <g clip-path="url(#pv-pumpb-clip)">
-          <rect x="848" y="219" width="36" height="{{ pvBGasH }}" fill="url(#pv-gas)" style="{{ pvSampleTrans }}"></rect>
-          <rect x="848" y="{{ pvBLiquidY }}" width="36" height="{{ pvBLiquidH }}" fill="url(#pv-sample)" style="{{ pvSampleTrans }}"></rect>
-          <rect x="848" y="{{ pvBLiquidY }}" width="36" height="{{ pvBLiquidH }}" fill="url(#pv-diss)" style="{{ pvDissStyle }}"></rect>
-          <sc-for list="{{ pvBubsB }}" as="bb" hint-placeholder-count="10">
-            <circle cx="{{ bb.x }}" cy="{{ bb.y }}" r="{{ bb.r }}" fill="#bff3da" opacity="{{ bb.o }}"></circle>
-          </sc-for>
-          <rect x="848" y="{{ pvBPistonY }}" width="36" height="9" rx="1.5" fill="url(#pv-metal)" stroke="#05080f" stroke-width="1.1" style="{{ pvSampleTrans }}"></rect>
-        </g>
-        <line x1="856" y1="222" x2="856" y2="398" stroke="#eef4fb" stroke-width="1.2" opacity=".3"></line>
-        <line x1="846" y1="252" x2="886" y2="252" stroke="#0a0e16" stroke-width="1" opacity=".28"></line>
-        <line x1="846" y1="352" x2="886" y2="352" stroke="#0a0e16" stroke-width="1" opacity=".28"></line>
-        <rect x="838" y="405" width="56" height="14" rx="2" fill="url(#pv-metal)" stroke="#0a0e16" stroke-width="1"></rect>
-        <foreignObject x="790" y="{{ pvPumpLblY }}" width="152" height="17"><div style="margin:0; display:flex; align-items:center; justify-content:center; height:100%; white-space:nowrap; line-height:1.1; font-family:'IBM Plex Sans',sans-serif; font-size:12.5px; color:var(--txt2);">Pump B &#183; <span style="font-family:'IBM Plex Mono',ui-monospace,monospace;font-weight:600; color:var(--amb);">{{ pvVolumeBText }}</span></div></foreignObject>
-
-        <!-- Pressure sensor -->
-        <rect x="942" y="210" width="12" height="11" rx="1.5" fill="url(#pv-metal)" stroke="#0a0e16" stroke-width="1"></rect>
-        <circle cx="948" cy="240" r="20" fill="url(#pv-metal)" stroke="#0a0e16" stroke-width="1.3"></circle>
-        <circle cx="948" cy="240" r="14.5" fill="#0c1626" stroke="#2a3852" stroke-width="1"></circle>
-        <path d="M939.9 231.9 A 11.5 11.5 0 0 1 956.1 231.9" fill="none" stroke="#4a6088" stroke-width="1.3" stroke-dasharray="1 3.5" stroke-linecap="round"></path>
-        <line x1="948" y1="240" x2="{{ pvNeedleX }}" y2="{{ pvNeedleY }}" stroke="#46e0ff" stroke-width="1.8" stroke-linecap="round" style="{{ pvNeedleTrans }}"></line>
-        <circle cx="948" cy="240" r="2.4" fill="#8fa3c2"></circle>
-        <circle cx="948" cy="240" r="23.5" fill="none" stroke="#46e0ff" stroke-width="1.6" style="{{ pvSensorPulse }}"></circle>
-        <text x="948" y="280" text-anchor="middle" font-family="IBM Plex Sans" font-size="12.5" fill="var(--txt2)">Pressure Sensor</text>
-        <text x="948" y="303" text-anchor="middle" font-family="IBM Plex Mono" font-size="10" letter-spacing=".5" fill="var(--mut)">CELL PRESSURE</text>
-        <rect x="{{ pvBoxX }}" y="309" width="{{ pvBoxW }}" height="21" rx="4" fill="#0a1420" stroke="#3a9d63" stroke-width="1.2"></rect>
-        <foreignObject x="{{ pvBoxX }}" y="311" width="{{ pvBoxW }}" height="17"><div style="margin:0; display:flex; align-items:center; justify-content:center; height:100%; white-space:nowrap; line-height:1.1; font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:11.5px; font-weight:600; color:var(--grn);">{{ pvPressureText }}</div></foreignObject>
-        <text x="948" y="352" text-anchor="middle" font-family="IBM Plex Mono" font-size="10" letter-spacing=".5" fill="var(--mut)">CELL VOLUME</text>
-        <rect x="{{ pvBoxX }}" y="358" width="{{ pvBoxW }}" height="21" rx="4" fill="#0a1420" stroke="#8a6a20" stroke-width="1.2"></rect>
-        <foreignObject x="{{ pvBoxX }}" y="360" width="{{ pvBoxW }}" height="17"><div style="margin:0; display:flex; align-items:center; justify-content:center; height:100%; white-space:nowrap; line-height:1.1; font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:11.5px; font-weight:600; color:var(--amb);">{{ pvVolumeText }}</div></foreignObject>
-
-        <!-- Pump A : sample sits at the TOP of the cylinder, on top of the piston -->
-        <rect x="1002" y="206" width="56" height="12" rx="2" fill="url(#pv-metal)" stroke="#0a0e16" stroke-width="1"></rect>
-        <rect x="1010" y="215" width="40" height="190" rx="4" fill="url(#pv-cyl)" stroke="#0a0e16" stroke-width="1.2"></rect>
-        <clipPath id="pv-pumpa-clip"><rect x="1012" y="219" width="36" height="182" rx="3"></rect></clipPath>
-        <g clip-path="url(#pv-pumpa-clip)">
-          <rect x="1012" y="219" width="36" height="{{ pvGasH }}" fill="url(#pv-gas)" style="{{ pvSampleTrans }}"></rect>
-          <rect x="1012" y="{{ pvLiquidY }}" width="36" height="{{ pvLiquidH }}" fill="url(#pv-sample)" style="{{ pvSampleTrans }}"></rect>
-          <rect x="1012" y="{{ pvLiquidY }}" width="36" height="{{ pvLiquidH }}" fill="url(#pv-diss)" style="{{ pvDissStyle }}"></rect>
-          <rect x="1012" y="{{ pvLiquidY }}" width="36" height="1.4" fill="#eafff4" style="{{ pvInterfaceStyle }}"></rect>
-          <rect x="1012" y="219" width="36" height="3.5" fill="#ffffff" opacity=".18"></rect>
-          <sc-for list="{{ pvBubsA }}" as="ba" hint-placeholder-count="10">
-            <circle cx="{{ ba.x }}" cy="{{ ba.y }}" r="{{ ba.r }}" fill="#bff3da" opacity="{{ ba.o }}"></circle>
-          </sc-for>
-          <rect x="1012" y="{{ pvPistonY }}" width="36" height="9" rx="1.5" fill="url(#pv-metal)" stroke="#05080f" stroke-width="1.1" style="{{ pvSampleTrans }}"></rect>
-        </g>
-        <line x1="1020" y1="222" x2="1020" y2="398" stroke="#eef4fb" stroke-width="1.2" opacity=".3"></line>
-        <line x1="1010" y1="252" x2="1050" y2="252" stroke="#0a0e16" stroke-width="1" opacity=".28"></line>
-        <line x1="1010" y1="352" x2="1050" y2="352" stroke="#0a0e16" stroke-width="1" opacity=".28"></line>
-        <rect x="1002" y="405" width="56" height="14" rx="2" fill="url(#pv-metal)" stroke="#0a0e16" stroke-width="1"></rect>
-        <foreignObject x="952" y="{{ pvPumpLblY }}" width="156" height="17"><div style="margin:0; display:flex; align-items:center; justify-content:center; height:100%; white-space:nowrap; line-height:1.1; font-family:'IBM Plex Sans',sans-serif; font-size:12.5px; color:var(--txt2);">Pump A &#183; <span style="font-family:'IBM Plex Mono',ui-monospace,monospace;font-weight:600; color:var(--amb);">{{ pvVolumeAText }}</span></div></foreignObject>
-        <text x="948" y="{{ pvCellCapY }}" text-anchor="middle" font-family="IBM Plex Mono" font-size="11" letter-spacing=".9" fill="var(--cap2)">DUAL-CYLINDER PVT CELL</text>
+        <circle cx="948" cy="217.7" r="24" fill="none" stroke="#46e0ff" stroke-width="1.6" style="{{ pvSensorPulse }}"></circle>
+        <text x="948" y="174" text-anchor="middle" font-family="IBM Plex Mono" font-size="10" letter-spacing=".5" fill="var(--cap2)">SAMPLE</text>
+        <foreignObject x="790" y="520" width="152" height="17"><div style="margin:0; display:flex; align-items:center; justify-content:center; height:100%; white-space:nowrap; line-height:1.1; font-family:'IBM Plex Sans',sans-serif; font-size:12.5px; color:var(--txt2);">Pump B &#183; <span style="font-family:'IBM Plex Mono',ui-monospace,monospace;font-weight:600; color:var(--amb);">{{ pvVolumeBText }}</span></div></foreignObject>
+        <foreignObject x="952" y="520" width="156" height="17"><div style="margin:0; display:flex; align-items:center; justify-content:center; height:100%; white-space:nowrap; line-height:1.1; font-family:'IBM Plex Sans',sans-serif; font-size:12.5px; color:var(--txt2);">Pump A &#183; <span style="font-family:'IBM Plex Mono',ui-monospace,monospace;font-weight:600; color:var(--amb);">{{ pvVolumeAText }}</span></div></foreignObject>
+        <text x="948" y="554" text-anchor="middle" font-family="IBM Plex Mono" font-size="10" letter-spacing=".8" fill="{{ pvPhaseColor }}">{{ pvPhaseText }}</text>
           </svg>
         </div>
       </div>
