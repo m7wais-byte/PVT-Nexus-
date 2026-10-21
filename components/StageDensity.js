@@ -526,17 +526,7 @@ DC.define('StageDensity', {
   .dn-runs { flex:0 0 auto; display:flex; flex-direction:column; justify-content:center; gap:1px; min-width:0; }
   .dn-cmp { display:flex; align-items:baseline; gap:7px; padding:0 6px; white-space:nowrap; }
   .dn-runs > .dn-cmp:first-of-type { margin-top:2px; padding-top:3px; border-top:1px solid #22314a; }
-  .dn-fig { align-items:stretch; }
-  /* Explain This Stage on this page: an overlay drawer over the procedure sidebar. The page keeps its
-     width (no reserved margin), so the equipment keeps exactly its size and position. */
-  @media (min-width:1101px) {
-    html.sg-open:has([data-screen-label="Direct Density"]) main { margin-right:0 !important; }
-    html:has([data-screen-label="Direct Density"]) #sgWrap {
-      top:calc(var(--topbar-h) + var(--page-pad-y) + 46px); bottom:12px; right:var(--page-pad-x); left:auto;
-      width:clamp(280px,21vw,330px); z-index:60; }
-    html:has([data-screen-label="Direct Density"]) #sgPanel {
-      border:1px solid var(--line2) !important; border-radius:12px !important; box-shadow:-8px 0 24px rgba(10,20,40,.16) !important; }
-  }`,
+  .dn-fig { align-items:stretch; }`,
   template: `<div data-screen-label="Direct Density" class="pg pg-stack">
 
   <!-- 1 · header (shared Validation .pg-head; the run / volume / density values are in the sidebar summary) -->

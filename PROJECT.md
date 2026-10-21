@@ -532,10 +532,19 @@ Every Validation procedure page uses one frame, taken from Restoration (CSS at t
   `.dn-fig` (same SVG / viewBox as before, now using the full width and remaining height). The former tall
   calculation column and the Run 1 / Run 2 chips are gone; run state (STORED / RUNNING / PENDING / LOCKED),
   |rho1 - rho2|, tolerance, verdict and Repeat are in the Results group.
-- Explain This Stage on this page (>= 1101 px wide): the StepGuide drawer overlays the procedure sidebar
-  (same box as `.lab-side`) instead of reserving `--sg-w` on `main`, so the equipment keeps its exact size and
-  position. Scoped with `html:has([data-screen-label="Direct Density"])` in the StageDensity style block;
-  other pages keep the reserved-width drawer.
+- Explain This Stage: shared overlay drawer (see "Explain drawer" below).
+
+## Explain drawer — overlay on every page (2026-10-21)
+
+`components/StepGuide.js` (`anchor()`, LAYOUT v3 CSS) is the one implementation for every page with Explain
+(sampling, Validation, analysis). Nothing is reserved on `main` any more (`--sg-w` margin removed), so opening /
+closing never resizes or moves the simulation, equipment, graphs or calculation panels.
+- Placed by measurement every tick: over the procedure sidebar (the <= 480 px column that holds a
+  `data-pc-layout="side"` procedure panel: `.lab-side`, `.m01-panel`, `.bhs-panel`, `.rc-panel`); on pages with a
+  bottom procedure bar (DL, Separator, GC, viscosity) at the right edge, sidebar width
+  `clamp(280px,21vw,330px)`, ending above the bar so Pause / Explain stay usable. <= 1000 px: bottom sheet overlay.
+- Card scrolls internally; head (title · stage / status tag · close) is sticky at the top.
+- Content, live readings, stage tracking and playback unchanged (Explain never pauses / resumes).
 
 ## Sampling section layout (module01, 2026-09-28)
 
