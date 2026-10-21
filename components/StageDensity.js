@@ -381,7 +381,7 @@ class Component extends DCLogic {
         col: rv == null ? MUT : GRN,
         tag: dn ? 'STORED' : on ? 'RUNNING' : (n === 2 && !st.done[1]) ? 'LOCKED' : 'PENDING',
         tagCol: dn ? GRN : on ? BLUE : MUT,
-        style: 'display:grid; grid-template-columns:3.6em 1.6em minmax(0,1fr) 2.6em 4.6em; align-items:baseline; column-gap:6px; padding:3px 8px; border-radius:6px; background:' +
+        style: 'display:grid; grid-template-columns:3.3em 1.4em minmax(4.2em,1fr) 2.4em 4.6em; align-items:baseline; column-gap:5px; padding:1px 6px; border-radius:5px; font-family:\'IBM Plex Mono\',ui-monospace,monospace; white-space:nowrap; background:' +
           (on ? 'rgba(111,183,255,.08)' : 'transparent') + ';' };
     };
 
@@ -430,29 +430,7 @@ class Component extends DCLogic {
       dnBalLed: st.coilPos === 'balance' ? '#46d39a' : '#54657f',
       dnOnBalance: st.coilPos === 'balance' ? 'COIL ON PAN' : 'PAN EMPTY',
 
-      /* ---- run chips (unchanged controls) ---- */
       dnStepBadge: both ? 'RUNS 1 + 2 COMPLETE' : 'RUN ' + a + ' OF 2',
-      dnRunChips: [1, 2].map(n => {
-        const on = a === n && !both, dn = st.done[n];
-        const rr = n === 1 ? st.r1 : st.r2;
-        const locked = n === 2 && !st.done[1];
-        const run = busy && a === n;
-        const accent = dn ? 'var(--grn)' : (on ? 'var(--blue)' : 'var(--line2)');
-        return {
-          name: 'Run ' + n,
-          tag: dn ? 'Complete' : run ? 'Running' : locked ? 'Locked' : 'Ready',
-          tagColor: dn ? 'var(--grn)' : run ? 'var(--blue)' : on ? 'var(--blue)' : 'var(--mut)',
-          color: dn || on ? 'var(--txt)' : 'var(--mut)',
-          rho: rr == null ? '—' : rr.toFixed(4),
-          rhoColor: rr == null ? 'var(--mut2)' : 'var(--grn)',
-          lockStyle: 'display:' + (locked ? 'inline-block' : 'none') + '; width:9px; height:10px; flex:0 0 auto;',
-          style: 'flex:1 1 0; min-width:0; display:flex; flex-direction:column; gap:3px; padding:7px 11px 7px; border-radius:10px; opacity:' +
-            (dn || on ? '1' : '.62') + '; background:' +
-            (dn ? 'rgba(29,138,90,.08)' : on ? 'rgba(47,111,208,.09)' : 'var(--icard)') + '; border:1px solid ' +
-            (dn ? 'rgba(29,138,90,.35)' : on ? 'rgba(47,111,208,.45)' : 'var(--line)') +
-            '; box-shadow:inset 0 -2.5px 0 ' + accent + ';' + (locked ? ' border-style:dashed;' : '')
-        };
-      }),
 
       /* ---- working equation + results (single dark panel) ---- */
       dnEqMi: miLive == null ? 'Mi' : miLive.toFixed(3), dnEqMiColor: miLive == null ? MUT : GOLD,
@@ -467,10 +445,10 @@ class Component extends DCLogic {
       dnEqVol: [
         { k: 'Vi', d: 'Initial cell volume', v: fx(vi, 1), u: 'cc', color: vi == null ? MUT : BLUE, live: '' },
         { k: 'Vf', d: 'Final cell volume', v: fx(vf, 1), u: 'cc', color: vf == null ? MUT : BLUE, live: xferLive ? '●' : '' },
-        { k: 'ΔV', d: 'Transferred Vi − Vf', v: fx(dV, 1), u: 'cc', color: dV == null ? MUT : BLUE, live: xferLive ? '●' : '' }
+        { k: 'ΔV', d: 'Transferred', v: fx(dV, 1), u: 'cc', color: dV == null ? MUT : BLUE, live: xferLive ? '●' : '' }
       ],
       dnResLabel: resLabel, dnResVal: resVal, dnResNote: resNote, dnResCol: resCol,
-      dnResBox: 'flex:0 0 auto; display:flex; flex-direction:column; align-items:center; gap:4px; padding:10px 10px 9px; border-radius:10px; background:' +
+      dnResBox: 'flex:0 0 16em; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:1px; padding:3px 8px; border-radius:8px; background:' +
         (resCol === GRN ? 'rgba(70,211,154,.10)' : resCol === MUT ? 'rgba(127,147,179,.05)' : 'rgba(255,122,140,.10)') + '; border:1px solid ' +
         (resCol === GRN ? 'rgba(70,211,154,.55)' : resCol === MUT ? '#2a3852' : 'rgba(255,122,140,.55)') + ';' +
         (resCol === GRN ? ' box-shadow:0 0 0 3px rgba(70,211,154,.08), inset 0 0 18px rgba(70,211,154,.06);' : ''),
@@ -515,6 +493,49 @@ DC.define('StageDensity', {
     30%  { opacity:.95; transform:scale(.8); }
     75%  { opacity:.95; transform:scale(1.05); }
     100% { opacity:0;   transform:scale(1.15); }
+  }
+  /* ---- simulation area: heading · compact calculation strip · action line · equipment ---- */
+  .dn-sim { gap:6px; }
+  .dn-hd { flex:0 0 auto; display:flex; align-items:center; gap:12px; min-width:0; }
+  .dn-act { flex:1 1 auto; min-width:0; height:32px; box-sizing:border-box; display:flex; align-items:center; padding:2px 8px; border-radius:6px; background:var(--icard); border:1px solid var(--line);
+            font-family:'IBM Plex Mono',ui-monospace,monospace; font-size:9.5px; letter-spacing:.3px; line-height:1.3; overflow:hidden; }
+  .dn-calc { flex:0 0 auto; display:flex; flex-wrap:wrap; align-items:stretch; gap:6px; padding:5px; border-radius:10px;
+             background:#0d1728; border:1px solid #3a4c66; font-family:'IBM Plex Mono',ui-monospace,monospace; font-size:10px; color:#c8d6ea; min-width:0; }
+  .dn-g { display:flex; flex-direction:column; gap:2px; padding:3px 7px 4px; border-radius:7px; min-width:max-content; }
+  .dn-g-eq { flex:1 1 auto; justify-content:space-between; background:rgba(127,147,179,.05); border:1px solid #22314a; }
+  .dn-g-m { flex:1 1 auto; background:rgba(226,198,90,.05); border:1px solid rgba(226,198,90,.20); }
+  .dn-g-v { flex:1 1 auto; background:rgba(111,183,255,.05); border:1px solid rgba(111,183,255,.20); }
+  .dn-g-r { flex:2 1 auto; border:1px solid #22314a; }
+  .dn-gk { display:flex; align-items:center; justify-content:space-between; gap:8px; min-height:13px; font-size:8px; letter-spacing:.9px; text-transform:uppercase; color:#7f93b3; white-space:nowrap; }
+  .dn-badge { font-size:7.5px; font-weight:600; letter-spacing:.6px; padding:1px 5px; border-radius:4px; background:rgba(111,183,255,.10); border:1px solid rgba(111,183,255,.35); color:#9cc8ff; }
+  .dn-eq { flex:1 1 auto; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px; white-space:nowrap; }
+  .dn-eq1 { font-size:11px; font-weight:600; color:#8fa3c2; }
+  .dn-op { font-weight:400; color:#8fa3c2; }
+  .dn-fr { display:inline-flex; flex-direction:column; align-items:center; line-height:1.15; font-size:13px; font-weight:600; color:#c8d6ea; }
+  .dn-fr > i { display:block; align-self:stretch; height:1.5px; margin:2px 0; background:#5a749e; }
+  .dn-q { display:grid; grid-template-columns:1.8em auto .7em minmax(3.6em,1fr) 1.4em; align-items:baseline; column-gap:4px; white-space:nowrap; line-height:1.3; }
+  .dn-q b { font-size:11px; font-weight:600; color:#c8d6ea; }
+  .dn-qd { font-size:8.5px; color:#6a7f9f; }
+  .dn-ql { font-size:7px; color:#46d39a; }
+  .dn-qv { font-size:12px; font-weight:600; text-align:right; }
+  .dn-qu { font-size:8.5px; color:#6a7f9f; }
+  .dn-rb { flex:1 1 auto; display:flex; align-items:stretch; gap:8px; min-width:0; }
+  .dn-rl { font-size:8px; letter-spacing:.9px; color:#7f93b3; white-space:nowrap; }
+  .dn-rv { font-size:16px; font-weight:700; letter-spacing:.2px; white-space:nowrap; line-height:1.2; }
+  .dn-rn { font-size:8.5px; color:#7f93b3; text-align:center; line-height:1.25; white-space:normal; min-height:2.5em; display:flex; align-items:center; }
+  .dn-runs { flex:0 0 auto; display:flex; flex-direction:column; justify-content:center; gap:1px; min-width:0; }
+  .dn-cmp { display:flex; align-items:baseline; gap:7px; padding:0 6px; white-space:nowrap; }
+  .dn-runs > .dn-cmp:first-of-type { margin-top:2px; padding-top:3px; border-top:1px solid #22314a; }
+  .dn-fig { align-items:stretch; }
+  /* Explain This Stage on this page: an overlay drawer over the procedure sidebar. The page keeps its
+     width (no reserved margin), so the equipment keeps exactly its size and position. */
+  @media (min-width:1101px) {
+    html.sg-open:has([data-screen-label="Direct Density"]) main { margin-right:0 !important; }
+    html:has([data-screen-label="Direct Density"]) #sgWrap {
+      top:calc(var(--topbar-h) + var(--page-pad-y) + 46px); bottom:12px; right:var(--page-pad-x); left:auto;
+      width:clamp(280px,21vw,330px); z-index:60; }
+    html:has([data-screen-label="Direct Density"]) #sgPanel {
+      border:1px solid var(--line2) !important; border-radius:12px !important; box-shadow:-8px 0 24px rgba(10,20,40,.16) !important; }
   }`,
   template: `<div data-screen-label="Direct Density" class="pg pg-stack">
 
@@ -531,17 +552,79 @@ DC.define('StageDensity', {
   </div>
 
   <div class="lab-body">
-  <div class="lab-schem vl-sim">
-  <!-- 2 + 3 · schematic | run selection + working equation / results -->
-  <div style="display:grid; grid-template-columns:minmax(0,1.62fr) minmax(330px,1fr); gap:8px; flex:1 1 auto; min-height:0;">
-
-    <div style="display:flex; flex-direction:column; min-height:0; min-width:0;">
-      <div style="flex:0 0 auto; display:flex; align-items:baseline; gap:10px; min-width:0;">
+  <div class="lab-schem vl-sim dn-sim">
+    <div class="dn-hd">
+      <div style="flex:0 0 auto; display:flex; flex-direction:column; gap:1px;">
         <div style="font-size:12.5px; font-weight:600; color:var(--txt); white-space:nowrap;">Density Measurement Setup</div>
         <div style="font-family:'IBM Plex Mono',ui-monospace,monospace; font-size:9px; letter-spacing:.5px; color:var(--mut); white-space:nowrap;">PVT CELL &#8594; DENSITY COIL &#8594; BALANCE</div>
       </div>
-      <div style="font-family:'IBM Plex Mono',ui-monospace,monospace; font-size:9.5px; letter-spacing:.3px; line-height:1.35; color:{{ dnActionColor }}; margin-top:3px; padding:4px 8px; border-radius:6px; background:var(--icard); border:1px solid var(--line); flex:0 0 auto; min-height:22px;">{{ dnActionText }}</div>
-      <svg viewBox="700 92 724 482" preserveAspectRatio="xMidYMid meet" style="display:block; width:100%; height:100%; flex:1 1 auto; min-height:0;">
+      <div class="dn-act" style="color:{{ dnActionColor }};">{{ dnActionText }}</div>
+    </div>
+
+    <!-- 2 · working equation + measured values + results : one compact strip across the top -->
+    <div class="dn-calc">
+      <div class="dn-g dn-g-eq">
+        <div class="dn-gk">Working equation</div>
+        <div class="dn-eq">
+          <span class="dn-eq1">&#961; = &#916;M / &#916;V =</span>
+          <span class="dn-fr">
+            <span><span style="color:{{ dnEqMfColor }};">{{ dnEqMf }}</span><span class="dn-op"> &#8722; </span><span style="color:{{ dnEqMiColor }};">{{ dnEqMi }}</span></span>
+            <i></i>
+            <span><span style="color:{{ dnEqViColor }};">{{ dnEqVi }}</span><span class="dn-op"> &#8722; </span><span style="color:{{ dnEqVfColor }};">{{ dnEqVf }}</span></span>
+          </span>
+        </div>
+      </div>
+      <div class="dn-g dn-g-m">
+        <div class="dn-gk" style="color:#b9a254;">Mass &#183; balance</div>
+        <sc-for list="{{ dnEqMass }}" as="q" hint-placeholder-count="3">
+          <span class="dn-q"><b>{{ q.k }}</b><span class="dn-qd">{{ q.d }}</span><span class="dn-ql">{{ q.live }}</span><span class="dn-qv" style="color:{{ q.color }};">{{ q.v }}</span><span class="dn-qu">{{ q.u }}</span></span>
+        </sc-for>
+      </div>
+      <div class="dn-g dn-g-v">
+        <div class="dn-gk" style="color:#6f9ccc;">Volume &#183; PVT cell</div>
+        <sc-for list="{{ dnEqVol }}" as="q" hint-placeholder-count="3">
+          <span class="dn-q"><b>{{ q.k }}</b><span class="dn-qd">{{ q.d }}</span><span class="dn-ql">{{ q.live }}</span><span class="dn-qv" style="color:{{ q.color }};">{{ q.v }}</span><span class="dn-qu">{{ q.u }}</span></span>
+        </sc-for>
+      </div>
+      <div class="dn-g dn-g-r">
+        <div class="dn-gk">
+          <span>Results</span>
+          <span style="flex:1 1 4px; min-width:0;"></span>
+          <sc-if value="{{ dnShowRepeat }}" hint-placeholder-val="{{ false }}">
+            <button onclick="{{ dnRepeat }}" style="font-family:inherit; font-size:9px; font-weight:600; letter-spacing:.3px; text-transform:none; white-space:nowrap; padding:0 8px; border-radius:5px; cursor:pointer; background:rgba(255,122,140,.10); border:1px solid #ff7a8c; color:#ff7a8c;" style-hover="background:rgba(255,122,140,.18);">Repeat</button>
+          </sc-if>
+          <span style="font-size:9px; font-weight:700; letter-spacing:.5px; color:{{ dnVerdictColor }};">{{ dnVerdict }}</span>
+          <span class="dn-badge">{{ dnStepBadge }}</span>
+        </div>
+        <div class="dn-rb">
+          <div style="{{ dnResBox }}">
+            <span class="dn-rl">{{ dnResLabel }}</span>
+            <span class="dn-rv" style="color:{{ dnResCol }};">{{ dnResVal }}</span>
+            <span class="dn-rn">{{ dnResNote }}</span>
+          </div>
+          <div class="dn-runs">
+            <sc-for list="{{ dnRuns }}" as="rr" hint-placeholder-count="2">
+              <span style="{{ rr.style }}">
+                <span style="font-size:10.5px; font-weight:600; color:#c8d6ea;">{{ rr.name }}</span>
+                <span style="font-size:10.5px; color:#8fa3c2;">{{ rr.rho }}</span>
+                <span style="font-size:12px; font-weight:600; color:{{ rr.col }}; text-align:right;">{{ rr.v }}</span>
+                <span style="font-size:8.5px; color:#6a7f9f;">g/cc</span>
+                <span style="font-size:7.5px; letter-spacing:.7px; color:{{ rr.tagCol }}; text-align:right;">{{ rr.tag }}</span>
+              </span>
+            </sc-for>
+            <span class="dn-cmp">
+              <span style="font-size:10px; color:#8fa3c2;">|&#961;&#8321; &#8722; &#961;&#8322;| =</span>
+              <span style="font-size:11px; font-weight:600; color:{{ dnCmpColor }};">{{ dnCmpText }}</span>
+              <span style="font-size:8.5px; color:#6a7f9f;">tol &#177;0.0005</span>
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 3 · equipment : PVT cell | density coil + balance (uses the rest of the simulation area) -->
+    <div class="vl-fig dn-fig">
+      <svg viewBox="702 102 718 470" preserveAspectRatio="xMidYMid meet">
         <defs>
           ${PVTCellArt.defs('dnc')}
           <linearGradient id="dn-metal" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#283750"></stop><stop offset=".42" stop-color="#b3c1d8"></stop><stop offset=".58" stop-color="#7e90b0"></stop><stop offset="1" stop-color="#1f2a3e"></stop></linearGradient>
@@ -692,122 +775,6 @@ DC.define('StageDensity', {
         </g>
       </svg>
     </div>
-
-    <div style="background:var(--panel); border:1px solid var(--line); border-radius:12px; box-shadow:0 1px 2px rgba(20,35,60,.05); padding:9px 10px 10px; display:flex; flex-direction:column; gap:8px; min-height:0; min-width:0;">
-
-      <!-- run selection -->
-      <div style="display:flex; align-items:stretch; gap:6px; flex:0 0 auto;">
-        <sc-for list="{{ dnRunChips }}" as="rc" hint-placeholder-count="2">
-          <div style="{{ rc.style }}">
-            <span style="display:flex; align-items:center; justify-content:space-between; gap:6px;">
-              <span style="display:flex; align-items:center; gap:5px; font-size:12px; font-weight:700; letter-spacing:-.1px; color:{{ rc.color }};">
-                <svg viewBox="0 0 9 10" style="{{ rc.lockStyle }}"><rect x=".5" y="4.3" width="8" height="5.2" rx="1.2" fill="none" stroke="currentColor" stroke-width="1"></rect><path d="M2.3 4.3 V3 a2.2 2.2 0 0 1 4.4 0 V4.3" fill="none" stroke="currentColor" stroke-width="1"></path></svg>{{ rc.name }}
-              </span>
-              <span style="font-family:'IBM Plex Mono',ui-monospace,monospace; font-size:8px; letter-spacing:.7px; text-transform:uppercase; color:{{ rc.tagColor }};">{{ rc.tag }}</span>
-            </span>
-            <span style="display:flex; align-items:baseline; gap:5px; font-family:'IBM Plex Mono',ui-monospace,monospace; white-space:nowrap;">
-              <span style="font-size:10px; color:var(--mut);">&#961;</span>
-              <span style="font-size:12px; font-weight:600; color:{{ rc.rhoColor }}; font-variant-numeric:tabular-nums;">{{ rc.rho }}</span>
-              <span style="font-size:9px; color:var(--mut2);">g/cc</span>
-            </span>
-          </div>
-        </sc-for>
-      </div>
-
-      <!-- working equation : live calculation + results -->
-      <div style="flex:1 1 auto; min-height:0; background:#0d1728; border:1px solid #3a4c66; border-radius:11px; padding:9px 12px 10px; display:flex; flex-direction:column; align-items:stretch; gap:8px; overflow:hidden;">
-
-        <div style="display:flex; align-items:center; justify-content:space-between; gap:8px; flex:0 0 auto;">
-          <span style="font-family:'IBM Plex Mono',ui-monospace,monospace; font-size:8.5px; letter-spacing:1px; text-transform:uppercase; color:#7f93b3;">Working Equation &#183; Results</span>
-          <span style="font-family:'IBM Plex Mono',ui-monospace,monospace; font-size:8.5px; font-weight:600; letter-spacing:.7px; padding:2px 7px; border-radius:5px; background:rgba(111,183,255,.10); border:1px solid rgba(111,183,255,.35); color:#9cc8ff;">{{ dnStepBadge }}</span>
-        </div>
-
-        <div style="flex:1 1 auto; min-height:0; display:flex; flex-direction:column; justify-content:space-evenly; gap:8px;">
-          <!-- definition + expanded form -->
-          <div style="flex:0 0 auto; display:flex; align-items:center; justify-content:center; gap:14px; font-family:'IBM Plex Mono',ui-monospace,monospace;">
-            <span style="display:flex; align-items:center; gap:6px; color:#8fa3c2;">
-              <span style="font-size:clamp(14px,1.8vh,18px); font-weight:600;">&#961;</span>
-              <span style="font-size:clamp(13px,1.6vh,16px);">=</span>
-              <span style="display:flex; flex-direction:column; align-items:center;">
-                <span style="font-size:clamp(12px,1.5vh,15px); font-weight:600; padding:0 6px 1px;">&#916;M</span>
-                <span style="width:100%; height:1px; background:#4a6088;"></span>
-                <span style="font-size:clamp(12px,1.5vh,15px); font-weight:600; padding:1px 6px 0;">&#916;V</span>
-              </span>
-            </span>
-            <span style="font-size:clamp(14px,1.7vh,18px); color:#8fa3c2;">=</span>
-            <span style="display:flex; flex-direction:column; align-items:center; color:#c8d6ea;">
-              <span style="font-size:clamp(16px,2.1vh,22px); font-weight:600; padding:0 10px 4px; white-space:nowrap;">
-                <span style="color:{{ dnEqMfColor }};">{{ dnEqMf }}</span><span style="color:#8fa3c2;"> &#8722; </span><span style="color:{{ dnEqMiColor }};">{{ dnEqMi }}</span>
-              </span>
-              <span style="width:100%; height:1.5px; background:#5a749e;"></span>
-              <span style="font-size:clamp(16px,2.1vh,22px); font-weight:600; padding:4px 10px 0; white-space:nowrap;">
-                <span style="color:{{ dnEqViColor }};">{{ dnEqVi }}</span><span style="color:#8fa3c2;"> &#8722; </span><span style="color:{{ dnEqVfColor }};">{{ dnEqVf }}</span>
-              </span>
-            </span>
-          </div>
-
-          <!-- measured values : mass (balance) | volume (PVT cell) -->
-          <div style="flex:0 0 auto; display:grid; grid-template-columns:repeat(auto-fit,minmax(228px,1fr)); gap:8px;">
-            <div style="display:flex; flex-direction:column; gap:5px; padding:7px 10px; border-radius:8px; background:rgba(226,198,90,.05); border:1px solid rgba(226,198,90,.20); min-width:0;">
-              <span style="font-family:'IBM Plex Mono',ui-monospace,monospace; font-size:8px; letter-spacing:.9px; text-transform:uppercase; color:#b9a254; margin-bottom:1px;">Mass &#183; balance</span>
-              <sc-for list="{{ dnEqMass }}" as="q" hint-placeholder-count="3">
-                <span style="display:grid; grid-template-columns:2.1em minmax(0,1fr) .7em auto 1.5em; align-items:baseline; column-gap:4px; font-family:'IBM Plex Mono',ui-monospace,monospace; white-space:nowrap;">
-                  <span style="font-size:clamp(10.5px,1.35vh,13.5px); font-weight:600; color:#c8d6ea;">{{ q.k }}</span>
-                  <span style="font-size:clamp(8.5px,1.05vh,10.5px); color:#6a7f9f; overflow:hidden; text-overflow:ellipsis;">{{ q.d }}</span>
-                  <span style="font-size:7px; color:#46d39a;">{{ q.live }}</span>
-                  <span style="font-size:clamp(12px,1.5vh,15.5px); font-weight:600; color:{{ q.color }}; text-align:right; font-variant-numeric:tabular-nums;">{{ q.v }}</span>
-                  <span style="font-size:8.5px; color:#6a7f9f;">{{ q.u }}</span>
-                </span>
-              </sc-for>
-            </div>
-            <div style="display:flex; flex-direction:column; gap:5px; padding:7px 10px; border-radius:8px; background:rgba(111,183,255,.05); border:1px solid rgba(111,183,255,.20); min-width:0;">
-              <span style="font-family:'IBM Plex Mono',ui-monospace,monospace; font-size:8px; letter-spacing:.9px; text-transform:uppercase; color:#6f9ccc; margin-bottom:1px;">Volume &#183; PVT cell</span>
-              <sc-for list="{{ dnEqVol }}" as="q" hint-placeholder-count="3">
-                <span style="display:grid; grid-template-columns:2.1em minmax(0,1fr) .7em auto 1.5em; align-items:baseline; column-gap:4px; font-family:'IBM Plex Mono',ui-monospace,monospace; white-space:nowrap;">
-                  <span style="font-size:clamp(10.5px,1.35vh,13.5px); font-weight:600; color:#c8d6ea;">{{ q.k }}</span>
-                  <span style="font-size:clamp(8.5px,1.05vh,10.5px); color:#6a7f9f; overflow:hidden; text-overflow:ellipsis;">{{ q.d }}</span>
-                  <span style="font-size:7px; color:#46d39a;">{{ q.live }}</span>
-                  <span style="font-size:clamp(12px,1.5vh,15.5px); font-weight:600; color:{{ q.color }}; text-align:right; font-variant-numeric:tabular-nums;">{{ q.v }}</span>
-                  <span style="font-size:8.5px; color:#6a7f9f;">{{ q.u }}</span>
-                </span>
-              </sc-for>
-            </div>
-          </div>
-
-          <!-- highlighted result -->
-          <div style="{{ dnResBox }}">
-            <span style="font-family:'IBM Plex Mono',ui-monospace,monospace; font-size:8.5px; letter-spacing:1px; color:#7f93b3;">{{ dnResLabel }}</span>
-            <span style="font-family:'IBM Plex Mono',ui-monospace,monospace; font-size:clamp(19px,2.6vh,28px); font-weight:700; letter-spacing:.3px; color:{{ dnResCol }}; white-space:nowrap;">{{ dnResVal }}</span>
-            <span style="font-family:'IBM Plex Mono',ui-monospace,monospace; font-size:9px; letter-spacing:.3px; color:#7f93b3; text-align:center; line-height:1.3;">{{ dnResNote }}</span>
-          </div>
-
-          <!-- compact two-run record + comparison -->
-          <div style="flex:0 0 auto; display:flex; flex-direction:column; gap:2px; padding:6px 4px 6px; border-top:1px solid #22314a;">
-            <sc-for list="{{ dnRuns }}" as="rr" hint-placeholder-count="2">
-              <span style="{{ rr.style }} font-family:'IBM Plex Mono',ui-monospace,monospace; white-space:nowrap;">
-                <span style="font-size:10.5px; font-weight:600; color:#c8d6ea;">{{ rr.name }}</span>
-                <span style="font-size:10.5px; color:#8fa3c2;">{{ rr.rho }}</span>
-                <span style="font-size:12.5px; font-weight:600; color:{{ rr.col }}; text-align:right; font-variant-numeric:tabular-nums;">{{ rr.v }}</span>
-                <span style="font-size:8.5px; color:#6a7f9f;">g/cc</span>
-                <span style="font-size:7.5px; letter-spacing:.7px; color:{{ rr.tagCol }}; text-align:right;">{{ rr.tag }}</span>
-              </span>
-            </sc-for>
-            <span style="display:flex; align-items:center; gap:8px; margin-top:3px; padding:4px 8px; border-radius:6px; background:rgba(127,147,179,.06); font-family:'IBM Plex Mono',ui-monospace,monospace; white-space:nowrap; min-width:0;">
-              <span style="font-size:10px; color:#8fa3c2;">|&#961;&#8321; &#8722; &#961;&#8322;| =</span>
-              <span style="font-size:11px; font-weight:600; color:{{ dnCmpColor }};">{{ dnCmpText }}</span>
-              <span style="font-size:8.5px; color:#6a7f9f;">tol &#177;0.0005</span>
-              <span style="flex:1 1 4px; min-width:0;"></span>
-              <sc-if value="{{ dnShowRepeat }}" hint-placeholder-val="{{ false }}">
-                <button onclick="{{ dnRepeat }}" style="font-family:inherit; font-size:10px; font-weight:600; white-space:nowrap; padding:3px 9px; border-radius:6px; cursor:pointer; background:rgba(255,122,140,.10); border:1px solid #ff7a8c; color:#ff7a8c;" style-hover="background:rgba(255,122,140,.18);">Repeat</button>
-              </sc-if>
-              <span style="font-size:10px; font-weight:700; letter-spacing:.5px; color:{{ dnVerdictColor }};">{{ dnVerdict }}</span>
-            </span>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-
   </div>
 
   <!-- 4 · sidebar: test summary + shared Validation procedure dock (theme.css .vl-dock) -->

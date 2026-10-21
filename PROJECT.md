@@ -524,6 +524,19 @@ Every Validation procedure page uses one frame, taken from Restoration (CSS at t
   counter in the corner, the point just recorded outlined) above the graph. The graph is drawn at the measured size of
   its area (`syncGraphBox`, 1 SVG unit = 1 px) so it fills the panel; embedded PV keeps the 460 x 360 drawing.
 
+## Direct Density page layout (2026-10-21)
+
+`components/StageDensity.js` only (presentation; data, timeline, valve logic and drawing coordinates unchanged).
+- Simulation area = heading · compact calculation strip `.dn-calc` (one row: Working equation | Mass · balance |
+  Volume · PVT cell | Results; wraps to a second row only when the area is too narrow) · action line · equipment
+  `.dn-fig` (same SVG / viewBox as before, now using the full width and remaining height). The former tall
+  calculation column and the Run 1 / Run 2 chips are gone; run state (STORED / RUNNING / PENDING / LOCKED),
+  |rho1 - rho2|, tolerance, verdict and Repeat are in the Results group.
+- Explain This Stage on this page (>= 1101 px wide): the StepGuide drawer overlays the procedure sidebar
+  (same box as `.lab-side`) instead of reserving `--sg-w` on `main`, so the equipment keeps its exact size and
+  position. Scoped with `html:has([data-screen-label="Direct Density"])` in the StageDensity style block;
+  other pages keep the reserved-width drawer.
+
 ## Sampling section layout (module01, 2026-09-28)
 
 - One page frame for Overview + the four sampling pages (Bottom Hole open / cased, Wellhead, Separator):
