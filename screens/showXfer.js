@@ -22,7 +22,7 @@ DC.slot('showXfer', `<sc-if value="{{ showXfer }}" hint-placeholder-val="{{ fals
 
       <div class="lab-body">
 
-        <div class="lab-schem" style="background:radial-gradient(120% 90% at 50% 0%,#0c1526,#070c16); border:1px solid var(--line); border-radius:16px; padding:12px 14px; display:flex; flex-direction:column; min-width:0; min-height:0; overflow:hidden; position:relative; background-image:linear-gradient(rgba(150,175,210,.035) 1px,transparent 1px),linear-gradient(90deg,rgba(150,175,210,.035) 1px,transparent 1px); background-size:34px 34px;">
+        <div class="lab-schem vl-sim">
           <div style="flex:1 1 auto; min-height:0; display:flex; align-items:center; justify-content:center; overflow:hidden;">
           <svg sc-camel-view-box="0 0 900 545" sc-camel-preserve-aspect-ratio="xMidYMid meet" style="display:block; width:100%; height:100%; min-height:0;">
             <defs>
@@ -173,6 +173,7 @@ DC.slot('showXfer', `<sc-if value="{{ showXfer }}" hint-placeholder-val="{{ fals
         </div>
 
         <div class="lab-side">
+          <div class="vl-scroll">
 
           <div style="flex:0 0 auto; background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:11px 13px; display:flex; flex-direction:column; gap:9px;">
             <div style="display:flex; align-items:center; gap:8px;">
@@ -194,10 +195,13 @@ DC.slot('showXfer', `<sc-if value="{{ showXfer }}" hint-placeholder-val="{{ fals
             </div>
           </div>
 
-          <div style="flex:1 1 auto; min-height:4px;"></div>
+          </div>
 
-          <div class="pc-host" data-pc="Main:xfer" data-pc-layout="side"></div>
-          <button onclick="{{ mxNext }}" style="{{ mxNextStyle }}">Continue to Validation →</button>
+          <!-- shared Validation procedure dock (theme.css .vl-dock) -->
+          <div class="vl-dock">
+            <div class="pc-host" data-pc="Main:xfer" data-pc-layout="side"></div>
+            <div class="vl-fwd"><button onclick="{{ mxNext }}" style="{{ mxNextStyle }}">Continue to Validation →</button></div>
+          </div>
         </div>
       </div>
     </div>

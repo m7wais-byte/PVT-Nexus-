@@ -28,7 +28,7 @@ DC.slot('showRestore', `<sc-if value="{{ showRestore }}" hint-placeholder-val="{
 
       <div class="lab-body">
 
-        <div class="lab-schem" style="background:radial-gradient(120% 90% at 50% 0%,#0c1526,#070c16); border:1px solid var(--line); border-radius:16px; padding:10px 14px; display:flex; flex-direction:column; min-width:0; min-height:0; position:relative; background-image:linear-gradient(rgba(150,175,210,.035) 1px,transparent 1px),linear-gradient(90deg,rgba(150,175,210,.035) 1px,transparent 1px); background-size:34px 34px;">
+        <div class="lab-schem vl-sim">
           <div style="flex:1; min-height:0; display:flex; align-items:center; justify-content:center;">
           <svg sc-camel-view-box="0 22 900 492" sc-camel-preserve-aspect-ratio="xMidYMid meet" style="display:block; width:100%; height:100%;">
 
@@ -227,6 +227,7 @@ DC.slot('showRestore', `<sc-if value="{{ showRestore }}" hint-placeholder-val="{
         </div>
 
         <div class="lab-side">
+          <div class="vl-scroll">
 
           <div style="flex:0 0 auto; background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:11px 13px; display:flex; flex-direction:column; gap:9px;">
             <div style="display:flex; align-items:center; gap:8px;">
@@ -248,11 +249,14 @@ DC.slot('showRestore', `<sc-if value="{{ showRestore }}" hint-placeholder-val="{
             </div>
           </div>
 
-          <div style="flex:1 1 auto; min-height:4px;"></div>
+          </div>
 
-          <div style="display:flex; flex-direction:column; gap:7px;">
+          <!-- shared Validation procedure dock (theme.css .vl-dock) -->
+          <div class="vl-dock">
             <div class="pc-host" data-pc="Main:qc" data-pc-layout="side"></div>
-            <sc-if value="{{ qcLastStep }}" hint-placeholder-val="{{ false }}"><button onclick="{{ qcNext }}" style="width:100%; padding:10px; border-radius:9px; cursor:{{ qcNextCursor }}; background:{{ qcNextBg }}; border:1px solid {{ qcNextBorder }}; color:{{ qcNextColor }}; font-family:inherit; font-size:13px; font-weight:600; letter-spacing:.3px;">{{ qcNextText }}</button></sc-if>
+            <div class="vl-fwd">
+              <sc-if value="{{ qcLastStep }}" hint-placeholder-val="{{ false }}"><button onclick="{{ qcNext }}" style="cursor:{{ qcNextCursor }}; background:{{ qcNextBg }}; border:1px solid {{ qcNextBorder }}; color:{{ qcNextColor }}; letter-spacing:.3px;">{{ qcNextText }}</button></sc-if>
+            </div>
           </div>
         </div>
       </div>

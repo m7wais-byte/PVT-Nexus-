@@ -1270,8 +1270,10 @@
 
   /* ------------------------------------------------------------ DOM / panel */
   var CSS = '' +
-    '.rc-root{position:absolute;inset:0;display:grid;grid-template-columns:minmax(0,1fr) var(--m01-side,340px);min-height:0;font-family:var(--font-main,"IBM Plex Sans",sans-serif);}' +
-    '.rc-main{min-width:0;min-height:0;display:flex;flex-direction:column;gap:8px;padding:10px 12px;box-sizing:border-box;container-type:inline-size;}' +
+    /* shared Validation layout (theme.css .lab-body / .vl-sim / .vl-sec / .vl-dock, 2026-10-21): same sidebar width, simulation
+       background, section cards and procedure dock as Restoration */
+    '.rc-root{position:absolute;inset:0;display:grid;grid-template-columns:minmax(0,1fr) clamp(280px,21vw,330px);gap:10px;min-height:0;font-family:var(--font-main,"IBM Plex Sans",sans-serif);}' +
+    '.rc-main{min-width:0;min-height:0;display:flex;flex-direction:column;gap:8px;padding:10px 14px;box-sizing:border-box;container-type:inline-size;}' +
     '.rc-chips{flex:0 0 auto;display:grid;grid-template-columns:repeat(9,minmax(0,1fr));gap:6px;}' +
     '.rc-chip{min-width:0;height:40px;display:flex;align-items:center;gap:7px;padding:0 8px;border-radius:9px;border:1px solid var(--line2);background:var(--panel);color:var(--txt2);cursor:pointer;font-family:inherit;text-align:left;box-sizing:border-box;}' +
     '.rc-chip .n{flex:0 0 auto;width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:"IBM Plex Mono",monospace;font-size:10.5px;font-weight:600;background:var(--chipbg);color:var(--mut);}' +
@@ -1284,13 +1286,13 @@
     '.rc-line i{width:8px;height:8px;border-radius:50%;flex:0 0 auto;background:var(--mut);}' +
     '.rc-line span.t{flex:1 1 auto;min-width:0;font-size:12.5px;color:var(--txt);line-height:1.3;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;}' +
     '.rc-line span.k{flex:0 0 auto;font-family:"IBM Plex Mono",monospace;font-size:9.5px;letter-spacing:.6px;color:var(--mut);padding:2px 8px;border:1px solid var(--line2);border-radius:6px;white-space:nowrap;}' +
-    '.rc-scene{position:relative;flex:1 1 auto;min-height:0;border-radius:12px;background:var(--panel);border:1px solid var(--line);overflow:hidden;}' +
+    '.rc-scene{position:relative;flex:1 1 auto;min-height:0;overflow:hidden;}' +
     '.rc-scene svg{position:absolute;inset:0;width:100%;height:100%;display:block;}' +
     '.rc-leg{flex:0 0 auto;display:flex;gap:10px;font-family:"IBM Plex Mono",monospace;font-size:9.5px;color:var(--txt2);white-space:nowrap;}' +
     '@container (max-width:1100px){.rc-leg{display:none;}}' +
     '.rc-leg b{display:inline-block;width:14px;height:8px;border-radius:2px;margin-right:5px;vertical-align:-1px;}' +
-    '.rc-panel{display:flex;flex-direction:column;gap:9px;min-width:0;min-height:0;overflow:hidden;padding:12px;background:var(--rail,var(--bg));border-left:1px solid var(--line);box-sizing:border-box;}' +
-    '.rc-card{background:var(--icard);border:1px solid var(--line2);border-radius:10px;padding:10px 12px;box-sizing:border-box;flex:0 0 auto;}' +
+    '.rc-panel{display:flex;flex-direction:column;gap:8px;min-width:0;min-height:0;overflow:hidden;box-sizing:border-box;}' +
+    '.rc-card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:11px 13px;box-sizing:border-box;flex:0 0 auto;}' +
     '.rc-sh{display:flex;align-items:center;gap:6px;}' +
     '.rc-sh .k{font-family:"IBM Plex Mono",monospace;font-size:9.5px;letter-spacing:.9px;color:var(--blue);font-weight:600;}' +
     '.rc-sh b{margin-left:auto;font-family:"IBM Plex Mono",monospace;font-size:9px;letter-spacing:.7px;font-weight:600;color:var(--mut);}' +
@@ -1303,7 +1305,7 @@
     '.rc-exp svg{width:14px;height:14px;}' +
     '.rc-k2{font-family:"IBM Plex Mono",monospace;font-size:9px;letter-spacing:.9px;color:var(--mut);display:flex;justify-content:space-between;}' +
     '.rc-rd{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:7px;}' +
-    '.rc-c{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:6px 9px;min-width:0;}' +
+    '.rc-c{background:var(--icard);border:1px solid var(--line2);border-radius:8px;padding:6px 10px;min-width:0;}' +
     '.rc-c .l{display:block;font-family:"IBM Plex Mono",monospace;font-size:8.3px;letter-spacing:.5px;color:var(--mut);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}' +
     '.rc-c .v{display:block;font-family:"IBM Plex Mono",monospace;font-size:15px;font-weight:600;color:var(--txt);margin-top:2px;white-space:nowrap;}' +
     '.rc-c .v small{font-size:10px;font-weight:500;color:var(--mut);margin-left:3px;}' +
@@ -1317,7 +1319,7 @@
     '.rc-act{flex:0 0 auto;height:36px;border-radius:9px;border:1px solid var(--line2);background:var(--panel);color:var(--txt2);font-family:inherit;font-size:12.5px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px;}' +
     '.rc-act.pri{background:linear-gradient(180deg,#46d39a,#2f9d72);border-color:#2f9d72;color:#06231a;}' +
     '.rc-act svg{width:14px;height:14px;}' +
-    '@media (max-height:780px){.rc-panel{gap:6px;padding:9px;}.rc-card{padding:8px 10px;}.rc-q{min-height:0;}.rc-note{display:none;}.rc-chip{height:34px;}}' +
+    '@media (max-height:780px){.rc-card{padding:9px 11px;}.rc-q{min-height:0;}.rc-note{display:none;}.rc-chip{height:34px;}}' +
     '@container (max-width:1150px){.rc-chip .n{display:none;}.rc-chip{padding:0 5px;justify-content:center;}.rc-chip .l{font-size:10.3px;}.rc-chips{gap:4px;}}';
 
   var ICON = {
@@ -1343,13 +1345,13 @@
        were removed; stage, status, progress and all controls are in the shared procedure panel
        (components/ProcCtl.js) at the top of the side panel. */
     M.root.innerHTML =
-      '<div class="rc-main">' +
+      '<div class="rc-main vl-sim">' +
       '<div class="rc-scene"><svg viewBox="' + VB + '" preserveAspectRatio="xMidYMid meet">' + defs() + '<g data-r="dyn"></g></svg></div></div>' +
       '<div class="rc-panel">' +
         '<div class="rc-card"><div class="rc-k2"><span>LIVE READINGS</span><span data-r="temp"></span></div><div class="rc-rd">' +
           [0, 1, 2, 3].map(function (i) { return '<div class="rc-c"><span class="l" data-r="l' + i + '"></span><span class="v" data-r="v' + i + '"></span></div>'; }).join('') + '</div></div>' +
         '<div class="rc-sp"></div>' +
-        '<div class="pc-host" data-pc="RecombSim" data-pc-layout="side"></div>' +
+        '<div class="vl-dock"><div class="pc-host" data-pc="RecombSim" data-pc-layout="side"></div><div class="vl-fwd"></div></div>' +
       '</div>';
     M.el = {};
     [].slice.call(M.root.querySelectorAll('[data-r]')).forEach(function (n) { M.el[n.getAttribute('data-r')] = n; });

@@ -460,3 +460,77 @@ main { min-width:0; }
 html[data-theme="light"] .fz-dim{opacity:.36;}
 /* step card on sampling pages: number, short title and progress only (details in Explain This Stage) */
 .m01-pc .pc-q,.bhs-pc .pc-q{display:none;}
+
+/* ==========================================================================
+   VALIDATION LAYOUT (2026-10-21) — one frame for every Validation procedure,
+   taken from Restoration: .pg-head header (eyebrow · title · status · details
+   buttons) | .lab-body grid = simulation area (.vl-sim) + fixed right sidebar
+   (.lab-side, same width everywhere). Sidebar = page sections (.vl-sec) on top,
+   the procedure dock (.vl-dock) at the bottom. The dock always has the same
+   rows: stage card (fixed height) · Previous / Restart / Next · Explain ·
+   Run / Pause · [Run All | Reset All] · [page navigation], and empty rows keep
+   their height, so every common control sits at the same place on every
+   Validation page and stage.
+   ========================================================================== */
+.vl-sim { min-width:0; min-height:0; display:flex; flex-direction:column; position:relative; overflow:hidden;
+          border:1px solid var(--line); border-radius:16px; padding:10px 14px; box-sizing:border-box;
+          background-image:linear-gradient(rgba(150,175,210,.035) 1px,transparent 1px),linear-gradient(90deg,rgba(150,175,210,.035) 1px,transparent 1px);
+          background-size:34px 34px; }
+.vl-fig { flex:1 1 auto; min-height:0; min-width:0; display:flex; align-items:center; justify-content:center; overflow:hidden; }
+.vl-fig > svg { display:block; width:100%; height:100%; min-height:0; }
+.vl-chip:empty { display:none; }
+.vl-status { align-self:center; flex:0 0 auto; display:inline-flex; align-items:center; gap:7px; font-family:'IBM Plex Mono',monospace; font-size:11px; white-space:nowrap; }
+.vl-status i { width:7px; height:7px; border-radius:50%; background:currentColor; box-shadow:0 0 8px currentColor; display:inline-block; }
+.vl-chip { align-self:center; flex:0 0 auto; font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:.6px; padding:3px 8px; border-radius:6px;
+           background:var(--chipbg); border:1px solid var(--line2); color:var(--chipt); white-space:nowrap; }
+/* sidebar page sections (same card as "Sample Under Test") */
+.vl-sec { flex:0 0 auto; background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:11px 13px; display:flex; flex-direction:column; gap:8px; min-width:0; box-sizing:border-box; }
+.vl-sec-hd { display:flex; align-items:center; gap:8px; min-width:0; }
+.vl-sec-t { font-size:13px; font-weight:600; color:var(--txt); flex:1; min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.vl-k { font-family:'IBM Plex Mono',monospace; font-size:8px; letter-spacing:1px; color:var(--mut); text-transform:uppercase; }
+.vl-cards { display:grid; grid-template-columns:1fr 1fr; gap:7px; min-width:0; }
+.vl-c { background:var(--icard); border:1px solid var(--line2); border-radius:8px; padding:6px 10px; min-width:0; box-sizing:border-box; }
+.vl-cl { font-family:'IBM Plex Mono',monospace; font-size:8px; letter-spacing:.7px; color:var(--mut); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; text-transform:uppercase; }
+.vl-cv { font-family:'IBM Plex Mono',monospace; font-size:14px; font-weight:600; margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; color:var(--txt); }
+.vl-cv small { font-size:9px; font-weight:400; color:var(--mut); }
+.vl-cs { font-size:9.5px; color:var(--mut2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.vl-fill { flex:1 1 auto; min-height:4px; }
+/* page sections scroll inside the sidebar when they are taller than the space above the dock */
+.vl-scroll { flex:1 1 auto; min-height:0; display:flex; flex-direction:column; gap:8px; overflow-y:auto; overflow-x:hidden; }
+/* live process monitor (dark readout card, same language as the Restoration readout) */
+.vl-mon { flex:0 0 auto; background:rgba(9,15,27,.95); border:1.4px solid rgba(150,175,210,.22); border-radius:11px; padding:10px 12px; color:#dfe8f5;
+          font-family:'IBM Plex Mono',monospace; display:flex; flex-direction:column; gap:5px; animation:monFade .4s ease; }
+.vl-mon-k { font-size:9.5px; letter-spacing:1.3px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.vl-mon-v { display:flex; align-items:baseline; gap:8px; white-space:nowrap; }
+.vl-mon-v b { font-size:30px; font-weight:600; letter-spacing:-1px; line-height:1.05; }
+.vl-mon-v span { font-size:12px; color:#8fa3bf; }
+.vl-mon-bar { position:relative; height:8px; border-radius:4px; background:rgba(150,175,210,.14); }
+.vl-mon-bar::after { content:''; position:absolute; right:0; top:-4px; bottom:-4px; width:1.6px; background:#46d39a; }   /* target mark */
+.vl-mon-bar i { position:absolute; left:0; top:0; bottom:0; border-radius:4px; transition:width .2s linear; }
+.vl-mon-row { display:flex; justify-content:space-between; gap:6px; font-size:9px; letter-spacing:.4px; color:#8fa3bf; white-space:nowrap; }
+.vl-mon-row > * { overflow:hidden; text-overflow:ellipsis; }
+.vl-mon-t { font-size:9.5px; line-height:1.35; }
+/* procedure dock */
+.vl-dock { flex:0 0 auto; display:flex; flex-direction:column; gap:7px; min-width:0; }
+.vl-dock .pc-card { height:134px; overflow:hidden; }
+.vl-dock .pc-tt { display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; flex:0 0 auto; }
+.vl-dock .pc-q { -webkit-line-clamp:3; flex:0 1 auto; }
+.vl-dock .pc-seg { margin-top:auto; flex:0 0 auto; }
+.vl-dock .pc.side .pc-acts { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); grid-template-rows:var(--pc-h) var(--pc-h); gap:6px; }
+.vl-dock .pc.side .pc-acts .pc-b { width:100%; min-width:0; }
+.vl-dock .pc-b[data-a="primary"], .vl-dock .pc-b[data-a="reset"] { grid-column:1 / -1; }
+.vl-dock .pc-b[data-a="runAll"]:not([style*="none"]) ~ .pc-b[data-a="reset"] { grid-column:auto; }
+.vl-fwd { display:flex; gap:6px; height:36px; min-width:0; }
+.vl-fwd > * { flex:1 1 auto; min-width:0; height:100% !important; min-height:0 !important; padding:0 8px !important; box-sizing:border-box;
+              font-family:inherit; font-size:12px !important; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; border-radius:9px !important; }
+@media (max-height:780px) {
+  .vl-dock { gap:5px; }
+  .vl-dock .pc-card { height:114px; }
+  .vl-dock .pc-q { -webkit-line-clamp:2; }
+  .vl-sec { padding:9px 11px; gap:7px; }
+  .vl-c { padding:4px 9px; }
+  .vl-cv { font-size:13px; margin-top:1px; }
+  .vl-cards { gap:6px; }
+}
+/* stacked (narrow) layout: the dock follows the sections */
+@media (max-width:1100px) { .pg-stack .vl-fill { display:none; } .pg-stack .vl-scroll { overflow:visible; } }

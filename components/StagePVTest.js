@@ -665,7 +665,7 @@ class Component extends DCLogic {
       /* results (graph + recorded points) appear only once the PV run starts; before that the
          setup panel takes the whole row (no reserved empty space) */
       pvResOn: busy || n > 0 || returned,
-      pvGridCols: !(busy || n > 0 || returned) ? 'minmax(0,1fr)' : embedded ? 'minmax(0,0.84fr) minmax(0,1.16fr)' : 'minmax(300px,0.82fr) minmax(0,1.18fr)',
+      pvGridCols: !(busy || n > 0 || returned) ? 'minmax(0,1fr)' : embedded ? 'minmax(0,0.84fr) minmax(0,1.16fr)' : 'minmax(0,1fr) minmax(0,1fr)',
       pvSheetW: embedded ? '212px' : '158px',
       pvSheetHdGrid: embedded ? '30px minmax(0,1fr) minmax(0,1fr)' : '26px minmax(0,1fr) minmax(0,1fr)',
       pvCtlW: PK ? '128px' : '112px',
@@ -691,8 +691,14 @@ class Component extends DCLogic {
       // embedded: Pump A / Pump B readings sit below the rack (clear of the frame), captions shifted to match
       pvCellVb: PK ? '805 146 309 392' : '788 140 318 384',
       pvPumpLblY: PK ? '472' : '430', pvCellCapY: PK ? '510' : '490', pvPhaseY: PK ? '530' : '512',
-      pvRootStyle: embedded ? 'display:flex; flex-direction:column; flex:1 1 auto; height:100%; min-height:0; overflow:hidden; padding:0; gap:6px; box-sizing:border-box;'
-        : 'display:flex; flex-direction:column; height:var(--page-h); overflow:hidden; padding:var(--page-pad-y) var(--page-pad-x) 12px; gap:8px; box-sizing:border-box;',
+      pvRootStyle: embedded ? 'display:flex; flex-direction:column; flex:1 1 auto; height:100%; min-height:0; overflow:hidden; padding:0; gap:6px; box-sizing:border-box;' : '',
+      // standalone (Validation): shared Validation layout (theme.css .pg / .lab-body / .vl-sim / .vl-dock, 2026-10-21);
+      // embedded (Differential Liberation, Separator Test): the wrappers below are display:contents, so that layout is unchanged
+      pvRootCls: embedded ? '' : 'pg pg-stack',
+      pvBodyCls: embedded ? '' : 'lab-body', pvBodyStyle: embedded ? 'display:contents;' : '',
+      pvSimCls: embedded ? '' : 'lab-schem vl-sim', pvSimStyle: embedded ? 'display:contents;' : 'gap:8px;',
+      pvSetupCardStyle: embedded ? 'background:var(--panel); border:1px solid var(--line); box-shadow:0 1px 2px rgba(20,35,60,.05); border-radius:12px; padding:8px 12px 7px; display:flex; flex-direction:column; min-height:0;'
+        : 'display:flex; flex-direction:column; min-height:0; min-width:0;',
       pvInitText: _fmtP(C.start[0]) + ' \u00b7 ' + C.start[1].toFixed(dec) + ' cc',
       pvBoxX: String(948 - (C.boxW || 72) / 2), pvBoxW: String(C.boxW || 72),
       pvPsatLabel: C.psatMarkTxt || C.psatLabel || _psatTxt, pvPsatBoxW: String(LW), pvPsatVolText: C.psatVolTxt || (DATA[BUBBLE_IDX][1].toFixed(Math.min(dec, 2)) + ' cc'), pvPU: pu, pvPAxis: 'Pressure (' + pu + ')',
@@ -755,49 +761,29 @@ DC.define('StagePVTest', {
   @keyframes pvtpop { 0% { transform:scale(0); opacity:0; } 60% { transform:scale(1.35); opacity:1; } 100% { transform:scale(1); opacity:1; } }
   @keyframes pvtring { 0% { transform:scale(1); opacity:.85; } 100% { transform:scale(3.4); opacity:0; } }
   @keyframes pvtrow { 0% { background:rgba(47,111,208,.34); } 100% { background:rgba(47,111,208,.09); } }`,
-  template: `<div data-screen-label="PV Test" style="{{ pvRootStyle }}">
+  template: `<div data-screen-label="PV Test" class="{{ pvRootCls }}" style="{{ pvRootStyle }}">
 
-  <!-- header -->
+  <!-- header (shared Validation .pg-head) -->
   <sc-if value="{{ pvStandalone }}" hint-placeholder-val="{{ true }}">
-  <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap; flex:0 0 auto;">
-    <div style="flex:1 1 260px; min-width:0; display:flex; align-items:baseline; gap:8px; flex-wrap:wrap;">
+  <div class="pg-head">
+    <div class="pg-titles">
+      <span class="pg-eyebrow">Validation</span>
       <h2 class="pg-title">PV Test</h2>
-      <div class="pg-desc">Automatically record 12 pressure-volume points from the PVT cell to determine the bubble point (Psat)</div>
-      <span style="font-family:'IBM Plex Mono'; font-size:10px; letter-spacing:.6px; padding:3px 8px; border-radius:6px; background:var(--chipbg); border:1px solid var(--line2); color:var(--chipt); white-space:nowrap;">{{ srcContext }}</span>
+      <span style="align-self:center; display:inline-flex; align-items:center; gap:6px; flex:0 0 auto; padding:3px 11px; border-radius:999px; background:{{ pvPillBg }}; border:1px solid {{ pvPillBorder }}; font-family:'IBM Plex Mono'; font-size:10px; letter-spacing:.7px; text-transform:uppercase; color:{{ pvPillColor }}; white-space:nowrap;"><span style="{{ pvPillDot }}"></span>{{ pvStatusText }}</span>
+      <span class="vl-chip">{{ srcContext }}</span>
+      <p class="pg-desc">Automatically record 12 pressure-volume points from the PVT cell to determine the bubble point (Psat)</p>
     </div>
-    <div style="display:flex; align-items:center; gap:6px; flex:0 0 auto; padding:5px 11px; border-radius:999px; background:{{ pvPillBg }}; border:1px solid {{ pvPillBorder }}; font-family:'IBM Plex Mono'; font-size:10px; letter-spacing:.7px; text-transform:uppercase; color:{{ pvPillColor }}; white-space:nowrap;">
-      <span style="{{ pvPillDot }}"></span>{{ pvStatusText }}
-    </div>
+    <div class="pg-end"><button type="button" class="bd-btn" data-cd-open="" data-cd-ctx="PV / Bsat · closed cell, Pump A open to the pressure sensor">Cell Details</button></div>
   </div>
   </sc-if>
 
-  <!-- summary strip (standalone only: the Differential Liberation host already shows these values) -->
-  <sc-if value="{{ pvStandalone }}" hint-placeholder-val="{{ true }}">
-  <div style="display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:8px; flex:0 0 auto;">
-    <div style="background:var(--panel); border:1px solid var(--line); box-shadow:0 1px 2px rgba(20,35,60,.05); border-radius:9px; padding:5px 10px;">
-      <div style="font-family:'IBM Plex Mono'; font-size:8.5px; letter-spacing:.8px; text-transform:uppercase; color:var(--mut);">Initial Condition</div>
-      <div style="font-family:'IBM Plex Mono'; font-size:12px; font-weight:600; color:var(--txt); margin-top:2px;">{{ pvInitText }}</div>
-    </div>
-    <div style="background:var(--panel); border:1px solid var(--line); box-shadow:0 1px 2px rgba(20,35,60,.05); border-radius:9px; padding:5px 10px;">
-      <div style="font-family:'IBM Plex Mono'; font-size:8.5px; letter-spacing:.8px; text-transform:uppercase; color:var(--mut);">Points Recorded</div>
-      <div style="font-family:'IBM Plex Mono'; font-size:12px; font-weight:600; color:{{ pvPointsColor }}; margin-top:2px;">{{ pvPointsOfText }}</div>
-    </div>
-    <div style="background:var(--panel); border:1px solid var(--line); box-shadow:0 1px 2px rgba(20,35,60,.05); border-radius:9px; padding:5px 10px;">
-      <div style="font-family:'IBM Plex Mono'; font-size:8.5px; letter-spacing:.8px; text-transform:uppercase; color:var(--mut);">Bubble Point</div>
-      <div style="font-family:'IBM Plex Mono'; font-size:12px; font-weight:600; color:{{ pvBubbleStatColor }}; margin-top:2px;">{{ pvPsatText }}</div>
-    </div>
-    <div style="background:var(--panel); border:1px solid var(--line); box-shadow:0 1px 2px rgba(20,35,60,.05); border-radius:9px; padding:5px 10px;">
-      <div style="font-family:'IBM Plex Mono'; font-size:8.5px; letter-spacing:.8px; text-transform:uppercase; color:var(--mut);">Test Status</div>
-      <div style="font-family:'IBM Plex Mono'; font-size:12px; font-weight:600; color:{{ pvTestStatusColor }}; margin-top:2px;">{{ pvTestStatusText }}</div>
-    </div>
-  </div>
-  </sc-if>
-
+  <div class="{{ pvBodyCls }}" style="{{ pvBodyStyle }}">
+  <div class="{{ pvSimCls }}" style="{{ pvSimStyle }}">
   <!-- schematic + graph/points -->
   <div style="display:grid; grid-template-columns:{{ pvGridCols }}; gap:8px; flex:1 1 auto; min-height:0;">
 
     <!-- Integrated PVT Setup -->
-    <div style="background:var(--panel); border:1px solid var(--line); box-shadow:0 1px 2px rgba(20,35,60,.05); border-radius:12px; padding:8px 12px 7px; display:flex; flex-direction:column; min-height:0;">
+    <div style="{{ pvSetupCardStyle }}">
 
       <div style="flex:0 0 auto; margin-bottom:4px;">
         <div style="font-size:13px; font-weight:600; color:var(--txt);">Integrated PVT Setup</div>
@@ -966,19 +952,36 @@ DC.define('StagePVTest', {
   </div>
   </sc-if>
 
-  <!-- actions -->
-  <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap; flex:0 0 auto;">
-    <sc-if value="{{ pvStandalone }}" hint-placeholder-val="{{ true }}">
-    <div class="pc-host" data-pc="StagePVTest" data-pc-layout="bar" style="flex:1 1 auto;"></div>
-    </sc-if>
-    <sc-if value="{{ pvEmbedded }}" hint-placeholder-val="{{ false }}">
-    <div style="font-family:'IBM Plex Mono'; font-size:10px; color:{{ pvHintColor }}; white-space:nowrap;">{{ pvHintText }}</div>
-    </sc-if>
-    <sc-if value="{{ pvStandalone }}" hint-placeholder-val="{{ true }}">
-    <button class="ui-btn ui-btn-ghost act" onclick="{{ onBack }}">&#8592; Back to Flash</button>
-    <button class="act" onclick="{{ onNext }}" style="font-family:inherit; font-size:11px; font-weight:600; white-space:nowrap; padding:7px 15px; border-radius:8px; cursor:{{ pvNextCursor }}; background:{{ pvNextBg }}; border:1px solid {{ pvNextBorder }}; color:{{ pvNextColor }};">Move to Direct Density</button>
-    </sc-if>
   </div>
+
+  <sc-if value="{{ pvStandalone }}" hint-placeholder-val="{{ true }}">
+  <div class="lab-side">
+    <div class="vl-scroll">
+      <div class="vl-sec">
+        <div class="vl-k">Test summary</div>
+        <div class="vl-cards" style="grid-template-columns:minmax(0,1fr);">
+          <div class="vl-c"><div class="vl-cl">Initial Condition</div><div class="vl-cv">{{ pvInitText }}</div></div>
+          <div class="vl-c"><div class="vl-cl">Points Recorded</div><div class="vl-cv" style="color:{{ pvPointsColor }};">{{ pvPointsOfText }}</div></div>
+          <div class="vl-c"><div class="vl-cl">Bubble Point</div><div class="vl-cv" style="color:{{ pvBubbleStatColor }};">{{ pvPsatText }}</div></div>
+          <div class="vl-c"><div class="vl-cl">Test Status</div><div class="vl-cv" style="color:{{ pvTestStatusColor }};">{{ pvTestStatusText }}</div></div>
+        </div>
+      </div>
+    </div>
+    <!-- shared Validation procedure dock (theme.css .vl-dock) -->
+    <div class="vl-dock">
+      <div class="pc-host" data-pc="StagePVTest" data-pc-layout="side"></div>
+      <div class="vl-fwd"><button class="ui-btn ui-btn-ghost" onclick="{{ onBack }}">&#8592; Back to Flash</button><button onclick="{{ onNext }}" style="cursor:{{ pvNextCursor }}; background:{{ pvNextBg }}; border:1px solid {{ pvNextBorder }}; color:{{ pvNextColor }};">Move to Direct Density</button></div>
+    </div>
+  </div>
+  </sc-if>
+  </div>
+
+  <!-- embedded hint (Differential Liberation / Separator Test host shows its own controls) -->
+  <sc-if value="{{ pvEmbedded }}" hint-placeholder-val="{{ false }}">
+  <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap; flex:0 0 auto;">
+    <div style="font-family:'IBM Plex Mono'; font-size:10px; color:{{ pvHintColor }}; white-space:nowrap;">{{ pvHintText }}</div>
+  </div>
+  </sc-if>
 </div>`,
   logic: Component
 });

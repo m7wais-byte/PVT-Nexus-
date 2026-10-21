@@ -516,48 +516,29 @@ DC.define('StageDensity', {
     75%  { opacity:.95; transform:scale(1.05); }
     100% { opacity:0;   transform:scale(1.15); }
   }`,
-  template: `<div data-screen-label="Direct Density" style="display:flex; flex-direction:column; height:var(--page-h); overflow:hidden; padding:var(--page-pad-y) var(--page-pad-x) 12px; gap:8px; box-sizing:border-box;">
+  template: `<div data-screen-label="Direct Density" class="pg pg-stack">
 
-  <!-- 1 · header + test summary -->
-  <div style="flex:0 0 auto; background:var(--panel); border:1px solid var(--line); border-radius:12px; box-shadow:0 1px 2px rgba(20,35,60,.05); display:flex; align-items:center; gap:14px; padding:8px 12px 8px 16px; min-width:0;">
-    <div style="flex:1 1 auto; min-width:0; display:flex; flex-direction:column; gap:3px;">
-      <div style="display:flex; align-items:center; gap:10px; min-width:0;">
-        <h2 class="pg-title">Direct Density</h2>
-        <span style="font-family:'IBM Plex Mono',ui-monospace,monospace; font-size:10px; letter-spacing:.5px; padding:2px 8px; border-radius:6px; background:var(--chipbg); border:1px solid var(--line2); color:var(--chipt); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; min-width:0;">{{ srcContext }}</span>
-      </div>
-      <div style="font-size:11px; line-height:1.35; color:var(--mut); overflow:hidden; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical;">Transfer a known volume from the PVT cell into a weighed density coil, then determine density from the mass gained</div>
+  <!-- 1 · header (shared Validation .pg-head; the run / volume / density values are in the sidebar summary) -->
+  <div class="pg-head">
+    <div class="pg-titles">
+      <span class="pg-eyebrow">Validation</span>
+      <h2 class="pg-title">Direct Density</h2>
+      <span style="align-self:center; display:inline-flex; align-items:center; gap:6px; flex:0 0 auto; padding:3px 11px; border-radius:999px; background:{{ dnPillBg }}; border:1px solid {{ dnPillBorder }}; font-family:'IBM Plex Mono',ui-monospace,monospace; font-size:10px; letter-spacing:.7px; text-transform:uppercase; color:{{ dnPillColor }}; white-space:nowrap;"><span style="{{ dnPillDot }}"></span>{{ dnPillText }}</span>
+      <span class="vl-chip">{{ srcContext }}</span>
+      <p class="pg-desc">Transfer a known volume from the PVT cell into a weighed density coil, then determine density from the mass gained</p>
     </div>
-    <div style="flex:0 0 auto; display:flex; align-items:stretch; padding:3px 0; border-left:1px solid var(--line);">
-      <div style="display:flex; flex-direction:column; justify-content:center; gap:2px; padding:0 16px; min-width:104px; border-left:1px solid var(--line);">
-        <span style="font-family:'IBM Plex Mono',ui-monospace,monospace; font-size:8.5px; letter-spacing:.9px; text-transform:uppercase; color:var(--mut); white-space:nowrap;">Run</span>
-        <span style="font-family:'IBM Plex Mono',ui-monospace,monospace; font-size:13.5px; font-weight:600; color:var(--txt); white-space:nowrap; font-variant-numeric:tabular-nums;">{{ dnRunText }}</span>
-      </div>
-      <div style="display:flex; flex-direction:column; justify-content:center; gap:2px; padding:0 16px; min-width:104px; border-left:1px solid var(--line);">
-        <span style="font-family:'IBM Plex Mono',ui-monospace,monospace; font-size:8.5px; letter-spacing:.9px; text-transform:uppercase; color:var(--mut); white-space:nowrap;">Cell Volume</span>
-        <span style="font-family:'IBM Plex Mono',ui-monospace,monospace; font-size:13.5px; font-weight:600; color:var(--amb); white-space:nowrap; font-variant-numeric:tabular-nums;">{{ dnCellVText }}</span>
-      </div>
-      <div style="display:flex; flex-direction:column; justify-content:center; gap:2px; padding:0 16px; min-width:104px; border-left:1px solid var(--line);">
-        <span style="font-family:'IBM Plex Mono',ui-monospace,monospace; font-size:8.5px; letter-spacing:.9px; text-transform:uppercase; color:var(--mut); white-space:nowrap;">Transferred</span>
-        <span style="font-family:'IBM Plex Mono',ui-monospace,monospace; font-size:13.5px; font-weight:600; color:var(--blue); white-space:nowrap; font-variant-numeric:tabular-nums;">{{ dnXferText }}</span>
-      </div>
-      <div style="display:flex; flex-direction:column; justify-content:center; gap:2px; padding:0 16px; min-width:104px; border-left:1px solid var(--line);">
-        <span style="font-family:'IBM Plex Mono',ui-monospace,monospace; font-size:8.5px; letter-spacing:.9px; text-transform:uppercase; color:var(--mut); white-space:nowrap;">Density</span>
-        <span style="font-family:'IBM Plex Mono',ui-monospace,monospace; font-size:13.5px; font-weight:600; color:{{ dnRhoColor }}; white-space:nowrap; font-variant-numeric:tabular-nums;">{{ dnRhoText }}</span>
-      </div>
-    </div>
-    <div style="display:flex; align-items:center; justify-content:center; gap:6px; flex:0 0 auto; min-width:128px; padding:6px 12px; border-radius:999px; background:{{ dnPillBg }}; border:1px solid {{ dnPillBorder }}; font-family:'IBM Plex Mono',ui-monospace,monospace; font-size:10px; letter-spacing:.7px; text-transform:uppercase; color:{{ dnPillColor }}; white-space:nowrap;">
-      <span style="{{ dnPillDot }}"></span>{{ dnPillText }}
-    </div>
+    <div class="pg-end"><button type="button" class="bd-btn" data-cd-open="" data-cd-ctx="Direct Density · sample flows from Port R to the density coil">Cell Details</button></div>
   </div>
 
+  <div class="lab-body">
+  <div class="lab-schem vl-sim">
   <!-- 2 + 3 · schematic | run selection + working equation / results -->
   <div style="display:grid; grid-template-columns:minmax(0,1.62fr) minmax(330px,1fr); gap:8px; flex:1 1 auto; min-height:0;">
 
-    <div style="background:var(--panel); border:1px solid var(--line); border-radius:12px; box-shadow:0 1px 2px rgba(20,35,60,.05); padding:9px 12px 6px; display:flex; flex-direction:column; min-height:0; min-width:0;">
+    <div style="display:flex; flex-direction:column; min-height:0; min-width:0;">
       <div style="flex:0 0 auto; display:flex; align-items:baseline; gap:10px; min-width:0;">
         <div style="font-size:12.5px; font-weight:600; color:var(--txt); white-space:nowrap;">Density Measurement Setup</div>
         <div style="font-family:'IBM Plex Mono',ui-monospace,monospace; font-size:9px; letter-spacing:.5px; color:var(--mut); white-space:nowrap;">PVT CELL &#8594; DENSITY COIL &#8594; BALANCE</div>
-        <button type="button" class="bd-btn" data-cd-open="" data-cd-ctx="Direct Density · sample flows from Port R to the density coil">Cell Details</button>
       </div>
       <div style="font-family:'IBM Plex Mono',ui-monospace,monospace; font-size:9.5px; letter-spacing:.3px; line-height:1.35; color:{{ dnActionColor }}; margin-top:3px; padding:4px 8px; border-radius:6px; background:var(--icard); border:1px solid var(--line); flex:0 0 auto; min-height:22px;">{{ dnActionText }}</div>
       <svg viewBox="700 92 724 482" preserveAspectRatio="xMidYMid meet" style="display:block; width:100%; height:100%; flex:1 1 auto; min-height:0;">
@@ -827,12 +808,26 @@ DC.define('StageDensity', {
     </div>
   </div>
 
-  <!-- 4 · action toolbar: shared procedure panel (components/ProcCtl.js) -->
-  <div style="display:flex; align-items:center; gap:8px; flex:0 0 auto; min-width:0;">
-    <div class="pc-host" data-pc="StageDensity" data-pc-layout="bar" style="flex:1 1 auto;"></div>
-    <div style="flex:0 1 auto; min-width:0; display:flex; align-items:center; justify-content:flex-end; gap:12px;">
-      <button class="ui-btn ui-btn-ghost act" onclick="{{ onBack }}">&#8592; Back to PV</button>
+  </div>
+
+  <!-- 4 · sidebar: test summary + shared Validation procedure dock (theme.css .vl-dock) -->
+  <div class="lab-side">
+    <div class="vl-scroll">
+      <div class="vl-sec">
+        <div class="vl-k">Test summary</div>
+        <div class="vl-cards">
+          <div class="vl-c"><div class="vl-cl">Run</div><div class="vl-cv">{{ dnRunText }}</div></div>
+          <div class="vl-c"><div class="vl-cl">Cell Volume</div><div class="vl-cv" style="color:var(--amb);">{{ dnCellVText }}</div></div>
+          <div class="vl-c"><div class="vl-cl">Transferred</div><div class="vl-cv" style="color:var(--blue);">{{ dnXferText }}</div></div>
+          <div class="vl-c"><div class="vl-cl">Density</div><div class="vl-cv" style="color:{{ dnRhoColor }};">{{ dnRhoText }}</div></div>
+        </div>
+      </div>
     </div>
+    <div class="vl-dock">
+      <div class="pc-host" data-pc="StageDensity" data-pc-layout="side"></div>
+      <div class="vl-fwd"><button class="ui-btn ui-btn-ghost" onclick="{{ onBack }}">&#8592; Back to PV</button></div>
+    </div>
+  </div>
   </div>
 </div>`,
   logic: Component

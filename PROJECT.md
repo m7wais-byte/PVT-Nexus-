@@ -499,6 +499,28 @@ One layout frame for every module (defined at the end of `theme.css`):
 - Bottom Hole panel: step list scrolls, play / Explain / Move-to-Lab controls stay pinned.
 - Tightened viewBoxes: validation bottle scenes `0 22 900 492`, two-phase `24 22 992 616`.
 
+## Validation layout (2026-10-21)
+
+Every Validation procedure page uses one frame, taken from Restoration (CSS at the end of `theme.css`):
+
+- `.pg.pg-stack` page, `.pg-head` header: `Validation` eyebrow · title · status · source chip · one-line
+  description · equipment-details buttons (`.pg-end`).
+- `.lab-body` grid: simulation area `.lab-schem.vl-sim` (grid background, 16 px radius, drawing in `.vl-fig`)
+  | fixed sidebar `.lab-side` (`clamp(280px,21vw,330px)`).
+- Sidebar = `.vl-scroll` (page sections `.vl-sec`, readout cards `.vl-c`, live monitor `.vl-mon`; scrolls on its
+  own) above `.vl-dock`. The dock has fixed rows: stage card (fixed height) · Previous / Restart / Next ·
+  Explain This Stage · Run / Pause · [Run All | Reset All] · `.vl-fwd` page navigation. Empty rows keep their
+  height, so every common control sits at the same place on every Validation page and stage.
+- Pages: Sample Transfer (`showXfer`), Opening Pressure / Restoration / Water Check / Agitation (`showRestore`),
+  Charge to PVT Cell + Flash (`showTest`), PV (`StagePVTest`, standalone only - when embedded in Differential
+  Liberation / Separator Test its wrappers are `display:contents`, layout unchanged), Direct Density
+  (`StageDensity`), Recombination (`RecombSim` CSS + `showRecomb`).
+- Charge: one view for all 12 stages (`chargeViewBox` fixed); the bottle rig (stand, bottle, transfer pump, pump
+  line, labels) is scaled 1.16 about the bottle sample-valve outlet (585, 197.9), so the charge line, fluid front
+  and all rig coordinates are unchanged and the bottle matches the Restoration bottle size; the bottle stays on
+  the bench (dimmed, disconnected) after stage 8. Computer / controller to the right of the cell (s 0.40). The
+  live monitor card and the agitation readouts moved from the drawing into the sidebar.
+
 ## Sampling section layout (module01, 2026-09-28)
 
 - One page frame for Overview + the four sampling pages (Bottom Hole open / cased, Wellhead, Separator):
