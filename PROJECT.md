@@ -522,7 +522,9 @@ Every Validation procedure page uses one frame, taken from Restoration (CSS at t
   live monitor card and the agitation readouts moved from the drawing into the sidebar.
 - PV (Validation only): the Pressure-Volume panel shows a horizontal point table (points 01-12 across, P and V rows,
   counter in the corner, the point just recorded outlined) above the graph. The graph is drawn at the measured size of
-  its area (`syncGraphBox`, 1 SVG unit = 1 px) so it fills the panel; embedded PV keeps the 460 x 360 drawing.
+  its area (`syncGraphBox`, 1 SVG unit = 1 px) so it fills the panel. Since 2026-10-21 embedded PV (Differential
+  Liberation, Separator Test) uses the same presentation (`pvHTOn`); its table font is sized from the longest value of
+  the dataset (e.g. 35.0000 cc) and the graph column takes 1.14 : 0.86 of the PV area.
 
 ## Direct Density page layout (2026-10-21)
 
@@ -545,6 +547,41 @@ closing never resizes or moves the simulation, equipment, graphs or calculation 
   `clamp(280px,21vw,330px)`, ending above the bar so Pause / Explain stay usable. <= 1000 px: bottom sheet overlay.
 - Card scrolls internally; head (title · stage / status tag · close) is sticky at the top.
 - Content, live readings, stage tracking and playback unchanged (Explain never pauses / resumes).
+- Focus (2026-10-21): the drawer is a non-modal `role="dialog"`. While open, the covered sidebar is `inert`
+  (+ `aria-hidden`), so its hidden controls cannot take focus or clicks; opening moves focus to the close button,
+  closing (close button or Escape) returns it to the control that opened it. Escape is ignored while a Bottle / Cell /
+  SPMC Details viewer is open on top. Since every procedure page now has the shared sidebar, the "bottom bar" placement
+  in `anchor()` is only a fallback.
+
+## Analysis pages — shared procedure layout (2026-10-21)
+
+Differential Liberation, Separator Test, GC (oil + gas) and the three viscosity tests use the Validation layout
+(`.pg.pg-stack` · `.pg-head` · `.lab-body` = simulation area + `.lab-side` sidebar with `.vl-scroll` sections above the
+`.vl-dock` procedure dock, `data-pc-layout="side"`). The former bottom procedure bars are gone; every common control sits
+at the same place as on Validation pages. Presentation only - data, calculations, timing, valve logic and stage counts
+are unchanged (final procedure states compared with `main`: identical apart from timestamps / measured layout sizes).
+- Header: eyebrow (`Analysis` / `Viscosity`) · title · status pill · one-line description · equipment details buttons
+  (Cell Details on DL / Separator / Two-Phase, Bottle Details on Gas GC / Single-Phase) · Viscosity Tests back link.
+  Procedure tabs (DL stages, Separator stages, Kinematic stages, Two-Phase points + sub-steps) stay under the header.
+- DL / Separator: sidebar = Live readings (the existing `dlStrip` values, previously unused / shown only on PV stages)
+  · stage status card · stage / test record · agitation log; Separator keeps "PV Results · kept separate" (first PV
+  114 °C and final PV 35 °C are separate datasets and results). The stage-1 "Working pressure = reservoir + 2,000 psi"
+  card was removed: the reasoning is in Explain This Stage (SEPSTEP.charge0), the 5,000 psig reading stays in Live
+  readings. Embedded PV stages use the PV cards directly (no extra frame).
+- GC: sidebar = Current action (status + `gcEdu`) · Readiness checklist; Mode Selection is the dock navigation row.
+  The chromatogram / composition-table column appears in the simulation area once the sample is injected
+  (`gcResOn`); the table view widens that column so every column fits (gas min 470 px, oil min 570 px).
+- Viscosity shell (`showViscTest`): no outer frame for the three tests (`vtWorkStyle`). Kinematic: readings card in the
+  sidebar (constant C shown read-only, CALIBRATED, as before). Single-Phase: the numbered 1-9 step row was removed
+  (stage + progress in the dock; Previous / Restart / Next unchanged); live readings + View settings (Show Components,
+  Inclination) in the sidebar; the results graph + table keep their own column in the simulation area. Two-Phase:
+  readouts + valve statuses + View settings in the sidebar; graph + table moved to a results column (`.v2-resc`) in the
+  simulation area.
+- Single-Phase bottle (drawing only): the separate "Bottle Valve" symbol above the bottle duplicated the bottle's own
+  sample valve and was removed; the sample line starts at the built-in valve outlet, and the label, OPEN / CLOSED tag and
+  activity halo sit at that valve (same `vB` state / action, same step count). Bottle + stand are drawn 1.36x
+  (`RIG_K`, about the stand axis, `RIG_Y0`) - limited by the overhead sample run - with bar / base lengths compensated;
+  pump unchanged, pump line re-ended at the moved driving-side outlet. Capacities, quantities, piston model unchanged.
 
 ## Sampling section layout (module01, 2026-09-28)
 

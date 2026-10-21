@@ -1034,6 +1034,15 @@
   var elOv, ovBuilt = false;
   var wrap, btn, btnStep, panel, elTitle, elTag, elNow, elWhy, elEq, elWatch, elVals, elPath, elNote, elProc;
   var open = false, lastSig = '', shown = true;
+  /* focus handling (2026-10-21): while the drawer covers the procedure sidebar that sidebar is inert (no keyboard focus,
+     no clicks); focus moves to the close button on open and returns to the control that opened it on close */
+  var coverCand = null, coverEl = null, opener = null;
+  function setCover(el) {
+    if (el === coverEl) return;
+    if (coverEl) { coverEl.inert = false; coverEl.removeAttribute('aria-hidden'); }
+    coverEl = el || null;
+    if (coverEl) { coverEl.inert = true; coverEl.setAttribute('aria-hidden', 'true'); }
+  }
 
   function build() {
     var st = document.createElement('style');
@@ -1046,7 +1055,7 @@
     wrap.innerHTML =
       '<div id="sgPanel"><div id="sgIn">' +
         '<div id="sgHead"><div id="sgTitle"></div><div id="sgTag"></div>' +
-          '<button id="sgClose" type="button" title="Close">&#10005;</button></div>' +
+          '<button id="sgClose" type="button" title="Close (Esc)" aria-label="Close explanation">&#10005;</button></div>' +
         '<div id="sgOv"></div>' +
         '<div id="sgPath"></div>' +
         '<div id="sgNote"></div>' +
@@ -1064,6 +1073,9 @@
         '<span id="sgBtnStep"></span><span id="sgChev">&#9656;</span>' +
       '</button>';
     document.body.appendChild(wrap);
+    wrap.setAttribute('role', 'dialog');
+    wrap.setAttribute('aria-modal', 'false');
+    wrap.setAttribute('aria-labelledby', 'sgTitle');
 
     btn = wrap.querySelector('#sgBtn');
     btnStep = wrap.querySelector('#sgBtnStep');
@@ -1082,7 +1094,12 @@
 
     btn.addEventListener('click', function () { toggle(); });
     wrap.querySelector('#sgClose').addEventListener('click', function () { toggle(false); });
-    document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && open) toggle(false); });
+    document.addEventListener('keydown', function (e) {
+      /* Escape closes the drawer, unless an equipment viewer (Bottle / Cell / SPMC Details) is open on top of it */
+      if (e.key !== 'Escape' || !open || wrap.classList.contains('pc-none')) return;
+      if (document.querySelector('.bd-ov, .cd-ov, .sd-ov, .bd-menu')) return;
+      toggle(false);
+    });
     window.addEventListener('resize', function () { place(); });
 
     /* the widget is an overlay only — the page keeps its own layout */
@@ -1143,6 +1160,7 @@
     var ho = open && on;
     if (document.documentElement.classList.contains('sg-open') !== ho) document.documentElement.classList.toggle('sg-open', ho);
     if (on) anchor();
+    setCover(ho && coverCand && coverCand.isConnected ? coverCand : null);
   }
 
   /* drawer box: the procedure sidebar of the page on screen (the column that holds a side-layout
@@ -1151,6 +1169,7 @@
   var lastBox = '';
   function anchor() {
     var W = window.innerWidth, H = window.innerHeight, box = null;
+    coverCand = null;
     if (W > 1000) {
       var hosts = document.querySelectorAll('.pc-host[data-pc][data-pc-layout="side"]');
       for (var i = 0; i < hosts.length && !box; i++) {
@@ -1158,8 +1177,10 @@
         if (!el.getClientRects().length) continue;
         while (el.parentElement && el.parentElement !== document.body && el.parentElement.getBoundingClientRect().width <= 480) el = el.parentElement;
         var r = el.getBoundingClientRect();
-        if (r.width >= 220 && r.left > W * 0.5 && r.top < H * 0.5 && Math.min(r.bottom, H) - Math.max(r.top, 0) > 240)
+        if (r.width >= 220 && r.left > W * 0.5 && r.top < H * 0.5 && Math.min(r.bottom, H) - Math.max(r.top, 0) > 240) {
           box = [r.left, Math.max(r.top, 0), r.width, Math.min(r.bottom, H) - Math.max(r.top, 0)];
+          coverCand = el;
+        }
       }
       if (!box) {
         var m = document.querySelector('main'), top = Math.max(m ? m.getBoundingClientRect().top : 52, 0) + 10;
@@ -1180,11 +1201,22 @@
   }
 
   function toggle(force) {
+    var was = open;
     open = (force === undefined) ? !open : !!force;
     try { localStorage.setItem('sgOpen', open ? '1' : '0'); } catch (e) {}
     wrap.classList.toggle('open', open);
     btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+    if (open && !was) {
+      var a = document.activeElement;
+      opener = a && a !== document.body && !wrap.contains(a) ? a : null;
+    }
     tick();
+    if (open && !was) { try { wrap.querySelector('#sgClose').focus({ preventScroll: true }); } catch (e) {} }
+    if (!open && was) {
+      var back = opener && opener.isConnected ? opener : document.querySelector('.pc-host .pc-b[data-a="explain"]');
+      opener = null;
+      if (back && (wrap.contains(document.activeElement) || document.activeElement === document.body)) { try { back.focus({ preventScroll: true }); } catch (e) {} }
+    }
   }
 
   function tick() {

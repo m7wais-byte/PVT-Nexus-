@@ -86,6 +86,15 @@ const arcPt = (th, rr) => { const a = th * Math.PI / 180, R = rr || ARC_R; retur
    Whole rig shifted by RIG_DX / RIG_DY */
 const BOT = { iy: -226, ih: 452, pist: 46 }, BOT_C = [565.3, 330], BOT_S = 0.41;
 const RIG_DX = 255, RIG_DY = -40;              // bottle rig on the RIGHT of the bench
+/* 2026-10-21: bottle + stand drawn larger (toward the Validation / Restoration bottle size) by one uniform scale about
+   the stand axis (rig-local x 585, y RIG_Y0). The scale is limited by the overhead sample run (IN_TOP); bar and base
+   lengths are compensated so the stand keeps its footprint clear of the sample riser and the pump. Capacities,
+   quantities and the piston model are unchanged - drawing geometry only. */
+const RIG_K = 1.36, RIG_Y0 = 500;
+const rigX = x => r1(585 + (x - 585) * RIG_K), rigY = y => r1(RIG_Y0 + (y - RIG_Y0) * RIG_K);
+const RIG_T = `translate(585 ${RIG_Y0}) scale(${RIG_K}) translate(-585 ${-RIG_Y0})`;
+const unK = x => r1(585 + (x - 585) / RIG_K);    // stand x drawn inside the scaled group so it lands at its old width
+const OUT_T = rigY(214.8), OUT_B = rigY(445.2);  // rig-local y of the bottle's sample-side / driving-side valve outlets (x 585)
 const BTX = x => r1(585 + (x - 585) * 0.6 + RIG_DX), BTY = y => r1(474 + (y - 474) * 0.74 + RIG_DY);
 const PX_CC = (BOT.ih - BOT.pist) / BOTTLE_CAP;
 const BORE = { x: 608, y: 222, w: 24, h: 250 };
@@ -129,7 +138,7 @@ function roundPts(pts, r) {
   return out;
 }
 const D_ST = dOf(P_ST);
-const C_W = `M${712 + RIG_DX},${458 + RIG_DY} H${640 + RIG_DX} V${445.2 + RIG_DY} H${585 + RIG_DX}`;   // pump (right of the bottle, mirrored drawing) -> driving-side valve outlet
+const C_W = `M${712 + RIG_DX},${458 + RIG_DY} H${640 + RIG_DX} V${OUT_B + RIG_DY} H${585 + RIG_DX}`;   // pump (right of the bottle, mirrored drawing) -> driving-side valve outlet
 function arrowD(x, y, dir) {
   const s = 7.5, a = (dir === 'r' ? 0 : dir === 'd' ? 90 : dir === 'u' ? -90 : dir === 'l' ? 180 : dir) * Math.PI / 180;
   const c = Math.cos(a), n = Math.sin(a);
@@ -461,7 +470,7 @@ class Component extends DCLogic {
     /* arrows follow the tubing route: bottle top -> overhead run (leftwards) -> riser (down) ->
        viscometer bottom inlet (leftwards) -> up the chamber -> top outlet -> waste run (leftwards) -> glass */
     const arrows = [
-      A(BOT_CX, 50, 'u', st.flowIn && fIn > .01, '#ffcf3f'),
+      A(BOT_CX, 40, 'u', st.flowIn && fIn > .01, '#ffcf3f'),
       A(r1((BOT_CX + IN_X) / 2), IN_TOP, 'l', st.flowIn && fIn > .1, '#ffcf3f'),
       A(IN_X, 230, 'd', st.flowIn && fIn > .4, '#ffcf3f'),
       A(r1(IN_MX), gm.IN_A[1], 'l', st.flowIn && fIn > .78, '#ffcf3f'),
@@ -618,7 +627,7 @@ class Component extends DCLogic {
       vsWaterLine: 'opacity:' + (st.conn[0] >= 1 ? 1 : 0) + '; transition:opacity .4s;',
       vsWaterDash: 'opacity:' + (st.pumpFlow ? 1 : 0) + '; transition:opacity .3s;',
 
-      vsOilH: f(oilH), vsPistY: f(pistY), vsWaterY: f(waterY), vsWaterH: f(Math.max(0, BOT.iy + BOT.ih - waterY)), vsPistLblY: r1(BOT_C[1] + BOT_S * (pistY + BOT.pist / 2) + RIG_DY),
+      vsOilH: f(oilH), vsPistY: f(pistY), vsWaterY: f(waterY), vsWaterH: f(Math.max(0, BOT.iy + BOT.ih - waterY)), vsPistLblY: r1(rigY(BOT_C[1] + BOT_S * (pistY + BOT.pist / 2)) + RIG_DY),
 
       vsDIn: gm.D_IN, vsDSt: D_ST, vsDTail: gm.D_TAIL,
       vsIn: (fIn * 1000).toFixed(1) + ' 1000', vsSt: (fSt * 1000).toFixed(1) + ' 1000', vsTl: (fTl * 1000).toFixed(1) + ' 1000',
@@ -720,7 +729,7 @@ function geo(th) {
   const rot = -th, Wr = mkW(rot), a = rot * Math.PI / 180;
   const nx = Math.cos(a), ny = Math.sin(a);                           // world direction of the instrument's local +x (fitting side)
   const IN_A = Wr(620, 604);                                          // axis extension below the inlet fitting
-  const P_IN = [[BOT_CX, 120 + RIG_DY], [BOT_CX, IN_TOP], [IN_X, IN_TOP], [IN_X, IN_A[1]], IN_A, Wr(620, 472)];
+  const P_IN = [[BOT_CX, OUT_T + RIG_DY], [BOT_CX, IN_TOP], [IN_X, IN_TOP], [IN_X, IN_A[1]], IN_A, Wr(620, 472)];
   const T0 = Wr(620, 126), T1 = Wr(620, 108);
   const P_TAIL = [T0, T1, [T1[0], TAIL_Y], [WASTE_CX, TAIL_Y], [WASTE_CX, WASTE.y - 6]];
   const P_INR = roundPts(P_IN, 20), P_TAILR = roundPts(P_TAIL, 18);
@@ -741,7 +750,7 @@ function geo(th) {
   const g = {
     th, T: devT(rot), IN_A, P_INR, P_TAILR,
     D_IN: dOf(P_INR), D_TAIL: dOf(P_TAILR),
-    C_IN: dOf(roundPts([[BOT_CX, 132 + RIG_DY], [BOT_CX, IN_TOP], [IN_X, IN_TOP], [IN_X, IN_A[1]], IN_A, Wr(620, 592)], 20)),
+    C_IN: dOf(roundPts([[BOT_CX, OUT_T + RIG_DY], [BOT_CX, IN_TOP], [IN_X, IN_TOP], [IN_X, IN_A[1]], IN_A, Wr(620, 592)], 20)),
     low: Math.max(BW[0][1], BW[1][1]), high: Math.min(BW[2][1], BW[3][1]),
     bx0: r1(Math.min.apply(null, BW.map(p => p[0])) - 4), bx1: r1(Math.max.apply(null, BW.map(p => p[0])) + 4),
     UPA: Wr(620, 200), AXUP: r1(Math.atan2(-Math.cos(a), Math.sin(a)) * 180 / Math.PI),
@@ -794,7 +803,7 @@ DC.define('StageViscSingle', {
   .vs-chl { font-family:'IBM Plex Sans',sans-serif; font-size:11.5px; font-weight:500; color:var(--mut); margin-right:2px; }
   .vs-chu { font-size:11px; color:var(--mut); }
   .vs-cht { font-size:9.5px; font-weight:700; letter-spacing:.5px; margin-left:4px; }
-  .vs-halo text { paint-order:stroke; stroke:var(--panel2); stroke-width:4px; stroke-linejoin:round; }
+  .vs-halo text { paint-order:stroke; stroke:var(--bg); stroke-width:4px; stroke-linejoin:round; }
   .vs-row { height:26px; }
   @media (max-width:1400px) { .vs-demo { display:none; } .vs-cht { display:none; } }
   @media (max-height:860px) {
@@ -808,34 +817,24 @@ DC.define('StageViscSingle', {
   `,
   template: `<div class="vs-root {{ vsAnim }}" data-screen-label="Single-Phase Viscosity Test" style="flex:1 1 auto; min-height:0; width:100%; display:flex; flex-direction:column; gap:12px; text-align:left;">
 
-  <!-- current step: instruction + step selector (row 1) · live action + live readings (row 2) -->
-  <div class="vs-head" style="flex:0 0 auto; display:flex; flex-direction:column; gap:6px; padding:0 2px;">
-    <div style="display:flex; align-items:center; gap:16px; min-width:0;">
+  <!-- shared Validation layout: simulation area (.vl-sim: step instruction + live action, schematic | results) | sidebar -->
+  <div class="lab-body">
+  <div class="lab-schem vl-sim" style="padding:8px 10px; gap:6px;">
+  <!-- current step: instruction (the 1-9 step selector was removed 2026-10-21; stage + progress are in the sidebar) · live action -->
+  <div class="vs-head" style="flex:0 0 auto; display:flex; flex-direction:column; gap:4px; padding:0 2px;">
+    <div style="display:flex; align-items:center; gap:12px; min-width:0;">
       <span style="flex:0 0 auto; font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:1px; font-weight:700; color:var(--blue); background:rgba(47,111,208,.12); padding:4px 9px; border-radius:6px;">{{ vsStepNo }}</span>
-      <span style="flex:1 1 auto; min-width:0; font-size:17px; font-weight:600; color:var(--txt); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ vsInstr }}</span>
-      <div style="flex:0 0 auto; display:flex; align-items:center; gap:4px;" title="Go to any step">
-        <sc-for list="{{ vsStages }}" as="s" hint-placeholder-count="9">
-          <button onclick="{{ s.onClick }}" title="{{ s.title }}" style="{{ s.style }}">{{ s.n }}</button>
-        </sc-for>
-      </div>
+      <span style="flex:1 1 auto; min-width:0; font-size:15px; font-weight:600; color:var(--txt); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" title="{{ vsInstr }}">{{ vsInstr }}</span>
     </div>
-    <div style="display:flex; align-items:center; gap:14px; min-width:0;">
-      <div style="flex:1 1 auto; min-width:0; display:flex; align-items:center; gap:9px; padding-left:2px;">
-        <span style="{{ vsMsgDot }}"></span>
-        <span style="min-width:0; font-size:14px; font-weight:500; color:{{ vsMsgCol }}; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ vsLive }}</span>
-      </div>
-      <!-- live readings (compact) -->
-      <div class="vs-read" style="flex:0 0 auto; display:flex; align-items:center; gap:8px;">
-        <div class="vs-chip" title="Viscometer pressure transmitter"><span class="vs-chl">Pressure</span><b style="color:{{ vsPCol }};">{{ vsPTxt }}</b><span class="vs-chu">{{ vsPUnit }}</span><span class="vs-cht" style="color:{{ vsPCol }};">{{ vsPState }}</span></div>
-        <div class="vs-chip" title="Test temperature (thermostat bath)"><span class="vs-chl">Temp</span><b>{{ vsTemp }}</b><span class="vs-chu">°C</span></div>
-        <div class="vs-chip" title="Falling-body time and viscosity (μ = K × t)"><span class="vs-chl">Viscosity</span><b style="color:#d6b03c;">{{ vsMuTxt }}</b><span class="vs-chu">{{ vsMuUnit }}</span><span class="vs-chu" style="margin-left:4px;">t = {{ vsTTxt }} {{ vsTUnit }}</span><span class="vs-cht" style="color:{{ vsMeasCol }};">{{ vsMeasTag }}</span></div>
-      </div>
+    <div style="display:flex; align-items:center; gap:9px; min-width:0; padding-left:2px;">
+      <span style="{{ vsMsgDot }}"></span>
+      <span style="min-width:0; font-size:13px; font-weight:500; color:{{ vsMsgCol }}; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ vsLive }}</span>
     </div>
   </div>
   <div style="flex:1 1 auto; min-height:0; display:flex;">
 
     <!-- ============ schematic ============ -->
-    <div style="flex:1 1 auto; min-width:0; position:relative; display:flex; flex-direction:column; border-radius:14px; background:var(--panel2); overflow:hidden;">
+    <div style="flex:1 1 auto; min-width:0; position:relative; display:flex; flex-direction:column; overflow:hidden;">
       <svg sc-camel-view-box="{{ vsVB }}" preserveAspectRatio="xMidYMid meet" style="flex:1 1 auto; min-height:0; width:100%; height:100%; display:block; padding:6px 8px; box-sizing:border-box;">
         <defs>
           ${BottleArt.defs('vs')}
@@ -1086,39 +1085,33 @@ DC.define('StageViscSingle', {
         <!-- ================= SPS/PDS bottle rig + transfer pump (same drawing as screens/showTest.js) ================= -->
         <g transform="translate(${RIG_DX},${RIG_DY})">
           <g style="{{ vsDimBottle }}">
-            <!-- clamp stand behind the bottle -->
+            <g transform="${RIG_T}">
+            <!-- clamp stand behind the bottle (bars / base drawn at their former world length) -->
             <rect x="581" y="258" width="8" height="302" fill="url(#vsMetal)" stroke="#0a0e16" stroke-width="0.7"></rect>
-            <rect x="506" y="258" width="158" height="9" rx="3" fill="url(#vsMetal)" stroke="#0a0e16" stroke-width="0.7"></rect>
-            <g fill="#0a0e16" opacity=".5"><circle cx="514" cy="262" r="1.6"></circle><circle cx="656" cy="262" r="1.6"></circle></g>
-            <rect x="506" y="368" width="158" height="9" rx="3" fill="url(#vsMetal)" stroke="#0a0e16" stroke-width="0.7"></rect>
-            <g fill="#0a0e16" opacity=".5"><circle cx="514" cy="372" r="1.6"></circle><circle cx="656" cy="372" r="1.6"></circle></g>
-            <rect x="500" y="556" width="170" height="8" rx="2" fill="#1a2030" stroke="#0a0e16"></rect>
-            <ellipse cx="585" cy="566" rx="90" ry="6" fill="rgba(0,0,0,.3)"></ellipse>
-            <!-- outlet riser (sample side, always full) -->
-            <path d="M585 214.8 V${132}" fill="none" stroke="#0a0e16" stroke-width="8" stroke-linecap="round"></path>
-            <path d="M585 214.8 V${132}" fill="none" stroke="#d6b03c" stroke-width="2.4" stroke-linecap="round"></path>
+            <rect x="${unK(506)}" y="258" width="${r1(158 / RIG_K)}" height="9" rx="3" fill="url(#vsMetal)" stroke="#0a0e16" stroke-width="0.7"></rect>
+            <g fill="#0a0e16" opacity=".5"><circle cx="${unK(514)}" cy="262" r="1.6"></circle><circle cx="${unK(656)}" cy="262" r="1.6"></circle></g>
+            <rect x="${unK(506)}" y="368" width="${r1(158 / RIG_K)}" height="9" rx="3" fill="url(#vsMetal)" stroke="#0a0e16" stroke-width="0.7"></rect>
+            <g fill="#0a0e16" opacity=".5"><circle cx="${unK(514)}" cy="372" r="1.6"></circle><circle cx="${unK(656)}" cy="372" r="1.6"></circle></g>
+            <rect x="${unK(500)}" y="556" width="${r1(170 / RIG_K)}" height="8" rx="2" fill="#1a2030" stroke="#0a0e16"></rect>
+            <ellipse cx="585" cy="566" rx="${r1(90 / RIG_K)}" ry="6" fill="rgba(0,0,0,.3)"></ellipse>
             <!-- approved Oil Sample Bottle (components/BottleArt.js); fills / piston in bore units -->
             ${BottleArt.oil('vs', { x: BOT_C[0], y: BOT_C[1], s: BOT_S, bd: 'oil', ctx: 'SPS/PDS sample bottle · feeding the viscometer',
               inner: `<rect x="-22" y="-226" width="44" height="{{ vsOilH }}" fill="url(#vsOil)"></rect>
               <rect x="-22" y="{{ vsWaterY }}" width="44" height="{{ vsWaterH }}" fill="url(#vsDrive)"></rect>
               <g transform="translate(0,{{ vsPistDY }})">${PBDraw.mixRing('vs', 0, -226 - 8.5)}${PBDraw.piston('vs', -226)}</g>`,
               ringT: '{{ vsBtlRingT }}', needleT: '{{ vsBtlNeedleT }}', ringB: '{{ vsBtlRingB }}', needleB: '{{ vsBtlNeedleB }}' })}
-            <!-- bottle valve (project valve) -->
-            <circle cx="585" cy="120" r="19" fill="#46d39a" opacity=".35" style="{{ vsHaloVB }}"></circle>
-            <line x1="563" y1="120" x2="573" y2="120" stroke="#8fa3c2" stroke-width="2.4"></line>
-            <path d="M572 108 L598 108 L585 120 Z" fill="url(#vsCyl)" stroke="#0a0e16" stroke-width="1.3"></path>
-            <path d="M572 132 L598 132 L585 120 Z" fill="url(#vsCyl)" stroke="#0a0e16" stroke-width="1.3"></path>
-            <g style="{{ vsVBHot }}"><path d="M572 108 L598 108 L585 120 Z" fill="#46d39a"></path><path d="M572 132 L598 132 L585 120 Z" fill="#46d39a"></path></g>
-            <circle cx="557" cy="120" r="7" fill="#0c1626" stroke="#8fa3c2" stroke-width="2"></circle>
-            <g stroke="#8fa3c2" stroke-width="1.5" stroke-linecap="round" style="{{ vsVBWheel }}"><line x1="550" y1="120" x2="564" y2="120"></line><line x1="557" y1="113" x2="557" y2="127"></line></g>
-            <text x="604" y="116" style="font-family:'IBM Plex Sans',sans-serif; font-size:13px; font-weight:600; fill:var(--accb3);">Bottle Valve</text>
-            <rect x="604" y="122" width="62" height="15" rx="3" fill="{{ vsTB.fill }}" stroke="{{ vsTB.stroke }}"></rect>
-            <text x="635" y="133" text-anchor="middle" style="${MONO} font-size:9px; font-weight:600; letter-spacing:.6px; fill:{{ vsTB.color }};">{{ vsTB.text }}</text>
+            </g>
+            <!-- bottle valve = the bottle's own sample valve (the separate external valve symbol was a duplicate and is removed):
+                 activity halo, label and OPEN / CLOSED tag sit at the built-in valve, bound to the same bottle-valve state -->
+            <circle cx="${rigX(565.3)}" cy="${OUT_T}" r="22" fill="#46d39a" opacity=".35" style="{{ vsHaloVB }}"></circle>
+            <text x="604" y="${r1(OUT_T - 6)}" style="font-family:'IBM Plex Sans',sans-serif; font-size:13px; font-weight:600; fill:var(--accb3);">Bottle Valve</text>
+            <rect x="604" y="${r1(OUT_T)}" width="62" height="15" rx="3" fill="{{ vsTB.fill }}" stroke="{{ vsTB.stroke }}"></rect>
+            <text x="635" y="${r1(OUT_T + 11)}" text-anchor="middle" style="${MONO} font-size:9px; font-weight:600; letter-spacing:.6px; fill:{{ vsTB.color }};">{{ vsTB.text }}</text>
           </g>
-          <text x="${BTX(676) - RIG_DX + 30}" y="196" style="${ESS}">SPS/PDS</text>
-          <text x="${BTX(676) - RIG_DX + 30}" y="214" style="${SUB}">sample bottle</text>
-          <text x="${BTX(676) - RIG_DX + 30}" y="232" style="${MONO} font-size:12.5px; font-weight:700; fill:var(--grn);">${fmtP(BOTTLE_P)} psig</text>
-          ${BottleArt.pill(BTX(676) - RIG_DX + 30, 244, 'oil', { ctx: 'SPS/PDS sample bottle · feeding the viscometer' })}
+          <text x="${BTX(676) - RIG_DX + 30}" y="146" style="${ESS}">SPS/PDS</text>
+          <text x="${BTX(676) - RIG_DX + 30}" y="164" style="${SUB}">sample bottle</text>
+          <text x="${BTX(676) - RIG_DX + 30}" y="182" style="${MONO} font-size:12.5px; font-weight:700; fill:var(--grn);">${fmtP(BOTTLE_P)} psig</text>
+          ${BottleArt.pill(BTX(676) - RIG_DX + 30, 194, 'oil', { ctx: 'SPS/PDS sample bottle · feeding the viscometer' })}
 
           <!-- transfer pump (project drawing, mirrored to sit RIGHT of the bottle; its outlet faces the bottle) -->
           <g style="{{ vsDimPump }}"><g transform="translate(1170,0) scale(-1,1)">
@@ -1144,7 +1137,7 @@ DC.define('StageViscSingle', {
           </g>
           <text x="${1170 - 375}" y="522" text-anchor="middle" style="${ESS}">Transfer Pump</text>
           <text x="${1170 - 375}" y="540" text-anchor="middle" style="${MONO} font-size:12px; fill:{{ vsPumpLed }};">{{ vsPumpLcd }} cc · {{ vsPumpState }}</text>
-          <text x="${1170 - 505}" y="448" text-anchor="middle" style="${MONO} font-size:11px; letter-spacing:.5px; fill:var(--cap2);">Pump Line</text>
+          <text x="${1170 - 490}" y="448" text-anchor="middle" style="${MONO} font-size:11px; letter-spacing:.5px; fill:var(--cap2);">Pump Line</text>
         </g>
         <!-- ================= essential labels ================= -->
         <text x="${VIS.x}" y="${VIS.y}" style="${ESS}">Viscometer</text>
@@ -1166,12 +1159,12 @@ DC.define('StageViscSingle', {
         <g style="{{ vsCompStyle }}">
           <g class="vs-halo" style="${LBL}"><path d="{{ vsLch.d }}" fill="none" stroke="var(--vs-lead)"></path><text x="{{ vsLch.x }}" y="{{ vsLch.y }}">Chamber · 3 cc</text><path d="{{ vsLbody.d }}" fill="none" stroke="var(--vs-lead)"></path><text x="{{ vsLbody.x }}" y="{{ vsLbody.y }}">Falling body</text><path d="{{ vsLdrive.d }}" fill="none" stroke="var(--vs-lead)"></path><text x="{{ vsLdrive.x }}" y="{{ vsLdrive.y }}" text-anchor="start">Driving coil <tspan style="${MONO} font-size:11px; font-weight:700; fill:#4d9dff;">{{ vsDriveTxt }}</tspan></text><path d="{{ vsLsense.d }}" fill="none" stroke="var(--vs-lead)"></path><text x="{{ vsLsense.x }}" y="{{ vsLsense.y }}" text-anchor="start">Sensing coil <tspan style="${MONO} font-size:11px; font-weight:700; fill:#46d39a;">{{ vsSenseTxt }}</tspan></text><path d="{{ vsLpt100.d }}" fill="none" stroke="var(--vs-lead)"></path><text x="{{ vsLpt100.x }}" y="{{ vsLpt100.y }}" text-anchor="start">PT100 · temperature</text><path d="{{ vsLpt.d }}" fill="none" stroke="var(--vs-lead)"></path><text x="{{ vsLpt.x }}" y="{{ vsLpt.y }}" text-anchor="start">Pressure transmitter</text><sc-for list="{{ vsTickLbls }}" as="k" hint-placeholder-count="2"><text x="{{ k.x }}" y="{{ k.y }}" text-anchor="middle" style="font-size:11px; fill:var(--mut); {{ k.st }}">{{ k.t }}</text></sc-for><text x="${PIV[0]}" y="${BASE_Y + 10.5}" text-anchor="middle" style="font-size:10px; font-weight:600; letter-spacing:.3px; fill:#c3d2e6; stroke:none;">Hinge (pivot)</text><text x="${r1((PIV[0] + ARC_P1[0]) / 2 - 20)}" y="${BASE_Y + 10.5}" text-anchor="middle" style="font-size:10px; font-weight:600; letter-spacing:.3px; fill:#c3d2e6; stroke:none;">Quadrant guide</text></g>
           <g style="${LBL}">
-            <line x1="${BOT_CX - 4}" y1="258" x2="${BTX(676) + 26}" y2="258" stroke="var(--vs-lead)"></line>
-            <text x="${BTX(676) + 30}" y="262">Sample side (oil)</text>
+            <line x1="${BOT_CX - 4}" y1="${rigY(305) - 40}" x2="${BTX(676) + 26}" y2="${rigY(305) - 40}" stroke="var(--vs-lead)"></line>
+            <text x="${BTX(676) + 30}" y="${rigY(305) - 36}">Sample side (oil)</text>
             <line x1="${BOT_CX - 4}" y1="{{ vsPistLblY }}" x2="${BTX(676) + 26}" y2="{{ vsPistLblY }}" stroke="var(--vs-lead)"></line>
             <text x="${BTX(676) + 30}" y="{{ vsPistLblY }}" dy="4">Floating piston</text>
-            <line x1="${BOT_CX - 4}" y1="352" x2="${BTX(676) + 26}" y2="352" stroke="var(--vs-lead)"></line>
-            <text x="${BTX(676) + 30}" y="356">Water side</text>
+            <line x1="${BOT_CX - 4}" y1="${rigY(392) - 40}" x2="${BTX(676) + 26}" y2="${rigY(392) - 40}" stroke="var(--vs-lead)"></line>
+            <text x="${BTX(676) + 30}" y="${rigY(392) - 36}">Water side</text>
           </g>
           <text x="${CTL.x + CTL.w / 2}" y="${CTL.y - 8}" text-anchor="middle" style="${LBL}">Viscometer controller</text>
           <text x="${PDU.x + PDU.w / 2}" y="${PDU.y - 9}" text-anchor="middle" style="${LBL}">Pressure display</text>
@@ -1250,19 +1243,35 @@ DC.define('StageViscSingle', {
     </div>
   </div>
 
-  <!-- controls: one primary action, the rest secondary -->
-  <div style="flex:0 0 auto; display:flex; align-items:center; gap:8px 10px; flex-wrap:wrap;">
-    <div class="pc-host" data-pc="StageViscSingle" data-pc-layout="bar" style="flex:1 1 100%; min-width:0;"></div>
-    <!-- view tools (demonstration only) -->
-    <div style="flex:0 0 auto; display:flex; align-items:center; gap:8px; margin-left:auto;">
-    <button class="ui-btn ui-btn-ghost act" onclick="{{ vsComp }}" style="{{ vsCompBtn }}">{{ vsCompTxt }}</button>
-    <div title="{{ vsInclTip }}" style="flex:0 0 auto; display:flex; align-items:center; gap:8px; height:36px; padding:0 12px; border-radius:10px; background:var(--panel2); border:1px solid var(--line2); box-sizing:border-box; {{ vsInclRow }}">
+  </div>
+
+  <!-- sidebar (shared Validation layout): live readings · view settings (demonstration only) · procedure dock -->
+  <div class="lab-side">
+    <div class="vl-scroll">
+      <div class="vl-sec">
+        <div class="vl-k">Live readings</div>
+        <div class="vl-cards">
+          <div class="vl-c" title="Viscometer pressure transmitter"><div class="vl-cl">Pressure</div><div class="vl-cv" style="color:{{ vsPCol }};">{{ vsPTxt }} <small>{{ vsPUnit }}</small></div><div class="vl-cs" style="color:{{ vsPCol }};">{{ vsPState }}</div></div>
+          <div class="vl-c" title="Test temperature (thermostat bath)"><div class="vl-cl">Temperature</div><div class="vl-cv">{{ vsTemp }} <small>°C</small></div></div>
+          <div class="vl-c" title="Falling-body time"><div class="vl-cl">Fall time, <span style="text-transform:none;">t</span></div><div class="vl-cv">{{ vsTTxt }} <small>{{ vsTUnit }}</small></div><div class="vl-cs" style="color:{{ vsMeasCol }};">{{ vsMeasTag }}</div></div>
+          <div class="vl-c" title="Viscosity (μ = K × t)"><div class="vl-cl">Viscosity, <span style="text-transform:none;">μ</span></div><div class="vl-cv" style="color:#d6b03c;">{{ vsMuTxt }} <small>{{ vsMuUnit }}</small></div></div>
+        </div>
+      </div>
+      <div class="vl-sec" style="gap:7px;">
+        <div class="vl-k">View settings · demonstration only</div>
+        <button class="ui-btn ui-btn-ghost act" onclick="{{ vsComp }}" style="{{ vsCompBtn }}; width:100%;">{{ vsCompTxt }}</button>
+        <div title="{{ vsInclTip }}" style="flex:0 0 auto; display:flex; width:100%; align-items:center; gap:8px; height:36px; padding:0 12px; border-radius:10px; background:var(--panel2); border:1px solid var(--line2); box-sizing:border-box; {{ vsInclRow }}">
       <span style="font-size:12.5px; font-weight:600; color:var(--txt2);">Inclination</span>
-      <input type="range" min="${INCL_MIN}" max="${INCL_MAX}" step="0.5" value="{{ vsIncl }}" oninput="{{ vsInclIn }}" disabled="{{ vsInclDis }}" style="width:110px; margin:0; accent-color:var(--blue); cursor:pointer;">
+      <input type="range" min="${INCL_MIN}" max="${INCL_MAX}" step="0.5" value="{{ vsIncl }}" oninput="{{ vsInclIn }}" disabled="{{ vsInclDis }}" style="flex:1 1 auto; min-width:0; width:auto; margin:0; accent-color:var(--blue); cursor:pointer;">
       <span style="font-family:'IBM Plex Mono',monospace; font-size:13px; font-weight:700; color:var(--txt); min-width:34px;">{{ vsInclTxt }}</span>
-      <span class="vs-demo" style="font-size:11px; color:var(--mut); white-space:nowrap;">demo only</span>
     </div>
+      </div>
     </div>
+    <div class="vl-dock">
+      <div class="pc-host" data-pc="StageViscSingle" data-pc-layout="side"></div>
+      <div class="vl-fwd"></div>
+    </div>
+  </div>
   </div>
 </div>`,
   logic: Component

@@ -610,8 +610,8 @@ class Component extends DCLogic {
 
     // highlight card
     let big = '', big2 = '', bigT = '', bigCol = 'var(--txt2)';
-    if (id === 'charge') { bigT = 'WORKING PRESSURE · 5,000 psig'; big = 'Reservoir 3,000 psig + 2,000 psi'; bigCol = 'var(--blue)'; }
-    else if (id === 'cond' && step === 0 && !busy) { bigT = 'NEXT · COOL AT 5,000 psig'; big = '114 °C → 35 °C'; bigCol = 'var(--blue)'; }
+    // (stage 1 working-pressure card removed 2026-10-21: the reasoning is in Explain This Stage, the reading in Live readings)
+    if (id === 'cond' && step === 0 && !busy) { bigT = 'NEXT · COOL AT 5,000 psig'; big = '114 °C → 35 °C'; bigCol = 'var(--blue)'; }
     else if (id === 'cond' && step === 1 && !busy) { bigT = 'NEXT · REDUCE AT 35 °C'; big = '5,000 → 200 psig'; bigCol = 'var(--blue)'; }
     else if (reach('cond', 2) && idx <= IDS.indexOf('flash')) { bigT = 'SEPARATOR CONDITIONS'; big = 'Separator Temperature: 35 °C'; big2 = 'Separator Pressure: 200 psig'; bigCol = 'var(--grn)'; }
     else if (id === 'pv2') { bigT = 'AFTER FLASH · SEPARATOR LIQUID'; big = V_REM.toFixed(4) + ' cc @ 200 psig'; big2 = 'Temperature held at 35 °C'; bigCol = 'var(--grn)'; }
@@ -639,7 +639,7 @@ class Component extends DCLogic {
     const cP = S('Cell Pressure', pTxt, 'var(--grn)'), cV = S('Cell Volume', vTxt, 'var(--amb)');
     const cT = S('Cell Temperature', tTxt, 'rgb(' + rgb + ')');
     let strip;
-    if (id === 'charge') strip = [S('Stage', '1 · Charge 35 cc'), cP, cV, cT, S('Working Pressure', '5,000 psig', 'var(--blue)'), S('Reservoir Pressure', '3,000 psig (+2,000 psi)')];
+    if (id === 'charge') strip = [S('Stage', '1 · Charge 35 cc'), cP, cV, cT, S('Working Pressure', '5,000 psig', 'var(--blue)'), S('Reservoir Pressure', '3,000 psig')];
     else if (pvOn) strip = [S('PV Points', (st.pvCount || 0) + ' / 12', st.pvCount ? 'var(--accb3)' : 'var(--mut)'), cP, cV,
       S('Temperature', first ? '114.0 °C · reservoir' : '35.0 °C · separator', 'rgb(' + rgb + ')'),
       S('First PV Psat · 114 °C', psat1Txt, psat1Txt !== '—' ? 'var(--red)' : 'var(--mut)'),
@@ -733,7 +733,7 @@ class Component extends DCLogic {
       dlnRec: rec, dlnPvRes: pvRes, dlnCycRows: cycRows, dlnCycEmpty: !cycRows.length, dlnCycOn: id === 'agit',
       dlnStabText: st.stabilized ? 'VOLUME STABILIZED · PUMP B EMPTY' : (busy && id === 'agit' ? 'AGITATING' : 'NOT YET AGITATED'),
       dlnStabCol: st.stabilized ? 'var(--grn)' : busy && id === 'agit' ? 'var(--amb)' : 'var(--mut)',
-      dlnBig2: big2, dlnBig2On: !!big2, dlnStripOn: pvOn,
+      dlnBig2: big2, dlnBig2On: !!big2, dlnStripOn: pvOn, dlnSimCls: pvOn ? '' : 'vl-sim',
       dlnBig: big, dlnBigT: bigT, dlnBigCol: bigCol, dlnBigOn: !!big
     };
   }
@@ -758,17 +758,17 @@ DC.define('StageSeparator', {
   @keyframes spndiss { 0%,100% { opacity:.16; } 50% { opacity:.34; } }
   @keyframes pvtpulse { 0%,100% { opacity:.35; } 50% { opacity:1; } }
   @keyframes spnFadeIn { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:none; } }`,
-  template: `<div data-screen-label="Separator Test" style="display:flex; flex-direction:column; height:var(--page-h); overflow:hidden; padding:var(--page-pad-y) var(--page-pad-x) 12px; gap:8px; box-sizing:border-box;">
+  template: `<div data-screen-label="Separator Test" class="pg pg-stack">
 
-  <!-- header -->
-  <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap; flex:0 0 auto;">
-    <div style="flex:1 1 260px; min-width:0; display:flex; align-items:baseline; gap:8px; flex-wrap:wrap;">
+  <!-- header (shared .pg-head, same treatment as Validation): eyebrow · title · status · description · equipment details -->
+  <div class="pg-head">
+    <div class="pg-titles">
+      <span class="pg-eyebrow">Analysis</span>
       <h2 class="pg-title">Separator Test</h2>
-      <div class="pg-desc">35 cc at 5,000 psig / 114 °C (working pressure = reservoir 3,000 psig + 2,000 psi) → first PV → separator conditions 35 °C / 200 psig → flash → final PV</div>
+      <span style="align-self:center; display:inline-flex; align-items:center; gap:6px; flex:0 0 auto; padding:3px 11px; border-radius:999px; background:{{ dlPillBg }}; border:1px solid {{ dlPillBorder }}; font-family:'IBM Plex Mono'; font-size:10px; letter-spacing:.7px; text-transform:uppercase; color:{{ dlPillColor }}; white-space:nowrap;"><span style="{{ dlPillDot }}"></span>{{ dlPillText }}</span>
+      <p class="pg-desc">35 cc at 5,000 psig / 114 °C → first PV → separator conditions 35 °C / 200 psig → flash → final PV</p>
     </div>
-    <div style="display:flex; align-items:center; gap:6px; flex:0 0 auto; padding:5px 11px; border-radius:999px; background:{{ dlPillBg }}; border:1px solid {{ dlPillBorder }}; font-family:'IBM Plex Mono'; font-size:10px; letter-spacing:.7px; text-transform:uppercase; color:{{ dlPillColor }}; white-space:nowrap;">
-      <span style="{{ dlPillDot }}"></span>{{ dlPillText }}
-    </div>
+    <div class="pg-end"><button type="button" class="bd-btn" data-cd-open="" data-cd-ctx="Separator Test · sample inlet at Port L, outlet at Port R">Cell Details</button></div>
   </div>
 
   <!-- stage navigation : every stage is always reachable, regardless of completion -->
@@ -781,17 +781,8 @@ DC.define('StageSeparator', {
     </sc-for>
   </div>
 
-  <!-- PV views : conditions + both PV results, kept separate -->
-  <sc-if value="{{ dlnStripOn }}" hint-placeholder-val="{{ false }}">
-  <div style="display:grid; grid-template-columns:repeat(6,minmax(0,1fr)); gap:8px; flex:0 0 auto;">
-    <sc-for list="{{ dlStrip }}" as="k" hint-placeholder-count="6">
-      <div style="background:var(--panel); border:1px solid var(--line); box-shadow:0 1px 2px rgba(20,35,60,.05); border-radius:9px; padding:5px 10px; min-width:0;">
-        <div style="font-family:'IBM Plex Mono'; font-size:8.5px; letter-spacing:.8px; text-transform:uppercase; color:var(--mut); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ k.k }}</div>
-        <div style="font-family:'IBM Plex Mono'; font-size:12px; font-weight:600; color:{{ k.color }}; margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ k.v }}</div>
-      </div>
-    </sc-for>
-  </div>
-  </sc-if>
+  <div class="lab-body">
+  <div class="lab-schem {{ dlnSimCls }}" style="gap:8px;">
   <!-- Stage 2 · First PV test : the Validation PV Test itself (35 cc charge, 114 °C) -->
   <sc-if value="{{ dlnPv1 }}" hint-placeholder-val="{{ false }}">
   <div style="flex:1 1 auto; min-height:0; display:flex; flex-direction:column; animation:spnFadeIn .45s ease both;">
@@ -806,7 +797,7 @@ DC.define('StageSeparator', {
   </sc-if>
 
   <sc-if value="{{ dlnCellOn }}" hint-placeholder-val="{{ true }}">
-  <div style="display:flex; gap:12px; flex:1 1 auto; min-height:0; background:var(--panel); border:1px solid var(--line); border-radius:12px; box-shadow:0 1px 2px rgba(20,35,60,.05); overflow:hidden; padding:8px 12px 8px;">
+  <div style="display:flex; flex:1 1 auto; min-height:0; min-width:0;">
     <div style="flex:1 1 auto; min-width:0; min-height:0; display:flex; flex-direction:column;">
       <div style="flex:0 0 auto; display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
         <div style="min-width:0;">
@@ -814,7 +805,6 @@ DC.define('StageSeparator', {
           <div style="font-size:10px; color:var(--mut); margin-top:1px;">{{ dlnTitleSub }}</div>
         </div>
         <div style="flex:1 1 10px;"></div>
-        <button type="button" class="bd-btn bd-inline" data-cd-open="" data-cd-ctx="Separator Test · sample inlet at Port L, outlet at Port R">Cell Details</button>
         <span style="display:inline-flex; align-items:center; padding:3px 10px; border-radius:999px; background:{{ dlnTagBg }}; border:1px solid {{ dlnTagBd }}; font-family:'IBM Plex Mono'; font-size:10px; letter-spacing:.5px; color:{{ dlnTagCol }}; white-space:nowrap;">{{ dlnTag }}</span>
       </div>
       <svg viewBox="{{ dlnVb }}" preserveAspectRatio="xMidYMid meet" style="display:block; width:100%; flex:1 1 auto; min-height:0; margin-top:4px;">
@@ -1025,8 +1015,21 @@ DC.define('StageSeparator', {
       </svg>
     </div>
 
-    <!-- side panel : separator-test record -->
-    <div style="{{ dlnSideW }} min-width:0; min-height:0; display:flex; flex-direction:column; gap:8px; overflow:hidden;">
+  </div>
+  </sc-if>
+  </div>
+
+  <!-- sidebar (shared Validation layout): live readings · stage status · test record · PV results (first and final kept separate) -->
+  <div class="lab-side">
+    <div class="vl-scroll">
+      <div class="vl-sec">
+        <div class="vl-k">Live readings</div>
+        <div class="vl-cards">
+          <sc-for list="{{ dlStrip }}" as="r" hint-placeholder-count="6">
+            <div class="vl-c"><div class="vl-cl" style="white-space:normal;">{{ r.k }}</div><div class="vl-cv" style="color:{{ r.color }}; font-size:12px; white-space:normal; line-height:1.25;">{{ r.v }}</div></div>
+          </sc-for>
+        </div>
+      </div>
       <sc-if value="{{ dlnBigOn }}" hint-placeholder-val="{{ false }}">
         <div style="flex:0 0 auto; border:1.4px solid {{ dlnBigCol }}; border-radius:9px; padding:6px 10px; background:var(--icard);">
           <div style="font-family:'IBM Plex Mono'; font-size:9.5px; font-weight:600; letter-spacing:.6px; color:{{ dlnBigCol }};">{{ dlnBigT }}</div>
@@ -1037,7 +1040,7 @@ DC.define('StageSeparator', {
       <div style="flex:0 0 auto; border:1px solid var(--line); border-radius:9px; padding:5px 0;">
         <div style="padding:2px 11px 4px; font-size:11.5px; font-weight:600; color:var(--txt);">Separator Test Record</div>
         <sc-for list="{{ dlnRec }}" as="r" hint-placeholder-count="7">
-          <div style="display:flex; justify-content:space-between; gap:8px; padding:2px 11px; font-family:'IBM Plex Mono'; font-size:10px;"><span style="color:var(--mut); white-space:nowrap;">{{ r.k }}</span><span style="font-weight:600; color:{{ r.c }}; white-space:nowrap;">{{ r.v }}</span></div>
+          <div style="display:flex; justify-content:space-between; align-items:baseline; gap:8px; padding:2px 11px; font-family:'IBM Plex Mono'; font-size:10px;"><span style="color:var(--mut); min-width:0;">{{ r.k }}</span><span style="font-weight:600; color:{{ r.c }}; text-align:right; flex:0 1 auto;">{{ r.v }}</span></div>
         </sc-for>
       </div>
       <div style="flex:0 0 auto; border:1px solid var(--line2); border-radius:9px; padding:5px 0; background:var(--panel2);">
@@ -1061,12 +1064,11 @@ DC.define('StageSeparator', {
         </div>
       </sc-if>
     </div>
+    <div class="vl-dock">
+      <div class="pc-host" data-pc="StageSeparator" data-pc-layout="side"></div>
+      <div class="vl-fwd"></div>
+    </div>
   </div>
-  </sc-if>
-
-  <!-- actions: shared procedure panel (components/ProcCtl.js) -->
-  <div style="display:flex; align-items:center; gap:8px; flex:0 0 auto;">
-    <div class="pc-host" data-pc="StageSeparator" data-pc-layout="bar" style="flex:1 1 auto;"></div>
   </div>
 </div>`,
   logic: Component

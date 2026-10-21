@@ -487,8 +487,9 @@ class Component extends DCLogic {
     const pvCompStyle = (embedded ? 'width:100px; height:78px; ' : '') + 'transition:filter .3s ease;' + (_sOn && _sig > 0.86 ? ' filter:drop-shadow(0 0 5px rgba(70,211,154,.85));' : '');
 
     const xMin = C.xMin, xMax = C.xMax, yMin = C.yMin, yMax = C.yMax;
-    // plot frame: embedded = the original 460 x 360 drawing; standalone = measured graph area (see syncGraphBox)
-    const SA = !embedded, GW = SA ? (this._gW || 640) : 460, GH = SA ? (this._gH || 300) : 360;
+    // plot frame: measured graph area (see syncGraphBox), standalone and embedded alike (2026-10-21: DL / Separator
+    // now have the shared sidebar, so their PV panel uses the Validation presentation: point table above a full-width graph)
+    const SA = true, GW = SA ? (this._gW || 640) : 460, GH = SA ? (this._gH || 300) : 360;
     const left = SA ? 64 : 56, top = SA ? 12 : 14;
     const w = SA ? Math.max(160, GW - left - 20) : 368, h = SA ? Math.max(90, GH - top - 46) : 310;
     const px = (v) => (left + (v - xMin) / (xMax - xMin) * w).toFixed(1);
@@ -617,8 +618,11 @@ class Component extends DCLogic {
 
     // Validation PV: compact horizontal point table (columns = points 01-12, rows = P and V), same DATA / reveal as the sheet
     // value type follows the measured panel width so '5,000' always fits its column (1366 wide: ~10.5 px; 1920: 12.5 px)
-    const _hColW = ((this._gW || 640) - 58) / NPTS, pvHFs = Math.max(9, Math.min(12.5, _hColW / 3.25)).toFixed(1);
-    const pvHCols = 'grid-template-columns:58px repeat(' + NPTS + ',minmax(0,1fr));';
+    // embedded (DL / Separator, narrower graph column): sized from the longest value of the dataset (e.g. 35.0000 cc), label column 46 px
+    const _hLab = embedded ? 46 : 58, _hColW = ((this._gW || 640) - _hLab) / NPTS;
+    const _hLen = Math.max.apply(null, DATA.map(([p, v]) => Math.max(p.toLocaleString('en-US').length, v.toFixed(dec).length)));
+    const pvHFs = (embedded ? Math.max(8, Math.min(12.5, (_hColW - 3) / (0.62 * _hLen))) : Math.max(9, Math.min(12.5, _hColW / 3.25))).toFixed(1);
+    const pvHCols = 'grid-template-columns:' + _hLab + 'px repeat(' + NPTS + ',minmax(0,1fr));';
     const pvHTable = DATA.map(([p, v], i) => {
       const rev = i < n, isBubble = _isPsatPt(i) && confirmed && rev, isNew = phase === 'rec' && i === n - 1, isActive = busy && i === n - 1;
       const bg = isBubble ? 'rgba(195,58,82,.10)' : isActive ? 'rgba(47,111,208,.12)' : rev ? 'var(--panel)' : 'transparent';
@@ -696,12 +700,12 @@ class Component extends DCLogic {
     const pvStatusText = returned ? 'Returned to Initial Condition' : busy ? pvSeqText : n >= NPTS ? ('All ' + NPTS + ' Points Recorded') : 'Ready to Start';
 
     return {
-      pvEmbedded: embedded, pvStandalone: !embedded,
+      pvEmbedded: embedded, pvStandalone: !embedded, pvHTOn: SA, pvSheetOn: !SA,
       // embedded (Differential Liberation): larger PVT-cell column, wider worksheet; standalone Validation layout unchanged
       /* results (graph + recorded points) appear only once the PV run starts; before that the
          setup panel takes the whole row (no reserved empty space) */
       pvResOn: busy || n > 0 || returned,
-      pvGridCols: !(busy || n > 0 || returned) ? 'minmax(0,1fr)' : embedded ? 'minmax(0,0.84fr) minmax(0,1.16fr)' : 'minmax(0,1fr) minmax(0,1fr)',
+      pvGridCols: !(busy || n > 0 || returned) ? 'minmax(0,1fr)' : embedded ? 'minmax(0,0.86fr) minmax(0,1.14fr)' : 'minmax(0,1fr) minmax(0,1fr)',
       pvSheetW: embedded ? '212px' : '158px',
       pvSheetHdGrid: embedded ? '30px minmax(0,1fr) minmax(0,1fr)' : '26px minmax(0,1fr) minmax(0,1fr)',
       pvCtlW: PK ? '128px' : '112px',
@@ -840,10 +844,10 @@ DC.define('StagePVTest', {
 
         <!-- PVT Cell (approved shared design, PVTCellArt) centred, computer + controller to the right: one drawing -->
         <div style="{{ pvCellColStyle }}">
-          <div style="display:flex; align-items:center; justify-content:center; gap:8px; flex:0 0 auto;">
-            <span style="font-size:15px; font-weight:700; color:var(--txt); letter-spacing:-.2px; white-space:nowrap;">PVT Cell</span>
-            <button type="button" class="bd-btn bd-inline" data-cd-open="" data-cd-ctx="PV / Bsat · closed cell, Pump A open to the pressure sensor">Cell Details</button>
-            <span style="display:inline-flex; align-items:center; padding:2px 9px; border-radius:999px; background:{{ pvCellTagBg }}; border:1px solid {{ pvCellTagBorder }}; font-family:'IBM Plex Mono'; font-size:9.5px; letter-spacing:.5px; color:{{ pvCellTagColor }}; white-space:nowrap;">{{ pvCellTag }}</span>
+          <div style="display:flex; align-items:center; justify-content:center; gap:8px; flex:0 0 auto; min-width:0;">
+            <span style="font-size:15px; font-weight:700; color:var(--txt); letter-spacing:-.2px; white-space:nowrap; flex:0 0 auto;">PVT Cell</span>
+            <button type="button" class="bd-btn bd-inline" style="flex:0 0 auto;" data-cd-open="" data-cd-ctx="PV / Bsat · closed cell, Pump A open to the pressure sensor">Cell Details</button>
+            <span title="{{ pvCellTag }}" style="display:block; min-width:0; flex:0 1 auto; overflow:hidden; text-overflow:ellipsis; padding:2px 9px; border-radius:999px; background:{{ pvCellTagBg }}; border:1px solid {{ pvCellTagBorder }}; font-family:'IBM Plex Mono'; font-size:9.5px; letter-spacing:.5px; color:{{ pvCellTagColor }}; white-space:nowrap;">{{ pvCellTag }}</span>
           </div>
           <svg viewBox="735 96 628 470" preserveAspectRatio="xMidYMid meet" style="display:block; width:100%; height:100%; flex:1 1 auto; min-height:0;">
         <defs>
@@ -906,7 +910,7 @@ DC.define('StagePVTest', {
       </div>
       <div style="{{ pvGRowStyle }}">
       <!-- Validation PV: compact horizontal point table (points 01-12 across, P and V rows), counter on the right -->
-      <sc-if value="{{ pvStandalone }}" hint-placeholder-val="{{ true }}">
+      <sc-if value="{{ pvHTOn }}" hint-placeholder-val="{{ true }}">
       <div style="flex:0 0 auto; display:flex; flex-direction:column; border:1px solid var(--line2); border-radius:8px; overflow:hidden; background:var(--panel2); font-family:'IBM Plex Mono',ui-monospace,monospace; font-variant-numeric:tabular-nums;">
         <div style="display:grid; {{ pvHCols }} background:var(--icard); border-bottom:1px solid var(--line2);">
           <span title="Recorded points" style="height:22px; display:flex; align-items:center; padding:0 8px; font-size:10.5px; font-weight:700; color:{{ pvPointsColor }}; white-space:nowrap;">{{ pvPointsOfText }}</span>
@@ -929,7 +933,7 @@ DC.define('StagePVTest', {
       </div>
       </sc-if>
       <!-- recorded P/V worksheet (embedded: Differential Liberation / Separator Test) -->
-      <sc-if value="{{ pvEmbedded }}" hint-placeholder-val="{{ false }}">
+      <sc-if value="{{ pvSheetOn }}" hint-placeholder-val="{{ false }}">
       <div style="flex:0 0 {{ pvSheetW }}; min-width:0; align-self:flex-start; max-height:100%; display:flex; flex-direction:column; border:1px solid var(--line2); border-radius:8px; overflow:hidden; background:var(--panel2);">
         <div style="display:flex; align-items:center; justify-content:space-between; gap:6px; padding:5px 7px; background:var(--icard); border-bottom:1px solid var(--line2);">
           <span style="font-family:'IBM Plex Mono'; font-size:7.5px; letter-spacing:.6px; text-transform:uppercase; white-space:nowrap; color:var(--mut);">Recorded Points</span>

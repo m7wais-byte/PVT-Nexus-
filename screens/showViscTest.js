@@ -2,7 +2,7 @@
    Header / status / back button are shared. Each test has its OWN workspace
    block below — replace only that block when the test is developed. */
 DC.slot('showViscTest', `<sc-if value="{{ showViscTest }}" hint-placeholder-val="{{ false }}">
-    <div data-screen-label="{{ vtName }}" class="pg" style="max-width:none;">
+    <div data-screen-label="{{ vtName }}" class="pg pg-stack" style="max-width:none;">
 
       <!-- compact page header (shared .pg-head) -->
       <div class="pg-head">
@@ -14,6 +14,8 @@ DC.slot('showViscTest', `<sc-if value="{{ showViscTest }}" hint-placeholder-val=
           <p class="pg-desc">{{ vtDesc }}</p>
         </div>
         <div class="pg-end">
+          <sc-if value="{{ vtIsSingleBtl }}" hint-placeholder-val="{{ false }}"><button type="button" class="bd-btn" data-bd-open="oil" data-bd-ctx="SPS/PDS sample bottle · feeding the viscometer">Bottle Details</button></sc-if>
+          <sc-if value="{{ vtIsTwoCell }}" hint-placeholder-val="{{ false }}"><button type="button" class="bd-btn" data-cd-open="" data-cd-ctx="Two-Phase Viscosity · oil leaves at Port L, gas at Port R">Cell Details</button></sc-if>
           <button onclick="{{ viscBackToMenu }}" class="ui-btn ui-btn-ghost">
             <svg width="13" height="13" sc-camel-view-box="0 0 24 24" fill="none"><path d="M19 12H5M11 6l-6 6 6 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></path></svg>
             Viscosity Tests

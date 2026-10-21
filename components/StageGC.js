@@ -1723,7 +1723,9 @@ class Component extends DCLogic {
       gcExhaustStyle: 'opacity:' + (detected.length && (st.running || st.complete) ? 1 : 0) + '; transition:opacity .4s ease;',
       gcDetLampA: st.pulse ? '#e0846b' : (st.det === 'Ready' ? '#6b3a33' : '#3a4c66'),
       gcDetLampB: st.det === 'Ready' ? '#46d39a' : '#3a4c66',
-      gcCols: !gcRes ? 'minmax(0,1fr) clamp(260px,22vw,330px)' : isGas ? (st.results && st.resTab === 'table' ? 'minmax(0,1.3fr) minmax(330px,1fr)' : 'minmax(0,1.45fr) minmax(360px,1fr)') : 'minmax(0,1.52fr) minmax(330px,1fr)',
+      gcSchemBd: gcRes ? '1px solid var(--line)' : 'none',
+      // shared sidebar since 2026-10-21: the composition table gets the wider share of the simulation area so every column shows
+      gcCols: !gcRes ? 'minmax(0,1fr)' : st.results && st.resTab === 'table' ? (isGas ? 'minmax(0,0.85fr) minmax(470px,1.15fr)' : 'minmax(0,0.8fr) minmax(570px,1.2fr)') : isGas ? 'minmax(0,1.45fr) minmax(360px,1fr)' : 'minmax(0,1.52fr) minmax(330px,1fr)',
       gcReadyCols: gcRes ? 'repeat(5,minmax(0,1fr))' : 'minmax(0,1fr)',
       ...gasVals,
 
@@ -1880,24 +1882,27 @@ DC.define('StageGC', {
 
 <!-- ================= ANALYSIS WORKSPACE ================= -->
 <sc-if value="{{ gcRun }}" hint-placeholder-val="{{ false }}">
-<div data-screen-label="GC Analysis" style="display:flex; flex-direction:column; height:var(--page-h); overflow:hidden; padding:var(--page-pad-y) var(--page-pad-x) 12px; gap:8px; box-sizing:border-box; background:var(--bg);">
+<div data-screen-label="GC Analysis" class="pg pg-stack">
 
-  <!-- header -->
-  <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap; flex:0 0 auto;">
-    <div style="flex:1 1 240px; min-width:0; display:flex; align-items:baseline; gap:8px; flex-wrap:wrap;">
+  <!-- header (shared .pg-head, same treatment as Validation): eyebrow · title · status · description · equipment details -->
+  <div class="pg-head">
+    <div class="pg-titles">
+      <span class="pg-eyebrow">Analysis</span>
       <h2 class="pg-title">{{ gcTitle }}</h2>
-      <div class="pg-desc">{{ gcSub }}</div>
+      <span style="align-self:center; display:inline-flex; align-items:center; gap:6px; flex:0 0 auto; padding:3px 11px; border-radius:999px; background:{{ gcPillBg }}; border:1px solid {{ gcPillBorder }}; font-family:'IBM Plex Mono'; font-size:10px; letter-spacing:.7px; text-transform:uppercase; color:{{ gcPillColor }}; white-space:nowrap;"><span style="{{ gcPillDot }}"></span>{{ gcPillText }}</span>
+      <p class="pg-desc">{{ gcSub }}</p>
     </div>
-    <div style="display:flex; align-items:center; gap:6px; flex:0 0 auto; padding:5px 11px; border-radius:999px; background:{{ gcPillBg }}; border:1px solid {{ gcPillBorder }}; font-family:'IBM Plex Mono'; font-size:10px; letter-spacing:.7px; text-transform:uppercase; color:{{ gcPillColor }}; white-space:nowrap;">
-      <span style="{{ gcPillDot }}"></span>{{ gcPillText }}
-    </div>
+    <sc-if value="{{ gcIsGas }}" hint-placeholder-val="{{ false }}">
+    <div class="pg-end"><button type="button" class="bd-btn" data-bd-open="gas" data-bd-ctx="Gas GC · active gas sample bottle in the balloon oven">Bottle Details</button></div>
+    </sc-if>
   </div>
 
-  <!-- working area -->
-  <div style="display:grid; grid-template-columns:{{ gcCols }}; gap:0; flex:1 1 auto; min-height:0; background:var(--panel); border:1px solid var(--line); border-radius:12px; box-shadow:0 1px 2px rgba(20,35,60,.05); overflow:hidden;">
+  <!-- working area: simulation (schematic | chromatogram / results column once the sample is injected) + shared sidebar -->
+  <div class="lab-body">
+  <div class="lab-schem" style="display:grid; grid-template-columns:{{ gcCols }}; grid-template-rows:minmax(0,1fr); gap:0; background:var(--panel); border:1px solid var(--line); border-radius:12px; box-shadow:0 1px 2px rgba(20,35,60,.05); overflow:hidden;">
 
     <!-- ===== schematic ===== -->
-    <div style="display:flex; flex-direction:column; min-height:0; border-right:1px solid var(--line); padding:6px 8px 4px;">
+    <div style="display:flex; flex-direction:column; min-height:0; min-width:0; border-right:{{ gcSchemBd }}; padding:6px 8px 4px;">
       <div style="flex:1 1 auto; min-height:0; border-radius:9px; background:var(--panel); border:1px solid var(--line2); overflow:hidden;">
         <sc-if value="{{ gcIsGas }}" hint-placeholder-val="{{ true }}">
         <svg viewBox="0 40 1460 822" width="100%" height="100%" preserveAspectRatio="xMidYMid meet" style="display:block;">
@@ -2890,17 +2895,9 @@ DC.define('StageGC', {
 
     </div>
 
-    <!-- ===== data system column ===== -->
-    <div style="display:flex; flex-direction:column; min-height:0; padding:6px 8px 6px;">
-
-      <div style="flex:0 0 auto; display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:5px;">
-        <sc-for list="{{ gcDsStrip }}" as="s" hint-placeholder-count="8">
-          <div style="border-radius:7px; background:var(--panel2); border:1px solid var(--line); padding:3px 7px; min-width:0;">
-            <div style="font-family:'IBM Plex Mono'; font-size:7.5px; letter-spacing:.6px; text-transform:uppercase; color:var(--mut); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ s.k }}</div>
-            <div style="font-family:'IBM Plex Mono'; font-size:10.5px; font-weight:600; color:{{ s.color }}; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ s.v }}</div>
-          </div>
-        </sc-for>
-      </div>
+    <!-- ===== data system column (chromatograms / composition table) ===== -->
+    <sc-if value="{{ gcResOn }}" hint-placeholder-val="{{ false }}">
+    <div style="display:flex; flex-direction:column; min-height:0; min-width:0; padding:6px 8px 6px;">
 
       <!-- chromatogram (oil): one timeline shared with the column animation and the results table -->
       <sc-if value="{{ gcOilTabs }}" hint-placeholder-val="{{ false }}">
@@ -2916,7 +2913,7 @@ DC.define('StageGC', {
             <span style="font-family:'IBM Plex Mono'; font-size:9.5px; font-weight:700; letter-spacing:.8px; text-transform:uppercase; color:#b9831f; white-space:nowrap;">Simulated chromatogram</span>
             <span style="flex:1 1 auto; min-width:0; font-family:'IBM Plex Mono'; font-size:9px; color:#6b7686; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ gcPlaybackText }}</span>
             <button onclick="{{ gcChromAllToggle }}" style="{{ gcChromAllStyle }}">{{ gcChromAllText }}</button>
-            <button onclick="{{ gcChromOpen }}" style="font-family:inherit; font-size:10.5px; font-weight:600; white-space:nowrap; padding:4px 10px; border-radius:6px; cursor:pointer; background:#ffffff; border:1px solid #cfd6e0; color:#3a4759;">Expand Chromatogram</button>
+            <button onclick="{{ gcChromOpen }}" style="font-family:inherit; font-size:10.5px; font-weight:600; white-space:nowrap; padding:4px 10px; border-radius:6px; cursor:pointer; background:#ffffff; border:1px solid #cfd6e0; color:#3a4759;" title="Expand chromatogram">Expand</button>
           </div>
           <div data-gc-chrom="1" style="flex:1 1 auto; min-height:0; position:relative;">
           <svg sc-camel-view-box="{{ gcOilChart.vb }}" width="100%" height="100%" preserveAspectRatio="xMidYMid meet" style="position:absolute; inset:0; display:block; user-select:none;">
@@ -3138,24 +3135,6 @@ DC.define('StageGC', {
       </sc-if>
       </sc-if>
 
-      <!-- status line -->
-      <div style="flex:0 0 auto; margin-top:5px; display:flex; align-items:center; gap:8px; padding:5px 9px; border-radius:8px; background:{{ gcMsgBg }}; border:1px solid {{ gcMsgBorder }};">
-        <span style="width:7px; height:7px; border-radius:50%; flex:0 0 auto; background:{{ gcMsgDot }};"></span>
-        <span style="flex:1 1 58%; min-width:0; font-size:11.5px; font-weight:500; color:var(--txt); line-height:1.3; text-wrap:pretty;">{{ gcStatus }}</span>
-        <span style="flex:0 1 34%; min-width:0; text-align:right; font-family:'IBM Plex Mono'; font-size:9.5px; color:var(--mut); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ gcEdu }}</span>
-      </div>
-
-      <!-- readiness checklist -->
-      <sc-if value="{{ gcShowReady }}" hint-placeholder-val="{{ true }}">
-      <div style="flex:0 0 auto; margin-top:5px; display:grid; grid-template-columns:{{ gcReadyCols }}; gap:5px;">
-        <sc-for list="{{ gcReady }}" as="r" hint-placeholder-count="5">
-          <div style="{{ r.style }}">
-            <span style="{{ r.dot }}"></span><span style="font-family:'IBM Plex Mono'; font-size:8.5px; letter-spacing:.3px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ r.k }}</span>
-          </div>
-        </sc-for>
-      </div>
-      </sc-if>
-
       <!-- results -->
       <sc-if value="{{ gcShowTable }}" hint-placeholder-val="{{ false }}">
       <div style="flex:1 1 auto; margin-top:5px; min-height:0; display:flex; flex-direction:column; border:1px solid var(--line); border-radius:9px; overflow:hidden; background:var(--panel);">
@@ -3182,8 +3161,39 @@ DC.define('StageGC', {
       </div>
       </sc-if>
     </div>
+    </sc-if>
   </div>
 
+  <!-- sidebar (shared Validation layout): current action · data-system readings · readiness, then the procedure dock -->
+  <div class="lab-side">
+    <div class="vl-scroll">
+      <div class="vl-sec" style="gap:6px;">
+        <div class="vl-k">Current action</div>
+        <div style="display:flex; align-items:flex-start; gap:8px; padding:6px 9px; border-radius:8px; background:{{ gcMsgBg }}; border:1px solid {{ gcMsgBorder }};">
+          <span style="width:7px; height:7px; margin-top:4px; border-radius:50%; flex:0 0 auto; background:{{ gcMsgDot }};"></span>
+          <span style="flex:1 1 auto; min-width:0; font-size:11.5px; font-weight:500; color:var(--txt); line-height:1.35; text-wrap:pretty;">{{ gcStatus }}</span>
+        </div>
+        <div style="font-family:'IBM Plex Mono'; font-size:9.5px; line-height:1.35; color:var(--mut);">{{ gcEdu }}</div>
+      </div>
+      <sc-if value="{{ gcShowReady }}" hint-placeholder-val="{{ true }}">
+      <div class="vl-sec" style="gap:6px;">
+        <div class="vl-k">Readiness</div>
+        <div style="display:grid; grid-template-columns:minmax(0,1fr); gap:4px;">
+          <sc-for list="{{ gcReady }}" as="r" hint-placeholder-count="5">
+            <div style="{{ r.style }}">
+              <span style="{{ r.dot }}"></span><span style="font-family:'IBM Plex Mono'; font-size:8.5px; letter-spacing:.3px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ r.k }}</span>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+      </sc-if>
+    </div>
+    <div class="vl-dock">
+      <div class="pc-host" data-pc="StageGC" data-pc-layout="side"></div>
+      <div class="vl-fwd"><button class="ui-btn ui-btn-ghost" onclick="{{ gcToModes }}">&#8592; Mode Selection</button></div>
+    </div>
+  </div>
+  </div>
 
   <!-- expanded chromatogram (oil) with zoom / pan -->
   <sc-if value="{{ gcChromBig }}" hint-placeholder-val="{{ false }}">
@@ -3386,11 +3396,6 @@ DC.define('StageGC', {
   </div>
   </sc-if>
 
-  <!-- controls -->
-  <div style="flex:0 0 auto; display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
-    <div class="pc-host" data-pc="StageGC" data-pc-layout="bar" style="flex:1 1 auto;"></div>
-    <button class="act" onclick="{{ gcToModes }}" style="font-family:inherit; font-size:10.5px; font-weight:500; white-space:nowrap; padding:7px 12px; border-radius:8px; cursor:pointer; background:var(--icard); border:1px solid var(--line2); color:var(--txt2);" style-hover="border-color:var(--blue); color:var(--txt);">Mode Selection</button>
-  </div>
 </div>
 </sc-if>`,
   logic: Component

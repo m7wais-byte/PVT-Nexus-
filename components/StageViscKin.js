@@ -658,10 +658,11 @@ DC.define('StageViscKin', {
     </sc-for>
   </div>
 
-  <div style="flex:1 1 auto; min-height:0; display:flex; gap:10px;">
+  <!-- shared Validation layout: simulation area (.vl-sim) | fixed sidebar (readings + procedure dock) -->
+  <div class="lab-body">
 
     <!-- ============ schematic ============ -->
-    <div style="flex:1 1 auto; min-width:0; display:flex; flex-direction:column; border:1px solid var(--line); border-radius:12px; background:var(--panel2); overflow:hidden;">
+    <div class="lab-schem vl-sim" style="padding:0;">
       <div style="flex:0 0 auto; display:flex; align-items:center; gap:9px; padding:7px 12px; border-bottom:1px solid var(--line);">
         <span style="{{ kvMsgDot }}"></span>
         <span style="flex:1 1 auto; min-width:0; font-size:12.5px; font-weight:500; color:{{ kvMsgCol }};">{{ kvMsg }}</span>
@@ -933,7 +934,9 @@ DC.define('StageViscKin', {
     </div>
 
     <!-- ============ live information panel ============ -->
-    <div class="kv-side" style="flex:0 0 300px; min-width:0; display:flex; flex-direction:column; gap:8px; border:1px solid var(--line); border-radius:12px; background:var(--panel2); padding:10px 12px; overflow:hidden;">
+    <div class="lab-side">
+    <div class="vl-scroll">
+    <div class="kv-side" style="flex:0 0 auto; min-width:0; display:flex; flex-direction:column; gap:8px; border:1px solid var(--line); border-radius:12px; background:var(--panel); padding:10px 12px;">
       <div class="kv-hdr" style="font-family:'IBM Plex Mono',monospace; font-size:9.5px; letter-spacing:1.4px; font-weight:600; color:var(--mut); text-transform:uppercase;">Live Measurement</div>
 
       <div style="display:flex; align-items:baseline; justify-content:space-between; gap:8px; padding:8px 12px; border-radius:10px; background:var(--icard); border:1px solid var(--line);">
@@ -993,11 +996,12 @@ DC.define('StageViscKin', {
         <span style="font-size:10px; color:var(--mut); line-height:1.4;">{{ kvNuNote }}</span>
       </div>
     </div>
-  </div>
-
-  <!-- controls: run controls left, navigation + reset right -->
-  <div style="flex:0 0 auto; display:flex; align-items:center; gap:8px 10px; flex-wrap:wrap;">
-    <div class="pc-host" data-pc="StageViscKin" data-pc-layout="bar" style="flex:1 1 100%; min-width:0;"></div>
+    </div>
+    <div class="vl-dock">
+      <div class="pc-host" data-pc="StageViscKin" data-pc-layout="side"></div>
+      <div class="vl-fwd"></div>
+    </div>
+    </div>
   </div>
 </div>`,
   logic: Component
