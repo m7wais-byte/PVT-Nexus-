@@ -216,12 +216,16 @@
 
   /* small selector when the page shows more than one bottle type */
   function closeMenu() { if (menu) { menu.remove(); menu = null; } }
+  // optional per-page names: data-bd-labels="Gas receiving bottle|..." (same order as data-bd-open) and a per-type
+  // context line data-bd-ctx-<type>; without them the approved type names are listed
   function openMenu(el, kinds, ctx) {
+    var labs = (el.getAttribute('data-bd-labels') || '').split('|');
     closeMenu();
     var r = el.getBoundingClientRect();
     menu = document.createElement('div'); menu.className = 'bd-menu'; menu.setAttribute('role', 'menu');
     menu.innerHTML = '<p>Bottles on this page</p>' + kinds.map(function (k) {
-      return '<button type="button" role="menuitem" data-k="' + k + '">' + esc(NAME[k]) + '</button>';
+      var i = kinds.indexOf(k), lab = labs[i] ? labs[i] + ' · ' + NAME[k] : NAME[k];
+      return '<button type="button" role="menuitem" data-k="' + k + '">' + esc(lab) + '</button>';
     }).join('');
     document.body.appendChild(menu);
     var mw = menu.offsetWidth, mh = menu.offsetHeight;
@@ -230,7 +234,7 @@
     menu.addEventListener('click', function (e) {
       var b = e.target.closest('[data-k]'); if (!b) return;
       var k = b.getAttribute('data-k'), rest = kinds.filter(function (x) { return x !== k; });
-      open([k].concat(rest).join('|'), ctx);
+      open([k].concat(rest).join('|'), el.getAttribute('data-bd-ctx-' + k) || ctx);
     });
     var f = menu.querySelector('button'); if (f) f.focus();
   }

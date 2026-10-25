@@ -186,13 +186,12 @@ uniform scale) through `components/BottleArt.js` (window.BottleArt). There are n
 | Validation · steps 1–3 (`showRestore`) | SPS/PDS, inverted (driving side up) | `oil` |
 | Validation · step 4 (`QcAgitSim`) | SPS/PDS on the inversion stand | `oil` |
 | Validation · Charging (`showTest`) | SPS/PDS charging rig | `oil` |
-| Validation · Recombination (`RecombSim`) | GSP gas bottle, separator oil bottle, recombination bottle | `gas` + `oil` (selector) |
+| Validation · Recombination (`RecombSim`) | GSP gas bottle, gas receiving bottle, separator oil bottle, recombination bottle | `gas` + `oil` (selector with functional names, `data-bd-labels`) |
 | Analysis · Single-phase viscosity (`StageViscSingle`) | SPS/PDS rig | `oil` |
 | Analysis · GC gas (`StageGC`) | active and spare gas bottles in the balloon oven | `gas` |
 
 Not sample bottles (unchanged): MDT/MPSR downhole bottles (BottomHoleSim), the source SPMC chamber on showXfer
-(see "SPMC source and SPMC Details" below), titanium
-transfer cylinder (RecombSim), PVT cells, pumps, flash balloon, helium cylinder.
+(see "SPMC source and SPMC Details" below), PVT cells, pumps, flash balloon, helium cylinder.
 
 **Bottle Details** (`components/BottleDetails.js`): any element with `data-bd-open="oil|gas"` (both types separated
 by `|` open a selector) and optional `data-bd-ctx` opens a full-screen overlay outside #app with the approved
@@ -643,10 +642,10 @@ drawn value a pure function of (stage, time), so pause / resume / restart / revi
 starts from the end state of the previous one. Main keeps `rcDone` / `rcStarted` via `opts.onStatus`.
 Explain = StepGuide card via `RecombSim.describe()` (per-stage text in `EX`).
 
-Stages (v3, 2026-09-30): 1 Connect + vacuum (titanium 30 cc water / piston on it, water pump 300 cc; vacuum pump
-behind the titanium top via isolation valve; booster in / out valves open, GSP closed; gas line evacuated through
+Stages (v3, 2026-09-30): 1 Connect + vacuum (receiving-bottle 30 cc water / piston on it, water pump 300 cc; vacuum pump
+behind the receiving-bottle top via isolation valve; booster in / out valves open, GSP closed; gas line evacuated through
 the booster check valves) · 2 Boost (hydraulic valve opened, water pump = pressure MONITOR at constant 300 cc;
-pump + cylinder read 0 -> CFG.BOOST_P, 1,000 psig in this example) · 3 water pump 300 -> 69 cc into the titanium
+pump + cylinder read 0 -> CFG.BOOST_P, 1,000 psig in this example) · 3 water pump 300 -> 69 cc into the receiving-bottle
 bottom, gas 1,000 -> 5,000 psig · 4 empty PVT cell evacuated, then exactly 60 cc gas into Pump A at 5,000 psig ·
 5 bottle receives 40 cc measured at 5,000 psig (Pump A 60 -> 20); the 20 cc STAYS in Pump A (no vent) ·
 6 cell leaves view with its 20 cc (no draining), empty cell fades in; oil bottle held 315 psig, pumped to
@@ -661,11 +660,11 @@ Recombination Bottle (180° inversion)".
 
 Booster (v3): vertical — air drive on top, gas head below; gas IN check valve on the left wall, OUT check valve
 on the right wall. Routes: GSP -> (y 120) -> BOOSTER IN valve -> down x 300 -> IN port; OUT port -> x 600 ->
-(y 120) -> BOOSTER OUT valve -> titanium top. Bypass valve, bypass line and its labels removed.
+(y 120) -> BOOSTER OUT valve -> receiving-bottle top. Bypass valve, bypass line and its labels removed.
 
 CFG - DEMONSTRATION INPUTS. User-specified: 30 cc, 300 cc, 1,000 / 5,000 psig gas, 60 / 40 cc gas,
 315 -> 3,000 psig oil, 100 + 80 cc, 99 + 80 cc, CELL_CAP 100 cc, OIL_A_END 1 cc, WORK_P 5,000, RES_P 3,000.
-Chosen for drawing / consistency: titanium 330 cc, bottle 275 cc, oil bottle 200 cc (1.4 cc water to reach
+Chosen for drawing / consistency: receiving-bottle 330 cc, bottle 275 cc, oil bottle 200 cc (1.4 cc water to reach
 3,000 psig), gas ratio 300 -> 69 cc (0.23) and P*V^n = const through it (also used for the bottle pressures),
 water pump refilled to 300 cc before the oil stage, MIX_SHRINK visual only. JACKET_T = null (no set point in the
 project data; set a number to show it). Not a validated GOR ratio (labelled on screen).
@@ -791,17 +790,22 @@ Backup: _backup_app_20260930_before_watersettle/
 ### Recombination layout (revised 2026-10-25)
 `components/RecombSim.js` drawing / layout only; quantities, pressures, timings and stage order unchanged except
 where noted. One fixed viewBox (`VB 6 102 1240 584`) for all nine stages, everything on one floor (`FLOOR` 646).
-- Vessels (titanium cylinder, separator oil bottle, recombination bottle) have both valve outlets facing RIGHT at
+- Vessels (gas receiving bottle, separator oil bottle, recombination bottle) have both valve outlets facing RIGHT at
   the same heights (sample `PORT_Y` 200, hydraulic `HYD_Y`). The water pump stands right of the vessel with its port
   on its LEFT face at `HYD_Y`: the hydraulic line is one short straight run with fittings at both ends. Tubing has
   rounded bends (`roundPts`) and hex fittings at connected ends; hydraulic lines are drawn wider than sample lines.
 - Stages 1-3: GSP = approved Gas Sample Bottle; its built-in top valve is the GSP valve (state ring + tag) and the
   gas line ends on its outlet (the separate line valve is gone). Booster In / Booster Out valves sit on the booster
-  ports (check valves unchanged inside the gas head). Vacuum pump below a tee in the booster-OUT -> titanium line;
+  ports (check valves unchanged inside the gas head). Vacuum pump below a tee in the booster-OUT -> receiving-bottle line;
   the vacuum isolation valve stays on the tee stub, the hose to the pump inlet is connected / removed.
-- Titanium cylinder keeps its titanium body; end caps and right-angle valves restyled to the approved steel finish.
+- Gas receiving bottle (2026-10-25 b, formerly the titanium cylinder): the approved Oil Sample Bottle (`BottleArt.oil`,
+  same placement as the sample bottles) with its own 330 cc capacity mapped onto the approved bore (`tiLayers`); its
+  own needle valves are the sample / hydraulic valves. All titanium drawing and wording removed (internal ids `ti`,
+  `TI_*` kept). Bottle Details lists it as "Gas receiving bottle · Oil Sample Bottle".
+- Stage 9 heating jacket = the Validation Restoration jacket markup (showRestore.js) mapped into the bottle frame
+  (`jacketMarkup`, x2.0407 about 300, 250), behind the bottle, turning with it; glow pulse computed from the stage clock.
 - Stage 4: no external vacuum pump; the empty cell is evacuated by the integrated cell setup (status pill above the
-  cell, Port L plugged until the titanium is connected). Text / Explain updated.
+  cell, Port L plugged until the receiving bottle is connected). Text / Explain updated.
 - Stages 4-8: complete integrated setup = approved PVT cell (`CELL_S` 0.95, standing on the floor) + signal cable +
   computer / controller (`PVTCellArt.desk`, `DESK`) to its right. Sample line: vessel sample outlet -> overhead ->
   drop at `CELL_DROP` -> Port L.
