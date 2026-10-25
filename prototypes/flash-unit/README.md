@@ -1,4 +1,4 @@
-# Flash Unit, Gasometer & Density Meter — Prototype 02 (design review)
+# Flash Unit, Gasometer & Density Meter — Prototype 02, rev. B (design review)
 
 Standalone review page for the redesigned Validation → Flash Process equipment. It is not linked to the simulator. No existing page, component or value was changed; `components/PVTCellArt.js` and `data/report-data.js` are only read.
 
@@ -14,14 +14,40 @@ No build step. `build-preview.py OUT.html` bundles the page into one file for th
 
 Review links: `?stage=n` (end of stage n) · `&run=1&t=<s>&hold=1` (run stage n, fast-forward, pause) · `&view=auto|system|fu|ga|dm` · `&labels=0` · `&details=fu|ga|dm&dview=overall|internal&demo=<stage>&dt=<s>`.
 
+## Rev. B (this revision)
+
+Equipment redrawn from the written description of the laboratory photographs. **The photographs themselves were not available in the session**, so proportions come from the description; please compare against the photos.
+
+- **Flash Unit**: black rectangular frame with transparent panels; upper stainless mounting plate with the inlet-control (isolation) valve, solenoid flow-control valve, delivery line and pressure transducer; a much larger glass flask with a sealed stainless head (two passages); balance on an adjustable lab jack; lower controller with PRESSURE and FLOW displays. Black valve handles.
+- **No permanent vacuum pump.** A portable pump is wheeled in during Stage 2, its hose attaches to a capped quick-connect, then it is disconnected and removed. Stage 2 gets a short connect / disconnect phase before and after the unchanged Stage 2 timeline (prototype addition). Route Check shows *Not installed → Connecting → Connected · Active → Disconnected*.
+- **Gasometer**: two-section stainless cabinet — 2,000 cc (left) and 1,000 cc (right); per section a volume display, temperature display, compound gauge, inlet / vent / isolation valves, a transparent chamber with a scale and a lower control knob.
+- **Blue gas-collection vessel** replaces the soft balloon: tall dark-blue cylinder, brass top valve with a black knob and a side connection. Its own valve is the isolation valve (no extra valve in the line).
+- **Density meter**: DMA 4100 M–style housing (grey, sloped touchscreen, red strip, side adapters, waste bottle with red cap, syringe). Screen method *Crude Oil (API)* with Density, API SG 60 °F, API Density 60 °F, API Gravity 60 °F, set and actual temperature, U-tube view, status and Start / Finished.
+
+### Values (unchanged from Main.js unless noted)
+
+Stages 1–6: Pump A 80 → 30 cc, flashed 50 cc, oil 40 g (balance 200 → 240 g), Gasometer helium 3,000 → 0 cc then gas 0 → 400 → 150 cc, vessel (balloon) 0 → 250 cc / 14.5 psi, unit pressure 14.7 → 0 → 14.7 psia, flow 0.3 mL/min, valve timing FXP.
+
+- **Gasometer split (prototype rule):** the existing total is shown as 2,000 cc section first + 1,000 cc section for the rest, so left + right always equals the total. Helium therefore leaves the 1,000 cc section first; flashed gas uses only the 2,000 cc section.
+- **Gasometer temperature:** not carried by the simulator; the displays show an example 22.0 °C.
+- **Stage 7 (example values):** set temperature 25.00 °C; ρ(25 °C) = 0.79400 g/cm³ back-calculated from the report stock-tank oil density 801.26 kg/m³ at 60 °F with the API MPMS 11.1 / ASTM D1250 crude-oil correction (simplified 1980 form: α60 = 341.0957/ρ60², CTL = exp(−αΔT(1+0.8αΔT))). Meter output: API density 60 °F 0.80126 g/cm³, SG 60/60 °F 0.8020, **44.9 °API** (report 44.9 °API). Aliquot 2.0 mL (≈1.6 g) illustrative; recorded oil stays 40 g.
+
+### Remaining assumptions
+
+1. Internal gasometer mechanics (what the knobs move) are not modelled; the chamber shows a gas column and boundary only.
+2. The 2,000-cc-first split order is a prototype rule unless the lab procedure says otherwise.
+3. Oil sampling through a flask side-arm with a stopcock (no flask photo detail for this).
+4. Temperature correction uses the simplified crude-oil form; the instrument applies the full standard.
+
 ## Files
 
 | File | Purpose |
 |---|---|
+| `parts.js` | Blue gas vessel, portable vacuum pump, syringe, waste container |
 | `common.js` | `FX`: path builder (SVG path + sampled polyline), tubing, fittings, valves, flow lanes, callouts, gradients |
 | `flash-unit.js` | `FlashUnit`: frame, sample inlet + inlet control valve, flexible lines, flask head, flask, balance, gas header, vacuum and balloon branches, oil sampling side-arm; port anchors and internal routes |
-| `gasometer.js` | `Gasometer`: piston-displacement gas meter, 3,000 cc |
-| `density-meter.js` | `DensityMeter`: oscillating U-tube benchtop meter |
+| `gasometer.js` | `Gasometer`: two-section gas meter, 2,000 + 1,000 cc |
+| `density-meter.js` | `DensityMeter`: DMA 4100 M–style meter, Crude Oil (API) screen |
 | `sim.js` | `FlashSim`: Stages 1–6 copied from `Main.js runFlashStage()`; Stage 7 timeline and the 60 °F / API calculation |
 | `scene.js` | Places instruments, draws inter-instrument tubing from port anchors, assembles flow routes, syringe |
 | `details.js` | Flash Unit / Gasometer / Density Meter Details (same pattern as `CellDetails.js`) |
@@ -29,6 +55,8 @@ Review links: `?stage=n` (end of stage n) · `&run=1&t=<s>&hold=1` (run stage n,
 | `screenshots/` | 1366×768 and 1920×1080 captures |
 
 The main preview and the Details views call the same instrument modules, so geometry and connections are identical.
+
+## Rev. A notes (superseded where rev. B differs)
 
 ## Corrected flow (Flash Unit)
 

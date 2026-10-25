@@ -1,179 +1,178 @@
-/* Gasometer — piston-displacement gas volume meter, 3,000 cc (the existing simulator capacity).
+/* Gasometer — two-section gas meter (rev. B): a tall stainless cabinet with a 2,000 cc section (left)
+   and a 1,000 cc section (right); combined 3,000 cc, the existing simulator capacity.
+   Each section: volume display (cc), temperature display (°C), compound gauge, inlet / vent /
+   isolation valves with black handles and a printed connection diagram, a tall transparent measuring
+   chamber with a graduated scale, and a lower manual control knob.
 
-   Measurement principle drawn (simplified educational schematic): gas enters the top of a precision
-   bore through one process port. A controller watches a differential-pressure sensor on the port line
-   (chamber vs. atmosphere) and drives the piston down through a lead screw so the chamber stays at
-   atmospheric pressure; the piston displacement is the gas volume shown on the display. Expelling gas
-   (helium to the flash unit, gas to the balloon) is the same drive in reverse.
-   This follows published descriptions of piston-type gas meters (motor-driven piston held at a set
-   pressure, volume counted from the drive); the internals of a specific commercial model are not
-   verified, so the cutaway is a schematic.
+   Measurement logic drawn (no internal mechanism claimed): the total reading is the existing simulator
+   value. It is split across the sections in a fixed order — the 2,000 cc section is used first, the
+   1,000 cc section takes the remainder — so left + right always equals the total shown elsewhere.
+   The chamber fill is shown as a tinted gas column with a boundary line; the knob turns with the
+   section volume. How the real knob and chamber work internally is not modelled.
 
-   Live state (view model V): V.gasoVol (cc in the chamber), V.gasoMode ('he' | 'gas'), V.valve.gaso,
-   V.gasoMove (-1 out, 0, +1 in). Drawing only. */
+   Live state (view model V): V.gaso2k, V.gaso1k (cc), V.gasoMode ('he' | 'gas'), V.gasoT (°C example),
+   V.valve.{in2k, iso2k, in1k, iso1k}. Drawing only. */
 (function () {
   'use strict';
   var F = window.FX, R = F.R, C = F.C, E = F.E, P = F.P, L = F.L, T = F.T, MONO = F.MONO, SANS = F.SANS, r1 = F.r1;
 
-  var cx = 165;
   var G = {
-    W: 330, H: 772, cap: 3000,
-    post: 16, roof: 22, head1: 124, portY: 140,
-    capTop: 150, bore0: 172, bore1: 412, capBot: 430, mid0: 430, mid1: 446, bot0: 748, bot1: 764,
-    hw: 52, glassHW: 60, tie: 72, pist: 16,
-    dpX: 108, valveX: 58, carOff: 300, motor0: 704, motor1: 744
+    W: 520, H: 860, foot: 840, supY: 254, valveY: 292, isoY: 330,
+    ch0: 372, ch1: 744,
+    sec: [
+      { k: '2k', cap: 2000, x0: 20, x1: 250, cx: 135, hw: 52, lab: '2,000 cc' },
+      { k: '1k', cap: 1000, x0: 270, x1: 500, cx: 385, hw: 36, lab: '1,000 cc' }
+    ]
   };
-  G.stroke = G.bore1 - G.bore0 - G.pist;
-  function pistonTop(v) { return G.bore0 + G.stroke * F.clamp(v / G.cap, 0, 1); }
+  G.sec.forEach(function (s) { s.inX = s.x0 + 40; s.ventX = s.x0 + 196; });
+  function gasH(sec, v) { return (G.ch1 - G.ch0 - 8) * F.clamp(v / sec.cap, 0, 1); }
 
+  /* routes: external inlet (left side) -> supply line -> section inlet valve -> junction -> isolation -> chamber top */
   var RT = {};
-  RT.port = F.path(0, G.portY).H(cx - 6).turn(cx, G.portY, cx, G.bore0 + 2, 6).V(G.bore0 + 2).end();
-  RT.portOut = F.geo('', RT.port.pts.slice().reverse());
+  G.sec.forEach(function (s) {
+    RT['in' + s.k] = F.path(0, G.supY).H(s.inX - 8).turn(s.inX, G.supY, s.inX, G.valveY, 8).V(G.valveY - 8).turn(s.inX, G.valveY, s.cx, G.valveY, 8)
+      .H(s.cx - 8).turn(s.cx, G.valveY, s.cx, G.ch0 + 4, 8).V(G.ch0 + 4).end();
+    RT['out' + s.k] = F.geo('', RT['in' + s.k].pts.slice().reverse());
+  });
 
-  function back() {
+  function cabinet() {
+    var s = '', w = G.W;
+    s += E(w / 2, G.H + 2, w / 2 + 12, 8, 'fill="#1b2a40" opacity=".12"');
+    s += R(0, 0, w, G.foot, 'rx="6" fill="url(#fxBrushed)" stroke="#8e98a5" stroke-width="1.4"');
+    s += R(6, 6, w - 12, G.foot - 12, 'rx="4" fill="none" stroke="#fff" stroke-width="1" opacity=".7"');
+    // plinth + feet
+    s += R(0, G.foot - 30, w, 30, 'fill="#b6bec8" stroke="#8e98a5" stroke-width="1"');
+    [14, w - 54].forEach(function (x) { s += R(x, G.foot, 40, G.H - G.foot, 'rx="3" fill="#2b3036"'); });
+    // the two control sections
+    G.sec.forEach(function (sc) {
+      s += R(sc.x0, 16, sc.x1 - sc.x0, 336, 'rx="5" fill="url(#fxCaseH)" stroke="#8592a3" stroke-width="1.2"');
+      [[sc.x0 + 8, 24], [sc.x1 - 8, 24], [sc.x0 + 8, 344], [sc.x1 - 8, 344]].forEach(function (q) { s += C(q[0], q[1], 2.6, 'fill="#9aa5b3" stroke="#5d6878" stroke-width=".6"'); });
+      s += T((sc.x0 + sc.x1) / 2, 36, sc.lab + ' SECTION', 'text-anchor="middle" ' + MONO + ' font-size="10" font-weight="700" letter-spacing="1" fill="#1d3a66"');
+      // volume + temperature displays
+      s += R(sc.x0 + 16, 44, sc.x1 - sc.x0 - 32, 48, 'rx="4" fill="url(#ppSteelD)" stroke="#2a3443" stroke-width="1"') + R(sc.x0 + 20, 48, sc.x1 - sc.x0 - 40, 40, 'rx="3" fill="url(#ppScreen)"');
+      s += T(sc.x0 + 26, 60, 'VOLUME', MONO + ' font-size="8" letter-spacing=".8" fill="#8fb3cc"');
+      s += R(sc.x0 + 16, 98, sc.x1 - sc.x0 - 32, 30, 'rx="4" fill="url(#ppSteelD)" stroke="#2a3443" stroke-width="1"') + R(sc.x0 + 20, 102, sc.x1 - sc.x0 - 40, 22, 'rx="3" fill="url(#ppScreen)"');
+      s += T(sc.x0 + 26, 117, 'TEMP', MONO + ' font-size="8" letter-spacing=".8" fill="#8fb3cc"');
+      // compound gauge
+      var gx = (sc.x0 + sc.x1) / 2, gy = 186;
+      s += C(gx, gy, 48, 'fill="url(#ppSteelV)" stroke="#2a3443" stroke-width="1.2"') + C(gx, gy, 41, 'fill="#fbfcfd" stroke="#5d6878" stroke-width="1"');
+      for (var i = 0; i <= 12; i++) {
+        var a = (-225 + i * 22.5) * Math.PI / 180, big = i % 3 === 0;
+        s += L(gx + Math.cos(a) * (big ? 31 : 34), gy + Math.sin(a) * (big ? 31 : 34), gx + Math.cos(a) * 39, gy + Math.sin(a) * 39, 'stroke="' + (i < 6 ? '#b8434e' : '#1d2836') + '" stroke-width="' + (big ? 1.4 : .8) + '"');
+      }
+      s += T(gx, gy + 18, 'inHg | psi', 'text-anchor="middle" ' + MONO + ' font-size="7.5" fill="#566578"');
+      s += T(gx, gy - 14, 'COMPOUND', 'text-anchor="middle" ' + MONO + ' font-size="6.5" letter-spacing=".6" fill="#566578"');
+      // printed connection diagram + valve names
+      s += T(sc.inX, G.valveY + 32, 'INLET', 'text-anchor="middle" ' + MONO + ' font-size="8" font-weight="600" fill="#33404f"');
+      s += T(sc.ventX, G.valveY + 32, 'VENT', 'text-anchor="middle" ' + MONO + ' font-size="8" font-weight="600" fill="#33404f"');
+      s += T(sc.cx + 30, G.isoY + 4, 'ISOL.', MONO + ' font-size="8" font-weight="600" fill="#33404f"');
+      s += P('M' + sc.cx + ' ' + G.valveY + ' H' + sc.ventX + ' M' + sc.ventX + ' ' + G.valveY + ' V' + 270 + ' H' + (sc.ventX + 22), 'fill="none" stroke="#33404f" stroke-width="1.4"');
+      s += T(sc.ventX + 24, 266, 'atm', MONO + ' font-size="7.5" fill="#566578"');
+    });
+    // external inlet bulkhead (left side) + supply line
+    s += F.tube(F.path(0, G.supY).H(G.sec[1].inX).end());
+    G.sec.forEach(function (sc) { s += F.tube(F.path(sc.inX, G.supY).V(G.valveY - 8).turn(sc.inX, G.valveY, sc.cx, G.valveY, 8).H(sc.cx - 8).turn(sc.cx, G.valveY, sc.cx, G.ch0, 8).V(G.ch0).end()); s += F.tee(sc.inX, G.supY); });
+    s += R(-8, G.supY - 11, 14, 22, 'rx="2" fill="url(#ppSteelD)" stroke="#2a3443" stroke-width=".9"') + F.nut(-12, G.supY, 'h', .9);
+    s += T(12, G.supY - 14, 'GAS IN', MONO + ' font-size="8.5" font-weight="700" letter-spacing=".6" fill="#33404f"');
+    return s;
+  }
+  function chambers(cut) {
     var s = '';
-    s += E(G.W / 2, G.H + 2, G.W / 2 + 10, 8, 'fill="#1b2a40" opacity=".10"');
-    s += R(G.post, G.roof, G.W - 2 * G.post, G.bot0 - G.roof, 'fill="url(#ppPanel)"');
-    s += R(G.post, G.mid1, G.W - 2 * G.post, G.bot0 - G.mid1, 'fill="url(#ppPanel)" opacity=".8"');
-    s += R(G.post + 30, G.roof + 6, G.W - 2 * G.post - 60, 2.5, 'rx="1.2" fill="#fff" opacity=".9"');
+    G.sec.forEach(function (sc) {
+      var x0 = sc.cx - sc.hw, x1 = sc.cx + sc.hw;
+      // flanges + tie rods
+      s += R(x0 - 14, G.ch0 - 12, 2 * sc.hw + 28, 12, 'rx="2" fill="url(#ppSteel)" stroke="#2a3443" stroke-width="1"');
+      s += R(x0 - 14, G.ch1, 2 * sc.hw + 28, 12, 'rx="2" fill="url(#ppSteel)" stroke="#2a3443" stroke-width="1"');
+      [x0 - 8, x1 + 8].forEach(function (x) { s += R(x - 2, G.ch0, 4, G.ch1 - G.ch0, 'fill="url(#ppSteelV)" stroke="#3c4553" stroke-width=".5"'); });
+      // transparent chamber (back)
+      s += R(x0, G.ch0, 2 * sc.hw, G.ch1 - G.ch0, 'fill="url(#fxCyl)" stroke="#7fa6c2" stroke-width="1.4"');
+      // graduated scale (outside, left of the chamber)
+      var step = sc.cap / 8;
+      for (var v = 0; v <= sc.cap; v += step) {
+        var y = G.ch0 + 4 + gasH(sc, v), big = (v / step) % 2 === 0;
+        s += L(x0 - 26, y, x0 - (big ? 12 : 18), y, 'stroke="#2a3443" stroke-width="' + (big ? 1.2 : .8) + '"');
+        if (big) s += T(x0 - 30, y + 3.5, v.toLocaleString('en-US'), 'text-anchor="end" ' + MONO + ' font-size="9" fill="#33404f"');
+      }
+    });
     return s;
   }
-  function headPanel() {
-    var s = '', y0 = G.roof + 8, y1 = G.head1;
-    s += R(G.post + 6, y0, G.W - 2 * G.post - 12, y1 - y0, 'rx="5" fill="url(#fxCase)" stroke="#8592a3" stroke-width="1"');
-    s += T(30, 52, 'GASOMETER', SANS + ' font-size="12" font-weight="700" letter-spacing=".4" fill="#1d3a66"');
-    s += T(30, 68, '3,000 cc', MONO + ' font-size="10.5" font-weight="600" fill="#33404f"');
-    s += T(30, 82, 'piston displacement', SANS + ' font-size="8.5" fill="#566578"');
-    s += R(122, 34, 188, 82, 'rx="5" fill="url(#ppSteelD)" stroke="#2a3443" stroke-width="1"') + R(127, 39, 178, 72, 'rx="3" fill="url(#ppScreen)"');
-    [0, 1, 2].forEach(function (i) { s += C(42 + i * 16, 104, 4, 'fill="' + ['#c9d0d9', '#c9d0d9', '#c9d0d9'][i] + '" stroke="#7d8898" stroke-width=".8"'); });
+  function chamberFill(V) {
+    var s = '', he = V.gasoMode === 'he', t = V.t || 0;
+    G.sec.forEach(function (sc) {
+      var v = V['gaso' + sc.k] || 0, h = gasH(sc, v), x0 = sc.cx - sc.hw + 3, w = 2 * sc.hw - 6;
+      if (h > 0.5) {
+        s += R(x0, G.ch0 + 3, w, h, 'fill="url(#' + (he ? 'fxHe' : 'fxGas') + ')" opacity=".85"');
+        for (var i = 0; i < 6; i++) { var px = x0 + 6 + (i * 29) % (w - 12), py = G.ch0 + 6 + ((i * 41 + t * 8) % Math.max(4, h - 6)); s += C(px, py, 1.5, 'fill="#fff" opacity=".6"'); }
+      }
+      // gas boundary
+      s += R(x0, G.ch0 + 3 + h, w, 5, 'fill="#5d6878" opacity=".85"') + R(x0, G.ch0 + 3 + h, w, 1.4, 'fill="#fff" opacity=".6"');
+      // highlights (front glass)
+      s += R(sc.cx - sc.hw + 8, G.ch0 + 4, 5, G.ch1 - G.ch0 - 8, 'rx="2.5" fill="#fff" opacity=".45"');
+    });
     return s;
   }
-  function cylinder(cut) {
-    var s = '', x0 = cx - G.glassHW, x1 = cx + G.glassHW;
-    // tie rods
-    [cx - G.tie, cx + G.tie].forEach(function (x) { s += R(x - 2.5, G.capTop, 5, G.capBot - G.capTop, 'fill="url(#ppSteelV)" stroke="#3c4553" stroke-width=".6"'); });
-    // cylinder wall
-    if (cut) {
-      s += R(x0, G.bore0, G.glassHW - G.hw, G.bore1 - G.bore0, 'fill="url(#ppHatch)" stroke="#2a3443" stroke-width=".8"') + R(cx + G.hw, G.bore0, G.glassHW - G.hw, G.bore1 - G.bore0, 'fill="url(#ppHatch)" stroke="#2a3443" stroke-width=".8"');
-      s += R(cx - G.hw, G.bore0, 2 * G.hw, G.bore1 - G.bore0, 'fill="#e3e8ee"') + R(cx - G.hw, G.bore0, 8, G.bore1 - G.bore0, 'fill="#c9d1db"');
-    } else {
-      s += R(x0, G.bore0, 2 * G.glassHW, G.bore1 - G.bore0, 'fill="url(#ppSteel)" stroke="#2a3443" stroke-width="1"');
-      s += R(cx - 13, G.bore0 + 8, 26, G.bore1 - G.bore0 - 16, 'rx="4" fill="#28313d" stroke="#2a3443" stroke-width="1"');   // sight window
-    }
-    // caps / flanges
-    s += R(x0 - 18, G.capTop, 2 * G.glassHW + 36, G.bore0 - G.capTop, 'rx="3" fill="url(#ppSteel)" stroke="#2a3443" stroke-width="1"');
-    s += R(x0 - 18, G.bore1, 2 * G.glassHW + 36, G.capBot - G.bore1, 'rx="3" fill="url(#ppSteel)" stroke="#2a3443" stroke-width="1"');
-    [cx - G.tie, cx + G.tie].forEach(function (x) { [G.capTop - 3, G.capBot - 4].forEach(function (y) { s += R(x - 6, y, 12, 7, 'rx="1.5" fill="url(#ppSteelD)" stroke="#2a3443" stroke-width=".7"'); }); });
-    if (cut) s += R(cx - 2, G.capTop - 8, 4, G.bore0 - G.capTop + 10, 'fill="#28313d"');
-    // volume scale (cc), right of the cylinder
-    for (var v = 0; v <= G.cap; v += 250) {
-      var y = pistonTop(v), big = v % 500 === 0;
-      s += L(x1 + 18, y, x1 + (big ? 32 : 26), y, 'stroke="#2a3443" stroke-width="' + (big ? 1.2 : .8) + '"');
-      if (big) s += T(x1 + 36, y + 3.5, v.toLocaleString('en-US'), MONO + ' font-size="9.5" fill="#33404f"');
-    }
-    s += T(x1 + 36, G.bore0 - 26, 'cc', MONO + ' font-size="9" fill="#566578"');
-    return s;
-  }
-  function drive(cut) {
-    var s = '', x0 = cx - 64, x1 = cx + 64;
-    s += R(G.post, G.mid0, G.W - 2 * G.post, G.mid1 - G.mid0, 'fill="url(#ppNavyV)" stroke="#132845" stroke-width="1"');
-    // bay window
-    s += R(x0 - 10, G.mid1 + 10, x1 - x0 + 20, G.motor0 - G.mid1 - 6, 'rx="4" fill="' + (cut ? '#e9edf2' : '#dfe4ea') + '" stroke="#9aa6b5" stroke-width="1"');
-    // guide rods + lead screw
-    [cx - 46, cx + 46].forEach(function (x) { s += R(x - 3, G.mid1, 6, G.motor0 - G.mid1, 'fill="url(#ppSteelV)" stroke="#3c4553" stroke-width=".6"'); });
-    s += R(cx + 24, G.mid1, 10, G.motor0 - G.mid1, 'fill="url(#fxScrew)" stroke="#3c4553" stroke-width=".7"');
-    // stepper motor + coupling
-    s += R(cx + 22, G.motor0 - 8, 14, 10, 'fill="#5d6878"');
-    s += R(cx + 4, G.motor0, 52, G.motor1 - G.motor0, 'rx="3" fill="#2b3644" stroke="#11161d" stroke-width="1"');
-    for (var i = 0; i < 5; i++) s += L(cx + 8, G.motor0 + 6 + i * 7, cx + 52, G.motor0 + 6 + i * 7, 'stroke="#46546a" stroke-width="1.5"');
-    s += T(cx - 10, G.motor0 + 24, 'M', 'text-anchor="middle" ' + MONO + ' font-size="10" font-weight="700" fill="#566578"');
-    // signal cable motor -> controller (dark, not tubing)
-    s += P('M' + (cx + 56) + ' ' + (G.motor0 + 20) + ' C ' + (G.W - 30) + ' ' + (G.motor0 + 20) + ', ' + (G.W - 30) + ' ' + (G.head1 + 40) + ', ' + (G.W - 40) + ' ' + G.head1, 'fill="none" stroke="#1e2733" stroke-width="2.6" stroke-linecap="round"');
-    // frame
-    s += R(0, 0, G.W, G.roof, 'fill="url(#ppNavyV)" stroke="#132845" stroke-width="1"');
-    [0, G.W - G.post].forEach(function (x) { s += R(x, 0, G.post, G.bot1, 'fill="url(#ppNavy)" stroke="#132845" stroke-width="1"'); });
-    s += R(0, G.bot0, G.W, G.bot1 - G.bot0, 'fill="url(#ppNavyV)" stroke="#132845" stroke-width="1"');
-    [8, G.W - 38].forEach(function (x) { s += R(x, G.bot1, 30, G.H - G.bot1, 'rx="3" fill="url(#ppSteelD)" stroke="#3c4553" stroke-width=".8"'); });
-    s += R(G.W / 2 - 60, 6, 120, 11, 'rx="2" fill="#e6ebf1" opacity=".95"');
-    s += T(G.W / 2, 14.5, '3,000 cc', 'text-anchor="middle" ' + MONO + ' font-size="8.5" font-weight="600" letter-spacing="1.4" fill="#1d3a66"');
-    return s;
-  }
-  function portLine() {
+  function knobs(V) {
     var s = '';
-    s += F.tube(F.path(0, G.portY).H(cx).V(G.capTop).end());
-    s += F.tee(G.dpX, G.portY);
-    // differential-pressure sensor (chamber vs. atmosphere)
-    s += R(G.dpX - 4, G.portY - 22, 8, 14, 'fill="url(#ppSteelD)" stroke="#2a3443" stroke-width=".7"') + R(G.dpX - 12, G.portY - 36, 24, 16, 'rx="3" fill="url(#ppSteel)" stroke="#2a3443" stroke-width="1"');
-    s += T(G.dpX, G.portY - 25, 'Δp', 'text-anchor="middle" ' + MONO + ' font-size="8.5" font-weight="700" fill="#33404f"');
-    s += R(G.post - 4, G.portY - 11, 10, 22, 'rx="2" fill="url(#ppSteelD)" stroke="#2a3443" stroke-width=".9"') + F.nut(4, G.portY, 'h', .9);
-    s += F.nut(cx, G.capTop - 6, 'v', .9);
+    G.sec.forEach(function (sc) {
+      var v = V['gaso' + sc.k] || 0, ang = 720 * v / sc.cap, y = 798;
+      s += R(sc.cx - 6, G.ch1 + 12, 12, y - G.ch1 - 34, 'fill="url(#ppSteelV)" stroke="#3c4553" stroke-width=".6"');
+      s += C(sc.cx, y, 26, 'fill="#1b1f24" stroke="#000" stroke-width="1.2"') + C(sc.cx, y, 18, 'fill="url(#fxBlack)"');
+      s += '<g transform="rotate(' + r1(ang) + ' ' + sc.cx + ' ' + y + ')">' + R(sc.cx - 3, y - 24, 6, 12, 'rx="2" fill="#c9d0d9"') + '</g>';
+    });
     return s;
   }
-
-  function chamber(V, cut) {
-    var s = '', v = V.gasoVol || 0, pt = pistonTop(v), he = V.gasoMode === 'he';
-    var x0 = cut ? cx - G.hw : cx - 11, w = cut ? 2 * G.hw : 22;
-    if (v > 1) s += R(x0, G.bore0, w, pt - G.bore0, 'fill="url(#' + (he ? 'fxHe' : 'fxGas') + ')" opacity=".95"');
-    if (v > 1 && cut) {
-      var t = V.t || 0;
-      for (var i = 0; i < 10; i++) { var px = x0 + 8 + (i * 37) % (w - 16), py = G.bore0 + 6 + ((i * 53 + t * 9) % Math.max(6, pt - G.bore0 - 10)); s += C(px, py, 1.5, 'fill="#fff" opacity=".6"'); }
-    }
-    // piston (+ seals), rod and carriage at the same displacement
-    s += R(x0, pt, w, G.pist, 'fill="url(#ppSteelV)" stroke="#2a3443" stroke-width="1"');
-    if (cut) { s += R(x0, pt + 4, w, 2.4, 'fill="#1d3a66"') + R(x0, pt + 10, w, 2.4, 'fill="#1d3a66"') + R(cx - G.hw + 4, pt + 1, 2 * G.hw - 8, 2, 'fill="#fff" opacity=".5"'); }
-    if (cut) s += R(cx - 5, pt + G.pist, 10, G.bore1 - pt - G.pist, 'fill="url(#ppSteelV)" stroke="#3c4553" stroke-width=".6"');
+  function displays(V) {
+    var s = '', he = V.gasoMode === 'he';
+    G.sec.forEach(function (sc) {
+      var v = V['gaso' + sc.k] || 0;
+      s += T(sc.x1 - 26, 82, Math.round(v).toLocaleString('en-US') + '<tspan font-size="10" fill="#8fb3cc"> cc</tspan>', 'text-anchor="end" ' + MONO + ' font-size="20" font-weight="600" fill="' + (v < 0.5 ? '#5fd4ff' : he ? '#8fdcff' : '#7ff0bf') + '"');
+      s += T(sc.x1 - 26, 119, (V.gasoT || 22).toFixed(1) + '<tspan font-size="9" fill="#8fb3cc"> °C</tspan>', 'text-anchor="end" ' + MONO + ' font-size="13" font-weight="600" fill="#ffc56b"');
+      s += T(sc.x0 + 26, 82, he && v > 0.5 ? 'He' : v > 0.5 ? 'GAS' : '', MONO + ' font-size="10" font-weight="700" fill="' + (he ? '#8fdcff' : '#7ff0bf') + '"');
+      // gauge needle: the meter holds the chamber near atmospheric, so the needle stays near 0 (moves slightly while gas flows)
+      var gx = (sc.x0 + sc.x1) / 2, gy = 186, act = (V.valve || {})['iso' + sc.k] || 0, a = (-90 + act * 6 * Math.sin((V.t || 0) * 3)) * Math.PI / 180;
+      s += L(gx, gy, gx + Math.cos(a) * 34, gy + Math.sin(a) * 34, 'stroke="#b8434e" stroke-width="1.8" stroke-linecap="round"') + C(gx, gy, 3, 'fill="#1d2836"');
+    });
     return s;
   }
-  function carriage(V) {
-    var v = V.gasoVol || 0, cy = pistonTop(v) + G.carOff, s = '';
-    s += R(cx - 5, G.capBot, 10, cy - G.capBot, 'fill="url(#ppSteelV)" stroke="#3c4553" stroke-width=".6"');
-    s += R(cx - 58, cy - 8, 116, 16, 'rx="2" fill="#d99a30" stroke="#7a5212" stroke-width="1"');
-    s += R(cx + 20, cy - 10, 18, 20, 'rx="2" fill="#b67a1c" stroke="#7a5212" stroke-width=".8"');
-    s += L(cx + 70, cy, cx + 84, cy, 'stroke="#b8434e" stroke-width="2"');
+  function valves(V) {
+    var s = '', v = V.valve || {};
+    G.sec.forEach(function (sc) {
+      s += F.valve(sc.inX, (G.supY + G.valveY) / 2 + 2, 'v', v['in' + sc.k] || 0, { side: 'right', ring: true });
+      s += F.valve(sc.ventX, G.valveY, 'h', 0, { side: 'down' });
+      s += F.valve(sc.cx, G.isoY, 'v', v['iso' + sc.k] || 0, { side: 'right' });
+    });
     return s;
   }
-  function display(V) {
-    var v = V.gasoVol || 0, he = V.gasoMode === 'he', s = '', mv = V.gasoMove || 0;
-    s += T(134, 54, 'VOLUME', MONO + ' font-size="9" letter-spacing=".8" fill="#8fb3cc"');
-    s += T(298, 72, Math.round(v).toLocaleString('en-US') + '<tspan font-size="11" fill="#8fb3cc"> cc</tspan>', 'text-anchor="end" ' + MONO + ' font-size="22" font-weight="600" fill="' + (he ? '#8fdcff' : v > 0.5 ? '#7ff0bf' : '#5fd4ff') + '"');
-    s += T(134, 92, 'GAS', MONO + ' font-size="9" letter-spacing=".8" fill="#8fb3cc"');
-    s += T(298, 92, he ? 'HELIUM' : 'FLASH GAS', 'text-anchor="end" ' + MONO + ' font-size="10.5" font-weight="700" letter-spacing=".6" fill="' + (he ? '#8fdcff' : '#7ff0bf') + '"');
-    s += T(134, 106, 'P HOLD', MONO + ' font-size="9" letter-spacing=".8" fill="#8fb3cc"');
-    s += T(298, 106, 'ATM', 'text-anchor="end" ' + MONO + ' font-size="10" font-weight="700" fill="#7ff0bf"');
-    s += C(256, 103, 3, 'fill="#2fbf7f"');
-    if (mv) s += T(210, 106, mv > 0 ? '▼ IN' : '▲ OUT', 'text-anchor="middle" ' + MONO + ' font-size="9.5" font-weight="700" fill="#ffc56b"');
-    s += C(42, 104, 4, 'fill="' + (mv ? '#2fbf7f' : '#c9d0d9') + '" stroke="#7d8898" stroke-width=".8"');
-    return s;
-  }
-  function valve(V) { return F.valve(G.valveX, G.portY, 'h', (V.valve || {}).gaso || 0, { side: 'down', tag: [0, 34] }); }
 
   function layers(o) {
-    o = o || {};
-    var cut = o.view !== 'exterior';
+    var cut = (o || {}).view !== 'exterior';
     return [
-      { id: 'ga-back', html: back() + headPanel() },
-      { id: 'ga-cyl', html: cylinder(cut) },
-      { id: 'ga-ch', fn: function (V) { return chamber(V, cut); } },
-      { id: 'ga-drv', html: drive(cut) },
-      { id: 'ga-car', fn: carriage },
-      { id: 'ga-port', html: portLine() },
-      { id: 'ga-valve', fn: valve },
-      { id: 'ga-disp', fn: display }
+      { id: 'ga-cab', html: cabinet() },
+      { id: 'ga-ch', html: chambers(cut) },
+      { id: 'ga-fill', fn: chamberFill },
+      { id: 'ga-knob', fn: knobs },
+      { id: 'ga-valve', fn: valves },
+      { id: 'ga-disp', fn: displays }
     ];
   }
 
   var LABELS = [
-    { id: 'inlet', n: 'Gas port', s: 'in and out · one line', a: [8, 140], p: [-26, 140], an: 'end' },
-    { id: 'valve', n: 'Gasometer valve', s: 'isolates the meter', a: [58, 162], p: [-26, 200], an: 'end' },
-    { id: 'dp', n: 'Δp sensor', s: 'chamber vs. atmosphere', a: [96, 112], p: [-26, 84], an: 'end' },
-    { id: 'chamber', n: 'Measuring chamber', s: 'gas above the piston', a: [cx - 60, 230], p: [-26, 262], an: 'end' },
-    { id: 'piston', n: 'Piston', s: 'sealed · moves with the gas', a: [cx - 60, 330], p: [-26, 340], an: 'end' },
-    { id: 'screw', n: 'Lead screw drive', s: 'piston rod + carriage', a: [cx - 58, 560], p: [-26, 560], an: 'end' },
-    { id: 'motor', n: 'Stepper motor', s: 'driven by the controller', a: [cx + 4, 724], p: [-26, 724], an: 'end' },
-    { id: 'display', n: 'Volume display', s: 'displacement → cc', a: [306, 60], p: [360, 52], an: 'start' },
-    { id: 'scale', n: 'Volume scale', s: '0 – 3,000 cc', a: [296, 300], p: [360, 300], an: 'start' },
-    { id: 'frame', n: 'Frame and cabinet', s: 'floor-standing', a: [322, 600], p: [360, 600], an: 'start' }
+    { id: 'inlets', n: 'Inlets', s: 'gas in · section inlet valves', a: [-10, G.supY], p: [-50, G.supY], an: 'end' },
+    { id: 'isolation', n: 'Isolation valves', s: 'one per chamber', a: [G.sec[0].cx - 10, G.isoY], p: [-50, G.isoY + 20], an: 'end' },
+    { id: 'chamber2k', n: '2,000 cc chamber', s: 'used first', a: [G.sec[0].cx - G.sec[0].hw - 30, 450], p: [-50, 440], an: 'end' },
+    { id: 'chambers', n: 'Transparent chambers', s: 'gas column + boundary', a: [G.sec[0].cx - G.sec[0].hw, 560], p: [-50, 540], an: 'end' },
+    { id: 'scales', n: 'Graduated scales', s: 'cc', a: [G.sec[0].cx - G.sec[0].hw - 20, 650], p: [-50, 640], an: 'end' },
+    { id: 'knobs', n: 'Lower control knobs', s: 'manual volume control', a: [G.sec[0].cx - 26, 798], p: [-50, 790], an: 'end' },
+    { id: 'volDisp', n: 'Volume displays', s: 'cc per section', a: [G.sec[1].x1 - 16, 68], p: [560, 60], an: 'start' },
+    { id: 'tempDisp', n: 'Temperature displays', s: 'example ambient value', a: [G.sec[1].x1 - 16, 113], p: [560, 116], an: 'start' },
+    { id: 'gauges', n: 'Compound gauges', s: 'vacuum | pressure', a: [(G.sec[1].x0 + G.sec[1].x1) / 2 + 48, 186], p: [560, 186], an: 'start' },
+    { id: 'vents', n: 'Vents', s: 'to atmosphere · closed', a: [G.sec[1].ventX + 14, G.valveY], p: [560, 262], an: 'start' },
+    { id: 'chamber1k', n: '1,000 cc chamber', s: 'takes gas above 2,000 cc', a: [G.sec[1].cx + G.sec[1].hw + 10, 470], p: [560, 450], an: 'start' },
+    { id: 'total', n: 'Combined 3,000 cc', s: 'total = 2,000 cc + 1,000 cc readings', a: [G.W, 700], p: [560, 700], an: 'start' }
   ];
 
-  window.Gasometer = { G: G, RT: RT, layers: layers, pistonTop: pistonTop, LABELS: LABELS, port: { gas: [0, G.portY] } };
+  // split of the existing total reading across the two sections (2,000 cc first)
+  function split(total) { var a = Math.min(Math.max(total, 0), 2000); return { k2: a, k1: Math.max(0, total - 2000) }; }
+
+  window.Gasometer = { G: G, RT: RT, layers: layers, LABELS: LABELS, split: split, port: { gas: [-20, G.supY] } };
 })();

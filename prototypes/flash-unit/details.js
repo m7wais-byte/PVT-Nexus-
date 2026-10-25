@@ -14,85 +14,97 @@
 
   var D = {
     fu: {
-      eyebrow: 'Flash Unit Details', name: 'Atmospheric Flash Unit', variant: 'Prototype design', mod: 'FlashUnit', mode: 'fu',
+      eyebrow: 'Flash Unit Details', name: 'Atmospheric Flash Unit', variant: 'Black frame · clear panels', mod: 'FlashUnit', mode: 'fu',
       views: [['overall', 'Overall'], ['internal', 'Internal / flow']], viewArg: { overall: 'exterior', internal: 'internal' },
-      vb: [-250, -50, 1140, 670], ls: 1.05,
-      demos: [[4, 'Sample → flask → gas out'], [2, 'Evacuation'], [3, 'Helium fill'], [5, 'Balloon collection']],
+      vb: [-330, -70, 1400, 890], ls: 1.15,
+      demos: [[4, 'Sample → flask → gas out'], [2, 'Evacuation (temporary pump)'], [3, 'Helium fill'], [5, 'Gas to vessel']],
+      measures: 'Measures the collected oil (balance: gross − tare) and passes the flashed gas, from the flask headspace only, to the Gasometer.',
       principle: [
-        'Sample from Pump A arrives through the sample inlet and passes the inlet control (metering) valve, where its pressure is let down.',
-        'A flexible line carries it to the sealed flask head. The head has two separate passages: the sample inlet passage feeds a dip tube whose delivery tip is inside the flask; the gas outlet passage opens into the headspace near the top of the neck.',
-        'At the tip the sample falls as drops. The oil collects at the bottom of the flask on the balance; the released gas rises into the headspace and leaves only through the gas outlet, up to the gas header and on to the gasometer.',
-        'The same gas header carries the vacuum branch (Stage 2), the helium fill from the gasometer (Stage 3) and the balloon branch (Stage 5). The inlet control valve opens only in Stage 4.'
+        'Sample from Pump A enters at the sample inlet and passes the inlet-control (isolation) valve and the solenoid flow-control valve on the upper stainless-steel manifold, where its pressure is let down.',
+        'The sample delivery tube runs down through the sealed flask head; its tip is inside the large flask. Oil falls from the tip and collects at the bottom of the flask, which stands on the balance on an adjustable platform.',
+        'Gas released from the sample rises through the oil into the headspace and leaves only through the headspace gas outlet — a separate passage in the head, opening above the liquid — to the Gasometer line.',
+        'The gas manifold also carries the gas-collection vessel line (Stage 5) and a capped quick-connect for a temporary vacuum pump (Stage 2). The vacuum pump is external equipment: it is connected for Stage 2 and removed afterwards.'
       ],
       parts: {
-        sampleIn: { n: 'Sample inlet', d: 'Bulkhead fitting where the sample line from the PVT Cell (Pump A through the Port R valve) enters the unit.', in: B },
-        inletValve: { n: 'Inlet control valve', d: 'Metering (needle) valve on the sample inlet. It controls the transfer and is where the sample pressure is let down. Open only during Stage 4, with the Pump A and Port R valves.', in: B },
-        flexLines: { n: 'Flexible PTFE lines', d: 'Short flexible lines from the panel fittings to the flask head, so the stainless tubing does not carry the flask and the balance reads the flask freely.', in: B },
-        head: { n: 'Flask head', d: 'Sealed stainless head on the ground-glass joint, held by a joint clip. It carries exactly two process passages — the sample inlet and the gas outlet — which do not connect inside the head.', in: B },
-        tip: { n: 'Sample delivery tip', d: 'End of the dip tube inside the flask, above the highest oil level. The sample leaves here as drops.', in: B },
-        flask: { n: 'Glass flask', d: 'Transparent receiver where the flashed sample separates. Oil collects at the bottom; gas fills the space above it.', in: B },
-        oil: { n: 'Collected oil', d: 'The residual oil. It stays in the flask and is weighed on the balance (gross minus the 200 g tare).', in: B },
-        headspace: { n: 'Gas headspace', d: 'Space above the oil. Released gas rises here and leaves only through the gas outlet.', in: B },
-        outlet: { n: 'Gas outlet', d: 'Opening of the outlet passage in the flask neck, in the headspace and never in the oil. It leads up through the head to the gas header.', in: B },
-        arm: { n: 'Oil sampling side-arm', d: 'Short glass arm through the lower flask wall with a PTFE stopcock and an upward Luer fitting. Closed during flashing; in Stage 7 a syringe is fitted and a small oil aliquot drawn for the density meter. It is below the oil level, so only oil can leave here.', in: B },
-        balance: { n: 'Electronic balance', d: 'Weighs the flask and its contents. Reading 200 g with the empty flask (tare); the oil collected is the gain.', in: B },
-        pt: { n: 'Pressure transducer', d: 'Reads the unit pressure on the gas header (psia), shown on the panel meter: 14.7 → 0 psia during evacuation, back to 14.7 with helium.', in: B },
-        vacuum: { n: 'Vacuum branch', d: 'Tee on the gas header with the vacuum valve, quick-connect and hose to the vacuum pump. Open only in Stage 2.', in: B },
-        balloon: { n: 'Gas collection balloon', d: 'GC sample container on its own branch of the gas header, with its own valve and pressure readout. It is filled only in Stage 5, from the gasometer.', in: B },
-        gasoConn: { n: 'Gasometer connection', d: 'End of the gas header: the gas line to the gasometer valve. Gas reaches it only from the flask headspace (or from the gasometer, for helium and balloon filling).', in: B }
+        sampleIn: { n: 'Sample inlet', d: 'Bulkhead on the left post where the sample line from the PVT Cell (Pump A through the Port R valve) enters.', in: B },
+        inletValve: { n: 'Inlet-control valve', d: 'Isolation valve with a black lever on the upper manifold. Open only during Stage 4, together with Pump A, Port R and the flow-control valve.', in: B },
+        flowCtl: { n: 'Flow-control component', d: 'Solenoid valve on the sample line; its lamp shows when it is energised (open). It meters the transfer and is where the sample pressure is let down.', in: B },
+        manifold: { n: 'Stainless-steel manifold', d: 'Upper stainless mounting plate carrying the sample line, valves, pressure transducer and the gas manifold.', in: B },
+        pt: { n: 'Pressure transducer', d: 'On the gas manifold; reads the unit pressure shown on the lower PRESSURE display (14.7 → 0 psia during evacuation, back to 14.7 psia with helium).', in: B },
+        tube: { n: 'Sample delivery tube', d: 'Stainless tube from the manifold down through the head into the flask. It carries only sample, downward.', in: B },
+        head: { n: 'Flask head', d: 'Sealed stainless head on the ground-glass joint with a clamp ring. Two separate passages: the delivery tube (left) and the headspace gas outlet (right). They do not connect inside the head.', in: B },
+        tip: { n: 'Delivery tip', d: 'End of the delivery tube inside the flask, above the highest oil level; the oil leaves here as drops.', in: B },
+        flask: { n: 'Large glass flask', d: 'The receiver where separation is shown: oil collects at the bottom, gas gathers above it.', in: B },
+        oil: { n: 'Collected oil', d: 'Residual oil; it stays in the flask and is weighed on the balance.', in: B },
+        release: { n: 'Gas-release region', d: 'Gas comes out of the sample as it enters the flask; bubbles rise through the collected oil and from the falling drops.', in: B },
+        headspace: { n: 'Gas headspace', d: 'Space above the oil where the released gas gathers before leaving through the headspace outlet.', in: B },
+        outlet: { n: 'Headspace gas outlet', d: 'Opening of the outlet passage in the neck, above the liquid — never submerged. It leads up to the gas manifold and the Gasometer line.', in: B },
+        gasLine: { n: 'Gasometer line', d: 'Gas manifold outlet to the Gasometer inlet. Gas reaches it only from the flask headspace (or from the Gasometer, for helium and vessel filling).', in: B },
+        vesselConn: { n: 'Gas-collection vessel connection', d: 'Branch of the gas manifold to the blue vessel; the vessel’s own top valve isolates it. Used in Stage 5.', in: B },
+        vacConn: { n: 'Temporary vacuum connection', d: 'Vacuum valve and a capped quick-connect on the right post. The vacuum pump itself is external and temporary: connected for Stage 2, then disconnected and removed.', in: B },
+        balance: { n: 'Balance', d: 'Weighs the flask and contents: 200 g tare, the oil collected is the gain.', in: B },
+        platform: { n: 'Adjustable platform', d: 'Lab jack under the balance, used to raise the flask to the head and lower it for removal.', in: B },
+        arm: { n: 'Oil sampling side-arm', d: 'Glass arm with a stopcock below the oil level, closed during flashing; used in Stage 7 to draw the oil aliquot by syringe.', in: B }
       },
-      about: ['General educational instrument based on the existing PVT Nexus atmospheric flash workflow (glass flask on a balance, gasometer, balloon). It is not a specific manufacturer model.'],
-      basis: 'Construction details (glass receiver, sealed head, metering valve, flexible lines, gas header) follow common GOR / flash-separator practice. No capacities or ratings are given; the flask graduations carry no values because the balance is the measurement.'
+      about: ['General educational drawing of the photographed flash unit construction (black frame, clear panels, upper manifold, lab jack, lower displays). Not a specific manufacturer model.'],
+      basis: 'The real photographs were not available in this session; layout follows the written description. Flask size, oil level and tube routing are drawn for clarity (drawing scale: 40 g oil fills the bottom layer).'
     },
     ga: {
-      eyebrow: 'Gasometer Details', name: 'Piston-Displacement Gasometer', variant: '3,000 cc · simulator capacity', mod: 'Gasometer', mode: 'ga',
-      views: [['overall', 'Overall'], ['internal', 'Internal / flow']], viewArg: { overall: 'exterior', internal: 'cutaway' },
-      vb: [-330, -40, 1000, 840], ls: 1.55,
-      demos: [[4, 'Gas in from the flask'], [3, 'Helium out to the flask'], [5, 'Gas out to the balloon']],
+      eyebrow: 'Gasometer Details', name: 'Two-Section Gasometer', variant: '2,000 cc + 1,000 cc = 3,000 cc', mod: 'Gasometer', mode: 'ga',
+      views: [['overall', 'Overall'], ['internal', 'Sections']], viewArg: { overall: 'exterior', internal: 'internal' },
+      vb: [-420, -50, 1380, 940], ls: 1.5,
+      demos: [[4, 'Gas in from the flask'], [3, 'Helium out (1,000 cc first)'], [5, 'Gas out to the vessel']],
+      measures: 'Measures gas volume at atmospheric pressure in two sections. Total = 2,000 cc section + 1,000 cc section.',
       principle: [
-        'One process port connects the measuring chamber to the gas line from the Flash Unit; the gasometer valve isolates it.',
-        'A Δp sensor compares the chamber with the atmosphere. The controller drives the piston through a lead screw so the chamber stays at atmospheric pressure: incoming gas makes the piston move down, delivering gas makes it move up.',
-        'The piston displacement is the gas volume, shown on the display in cc (0 – 3,000 cc). Helium (Stage 3) and flashed gas (Stages 4–5) use the same chamber, shown in different colours.',
-        'The internal view is a simplified educational schematic of this principle, not the internals of a specific commercial model.'
+        'Gas from the Flash Unit enters at the left side and reaches each section through its inlet valve; an isolation valve connects the section’s transparent chamber; a vent valve to atmosphere stays closed.',
+        'The 2,000 cc section is used first. Gas above 2,000 cc goes to the 1,000 cc section. Each volume display shows its own section; the total reading is the sum (the existing simulator value).',
+        'Helium (Stage 3) leaves the 1,000 cc section first, then the 2,000 cc section, so the order is the reverse of filling. Flashed gas (Stages 4–5) uses only the 2,000 cc section, because the collected volume stays below 2,000 cc.',
+        'Compound gauges show chamber pressure around atmospheric; the lower knobs are the manual volume controls. Their internal mechanism is not modelled.'
       ],
       parts: {
-        inlet: { n: 'Gas port', d: 'Single process connection: gas from the flask headspace enters here (Stage 4); helium (Stage 3) and balloon gas (Stage 5) leave here.', in: B },
-        valve: { n: 'Gasometer valve', d: 'Isolates the gasometer from the gas line. Open in Stages 3, 4 and 5 only.', in: B },
-        dp: { n: 'Δp sensor', d: 'Differential pressure between the chamber line and the atmosphere. The controller moves the piston to keep it at zero (atmospheric hold).', in: B },
-        chamber: { n: 'Measuring chamber', d: 'Precision bore above the piston. The gas volume in it is the reading.', in: I },
-        piston: { n: 'Piston', d: 'Sealed piston that rides directly under the gas; its travel is the volume reading.', in: I },
-        screw: { n: 'Lead screw drive', d: 'Piston rod, carriage and lead screw in the lower bay. The carriage position matches the piston.', in: B },
-        motor: { n: 'Stepper motor', d: 'Turns the lead screw on the controller\'s command; its steps give the displacement.', in: B },
-        display: { n: 'Volume display', d: 'Shows the chamber volume (cc), the gas (HELIUM / FLASH GAS) and the atmospheric hold status. It follows the simulator gasometer reading exactly.', in: B },
-        scale: { n: 'Volume scale', d: '0 – 3,000 cc against the piston position (existing simulator capacity, not a verified product specification).', in: B },
-        frame: { n: 'Frame and cabinet', d: 'Floor-standing navy frame matching the PVT Cell, with the measuring cylinder above and the drive bay below.', in: B }
+        chamber2k: { n: '2,000 cc chamber', d: 'Left transparent chamber, used first.', in: B },
+        chamber1k: { n: '1,000 cc chamber', d: 'Right transparent chamber; takes gas above 2,000 cc (helium in this procedure).', in: B },
+        volDisp: { n: 'Volume displays', d: 'One per section, in cc. Left + right = total Gasometer reading.', in: B },
+        tempDisp: { n: 'Temperature displays', d: 'One per section, °C. The simulator does not carry a gasometer temperature, so an example ambient value (22.0 °C) is shown.', in: B },
+        gauges: { n: 'Compound gauges', d: 'Vacuum and pressure scale; the needle stays near atmospheric while the section measures.', in: B },
+        inlets: { n: 'Inlets', d: 'External gas connection and each section’s inlet valve (black handle).', in: B },
+        vents: { n: 'Vents', d: 'Vent valve per section to atmosphere; closed throughout this procedure.', in: B },
+        isolation: { n: 'Isolation valves', d: 'Connect each chamber to its section line; open only while that section is measuring.', in: B },
+        chambers: { n: 'Transparent chambers', d: 'Tall clear chambers showing the gas column and its boundary moving with the volume.', in: B },
+        knobs: { n: 'Lower control knobs', d: 'Manual volume controls, one per section; drawn turning with the section volume.', in: B },
+        scales: { n: 'Graduated scales', d: '0 – 2,000 cc and 0 – 1,000 cc beside the chambers.', in: B },
+        total: { n: 'Combined 3,000 cc total', d: 'Existing simulator capacity, represented by the two sections.', in: B }
       },
-      about: ['Replaces the earlier single-tank illustration. Capacity 3,000 cc is kept from the current procedure.'],
-      basis: 'Mechanism basis: published descriptions of piston-type gas meters — a motor-driven piston held at a set pressure by a pressure sensor and controller, with gas volume taken from the drive (e.g. US 4,823,598), and a floating-piston gas meter in a graduated cylinder (US 8,991,233). The Chandler 2331D page could not be opened from this environment, so its internals are NOT claimed. No temperature value is shown: the current workflow does not carry a gasometer temperature.'
+      about: ['Replaces the earlier single-cylinder drawing. Capacity 3,000 cc is kept from the current procedure.'],
+      basis: 'The real photograph was not available in this session; the cabinet layout follows the written description. The split of the existing total reading (2,000 cc section first) is a prototype rule; no internal mechanism is claimed.'
     },
     dm: {
-      eyebrow: 'Density Meter Details', name: 'Oscillating U-Tube Density Meter', variant: 'Benchtop · Stage 7', mod: 'DensityMeter', mode: 'dm',
-      views: [['overall', 'Overall'], ['internal', 'Internal / flow']], viewArg: { overall: 'exterior', internal: 'cutaway' },
-      vb: [-330, -90, 1080, 450], ls: 1.15,
+      eyebrow: 'Density Meter Details', name: 'Digital Density Meter', variant: 'DMA 4100 M–style', mod: 'DensityMeter', mode: 'dm',
+      views: [['overall', 'Overall'], ['internal', 'Internal / flow']], viewArg: { overall: 'exterior', internal: 'internal' },
+      vb: [-300, -100, 1170, 440], ls: 1.0,
       demos: [[7, 'Sample loading & measurement']],
+      measures: 'Measures oil density at the set temperature (25.00 °C), converts it to 60 °F and reports SG 60/60 °F and API gravity (method Crude Oil (API)).',
       principle: [
-        'The oil aliquot is injected through the Luer inlet and fills a glass U-tube; the excess leaves through the outlet to the waste container.',
-        'The U-tube sits in a thermostated block (Peltier heating/cooling, Pt100 sensor) held at the set temperature, here 20.00 °C.',
-        'An exciter makes the U-tube oscillate and a pickup measures its period. A heavier (denser) liquid gives a longer period; with the calibration constants the period gives the density at the measuring temperature. A reference oscillator compensates drift.',
-        'The density at 20 °C is converted to the 60 °F reference with the petroleum measurement tables (API MPMS 11.1 / ASTM D1250) to give SG 60/60 °F, and API = 141.5 / SG − 131.5.'
+        'The syringe is connected to the inlet tube. Oil enters at the lower side adapter, fills the oscillating U-tube and pushes the air up through the outlet tube to the waste container.',
+        'The U-tube sits in a temperature-control block (Peltier) held at 25.00 °C. The reading is taken only after the actual density temperature equals the set temperature.',
+        'The oscillation period of the filled U-tube gives the density at 25 °C. The meter converts it to the 60 °F reference (API MPMS 11.1 / ASTM D1250 crude-oil tables) and reports API SG 60 °F and API gravity = 141.5 / SG − 131.5.',
+        'After the result, the used sample is pushed to the waste container.'
       ],
       parts: {
-        inlet: { n: 'Sample inlet', d: 'Luer adapter: the syringe is fitted here and the sample injected.', in: B },
-        outlet: { n: 'Sample outlet', d: 'Luer adapter on the other leg of the U-tube; the displaced sample flows to waste.', in: B },
-        utube: { n: 'U-tube measuring cell', d: 'Glass U-tube filled bubble-free with sample. Its oscillation period depends on the density of the liquid inside.', in: B },
-        thermo: { n: 'Thermostat block', d: 'Holds the U-tube at the set temperature (Peltier elements, Pt100 sensor). The reading is taken only at equilibrium.', in: I },
-        exciter: { n: 'Exciter / pickup', d: 'Drives the U-tube oscillation and measures its period.', in: I },
-        ref: { n: 'Reference oscillator', d: 'Second oscillator used to compensate long-term drift of the measurement.', in: I },
-        screen: { n: 'Touchscreen', d: 'Shows filling check, cell temperature, density at the measuring temperature, SG 60/60 °F and °API.', in: B },
-        waste: { n: 'Waste container', d: 'Collects the sample flushed through the cell.', in: B }
+        screen: { n: 'Touchscreen', d: 'Method Crude Oil (API): status, Start, results and the measuring-cell view.', in: B },
+        inlet: { n: 'Sample inlet', d: 'Lower side adapter, fed by the inlet tube from the syringe.', in: B },
+        outlet: { n: 'Sample outlet', d: 'Upper side adapter; air and excess sample leave here.', in: B },
+        syringe: { n: 'Syringe', d: 'Manual injection of the oil aliquot through the Luer adapter on the inlet tube.', in: B },
+        utube: { n: 'Oscillating U-tube cell', d: 'Internal measuring cell; filled bubble-free, its oscillation period gives the density.', in: I },
+        tempCtl: { n: 'Temperature-control region', d: 'Peltier block around the U-tube; set 25.00 °C.', in: I },
+        wasteLine: { n: 'Waste line', d: 'Tube from the outlet adapter to the waste container.', in: B },
+        waste: { n: 'Waste container', d: 'External container with a red cap; receives air, excess and used sample.', in: B },
+        resDensity: { n: 'Density result', d: 'Density at the actual (set) temperature, g/cm³.', in: B },
+        resSG: { n: 'Specific gravity result', d: 'API SG 60 °F (60/60 °F), after the temperature correction.', in: B },
+        resAPI: { n: 'API gravity result', d: '141.5 / SG − 131.5, in °API.', in: B }
       },
-      about: ['One consistent benchtop instrument (not a combination of models). The collected-oil result recorded at Stage 6 is not changed by the aliquot.'],
-      basis: 'Principle: oscillating U-tube density measurement as covered by ASTM D4052 (density, relative density and API gravity of liquids); manufacturers of such meters describe U-tube oscillation, temperature control and bubble checking. The internal view is a simplified educational schematic. Results shown are EXAMPLE values back-calculated from the project stock-tank oil density.'
+      about: ['One consistent benchtop instrument in the arrangement of the DMA 4100 M (wide grey housing, sloped touchscreen, red strip, side adapters, external waste container). The aliquot does not change the oil recorded at Stage 6.'],
+      basis: 'Principle per ASTM D4052 (oscillating U-tube). The photographs were not available in this session. Results are EXAMPLE values back-calculated from the project stock-tank oil density, not a live measurement.'
     }
   };
 
@@ -117,6 +129,7 @@
         '<button class="btn" type="button" data-act="replay">Replay</button><button class="btn" type="button" data-act="pause">Pause</button></span></div>' +
       '</section><aside class="eq-side">' +
         '<div class="eq-info" data-ref="info" aria-live="polite"></div>' +
+        '<h4 class="eq-h">What is measured</h4><div class="eq-about"><p>' + esc(d.measures) + '</p></div>' +
         '<h4 class="eq-h">Operating principle</h4><div class="eq-about">' + d.principle.map(function (t) { return '<p>' + esc(t) + '</p>'; }).join('') + '</div>' +
         '<h4 class="eq-h">Parts</h4><div class="eq-parts" data-ref="parts">' + Object.keys(d.parts).map(function (id) {
           var p = d.parts[id]; return '<button type="button" class="eq-part" data-part="' + id + '" aria-pressed="false">' + esc(p.n) + (p.in.length === 1 ? '<small>internal</small>' : '') + '</button>';
@@ -146,7 +159,7 @@
     ref('vseg').innerHTML = seg('view', d.views, S.view);
     ref('dseg').innerHTML = seg('demo', d.demos, S.demo);
     root.querySelector('[data-sw="labels"]').checked = S.labels;
-    ref('tag').textContent = S.view === 'overall' ? 'OVERALL' : (S.k === 'fu' ? 'INTERNAL PASSAGES · TRAINING VIEW' : 'CUTAWAY · SIMPLIFIED SCHEMATIC');
+    ref('tag').textContent = S.view === 'overall' ? 'OVERALL' : ({ fu: 'INTERNAL PASSAGES · TRAINING VIEW', ga: 'SECTIONS · LIVE READINGS', dm: 'INTERNAL U-TUBE · SIMPLIFIED' })[S.k];
     ref('tag').className = 'eq-tag' + (S.view !== 'overall' ? ' cut' : '');
     root.querySelector('[data-act="pause"]').textContent = S.paused ? 'Resume' : 'Pause';
     ref('parts').querySelectorAll('.eq-part').forEach(function (x) { x.setAttribute('aria-pressed', x.getAttribute('data-part') === S.selected ? 'true' : 'false'); });

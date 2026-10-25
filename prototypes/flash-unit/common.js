@@ -104,12 +104,11 @@
     s += R(x - bw / 2, y - bh / 2, bw, bh, 'rx="3" fill="url(#ppSteelD)" stroke="#2a3443" stroke-width="1"') + R(x - bw / 2 + 2, y - bh / 2 + 2, bw - 4, 2.2, 'fill="#fff" opacity=".45"');
     // handle: lever along (open) or across (closed) the flow axis
     var hx = x + vx * 22, hy = y + vy * 22, ang = (axis === 'h' ? 0 : 90) + (1 - clamp(open, 0, 1)) * 90;
-    var col = on ? '#1d8a5a' : (o.kind === 'needle' ? '#2f4f7f' : '#b8434e');
-    if (o.kind === 'needle') {
-      // needle (metering) valve: round knurled knob; the open state is shown by the ring and tag only
-      s += C(hx, hy, 9, 'fill="' + col + '" stroke="#1b2a40" stroke-width="1"') + C(hx, hy, 5.5, 'fill="none" stroke="#fff" stroke-width="1" opacity=".55"');
+    // black handles as on the photographed equipment; the state is read from the lever angle, ring and tag
+    if (o.kind === 'knob') {
+      s += C(hx, hy, 9, 'fill="#1b1f24" stroke="#000" stroke-width="1"') + C(hx, hy, 5.5, 'fill="none" stroke="#5d6672" stroke-width="1"');
     } else {
-      s += '<g transform="rotate(' + r1(ang) + ' ' + r1(hx) + ' ' + r1(hy) + ')">' + R(hx - 15, hy - 3, 30, 6, 'rx="3" fill="' + col + '" stroke="#1b2a40" stroke-width=".8"') + '</g>' + C(hx, hy, 3.2, 'fill="#c5ccd6" stroke="#2a3443" stroke-width=".8"');
+      s += '<g transform="rotate(' + r1(ang) + ' ' + r1(hx) + ' ' + r1(hy) + ')">' + R(hx - 15, hy - 3.2, 30, 6.4, 'rx="3" fill="#1b1f24" stroke="#000" stroke-width=".8"') + '</g>' + C(hx, hy, 3.2, 'fill="#c5ccd6" stroke="#2a3443" stroke-width=".8"');
     }
     if (o.ring !== false) s += C(x, y, 19, 'fill="none" stroke="#1d8a5a" stroke-width="2" opacity="' + (on ? .9 : 0) + '"');
     if (o.tag) {
@@ -164,6 +163,13 @@
     o += lg('fxCaseH', [[0, '#d6dce4'], [.5, '#f4f6f9'], [1, '#cdd4dd']]);
     o += lg('fxBench', [[0, '#d9dfe6'], [1, '#b8c1cc']], true);
     o += lg('fxCyl', [[0, '#9fb3c8', .55], [.1, '#ffffff', .25], [.25, '#eaf2f9', .08], [.8, '#eaf2f9', .08], [.92, '#ffffff', .3], [1, '#9fb3c8', .55]]);
+    o += lg('fxBlue', [[0, '#0f2448'], [.18, '#1f4a8a'], [.42, '#2c63ad'], [.62, '#1d4682'], [1, '#0c1e3d']]);
+    o += lg('fxBrass', [[0, '#8a6a1e'], [.35, '#e7c86a'], [.55, '#c9a23e'], [1, '#7a5a14']]);
+    o += lg('fxPumpBlue', [[0, '#1f4f8f'], [.5, '#3a78c4'], [1, '#183f73']]);
+    o += lg('fxBlack', [[0, '#14181d'], [.45, '#3a424d'], [.6, '#262c34'], [1, '#101317']]);
+    o += lg('fxBlackV', [[0, '#3a424d'], [1, '#14181d']], true);
+    o += lg('fxBrushed', [[0, '#c3cad3'], [.2, '#e9edf1'], [.5, '#d2d8df'], [.8, '#eef1f4'], [1, '#bcc4cd']]);
+    o += lg('fxDma', [[0, '#eef1f4'], [.5, '#e1e6eb'], [1, '#cfd6de']], true);
     o += lg('fxScreenG', [[0, '#14263b'], [1, '#0b1726']], true);
     o += '<radialGradient id="fxKnob" cx=".35" cy=".35" r=".7"><stop offset="0" stop-color="#e9edf2"/><stop offset="1" stop-color="#7e8896"/></radialGradient>';
     o += '<radialGradient id="fxBalloonR" cx=".35" cy=".3" r=".8"><stop offset="0" stop-color="#f2f8ff" stop-opacity=".95"/><stop offset=".6" stop-color="#b8d3ee" stop-opacity=".8"/><stop offset="1" stop-color="#7ea6cf" stop-opacity=".9"/></radialGradient>';
