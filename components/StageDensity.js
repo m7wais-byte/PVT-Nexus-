@@ -338,7 +338,8 @@ class Component extends DCLogic {
     const a = st.active, busy = st.busy;
     const both = st.done[1] && st.done[2];
     const sub = a === 1 ? '₁' : '₂';
-    const MUT = '#52627d', GOLD = '#e2c65a', BLUE = '#6fb7ff', GRN = '#46d39a';
+    // calculation panel colours: the page's own theme variables (light panel, restrained accents)
+    const MUT = 'var(--mut)', GOLD = 'var(--amb)', BLUE = 'var(--blue)', GRN = 'var(--grn)', RED = 'var(--red)';
 
     // active-run values: mass from the balance, volume from the PVT cell
     const mi = a === 1 ? st.mi1 : st.mi2, mf = a === 1 ? st.mf1 : st.mf2;
@@ -360,29 +361,20 @@ class Component extends DCLogic {
     const clamp = v => Math.max(0, Math.min(1, v));
     const segStyle = s => 'stroke-dashoffset:' + (100 - clamp((st.coilFill - s.a) / (s.b - s.a)) * 100).toFixed(2) + '; transition:stroke-dashoffset .2s linear;';
 
-    // main highlighted result
+    // main highlighted result: the current run's density (or the accepted average); placeholders until available
     let resLabel, resVal, resNote, resCol;
-    if (both && st.verified) { resLabel = 'DENSITY · VERIFIED'; resVal = 'ρ = ' + avg.toFixed(4) + ' g/cc'; resNote = 'Average of Run 1 and Run 2'; resCol = GRN; }
-    else if (both && st.failed) { resLabel = 'DENSITY · NOT ACCEPTED'; resVal = 'Repeat required'; resNote = '|ρ₁ − ρ₂| exceeds ±0.0005 g/cc'; resCol = '#ff7a8c'; }
-    else if (r != null) { resLabel = 'DENSITY · RUN ' + a; resVal = 'ρ' + sub + ' = ' + r.toFixed(4) + ' g/cc'; resNote = 'ΔM / ΔV = ' + dM.toFixed(3) + ' g ÷ ' + dV.toFixed(1) + ' cc'; resCol = GRN; }
-    else {
-      resLabel = 'DENSITY · RUN ' + a; resVal = 'ρ' + sub + ' = —'; resCol = MUT;
-      resNote = st.weigh === 'mf' ? 'Weighing the filled coil — Mf'
-        : xferLive ? 'Transferring — cell volume falling, ΔV rising'
-        : vf != null && dV != null && dV > 0 ? 'ΔV recorded — awaiting Mf'
-        : mi != null ? 'Mi recorded — connect and transfer'
-        : st.weigh === 'mi' ? 'Weighing the empty coil — Mi'
-        : 'Awaiting the first measured value';
-    }
+    if (both && st.verified) { resLabel = 'Average of Run 1 and Run 2'; resVal = 'ρ = ' + avg.toFixed(4); resNote = ''; resCol = GRN; }
+    else if (both && st.failed) { resLabel = 'Not accepted'; resVal = 'Repeat required'; resNote = '|ρ₁ − ρ₂| exceeds ±0.0005 g/cc'; resCol = RED; }
+    else if (r != null) { resLabel = 'Run ' + a; resVal = 'ρ' + sub + ' = ' + r.toFixed(4); resNote = dM.toFixed(3) + ' g ÷ ' + dV.toFixed(1) + ' cc'; resCol = GRN; }
+    else { resLabel = 'Run ' + a; resVal = 'ρ' + sub + ' = —'; resNote = ''; resCol = MUT; }
 
     const runRow = n => {
       const rv = n === 1 ? st.r1 : st.r2, on = busy && a === n, dn = st.done[n];
-      return { name: 'Run ' + n, rho: 'ρ' + (n === 1 ? '₁' : '₂'), v: rv == null ? '—' : rv.toFixed(4),
-        col: rv == null ? MUT : GRN,
-        tag: dn ? 'STORED' : on ? 'RUNNING' : (n === 2 && !st.done[1]) ? 'LOCKED' : 'PENDING',
+      return { name: 'Run ' + n, v: rv == null ? '—' : rv.toFixed(4),
+        col: rv == null ? MUT : 'var(--txt)',
+        tag: dn ? 'stored' : on ? 'running' : (n === 2 && !st.done[1]) ? 'locked' : 'pending',
         tagCol: dn ? GRN : on ? BLUE : MUT,
-        style: 'display:grid; grid-template-columns:3.3em 1.4em minmax(4.2em,1fr) 2.4em 4.6em; align-items:baseline; column-gap:5px; padding:1px 6px; border-radius:5px; font-family:\'IBM Plex Mono\',ui-monospace,monospace; white-space:nowrap; background:' +
-          (on ? 'rgba(111,183,255,.08)' : 'transparent') + ';' };
+        style: 'background:' + (on ? 'rgba(47,111,208,.07)' : 'transparent') + ';' };
     };
 
     return {
@@ -430,7 +422,6 @@ class Component extends DCLogic {
       dnBalLed: st.coilPos === 'balance' ? '#46d39a' : '#54657f',
       dnOnBalance: st.coilPos === 'balance' ? 'COIL ON PAN' : 'PAN EMPTY',
 
-      dnStepBadge: both ? 'RUNS 1 + 2 COMPLETE' : 'RUN ' + a + ' OF 2',
 
       /* ---- working equation + results (single dark panel) ---- */
       dnEqMi: miLive == null ? 'Mi' : miLive.toFixed(3), dnEqMiColor: miLive == null ? MUT : GOLD,
@@ -438,25 +429,23 @@ class Component extends DCLogic {
       dnEqVi: vi == null ? 'Vi' : vi.toFixed(1), dnEqViColor: vi == null ? MUT : BLUE,
       dnEqVf: vf == null ? 'Vf' : vf.toFixed(1), dnEqVfColor: vf == null ? MUT : BLUE,
       dnEqMass: [
-        { k: 'Mi', d: 'Empty coil', v: fx(miLive, 3), u: 'g', color: miLive == null ? MUT : GOLD, live: st.weigh === 'mi' ? '●' : '' },
-        { k: 'Mf', d: 'Filled coil', v: fx(mfLive, 3), u: 'g', color: mfLive == null ? MUT : GOLD, live: st.weigh === 'mf' ? '●' : '' },
-        { k: 'ΔM', d: 'Mf − Mi', v: fx(dM, 3), u: 'g', color: dM == null ? MUT : GOLD, live: '' }
+        { k: 'Mi', d: 'Empty coil', v: fx(miLive, 3), u: 'g', color: miLive == null ? MUT : GOLD, live: st.weigh === 'mi', cls: 'dn-q' },
+        { k: 'Mf', d: 'Filled coil', v: fx(mfLive, 3), u: 'g', color: mfLive == null ? MUT : GOLD, live: st.weigh === 'mf', cls: 'dn-q' },
+        { k: 'ΔM', d: 'Mass difference', v: fx(dM, 3), u: 'g', color: dM == null ? MUT : GOLD, live: false, cls: 'dn-q sum' }
       ],
       dnEqVol: [
-        { k: 'Vi', d: 'Initial cell volume', v: fx(vi, 1), u: 'cc', color: vi == null ? MUT : BLUE, live: '' },
-        { k: 'Vf', d: 'Final cell volume', v: fx(vf, 1), u: 'cc', color: vf == null ? MUT : BLUE, live: xferLive ? '●' : '' },
-        { k: 'ΔV', d: 'Transferred', v: fx(dV, 1), u: 'cc', color: dV == null ? MUT : BLUE, live: xferLive ? '●' : '' }
+        { k: 'Vi', d: 'Initial cell volume', v: fx(vi, 1), u: 'cc', color: vi == null ? MUT : BLUE, live: false, cls: 'dn-q' },
+        { k: 'Vf', d: 'Final cell volume', v: fx(vf, 1), u: 'cc', color: vf == null ? MUT : BLUE, live: xferLive, cls: 'dn-q' },
+        { k: 'ΔV', d: 'Transferred volume', v: fx(dV, 1), u: 'cc', color: dV == null ? MUT : BLUE, live: xferLive, cls: 'dn-q sum' }
       ],
-      dnResLabel: resLabel, dnResVal: resVal, dnResNote: resNote, dnResCol: resCol,
-      dnResBox: 'flex:0 0 16em; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:1px; padding:3px 8px; border-radius:8px; background:' +
-        (resCol === GRN ? 'rgba(70,211,154,.10)' : resCol === MUT ? 'rgba(127,147,179,.05)' : 'rgba(255,122,140,.10)') + '; border:1px solid ' +
-        (resCol === GRN ? 'rgba(70,211,154,.55)' : resCol === MUT ? '#2a3852' : 'rgba(255,122,140,.55)') + ';' +
-        (resCol === GRN ? ' box-shadow:0 0 0 3px rgba(70,211,154,.08), inset 0 0 18px rgba(70,211,154,.06);' : ''),
+      dnResLabel: resLabel, dnResVal: resVal, dnResNote: resNote, dnResCol: resCol, dnResUnit: resCol === RED ? '' : 'g/cc',
+      dnResBox: 'border-color:' + (resCol === GRN ? 'rgba(29,138,90,.45)' : resCol === RED ? 'rgba(195,58,82,.45)' : 'var(--line)') + '; background:' +
+        (resCol === GRN ? 'rgba(29,138,90,.06)' : resCol === RED ? 'rgba(195,58,82,.06)' : 'var(--icard)') + ';',
       dnRuns: [runRow(1), runRow(2)],
       dnCmpText: diff == null ? '—' : diff.toFixed(4) + ' g/cc',
-      dnCmpColor: diff == null ? MUT : diff <= D.TOL ? GRN : '#ff7a8c',
-      dnVerdict: st.verified ? 'VERIFIED ✓' : st.failed ? 'REPEAT' : both ? 'COMPARING' : 'AWAITING RUN 2',
-      dnVerdictColor: st.verified ? GRN : st.failed ? '#ff7a8c' : MUT,
+      dnCmpColor: diff == null ? MUT : diff <= D.TOL ? GRN : RED,
+      dnVerdict: st.verified ? 'Verified ✓' : st.failed ? 'Not accepted' : '',
+      dnVerdictColor: st.verified ? GRN : st.failed ? RED : MUT,
       dnShowRepeat: st.failed, dnRepeat: () => this.reset()
     };
   }
@@ -479,7 +468,7 @@ DC.define('StageDensity', {
     -webkit-font-smoothing:antialiased;
   }
   #dc-root > .sc-host > [data-screen-label="Direct Density"] * { box-sizing:border-box; }
-  @keyframes dndash { to { stroke-dashoffset:-24; } }
+  @keyframes dnglint { from { stroke-dashoffset:14; } to { stroke-dashoffset:-86; } }
   /* a gas bubble nucleating in the oil, growing, then drifting along the tube */
   @keyframes dnbub {
     0%   { opacity:0;   transform:translate(0,0) scale(.2); }
@@ -499,33 +488,36 @@ DC.define('StageDensity', {
   .dn-hd { flex:0 0 auto; display:flex; align-items:center; gap:12px; min-width:0; }
   .dn-act { flex:1 1 auto; min-width:0; height:32px; box-sizing:border-box; display:flex; align-items:center; padding:2px 8px; border-radius:6px; background:var(--icard); border:1px solid var(--line);
             font-family:'IBM Plex Mono',ui-monospace,monospace; font-size:9.5px; letter-spacing:.3px; line-height:1.3; overflow:hidden; }
-  .dn-calc { flex:0 0 auto; display:flex; flex-wrap:wrap; align-items:stretch; gap:6px; padding:5px; border-radius:10px;
-             background:#0d1728; border:1px solid #3a4c66; font-family:'IBM Plex Mono',ui-monospace,monospace; font-size:10px; color:#c8d6ea; min-width:0; }
-  .dn-g { display:flex; flex-direction:column; gap:2px; padding:3px 7px 4px; border-radius:7px; min-width:max-content; }
-  .dn-g-eq { flex:1 1 auto; justify-content:space-between; background:rgba(127,147,179,.05); border:1px solid #22314a; }
-  .dn-g-m { flex:1 1 auto; background:rgba(226,198,90,.05); border:1px solid rgba(226,198,90,.20); }
-  .dn-g-v { flex:1 1 auto; background:rgba(111,183,255,.05); border:1px solid rgba(111,183,255,.20); }
-  .dn-g-r { flex:2 1 auto; border:1px solid #22314a; }
-  .dn-gk { display:flex; align-items:center; justify-content:space-between; gap:8px; min-height:13px; font-size:8px; letter-spacing:.9px; text-transform:uppercase; color:#7f93b3; white-space:nowrap; }
-  .dn-badge { font-size:7.5px; font-weight:600; letter-spacing:.6px; padding:1px 5px; border-radius:4px; background:rgba(111,183,255,.10); border:1px solid rgba(111,183,255,.35); color:#9cc8ff; }
-  .dn-eq { flex:1 1 auto; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px; white-space:nowrap; }
-  .dn-eq1 { font-size:11px; font-weight:600; color:#8fa3c2; }
-  .dn-op { font-weight:400; color:#8fa3c2; }
-  .dn-fr { display:inline-flex; flex-direction:column; align-items:center; line-height:1.15; font-size:13px; font-weight:600; color:#c8d6ea; }
-  .dn-fr > i { display:block; align-self:stretch; height:1.5px; margin:2px 0; background:#5a749e; }
-  .dn-q { display:grid; grid-template-columns:1.8em auto .7em minmax(3.6em,1fr) 1.4em; align-items:baseline; column-gap:4px; white-space:nowrap; line-height:1.3; }
-  .dn-q b { font-size:11px; font-weight:600; color:#c8d6ea; }
-  .dn-qd { font-size:8.5px; color:#6a7f9f; }
-  .dn-ql { font-size:7px; color:#46d39a; }
-  .dn-qv { font-size:12px; font-weight:600; text-align:right; }
-  .dn-qu { font-size:8.5px; color:#6a7f9f; }
-  .dn-rb { flex:1 1 auto; display:flex; align-items:stretch; gap:8px; min-width:0; }
-  .dn-rl { font-size:8px; letter-spacing:.9px; color:#7f93b3; white-space:nowrap; }
-  .dn-rv { font-size:16px; font-weight:700; letter-spacing:.2px; white-space:nowrap; line-height:1.2; }
-  .dn-rn { font-size:8.5px; color:#7f93b3; text-align:center; line-height:1.25; white-space:normal; min-height:2.5em; display:flex; align-items:center; }
-  .dn-runs { flex:0 0 auto; display:flex; flex-direction:column; justify-content:center; gap:1px; min-width:0; }
-  .dn-cmp { display:flex; align-items:baseline; gap:7px; padding:0 6px; white-space:nowrap; }
-  .dn-runs > .dn-cmp:first-of-type { margin-top:2px; padding-top:3px; border-top:1px solid #22314a; }
+  /* calculation panel: light, four groups separated by hairlines - equation | mass | volume | density */
+  .dn-calc { flex:0 0 auto; display:flex; flex-wrap:wrap; align-items:stretch; row-gap:8px; padding:9px 4px; border-radius:10px;
+             background:var(--panel); border:1px solid var(--line); color:var(--txt); min-width:0; }
+  .dn-g { flex:1 1 auto; display:flex; flex-direction:column; gap:4px; padding:0 14px; min-width:max-content; }
+  .dn-g + .dn-g { border-left:1px solid var(--line); }
+  /* results: their own row under the inputs - one line: density (priority) · run 1 · run 2 · comparison · verdict */
+  .dn-g.dn-g-r { flex:1 1 100%; min-width:0; flex-direction:row; align-items:center; gap:14px; border-left:0; border-top:1px solid var(--line); padding-top:8px; }
+  .dn-gk { display:flex; align-items:center; gap:8px; min-height:16px; font-family:'IBM Plex Mono',ui-monospace,monospace; font-size:10px; font-weight:600;
+           letter-spacing:.8px; text-transform:uppercase; color:var(--mut); white-space:nowrap; }
+  .dn-eq { flex:1 1 auto; display:flex; align-items:center; gap:10px; white-space:nowrap; font-family:'IBM Plex Mono',ui-monospace,monospace; }
+  .dn-eq1 { font-size:15px; font-weight:600; color:var(--txt); }
+  .dn-op { font-weight:400; color:var(--mut); }
+  .dn-fr { display:inline-flex; flex-direction:column; align-items:center; line-height:1.2; font-size:13px; font-weight:600; }
+  .dn-fr > i { display:block; align-self:stretch; height:1.5px; margin:2px 0; background:var(--line2); }
+  .dn-q { display:grid; grid-template-columns:2.1em minmax(8.5em,max-content) 5.6em 1.6em; align-items:baseline; column-gap:6px; white-space:nowrap; line-height:1.5; }
+  .dn-q b { font-family:'IBM Plex Mono',ui-monospace,monospace; font-size:12px; font-weight:600; color:var(--txt); }
+  .dn-qd { font-size:11.5px; color:var(--txt2); }
+  .dn-qv { font-family:'IBM Plex Mono',ui-monospace,monospace; font-size:13px; font-weight:600; text-align:right; }
+  .dn-qu { font-family:'IBM Plex Mono',ui-monospace,monospace; font-size:11px; color:var(--mut); }
+  .dn-q.sum { border-top:1px solid var(--line); margin-top:1px; padding-top:1px; }
+  .dn-live { width:6px; height:6px; border-radius:50%; background:var(--grn); display:inline-block; margin-left:5px; vertical-align:1px; }
+  .dn-res { flex:0 0 auto; display:flex; align-items:baseline; gap:10px; padding:4px 14px; border-radius:8px; border:1px solid var(--line); white-space:nowrap; }
+  .dn-rl { font-size:11.5px; color:var(--txt2); }
+  .dn-rv { font-family:'IBM Plex Mono',ui-monospace,monospace; font-size:20px; font-weight:700; line-height:1.2; }
+  .dn-rv small { font-size:12px; font-weight:500; color:var(--mut); margin-left:5px; }
+  .dn-rn { font-family:'IBM Plex Mono',ui-monospace,monospace; font-size:11px; color:var(--mut); }
+  .dn-runs { flex:1 1 auto; display:flex; flex-wrap:wrap; align-items:baseline; column-gap:14px; row-gap:2px; min-width:0; font-family:'IBM Plex Mono',ui-monospace,monospace; white-space:nowrap; }
+  .dn-run { display:inline-flex; align-items:baseline; gap:6px; padding:2px 6px; border-radius:5px; }
+  .dn-cmp { display:inline-flex; align-items:baseline; gap:7px; }
+  .dn-end { flex:0 0 auto; display:flex; align-items:center; gap:8px; font-family:'IBM Plex Mono',ui-monospace,monospace; font-size:11px; font-weight:600; letter-spacing:.5px; white-space:nowrap; }
   .dn-fig { align-items:stretch; }`,
   template: `<div data-screen-label="Direct Density" class="pg pg-stack">
 
@@ -551,12 +543,13 @@ DC.define('StageDensity', {
       <div class="dn-act" style="color:{{ dnActionColor }};">{{ dnActionText }}</div>
     </div>
 
-    <!-- 2 · working equation + measured values + results : one compact strip across the top -->
+    <!-- 2 · calculation panel (light): working equation | mass | volume | density results -->
     <div class="dn-calc">
-      <div class="dn-g dn-g-eq">
+      <div class="dn-g">
         <div class="dn-gk">Working equation</div>
         <div class="dn-eq">
-          <span class="dn-eq1">&#961; = &#916;M / &#916;V =</span>
+          <span class="dn-eq1">&#961; = &#916;M / &#916;V</span>
+          <span class="dn-op">=</span>
           <span class="dn-fr">
             <span><span style="color:{{ dnEqMfColor }};">{{ dnEqMf }}</span><span class="dn-op"> &#8722; </span><span style="color:{{ dnEqMiColor }};">{{ dnEqMi }}</span></span>
             <i></i>
@@ -564,50 +557,45 @@ DC.define('StageDensity', {
           </span>
         </div>
       </div>
-      <div class="dn-g dn-g-m">
-        <div class="dn-gk" style="color:#b9a254;">Mass &#183; balance</div>
+      <div class="dn-g">
+        <div class="dn-gk">Mass &#183; balance</div>
         <sc-for list="{{ dnEqMass }}" as="q" hint-placeholder-count="3">
-          <span class="dn-q"><b>{{ q.k }}</b><span class="dn-qd">{{ q.d }}</span><span class="dn-ql">{{ q.live }}</span><span class="dn-qv" style="color:{{ q.color }};">{{ q.v }}</span><span class="dn-qu">{{ q.u }}</span></span>
+          <span class="{{ q.cls }}"><b>{{ q.k }}</b><span class="dn-qd">{{ q.d }}<sc-if value="{{ q.live }}" hint-placeholder-val="{{ false }}"><i class="dn-live"></i></sc-if></span><span class="dn-qv" style="color:{{ q.color }};">{{ q.v }}</span><span class="dn-qu">{{ q.u }}</span></span>
         </sc-for>
       </div>
-      <div class="dn-g dn-g-v">
-        <div class="dn-gk" style="color:#6f9ccc;">Volume &#183; PVT cell</div>
+      <div class="dn-g">
+        <div class="dn-gk">Volume &#183; PVT cell</div>
         <sc-for list="{{ dnEqVol }}" as="q" hint-placeholder-count="3">
-          <span class="dn-q"><b>{{ q.k }}</b><span class="dn-qd">{{ q.d }}</span><span class="dn-ql">{{ q.live }}</span><span class="dn-qv" style="color:{{ q.color }};">{{ q.v }}</span><span class="dn-qu">{{ q.u }}</span></span>
+          <span class="{{ q.cls }}"><b>{{ q.k }}</b><span class="dn-qd">{{ q.d }}<sc-if value="{{ q.live }}" hint-placeholder-val="{{ false }}"><i class="dn-live"></i></sc-if></span><span class="dn-qv" style="color:{{ q.color }};">{{ q.v }}</span><span class="dn-qu">{{ q.u }}</span></span>
         </sc-for>
       </div>
       <div class="dn-g dn-g-r">
-        <div class="dn-gk">
-          <span>Results</span>
-          <span style="flex:1 1 4px; min-width:0;"></span>
-          <sc-if value="{{ dnShowRepeat }}" hint-placeholder-val="{{ false }}">
-            <button onclick="{{ dnRepeat }}" style="font-family:inherit; font-size:9px; font-weight:600; letter-spacing:.3px; text-transform:none; white-space:nowrap; padding:0 8px; border-radius:5px; cursor:pointer; background:rgba(255,122,140,.10); border:1px solid #ff7a8c; color:#ff7a8c;" style-hover="background:rgba(255,122,140,.18);">Repeat</button>
-          </sc-if>
-          <span style="font-size:9px; font-weight:700; letter-spacing:.5px; color:{{ dnVerdictColor }};">{{ dnVerdict }}</span>
-          <span class="dn-badge">{{ dnStepBadge }}</span>
+        <span class="dn-gk">Density result</span>
+        <div class="dn-res" style="{{ dnResBox }}">
+          <span class="dn-rl">{{ dnResLabel }}</span>
+          <span class="dn-rv" style="color:{{ dnResCol }};">{{ dnResVal }}<small>{{ dnResUnit }}</small></span>
+          <span class="dn-rn">{{ dnResNote }}</span>
         </div>
-        <div class="dn-rb">
-          <div style="{{ dnResBox }}">
-            <span class="dn-rl">{{ dnResLabel }}</span>
-            <span class="dn-rv" style="color:{{ dnResCol }};">{{ dnResVal }}</span>
-            <span class="dn-rn">{{ dnResNote }}</span>
-          </div>
-          <div class="dn-runs">
-            <sc-for list="{{ dnRuns }}" as="rr" hint-placeholder-count="2">
-              <span style="{{ rr.style }}">
-                <span style="font-size:10.5px; font-weight:600; color:#c8d6ea;">{{ rr.name }}</span>
-                <span style="font-size:10.5px; color:#8fa3c2;">{{ rr.rho }}</span>
-                <span style="font-size:12px; font-weight:600; color:{{ rr.col }}; text-align:right;">{{ rr.v }}</span>
-                <span style="font-size:8.5px; color:#6a7f9f;">g/cc</span>
-                <span style="font-size:7.5px; letter-spacing:.7px; color:{{ rr.tagCol }}; text-align:right;">{{ rr.tag }}</span>
-              </span>
-            </sc-for>
-            <span class="dn-cmp">
-              <span style="font-size:10px; color:#8fa3c2;">|&#961;&#8321; &#8722; &#961;&#8322;| =</span>
-              <span style="font-size:11px; font-weight:600; color:{{ dnCmpColor }};">{{ dnCmpText }}</span>
-              <span style="font-size:8.5px; color:#6a7f9f;">tol &#177;0.0005</span>
+        <div class="dn-runs">
+          <sc-for list="{{ dnRuns }}" as="rr" hint-placeholder-count="2">
+            <span class="dn-run" style="{{ rr.style }}">
+              <span style="font-size:12px; font-weight:600; color:var(--txt);">{{ rr.name }}</span>
+              <span style="font-size:13px; font-weight:600; color:{{ rr.col }};">{{ rr.v }}</span>
+              <span style="font-size:11px; color:var(--mut);">g/cc</span>
+              <span style="font-size:10.5px; color:{{ rr.tagCol }};">{{ rr.tag }}</span>
             </span>
-          </div>
+          </sc-for>
+          <span class="dn-cmp">
+            <span style="font-size:12px; color:var(--txt2);">|&#961;&#8321; &#8722; &#961;&#8322;|</span>
+            <span style="font-size:13px; font-weight:600; color:{{ dnCmpColor }};">{{ dnCmpText }}</span>
+            <span style="font-size:11px; color:var(--mut);">tolerance &#177;0.0005 g/cc</span>
+          </span>
+        </div>
+        <div class="dn-end">
+          <span style="color:{{ dnVerdictColor }};">{{ dnVerdict }}</span>
+          <sc-if value="{{ dnShowRepeat }}" hint-placeholder-val="{{ false }}">
+            <button onclick="{{ dnRepeat }}" style="font-family:'IBM Plex Sans',sans-serif; font-size:11px; font-weight:600; white-space:nowrap; padding:3px 12px; border-radius:6px; cursor:pointer; background:rgba(195,58,82,.08); border:1px solid var(--red); color:var(--red);" style-hover="background:rgba(195,58,82,.14);">Repeat</button>
+          </sc-if>
         </div>
       </div>
     </div>
@@ -637,9 +625,13 @@ DC.define('StageDensity', {
           valves: { A: 'true', R: 'dnFlowOn' },
           ports: { R: { plug: '!dnCoilAtCell', nut: 'dnCoilAtCell' } },
           disp: { P: '{{ dnPNum }}', Pu: 'psi', B: '0.0 cc', A: '{{ dnCellVText }}' } })}
-        <!-- live flow : pump A -> manifold -> coil -->
+        <!-- live flow : pump A -> manifold -> coil. Single-phase sample = one continuous fluid line (same colour as the
+             sample in Pump A); motion = one soft glint travelling along it + a fixed direction chevron (no dashes / gaps) -->
         <g style="{{ dnFlowStyle }}">
-          <path d="M1030 212 V190 H1147.6" fill="none" stroke="#ffcf3f" stroke-width="2.4" stroke-dasharray="3 9" stroke-linecap="round" style="animation:dndash calc(.7s * var(--pm, 1)) linear infinite;"></path>
+          <path d="M1030 212 V190 H1147.6" fill="none" stroke="#8a6d22" stroke-width="4.2" stroke-linecap="round" stroke-linejoin="round"></path>
+          <path d="M1030 212 V190 H1147.6" fill="none" stroke="#d9b64a" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"></path>
+          <path d="M1030 212 V190 H1147.6" fill="none" stroke="#fff4cc" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" opacity=".7" pathLength="100" stroke-dasharray="14 86" style="animation:dnglint calc(1.6s * var(--pm, 1)) linear infinite;"></path>
+          <path d="M1084 186.2 L1091 190 L1084 193.8 Z" fill="#8a6d22"></path>
         </g>
         <foreignObject x="848" y="540" width="200" height="13"><div style="margin:0; display:flex; align-items:center; justify-content:center; height:100%; white-space:nowrap; line-height:1.1; font-family:'IBM Plex Mono',ui-monospace,monospace; font-size:8.5px; letter-spacing:.5px; color:{{ dnLineLabelColor }};">{{ dnLineLabel }}</div></foreignObject>
 

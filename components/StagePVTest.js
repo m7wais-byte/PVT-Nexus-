@@ -60,14 +60,16 @@ window.PVT_PV = {
 
 // Test configuration. Validation uses DEF_CFG (30 cc charge) unchanged; another test (Differential
 // Liberation Initial PV, 80 cc) passes its own dataset through the pv-config prop and runs this same engine.
+// Psat texts for the Test Summary and the graph annotation, both from the same PSAT_PV point
+const PSAT_P_TXT = PSAT_PV[0].toLocaleString('en-US') + ' psig', PSAT_V_TXT = PSAT_PV[1].toFixed(1) + ' cc';
 const DEF_CFG = {
   data: DATA, bubbleIdx: BUBBLE_IDX, start: [5000, 30.0], dec: 1, pu: 'psig',
   xMin: 29.6, xMax: 33.9, yMin: 1750, yMax: 5150, xTicks: [30, 31, 32, 33], xTickDec: 0, yTicks: [5000, 4000, 3000, 2000],
-  psatLabel: '2,700 psig @ 31.3 cc', psatPTxt: '2,700 psig', psatVolTxt: '31.3 cc', psatBoxW: 150, boxW: 96,
+  psatLabel: PSAT_P_TXT + ' @ ' + PSAT_V_TXT, psatPTxt: PSAT_P_TXT, psatVolTxt: PSAT_V_TXT, psatBoxW: 150, boxW: 96,
   connectPts: false,  // measured points are plotted as separate points (no point-to-point trace)
   // Validation: two regional straight-line fits (single-phase / two-phase), drawn over their data, then
   // extended to their intersection; Psat is read from that intersection (not from a measured point)
-  fitSplit: FIT_SPLIT, psatP: PSAT_PV[0], psatMarkTitle: 'Fitted-line intersection', psatMarkTxt: 'Psat = 2700 psig',
+  fitSplit: FIT_SPLIT, psatP: PSAT_PV[0], psatMarkTitle: 'Fitted-line intersection', psatMarkTxt: 'Psat = ' + PSAT_PV[0] + ' psig @ ' + PSAT_V_TXT,
   psatAxisTxt: '2,700', fitMs: 12000
 };
 
@@ -590,9 +592,13 @@ class Component extends DCLogic {
     const pvPsatMarkTitle = C.psatMarkTitle || 'Psat \u2014 Bubble Point';
     // compact label sits just off the intersection, clamped inside the plot frame
     const _bx = parseFloat(pvBubbleX), _by = parseFloat(pvBubbleY);
-    const LW = (C.psatBoxW || 116) + (SA ? 24 : 0), LH = SA ? 34 : 27;
-    const pvPsatLabelX = Math.max(left + 4, Math.min(left + w - 4 - LW, _bx + 14)).toFixed(1);
-    const pvPsatLabelY = Math.max(top + 4, Math.min(top + h - 4 - LH, _by - (SA ? 48 : 40))).toFixed(1);
+    // box grows with the annotation text (e.g. 'Psat = 2700 psig @ 31.3 cc'), never narrower than the configured width
+    const _markTxt = C.psatMarkTxt || C.psatLabel || '', _markW = Math.ceil(_markTxt.length * (SA ? 13 : 10.5) * 0.62) + 20;
+    const LW = Math.max(C.psatBoxW || 116, _markW) + (SA ? 24 : 0), LH = SA ? 34 : 27;
+    // up and to the right of the crossing: clear of the single-phase line (rising to the upper left) and the
+    // two-phase line (falling to the lower right)
+    const pvPsatLabelX = Math.max(left + 4, Math.min(left + w - 4 - LW, _bx + (SA ? 30 : 14))).toFixed(1);
+    const pvPsatLabelY = Math.max(top + 4, Math.min(top + h - 4 - LH, _by - (SA ? 64 : 40))).toFixed(1);
     const pvPsatLabelTitleY = (parseFloat(pvPsatLabelY) + (SA ? 4 : 3)).toFixed(1);
     const pvPsatLabelValY = (parseFloat(pvPsatLabelY) + (SA ? 17 : 13)).toFixed(1);
     const pvPsatLeader = _bx + ',' + _by + ' ' + (parseFloat(pvPsatLabelX) + 8).toFixed(1) + ',' + (parseFloat(pvPsatLabelY) + LH).toFixed(1);
