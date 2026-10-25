@@ -6,17 +6,22 @@
    Main.syncRecomb() into the host <div> of screens/showRecomb.js.
 
    Stages (revised 2026-09-30, v3):
-     1 Connect + vacuum   GSP -> booster IN (left) ; booster OUT (right) -> titanium top (no bypass line);
-                          titanium bottom -> water pump (300 cc). Titanium starts with 30 cc water, piston
-                          directly above it. Vacuum pump on the titanium top via isolation valve; the gas line is
-                          evacuated through the booster check valves; GSP valve stays closed.
+     1 Connect + vacuum   GSP bottle valve -> Booster In -> booster ; booster -> Booster Out -> tee -> titanium sample
+                          valve (no bypass line); titanium hydraulic valve -> water pump (300 cc). Titanium starts with
+                          30 cc water, piston directly above it. Vacuum pump on a tee in the gas line (booster OUT ->
+                          titanium) through its isolation valve; the gas line is evacuated toward the tee through the
+                          booster check valves; GSP bottle valve stays closed.
      2 Boost              hydraulic valve opened, water pump = pressure monitor at CONSTANT volume (300 cc);
                           gas enters, booster raises it; pump + cylinder read 0 -> CFG.BOOST_P (1,000 psig here).
      3 Pressurize         water pump delivers into the titanium bottom; gas 1,000 -> 5,000 psig.
-     4 Charge 60 cc gas   PVT cell evacuated first, then exactly 60 cc gas into Pump A at 5,000 psig.
+     4 Charge 60 cc gas   PVT cell evacuated first by the integrated cell setup (no separate vacuum pump, Port L
+                          plugged), then exactly 60 cc gas into Pump A at 5,000 psig.
      5 Gas -> bottle      40 cc (measured at 5,000 psig) delivered, Pump A 60 -> 20 cc; the 20 cc STAYS in the
-                          cell (no vent). Stage 6 hides the cell with it (no draining), then an empty cell is used.
-     6 Charge oil         oil bottle held at 315 psig ~2.6 s, pumped to 3,000 psig, A 100 + B 80 cc.
+                          cell (no vent). The water pump stays and is connected to the bottle hydraulic valve at a
+                          fixed volume: once that valve opens it reads the bottle pressure (monitor, no pumping).
+                          Stage 6 hides the cell with it (no draining), then an empty cell is used.
+     6 Charge oil         water pump refilled 9 -> 300 cc while the bottles are swapped; oil bottle held at 315 psig
+                          ~2.6 s, pumped to 3,000 psig, A 100 + B 80 cc.
      7 Agitate oil        stroke = free space of the receiving pump (capacity 100 cc): 20 cc A -> B, 20 cc back;
                           4 strokes, total 180 cc throughout, ends A 100 / B 80.
      8 Oil -> bottle      water pump on the bottle water-side port (monitor, constant volume);
@@ -145,35 +150,58 @@
   };
   function pf(P) { return P < -0.05 ? '−' + f1(-P) : n0(P > 0 ? P : 0); }        // pressure text (vacuum shown to 0.1)
 
-  /* ------------------------------------------------------------ geometry (svg units) */
-  var VB = '20 98 1170 548';
-  var SLOT_X = 430, PORT_Y = 190;           // connection slot at the PVT cell (titanium / bottles), top port level
-  var A_TI_X = 820, A_PUMP_X = 560;         // stage 1-3 positions
-  var B_PUMP_X = 70;                        // water pump position beside the PVT cell
-  var PUMP_Y = 470, PUMP_W = 180, PUMP_H = 132, PUMP_PORT_Y = 560;
-  var GSP_X = 130;
-  // vertical air-driven booster: air drive on top, gas head below; gas IN on the left wall, OUT on the right wall
-  var BOO = { x: 430, inX: 380, outX: 480, portY: 330, riseX: 300, dropX: 600, vIn: 215, vOut: 700 };
-  var CELL_S = 1.06;                        // approved PVT cell (PVTCellArt legacy frame) scaled + placed; Port R and labels inside the scene
-  var CELL_T = 'translate(' + r1(800 - 806 * CELL_S) + ',' + r1(120 - 150 * CELL_S) + ') scale(' + CELL_S + ')';
-  var CW = function (x, y) { return [x * CELL_S + 800 - 806 * CELL_S, y * CELL_S + 120 - 150 * CELL_S]; };
-  var CELL_IN = CW(748, 190);               // Port L outward fitting of the approved PVT cell (world): sample + vacuum lines end here
+  /* ------------------------------------------------------------ geometry (svg units)
+     Layout (revised 2026-10-25): every piece of equipment stands on one floor (FLOOR). Vessels (titanium
+     cylinder, separator oil bottle, recombination bottle) all have their two valve outlets facing RIGHT at
+     the same heights: sample outlet at PORT_Y, hydraulic outlet at HYD_Y. The water pump stands to the right
+     of the vessel with its port on its LEFT face at HYD_Y, so the hydraulic line is one short straight run.
+     The approved PVT cell (scaled CELL_S, Port L at CELL_IN) stands on the same floor with the approved
+     computer + controller to its right. */
+  var VB = '6 102 1240 584';
+  var FLOOR = 646;                          // common floor line (pumps, stands, PVT cell, desk)
+  var BOT_S = 0.67;                         // sample bottle scale
+  var PORT_Y = 200;                         // vessel sample (top) outlet level
+  var HYD_Y = PORT_Y + 562 * BOT_S;         // vessel hydraulic (bottom) outlet level = water-pump port level
+  var SLOT_X = 400;                         // connection slot beside the PVT cell: vessel outlets at x = SLOT_X
+  var A_TI_X = 930;                         // stage 1-3: titanium outlets
+  var PUMP_DX = 56;                         // vessel outlet -> water pump body (port fitting 10 + 46 line)
+  var A_PUMP_X = A_TI_X + PUMP_DX;          // stage 1-3 water pump
+  var B_PUMP_X = SLOT_X + PUMP_DX;          // stage 4-8 water pump (beside the vessel at the slot)
+  var C_PUMP_X = 930;                       // stage 9 water pump (moves clear of the inversion stand)
+  var PUMP_W = 180, PUMP_H = 132, PUMP_Y = FLOOR - PUMP_H, PUMP_PORT_Y = HYD_Y;
+  var GSP_X = 120, GSP_C = 377, GSP_S = 0.73;   // approved Gas Sample Bottle (top valve outlet at y 196)
+  var HI_Y = 128;                           // overhead run of the gas lines
+  // vertical air-driven booster: air drive on top, gas head below; gas IN on the left wall, OUT on the right wall.
+  // BOOSTER IN / OUT valves sit directly on the two ports (vIn / vOut), the lines rise / fall at riseX / dropX
+  var BOO = { x: 400, inX: 348, outX: 452, portY: 330, riseX: 256, dropX: 580, vIn: 310, vOut: 490 };
+  var CELL_S = 0.95;                        // approved PVT cell (PVTCellArt legacy frame) scaled, standing on FLOOR
+  var CELL_PL = PVTCellArt.port({}, 'L');   // Port L outward fitting in the legacy frame
+  var CELL_GL = PVTCellArt.pt({}, 0, PVTCellArt.G.ground)[1];   // cell floor in the legacy frame
+  var CELL_X0 = 680, CELL_Y0 = FLOOR - (CELL_GL - CELL_PL[1]) * CELL_S;   // Port L outward fitting (world)
+  var CELL_TX = CELL_X0 - CELL_PL[0] * CELL_S, CELL_TY = CELL_Y0 - CELL_PL[1] * CELL_S;
+  var CELL_T = 'translate(' + r1(CELL_TX) + ',' + r1(CELL_TY) + ') scale(' + CELL_S + ')';
+  var CW = function (x, y) { return [x * CELL_S + CELL_TX, y * CELL_S + CELL_TY]; };
+  var CELL_AT = { x: PVTCellArt.LEGACY.x * CELL_S + CELL_TX, y: PVTCellArt.LEGACY.y * CELL_S + CELL_TY, s: PVTCellArt.LEGACY.s * CELL_S };
+  var CELL_IN = [CELL_X0, CELL_Y0];         // Port L outward fitting: the sample line ends here
+  var CELL_DROP = 656;                      // sample line: overhead at PORT_Y, drops to Port L level at this x
+  var CELL_CX = CW(948, 0)[0];              // cell centre line (pressure sensor)
+  var DESK = { x: 1080, y: 408, s: 0.42 };  // approved computer + controller, right of the cell
+  DESK.legs = (FLOOR - DESK.y) / DESK.s - 250;
   var PXC = 182 / CFG.CELL_CAP;             // px per cc in the cell pump bore (local): 182 px = 105 cc
   /* sample bottle = approved Oil Sample Bottle (equipment/bottle-draw.js, local units: bore -226..226, 46-unit
      piston -> 406-unit stroke). (b.x, b.y) is the side outlet of its sample valve, where the line connects;
      the driving-side outlet is 562 units below it, the bottle axis 48 units to its left */
-  var BOT_S = 0.67;                         // sample bottle scale
   var BOT_PX = 406 / CFG.BOTTLE_CAP;        // bottle: local units per cc (406-unit piston stroke)
   var PIV_DX = 48 * BOT_S;                  // sample-valve outlet -> bottle axis
-  var TI = { top: 190, ch0: 246, ch1: 554, pist: 10 };
-  var TI_PX = (TI.ch1 - TI.ch0 - TI.pist) / CFG.TI_CAP;
-  var STAND = { x: 500, py: 372 };          // inversion stand pivot (stage 9) = bottle body centre
   var PIV_DY = 281 * BOT_S;                 // sample-valve outlet -> body centre of the bottle
-  var VACP = {                              // vacuum pump placements
-    ti: { x: 880, y: 127, pts: [[880, 152], [A_TI_X, 152]], vx: 852, vy: 152, h: true },
-    cell: { x: 612, y: 252, pts: null, vx: 667, vy: 222, h: false }
-  };
-  VACP.cell.pts = [[667, 252], [667, CELL_IN[1]], CELL_IN];
+  /* titanium cylinder (world units relative to its outlet x): axis TI_DX left of the outlets, same outlet
+     heights as the bottles. Bore ch0..ch1 holds sample side + floating piston + water */
+  var TI_DX = PIV_DX;
+  var TI = { cap0: 222, cap1: 554, ch0: 240, ch1: 536, pist: 10 };
+  var TI_PX = (TI.ch1 - TI.ch0 - TI.pist) / CFG.TI_CAP;
+  var STAND = { x: 660, py: 400 };          // inversion stand pivot (stage 9) = bottle body centre
+  // vacuum pump on a tee in the sample-side gas line (booster OUT -> titanium), stage 1 only
+  var VAC = { tee: [740, HI_Y], inlet: [740, 228], vy: 166 };
 
   /* ------------------------------------------------------------ stages */
   var STAGES = [
@@ -182,41 +210,41 @@
       { k: 'c1', d: 2.2, q: 'Connect the GSP outlet to the booster gas inlet.' },
       { k: 'c2', d: 2.2, q: 'Connect the booster outlet to the titanium cylinder sample (gas) side at the top.' },
       { k: 'c3', d: 2.2, q: 'Connect the titanium hydraulic (water) side at the bottom to the water pump.' },
-      { k: 'vbring', d: 2.6, q: 'A vacuum pump is placed behind the titanium cylinder and connected to its top through an isolation valve.' },
-      { k: 'vopen', d: 2.4, q: 'Open the vacuum isolation valve, the titanium top valve and the booster inlet and outlet valves. The GSP valve stays CLOSED.' },
-      { k: 'evac', d: 9, q: 'Vacuum pump running: the titanium sample side and the gas line (through the booster) are evacuated. The piston rises toward the top; the 30 cc of water stays at the bottom.' },
+      { k: 'vbring', d: 2.6, q: 'A vacuum pump is connected to a tee on the gas line between the booster outlet and the titanium cylinder, through its vacuum isolation valve.' },
+      { k: 'vopen', d: 2.4, q: 'Open the vacuum isolation valve, the titanium sample valve and the Booster In and Booster Out valves. The GSP bottle valve stays CLOSED.' },
+      { k: 'evac', d: 9, q: 'Vacuum pump running: the titanium sample side and the gas line (through the booster) are evacuated toward the tee and the pump. The piston rises toward the top; the 30 cc of water stays at the bottom.' },
       { k: 'vclose', d: 2.4, q: 'Vacuum complete: close the vacuum isolation valve. The pump stops.' },
-      { k: 'vremove', d: 2.6, q: 'Disconnect and remove the vacuum pump. The gas pathway is left under vacuum.' },
-      { k: 'chk', d: 2.0, q: 'Ready for boosting: sample side under vacuum, GSP valve closed, hydraulic valve closed.' } ] },
+      { k: 'vremove', d: 2.6, q: 'Disconnect and remove the vacuum pump; the isolation valve keeps the branch closed. The gas pathway is left under vacuum.' },
+      { k: 'chk', d: 2.0, q: 'Ready for boosting: sample side under vacuum, GSP bottle valve closed, hydraulic valve closed.' } ] },
     { n: 'Boost', t: 'Boost gas into the titanium cylinder', sub: [
       { k: 'start', d: 2.4, q: 'Open the titanium hydraulic valve: the water pump (volume fixed) now reads the cylinder pressure. Air supply on.' },
-      { k: 'fill', d: 2.6, q: 'Open the GSP valve: boosting begins. Gas flows GSP → booster inlet → booster outlet → titanium top; the piston moves down onto the water.' },
+      { k: 'fill', d: 2.6, q: 'Open the GSP bottle valve: boosting begins. Gas flows GSP → booster inlet → booster outlet → titanium top; the piston moves down onto the water.' },
       { k: 'boost', d: 13, q: 'The booster draws gas in, compresses it with each stroke and discharges it to the titanium cylinder. The water pump reads the pressure rising to ' + n0g(CFG.BOOST_P) + ' psig; its volume does not change.' },
-      { k: 'stop', d: 2.6, q: n0g(CFG.BOOST_P) + ' psig reached: stop the booster, close the titanium gas inlet, the booster valves and the GSP valve. The pump reading holds at ' + n0g(CFG.BOOST_P) + ' psig.' } ] },
+      { k: 'stop', d: 2.6, q: n0g(CFG.BOOST_P) + ' psig reached: stop the booster, close the titanium sample valve, the Booster In / Out valves and the GSP bottle valve. The pump reading holds at ' + n0g(CFG.BOOST_P) + ' psig.' } ] },
     { n: 'Pressurize 5,000', t: 'Pressurize the titanium gas to 5,000 psig', sub: [
       { k: 'set', d: 2.4, q: 'Start: 300 cc water in the pump, 30 cc water in the titanium cylinder, gas at 1,000 psig. The hydraulic valve is already open: the pump switches from monitoring to delivering.' },
       { k: 'comp', d: 13, q: 'The water pump delivers water into the bottom of the titanium cylinder: the piston rises and the gas is compressed from 1,000 to 5,000 psig.' },
       { k: 'hold', d: 2.2, q: 'Gas held at 5,000 psig: the same gas in a smaller volume.' } ] },
     { n: 'Charge 60 cc gas', t: 'Vacuum the PVT cell and charge 60 cc of gas', sub: [
-      { k: 'move', d: 3.4, q: 'Move the isolated titanium cylinder, with its water pump, to the PVT cell. The receiving cell is empty.' },
-      { k: 'vconn', d: 2.4, q: 'Connect a vacuum pump to the cell inlet line through its isolation valve.' },
-      { k: 'evac', d: 7, q: 'Open the vacuum valve, the cell inlet valve and the Pump A / Pump B valves: the empty cell is evacuated.' },
-      { k: 'vclose', d: 2.2, q: 'Close the vacuum isolation valve and the cell valves. The cell stays under vacuum.' },
-      { k: 'vremove', d: 2.4, q: 'Disconnect and remove the vacuum pump.' },
-      { k: 'conn', d: 2.2, q: 'Connect the titanium sample outlet (top) to the cell inlet valve.' },
-      { k: 'open', d: 2.4, q: 'Open the titanium outlet, the cell inlet valve and the Pump A valve: gas fills the evacuated line and the cell reads 5,000 psig.' },
+      { k: 'move', d: 3.4, q: 'Move the isolated titanium cylinder, with its water pump, to the PVT cell setup. The receiving cell is empty and its Port L is plugged.' },
+      { k: 'vconn', d: 2.4, q: 'Select cell evacuation on the PVT cell controller. The evacuation is part of the integrated PVT cell setup; no separate vacuum pump is connected.' },
+      { k: 'evac', d: 7, q: 'Pump A and Pump B valves open: the integrated cell setup evacuates the empty cell. The cell pressure falls to full vacuum.' },
+      { k: 'vclose', d: 2.2, q: 'Evacuation complete: close the Pump A and Pump B valves. The cell stays under vacuum.' },
+      { k: 'vremove', d: 2.4, q: 'Cell held under vacuum, ready for the gas charge: remove the plug from Port L.' },
+      { k: 'conn', d: 2.2, q: 'Connect the titanium sample valve (top) to the cell inlet valve at Port L.' },
+      { k: 'open', d: 2.4, q: 'Open the titanium sample valve, the cell inlet valve and the Pump A valve: gas fills the evacuated line and the cell reads 5,000 psig.' },
       { k: 'xfer', d: 10, q: 'Pump A retracts at 5,000 psig while the water pump pushes the gas out: the cell volume rises toward 60 cc.' },
       { k: 'close', d: 2.4, q: '60.00 cc reached: the transfer stops automatically. Close the valves; 9 cc of gas stays in the titanium cylinder.' },
       { k: 'rec', d: 2.2, q: 'Record the gas charge: 60.00 cc at 5,000 psig and 22 °C.' } ] },
     { n: 'Gas → bottle', t: 'Transfer 40 cc of gas into the Recombination Bottle', sub: [
-      { k: 'swap', d: 3.2, q: 'Remove the titanium cylinder and water pump. Bring the Recombination Bottle: 30 cc water, piston directly above it, sample side empty.' },
-      { k: 'conn', d: 2.2, q: 'Connect the cell outlet to the bottle sample valve (top). The bottle hydraulic valve stays closed.' },
-      { k: 'open', d: 2.2, q: 'Open the Pump A valve, the cell inlet valve and the bottle sample valve. Pump A holds 5,000 psig.' },
-      { k: 'xfer', d: 10, q: 'Pump A advances at constant 5,000 psig: 60 → 20 cc. Gas enters above the bottle piston; the water stays below it.' },
-      { k: 'close', d: 2.4, q: '40.00 cc delivered (measured at 5,000 psig): the transfer stops automatically. Close the valves; the bottle is isolated.' },
+      { k: 'swap', d: 3.2, q: 'Disconnect and remove the titanium cylinder; the water pump stays in place. Bring the Recombination Bottle: 30 cc water, piston directly above it, sample side empty.' },
+      { k: 'conn', d: 2.2, q: 'Connect the cell inlet line to the bottle sample valve (top) and the water pump to the bottle hydraulic valve (bottom).' },
+      { k: 'open', d: 2.2, q: 'Open the bottle hydraulic valve: the water pump (volume fixed, no pumping) now reads the bottle pressure. Open the Pump A valve, the cell inlet valve and the bottle sample valve. Pump A holds 5,000 psig.' },
+      { k: 'xfer', d: 10, q: 'Pump A advances at constant 5,000 psig: 60 → 20 cc. Gas enters above the bottle piston; the water stays below it and the water pump reading follows the bottle pressure.' },
+      { k: 'close', d: 2.4, q: '40.00 cc delivered (measured at 5,000 psig): the transfer stops automatically. Close the sample-side valves; the bottle sample side is isolated.' },
       { k: 'keep', d: 2.6, q: 'The remaining 20 cc stays in Pump A at 5,000 psig. It is not used for the recombination.' } ] },
     { n: 'Charge oil', t: 'Pressurize and charge the separator oil', sub: [
-      { k: 'bring', d: 3.8, q: 'Bottle set aside; the PVT cell leaves view with its unused 20 cc and an empty cell is set in place. Bring the oil bottle and connect it to the water pump (300 cc).' },
+      { k: 'bring', d: 3.8, q: 'Close the bottle hydraulic valve and set the bottle aside; the PVT cell leaves view with its unused 20 cc and an empty cell is set in place. The water pump is refilled to 300 cc from its reservoir; bring the oil bottle and connect it to the pump.' },
       { k: 'wait', d: 2.6, q: 'Connected. The oil is still at 315 psig — the pump has not started yet.' },
       { k: 'press', d: 8, q: 'Pumping: water enters behind the oil-bottle piston and the oil pressure rises from 315 to 3,000 psig.' },
       { k: 'stab', d: 2.2, q: 'Pump stopped: oil stable at 3,000 psig.' },
@@ -255,22 +283,22 @@
   /* Explain text per stage (why / what changes / what to watch) */
   var EX = [
     { w: 'Air and moisture must be removed from the titanium cylinder and the gas line before separator gas is boosted in, so only separator gas is collected.',
-      e: 'Gas route: GSP → booster → titanium sample side (top); hydraulic route: titanium water side (bottom) → water pump. The titanium cylinder starts with 30 cc of water, the piston directly above it and the rest empty; the pump holds 300 cc. The vacuum pump is connected to the titanium top through an isolation valve; the titanium top valve and the booster inlet and outlet valves are opened while the GSP valve stays closed; the gas line is evacuated through the booster. During evacuation the piston is drawn up toward the top (educational depiction); the 30 cc of water stays at the bottom. Then the vacuum valve is closed and the pump removed.',
-      o: 'GSP valve CLOSED throughout, the pressure reaching vacuum, the piston rising while the water stays at 30 cc, and the vacuum pump being isolated before removal.' },
+      e: 'Gas route: GSP → booster → titanium sample side (top); hydraulic route: titanium water side (bottom) → water pump. The titanium cylinder starts with 30 cc of water, the piston directly above it and the rest empty; the pump holds 300 cc. The vacuum pump is connected through its isolation valve to a tee on the gas line between the booster outlet and the titanium cylinder; the titanium sample valve and the Booster In / Out valves are opened while the GSP bottle valve stays closed; the gas line is evacuated through the booster toward the tee. During evacuation the piston is drawn up toward the top (educational depiction); the 30 cc of water stays at the bottom. Then the vacuum valve is closed and the pump removed.',
+      o: 'GSP bottle valve CLOSED throughout, the pressure reaching vacuum, the piston rising while the water stays at 30 cc, and the vacuum pump being isolated before removal.' },
     { w: 'The booster raises low-pressure separator gas to 1,000 psig in the titanium cylinder.',
-      e: 'Gas route: GSP → booster inlet (left) → booster outlet (right) → titanium top. The titanium hydraulic valve is opened and the water pump is held at constant volume, so it acts as the pressure monitor. When the GSP valve opens, gas enters above the piston and the piston moves down onto the 30 cc of water. The air-driven booster then cycles: on each intake stroke gas enters the compression chamber through the inlet check valve, the plunger compresses it, and it leaves through the outlet check valve to the titanium cylinder. The pump pressure rises from 0 to ' + n0g(CFG.BOOST_P) + ' psig (the target for this run) while its volume, 300 cc, does not change.',
+      e: 'Gas route: GSP → booster inlet (left) → booster outlet (right) → titanium top. The titanium hydraulic valve is opened and the water pump is held at constant volume, so it acts as the pressure monitor. When the GSP bottle valve opens, gas enters above the piston and the piston moves down onto the 30 cc of water. The air-driven booster then cycles: on each intake stroke gas enters the compression chamber through the inlet check valve, the plunger compresses it, and it leaves through the outlet check valve to the titanium cylinder. The pump pressure rises from 0 to ' + n0g(CFG.BOOST_P) + ' psig (the target for this run) while its volume, 300 cc, does not change.',
       o: 'Gas entering, compressed and leaving the booster chamber in step with its piston; the pump and cylinder pressures rising together to ' + n0g(CFG.BOOST_P) + ' psig; the pump volume staying at 300.00 cc.' },
     { w: 'Hydraulic water compresses the collected gas to 5,000 psig before the measured charge.',
       e: 'The stage starts with 300 cc of water in the pump, 30 cc in the titanium cylinder and the gas at 1,000 psig. The gas inlet stays closed. The water pump delivers water into the bottom: the piston rises, the gas volume falls and the pressure rises to 5,000 psig. The water leaving the pump equals the water gained by the cylinder.',
       o: 'Pump volume falling while titanium water rises, the piston moving up, and pressure 1,000 → 5,000 psig.' },
     { w: 'The empty PVT cell is evacuated so the gas charge is not contaminated, then exactly 60 cc of gas is charged at 5,000 psig.',
-      e: 'A vacuum pump on the cell inlet line evacuates the empty cell; its valve is closed and the pump removed before the titanium cylinder is connected. Pump A retracts at constant 5,000 psig while the water pump pushes the gas out of the titanium cylinder. The transfer stops automatically at 60.00 cc; 9 cc of gas stays in the titanium cylinder.',
-      o: 'Cell pressure going to vacuum, then 5,000 psig; Pump A volume rising and stopping exactly at 60.00 cc.' },
+      e: 'The empty cell is evacuated by the integrated PVT cell setup (no separate vacuum pump), with the Pump A and Pump B valves open and Port L plugged; the cell valves are then closed and the cell stays under vacuum until the titanium cylinder is connected. Pump A retracts at constant 5,000 psig while the water pump pushes the gas out of the titanium cylinder. The transfer stops automatically at 60.00 cc; 9 cc of gas stays in the titanium cylinder.',
+      o: 'The cell evacuation status and the cell pressure going to vacuum, then 5,000 psig; Pump A volume rising and stopping exactly at 60.00 cc.' },
     { w: 'Only 40 cc of the measured gas (at 5,000 psig and 22 °C) goes into the Recombination Bottle.',
-      e: 'The bottle starts with 30 cc water, the piston directly above it and an empty sample side. Pump A advances at constant 5,000 psig from 60 to 20 cc, so 40 cc at measurement conditions leaves the cell. In the bottle the gas expands to fill the sample side above the piston at a much lower pressure — the charge is recorded at its measurement conditions, not as the volume it occupies in the bottle. The remaining 20 cc stays in Pump A and is not used; the cell is taken out of view with it at the start of the next stage.',
-      o: 'Pump A 60 → 20 cc at 5,000 psig, the bottle pressure rising only to about ' + n0(P_B1) + ' psig, water staying below the piston.' },
+      e: 'The bottle starts with 30 cc water, the piston directly above it and an empty sample side. The water pump stays connected to the bottle hydraulic valve at a fixed volume (no pumping), so once that valve is open it reads the bottle pressure. Pump A advances at constant 5,000 psig from 60 to 20 cc, so 40 cc at measurement conditions leaves the cell. In the bottle the gas expands to fill the sample side above the piston at a much lower pressure — the charge is recorded at its measurement conditions, not as the volume it occupies in the bottle. The remaining 20 cc stays in Pump A and is not used; the cell is taken out of view with it at the start of the next stage.',
+      o: 'Pump A 60 → 20 cc at 5,000 psig, the bottle pressure (and the water-pump reading) rising only to about ' + n0(P_B1) + ' psig, water staying below the piston.' },
     { w: 'The separator oil is raised from separator pressure to 3,000 psig and charged into Pump A and Pump B.',
-      e: 'After the hydraulic connection, the oil pressure stays at 315 psig for a moment; then the water pump starts and raises it to 3,000 psig (only a small water volume is needed because oil is nearly incompressible). With the bottle stable at 3,000 psig, 100 cc is charged into Pump A and 80 cc into Pump B. The cell used here is empty: the earlier cell, holding the unused 20 cc of gas, was taken out of view at the start of this stage.',
+      e: 'The water pump is refilled to 300 cc from its reservoir and connected to the oil bottle. After the hydraulic connection, the oil pressure stays at 315 psig for a moment; then the water pump starts and raises it to 3,000 psig (only a small water volume is needed because oil is nearly incompressible). With the bottle stable at 3,000 psig, 100 cc is charged into Pump A and 80 cc into Pump B. The cell used here is empty: the earlier cell, holding the unused 20 cc of gas, was taken out of view at the start of this stage.',
       o: 'Pressure held at 315 psig after connection, then rising gradually to 3,000 psig; the pumps filling to 100 and 80 cc.' },
     { w: 'The oil is agitated between the two pumps before its volume is accepted.',
       e: 'Each stroke moves the largest volume the receiving pump can take. Capacity is ' + CFG.CELL_CAP + ' cc per pump: with A ' + CFG.OIL_A + ' / B ' + CFG.OIL_B + ' cc, Pump B has ' + AGIT_DV + ' cc free, so ' + AGIT_DV + ' cc moves A → B (A ' + (CFG.OIL_A - AGIT_DV) + ', B ' + (CFG.OIL_B + AGIT_DV) + ') and the same ' + AGIT_DV + ' cc returns B → A. The total stays ' + OIL_TOT + ' cc, neither pump exceeds ' + CFG.CELL_CAP + ' cc, and the pressure stays at 3,000 psig. The agitation ends with Pump A ' + CFG.OIL_A + ' cc and Pump B ' + CFG.OIL_B + ' cc.',
@@ -289,24 +317,24 @@
     var w = {
       gsp: { P: CFG.GSP_P0, open: false, a: 1 },
       boo: { run: false, air: false, a: 1, env: 0, vin: false, vout: false, gas: false },
-      vac: { a: 0, at: 'ti', run: false, open: false, dx: 0, lvl: 0 },
+      vac: { a: 0, run: false, open: false, dx: 0, lvl: 0 },
       ti: { x: A_TI_X, sv: CFG.TI_CAP - CFG.TI_W0, water: CFG.TI_W0, gas: false, P: 0, top: false, bot: false, a: 1 },
       pump: { x: A_PUMP_X, P: 0, V: CFG.PUMP_V0, mode: 'IDLE', a: 1 },
-      cell: { a: 0, A: 0, Af: null, B: 0, P: 0, valve: false, aV: false, bV: false, man: null, manSeg: null, manDir: 0, stab: 0 },
+      cell: { a: 0, A: 0, Af: null, B: 0, P: 0, valve: false, aV: false, bV: false, man: null, manSeg: null, manDir: 0, stab: 0, evac: null, plug: true },
       bot: { kind: null, x: SLOT_X, y: PORT_Y, a: 0, water: CFG.BOT_W0, q: 0, oil: 0, P: 0, top: false, bv: false, mix: 0, ang: 0, drops: false },
       stand: 0, agCard: 0, rockCard: 0, xfCard: 0, summary: 0, hose: false, jacket: 0, heat: false,
-      L: { gas1: line(), gas2: line(), hyd: { part: 0, c: 'water', flow: 0, a: 1, to: 'ti' }, cellL: line(), vacL: line('vac') },
+      L: { gas1: line(), gas2: line(), gas3: line(), hyd: { part: 0, c: 'water', flow: 0, a: 1, to: 'ti' }, cellL: line(), vacL: line('vac') },
       rec: { gas: false, bot: false, oil: false, oilBot: false },
       xf: { s1: 0, s2: 0, s3: 0 }, hl: null, stroke: 0, strokeDir: 0, cyc: 0, rockP: 0, pSet: false
     };
     if (k >= 1) {          // after connect + vacuum
-      w.L.gas1.part = w.L.gas2.part = w.L.hyd.part = 1;
-      w.L.gas1.c = w.L.gas2.c = 'vac';
+      w.L.gas1.part = w.L.gas2.part = w.L.gas3.part = w.L.hyd.part = 1;
+      w.L.gas1.c = w.L.gas2.c = w.L.gas3.c = 'vac';
       w.ti.sv = CFG.TI_SV_VAC; w.ti.P = CFG.VAC_P; w.ti.top = true; w.boo.vin = w.boo.vout = true;
     }
     if (k >= 2) {          // after boosting to 1,000 psig
       w.gsp.P = CFG.GSP_P1; w.ti.sv = CFG.GAS_BOOST_V; w.ti.gas = true; w.ti.P = CFG.BOOST_P; w.ti.top = false;
-      w.boo.vin = w.boo.vout = false; w.boo.gas = true; w.L.gas1.c = w.L.gas2.c = 'gas';
+      w.boo.vin = w.boo.vout = false; w.boo.gas = true; w.L.gas1.c = w.L.gas2.c = w.L.gas3.c = 'gas';
       w.ti.bot = true; w.pump.P = CFG.BOOST_P; w.pump.mode = 'MONITOR · FIXED VOL.';   // pump monitors at constant volume
     }
     if (k >= 3) {          // after pressurizing to 5,000 psig
@@ -314,14 +342,15 @@
       w.pump.V = CFG.PUMP_V0 - (w.ti.water - CFG.TI_W0); w.pump.P = CFG.GAS_P; w.pump.mode = 'HOLD 5,000 psig';
     }
     if (k >= 4) {          // after the 60 cc gas charge
-      w.gsp.a = 0; w.boo.a = 0; w.L.gas1.a = w.L.gas2.a = 0;
+      w.gsp.a = 0; w.boo.a = 0; w.L.gas1.a = w.L.gas2.a = w.L.gas3.a = 0;
       w.ti.x = SLOT_X; w.ti.sv -= CFG.GAS_CHARGE; w.ti.water += CFG.GAS_CHARGE; w.pump.x = B_PUMP_X; w.pump.V -= CFG.GAS_CHARGE;
-      w.cell.a = 1; w.cell.A = CFG.GAS_CHARGE; w.cell.Af = 'gas'; w.cell.P = CFG.GAS_P; w.cell.stab = 1;
+      w.cell.a = 1; w.cell.A = CFG.GAS_CHARGE; w.cell.Af = 'gas'; w.cell.P = CFG.GAS_P; w.cell.stab = 1; w.cell.plug = false;
       w.L.cellL.part = 1; w.L.cellL.c = 'gas'; w.rec.gas = true;
     }
     if (k >= 5) {          // after 40 cc to the bottle; the unused 20 cc stays in Pump A (no vent)
-      w.ti.a = 0; w.pump.a = 0; w.L.hyd.part = 0;
-      w.bot.kind = 'recomb'; w.bot.a = 1; w.bot.q = CFG.GAS_TO_BOT; w.bot.P = P_B1;
+      w.ti.a = 0; w.L.hyd.to = 'bot';                              // water pump stays on the bottle hydraulic valve (monitor)
+      w.bot.kind = 'recomb'; w.bot.a = 1; w.bot.q = CFG.GAS_TO_BOT; w.bot.P = P_B1; w.bot.bv = true;
+      w.pump.P = P_B1; w.pump.mode = 'MONITOR · FIXED VOL.';
       w.cell.A = CFG.GAS_CHARGE - CFG.GAS_TO_BOT; w.cell.Af = 'gas'; w.cell.P = CFG.GAS_P; w.rec.bot = true;
     }
     if (k >= 6) {          // after the oil charge (A 100 + B 80)
@@ -336,7 +365,7 @@
       w.bot.kind = 'recomb'; w.bot.a = 1; w.bot.q = CFG.GAS_TO_BOT; w.bot.oil = OIL_IN; w.bot.water = CFG.BOT_W0; w.bot.P = P_B2; w.bot.bv = true;
       w.cell.A = CFG.OIL_A_END; w.cell.B = 0; w.cell.Af = 'oil'; w.cell.P = CFG.OIL_P; w.cell.aV = true; w.L.cellL.part = 1; w.L.cellL.c = 'oil';
       w.pump.a = 1; w.pump.x = B_PUMP_X; w.pump.V = PUMP_OIL0; w.pump.P = P_B2; w.pump.mode = 'MONITOR · FIXED VOL.';
-      w.L.hyd.part = 1; w.L.hyd.to = 'bot'; w.L.hyd.a = 1; w.hose = true;
+      w.L.hyd.part = 1; w.L.hyd.to = 'bot'; w.L.hyd.a = 1;
       w.xf.s1 = w.xf.s2 = w.xf.s3 = 1; w.xfCard = 1; w.rec.oilBot = true;
     }
     return w;
@@ -345,9 +374,9 @@
   var STAGE_FN = [
     /* 1 connect + vacuum */
     function (w, pr, key) {
-      w.L.gas1.part = ease(pr('c1')); w.L.gas2.part = ease(pr('c2')); w.L.hyd.part = ease(pr('c3'));
+      var c2 = pr('c2');
+      w.L.gas1.part = ease(pr('c1')); w.L.gas2.part = ease(clamp(c2 * 2, 0, 1)); w.L.gas3.part = ease(clamp(c2 * 2 - 1, 0, 1)); w.L.hyd.part = ease(pr('c3'));
       var vb = pr('vbring'), vo = pr('vopen'), ev = pr('evac'), vc = pr('vclose'), vr = pr('vremove');
-      w.vac.at = 'ti';
       w.vac.a = vr > 0 ? 1 - smooth(vr * 1.3) : smooth(vb * 1.8);
       w.vac.dx = vr > 0 ? 70 * smooth(vr) : 70 * (1 - smooth(vb * 1.5));
       w.L.vacL.part = vr > 0 ? 1 - ease(clamp(vr * 2, 0, 1)) : ease(clamp((vb - .45) / .55, 0, 1));
@@ -357,8 +386,10 @@
       var e = ease(ev);
       w.ti.P = CFG.VAC_P * e; w.vac.lvl = e;
       w.ti.sv = lerp(CFG.TI_CAP - CFG.TI_W0, CFG.TI_SV_VAC, e);
+      // evacuation runs toward the tee and the vacuum pump: GSP side -> booster -> tee, titanium -> tee, tee -> pump
       var c = on ? 'vac' : null, fl = ev > 0 && ev < 1 ? 1 : 0;
-      w.L.gas1.c = w.L.gas2.c = c; w.L.gas1.flow = w.L.gas2.flow = fl; w.L.vacL.flow = -fl;
+      w.L.gas1.c = w.L.gas2.c = w.L.gas3.c = c; w.L.gas1.flow = w.L.gas2.flow = fl; w.L.gas3.flow = -fl;
+      w.L.vacL.c = vo > .3 && vc < .4 ? 'vac' : null; w.L.vacL.flow = w.vac.open ? fl : 0;
       w.pump.mode = 'IDLE · 300 cc';
       w.hl = key === 'c1' ? ['gsp', 'boo'] : key === 'c2' ? ['boo', 'ti'] : key === 'c3' ? ['ti', 'pump'] : key === 'vbring' ? ['vac'] : null;
     },
@@ -379,9 +410,9 @@
       w.ti.P = fi < 1 ? lerp(CFG.VAC_P, P0, e1) : lerp(P0, CFG.BOOST_P, 1 - Math.pow(1 - clamp(b, 0, 1), 2));
       w.gsp.P = CFG.GSP_P0 - (CFG.GSP_P0 - CFG.GSP_P1) * b;
       var c = fi > 0 ? 'gas' : 'vac';
-      w.L.gas1.c = w.L.gas2.c = c;
+      w.L.gas1.c = w.L.gas2.c = w.L.gas3.c = c;
       var fl = fi > 0 && b < 1 && running ? 1 : 0;
-      w.L.gas1.flow = w.L.gas2.flow = fl;
+      w.L.gas1.flow = w.L.gas2.flow = w.L.gas3.flow = fl;
       // water pump = pressure monitor on the titanium water side: hydraulic valve open, volume held constant
       var mon = st > .35;
       w.ti.bot = mon;
@@ -406,22 +437,18 @@
     function (w, pr, key) {
       var mv = pr('move'), m = ease(mv), vc = pr('vconn'), ev = pr('evac'), vcl = pr('vclose'), vr = pr('vremove');
       var cn = pr('conn'), op = pr('open'), x = pr('xfer'), cl = pr('close'), rc = pr('rec');
-      w.gsp.a = w.boo.a = clamp(1 - mv * 2.2, 0, 1); w.L.gas1.a = w.L.gas2.a = clamp(1 - mv * 4, 0, 1);
+      w.gsp.a = w.boo.a = clamp(1 - mv * 2.2, 0, 1); w.L.gas1.a = w.L.gas2.a = w.L.gas3.a = clamp(1 - mv * 4, 0, 1);
       w.cell.a = clamp(mv * 1.6 - .3, 0, 1);
       w.ti.x = lerp(A_TI_X, SLOT_X, m); w.pump.x = lerp(A_PUMP_X, B_PUMP_X, m);
-      // vacuum on the empty cell
-      w.vac.at = 'cell';
-      w.vac.a = vr > 0 ? 1 - smooth(vr * 1.3) : smooth(vc * 1.8);
-      w.vac.dx = vr > 0 ? 70 * smooth(vr) : 70 * (1 - smooth(vc * 1.5));
-      w.L.vacL.part = vr > 0 ? 1 - ease(clamp(vr * 2, 0, 1)) : ease(clamp((vc - .45) / .55, 0, 1));
+      // integrated evacuation of the empty cell (part of the PVT cell setup: no separate vacuum pump, Port L plugged)
       var vOpen = ev > 0 && vcl < .4;
-      w.vac.open = vOpen; w.vac.run = ev > 0 && ev < 1; w.vac.lvl = ease(ev);
       var fl = ev > 0 && ev < 1 ? 1 : 0;
-      w.L.vacL.c = vc >= 1 && ev > 0 ? 'vac' : null; w.L.vacL.flow = -fl;
+      w.cell.evac = ev > 0 && ev < 1 ? 'run' : vc > .3 && ev === 0 ? 'set' : ev >= 1 && cn === 0 ? 'done' : null;
+      w.cell.plug = vr < .5;
       // gas charge
       w.L.cellL.part = ease(cn);
       var open = op > .35 && cl < .45;
-      w.ti.top = open; w.cell.valve = vOpen || open; w.cell.aV = vOpen || open; w.cell.bV = vOpen;
+      w.ti.top = open; w.cell.valve = open; w.cell.aV = vOpen || open; w.cell.bV = vOpen;
       w.cell.P = op > .35 ? CFG.GAS_P : CFG.VAC_P * ease(ev);
       var moved = CFG.GAS_CHARGE * x;
       w.ti.sv = CFG.GAS_TI_V - moved; w.ti.water = CFG.TI_CAP - w.ti.sv;
@@ -431,23 +458,30 @@
       w.L.cellL.c = op > .35 ? 'gas' : null;
       var fx = x > 0 && x < 1;
       w.L.cellL.flow = fx ? 1 : 0; w.L.hyd.flow = fx ? -1 : 0;
-      w.cell.man = fl ? 'vac' : op > .35 ? 'gas' : null; w.cell.manSeg = fl ? 'all' : 'out'; w.cell.manDir = fl ? -1 : fx ? 1 : 0;
+      w.cell.man = fl ? 'vac' : op > .35 ? 'gas' : null; w.cell.manSeg = fl ? 'ab' : 'out'; w.cell.manDir = fx ? 1 : 0;
       w.cell.stab = x < 1 ? 0 : smooth(cl);
       w.rec.gas = rc > .4;
-      w.hl = mv > 0 && mv < 1 ? ['ti', 'pump'] : key === 'vconn' ? ['vac'] : rc > 0 && rc < 1 ? ['cell'] : null;
+      w.hl = mv > 0 && mv < 1 ? ['ti', 'pump'] : key === 'vconn' || key === 'evac' ? ['cell'] : rc > 0 && rc < 1 ? ['cell'] : null;
     },
     /* 5 deliver 40 cc (measured at 5,000 psig) to the Recombination Bottle; the other 20 cc stays in Pump A */
-    function (w, pr) {
+    function (w, pr, key) {
       var sw = pr('swap'), cn = pr('conn'), op = pr('open'), x = pr('xfer'), cl = pr('close');
-      w.ti.a = clamp(1 - sw * 2.4, 0, 1); w.ti.x = SLOT_X - 70 * smooth(sw * 2);
-      w.pump.a = clamp(1 - sw * 2.4, 0, 1); w.L.hyd.a = w.pump.a;
-      w.bot.kind = 'recomb'; w.bot.a = clamp(sw * 2.2 - 1.1, 0, 1); w.bot.y = PORT_Y + 40 * (1 - smooth(sw * 2 - 1));
+      // titanium disconnected and taken away to the left; the water pump stays and is reconnected to the bottle
+      w.ti.a = clamp(1 - sw * 2.4, 0, 1); w.ti.x = SLOT_X - 70 * smooth(sw * 2); w.ti.bot = sw < .15; w.ti.top = false;
+      w.pump.a = 1; w.pump.x = B_PUMP_X;
+      w.L.hyd.to = sw < .5 ? 'ti' : 'bot'; w.L.hyd.part = sw < .5 ? 1 - ease(clamp(sw * 3, 0, 1)) : ease(cn); w.L.hyd.a = 1; w.L.hyd.flow = 0;
+      w.bot.kind = 'recomb'; w.bot.a = clamp(sw * 2.2 - 1.1, 0, 1); w.bot.y = PORT_Y - 40 * (1 - smooth(sw * 2 - 1));
       w.L.cellL.part = sw > 0 ? (sw < 1 ? clamp(1 - sw * 3, 0, 1) : ease(cn)) : 1;
       w.L.cellL.c = op > .35 ? 'gas' : null;
       var open = op > .35 && cl < .45;
       w.bot.top = open; w.cell.valve = open; w.cell.aV = open;
       var q = CFG.GAS_TO_BOT * x;
       w.bot.q = q; w.bot.P = pCharge(q, BOT_SS);
+      // water pump on the bottle hydraulic valve at a FIXED volume: reads the bottle pressure only once that valve is open
+      w.bot.bv = op > .2;
+      // until the titanium hydraulic valve closes the pump still reads the titanium pressure; disconnected it reads 0
+      w.pump.P = w.bot.bv ? w.bot.P : sw < .15 ? CFG.GAS_P : CFG.GAS_P * (1 - smooth((sw - .15) / .2));
+      w.pump.mode = w.bot.bv ? 'MONITOR · FIXED VOL.' : sw < .15 ? 'HOLD 5,000 psig' : sw < 1 ? 'IDLE · DISCONNECTED' : cn < 1 ? 'CONNECTING' : 'IDLE · VALVE CLOSED';
       w.cell.A = CFG.GAS_CHARGE - q; w.cell.Af = 'gas';              // 20 cc remains visibly in Pump A
       w.cell.P = CFG.GAS_P;
       var fl = x > 0 && x < 1;
@@ -455,27 +489,29 @@
       w.cell.man = fl ? 'gas' : null; w.cell.manSeg = 'out'; w.cell.manDir = fl ? -1 : 0;
       w.cell.stab = 1;
       w.rec.bot = cl > .4;
-      w.hl = cl > 0 && cl < 1 ? ['bot'] : null;
+      w.hl = cl > 0 && cl < 1 ? ['bot'] : key === 'conn' ? ['bot', 'pump'] : null;
     },
     /* 6 oil: connect, hold 315 psig, pressurize to 3,000 psig, charge A 100 + B 80 */
     function (w, pr, key) {
       var br = pr('bring'), wt = pr('wait'), ps = pr('press'), sb = pr('stab'), cn = pr('conn'), xa = pr('xferA'), xb = pr('xferB'), cl = pr('close');
-      if (br < .5) { w.bot.a = clamp(1 - br * 2.4, 0, 1); w.bot.x = SLOT_X - 70 * smooth(br * 2); }
+      if (br < .5) { w.bot.a = clamp(1 - br * 2.4, 0, 1); w.bot.x = SLOT_X - 70 * smooth(br * 2); w.bot.bv = br < .08; w.bot.top = false; }
       else {
-        w.bot.kind = 'oil'; w.bot.a = clamp(br * 2.2 - 1.1, 0, 1); w.bot.x = SLOT_X; w.bot.y = PORT_Y + 40 * (1 - smooth(br * 2 - 1));
+        w.bot.kind = 'oil'; w.bot.a = clamp(br * 2.2 - 1.1, 0, 1); w.bot.x = SLOT_X; w.bot.y = PORT_Y - 40 * (1 - smooth(br * 2 - 1));
         w.bot.q = 0; w.bot.oil = CFG.OIL_V0; w.bot.water = CFG.BOTTLE_CAP - CFG.OIL_V0; w.bot.P = CFG.OIL_P0; w.bot.bv = br >= 1; w.bot.top = false;
       }
-      w.pump.a = smooth((br - .35) / .65); w.pump.x = B_PUMP_X; w.pump.V = CFG.PUMP_REFILL;
-      w.L.hyd.to = 'bot'; w.L.hyd.part = br < .5 ? 0 : smooth((br - .6) / .4); w.L.hyd.a = 1;
+      // the water pump stays in place: disconnected from the recombination bottle, refilled to 300 cc, connected to the oil bottle
+      var V5 = CFG.PUMP_V0 - (CFG.TI_CAP - CFG.GAS_TI_V - CFG.TI_W0) - CFG.GAS_CHARGE, rfl = smooth(clamp((br - .15) / .6, 0, 1));
+      w.pump.a = 1; w.pump.x = B_PUMP_X; w.pump.V = lerp(V5, CFG.PUMP_REFILL, rfl);
+      w.L.hyd.to = 'bot'; w.L.hyd.part = br < .5 ? 1 - ease(clamp((br - .06) * 4, 0, 1)) : smooth((br - .6) / .4); w.L.hyd.a = 1;
       w.L.cellL.part = br > 0 ? (br < 1 ? clamp(1 - br * 3, 0, 1) : ease(cn)) : 1;
       w.L.cellL.c = xa > 0 ? 'oil' : null;
       var pe = ease(ps), dv = CFG.OIL_COMP * pe;
       if (w.bot.kind === 'oil') { w.bot.P = CFG.OIL_P0 + (CFG.OIL_P - CFG.OIL_P0) * pe; }
-      w.pump.P = br >= 1 ? w.bot.P : 0;
-      w.pump.mode = br < 1 ? 'REFILLED · 300 cc' : ps === 0 ? 'CONNECTED · NOT PUMPING' : ps < 1 ? 'PRESSURIZING' : xa > 0 && xb < 1 ? 'DELIVERING · 3,000 psig' : 'HOLD 3,000 psig';
+      w.pump.P = br >= 1 ? w.bot.P : br < .08 ? P_B1 : 0;
+      w.pump.mode = br < 1 ? (rfl > 0 && rfl < 1 ? 'REFILLING FROM RESERVOIR' : rfl >= 1 ? 'REFILLED · 300 cc' : 'MONITOR · FIXED VOL.') : ps === 0 ? 'CONNECTED · NOT PUMPING' : ps < 1 ? 'PRESSURIZING' : xa > 0 && xb < 1 ? 'DELIVERING · 3,000 psig' : 'HOLD 3,000 psig';
       var mA = CFG.OIL_A * ease(xa), mB = CFG.OIL_B * ease(xb);
       if (w.bot.kind === 'oil') { w.bot.oil = CFG.OIL_V0 - dv - mA - mB; w.bot.water = CFG.BOTTLE_CAP - w.bot.oil; }
-      w.pump.V = CFG.PUMP_REFILL - dv - mA - mB;
+      if (br >= 1) w.pump.V = CFG.PUMP_REFILL - dv - mA - mB;
       var open = xa > 0 && cl < .45;
       w.bot.top = open && w.bot.kind === 'oil'; w.cell.valve = open; w.cell.aV = xa > 0 && xb === 0; w.cell.bV = xb > 0 && cl < .45;
       w.cell.A = mA; w.cell.B = mB; w.cell.Af = mA > 0 ? 'oil' : null;
@@ -513,12 +549,12 @@
     function (w, pr, key) {
       var sw = pr('swap'), cn = pr('conn'), op = pr('open'), x1 = pr('x1'), p1 = pr('p1'), rf = pr('refill'), p2 = pr('p2'), x2 = pr('x2'), cl = pr('close');
       w.agCard = clamp(1 - sw * 2.5, 0, 1); w.xfCard = clamp(sw * 2 - .8, 0, 1);
-      w.bot.kind = 'recomb'; w.bot.a = clamp(sw * 1.8 - .5, 0, 1); w.bot.y = PORT_Y + 40 * (1 - smooth(sw * 1.6 - .4));
+      w.bot.kind = 'recomb'; w.bot.a = clamp(sw * 1.8 - .5, 0, 1); w.bot.y = PORT_Y - 40 * (1 - smooth(sw * 1.6 - .4));
       w.bot.q = CFG.GAS_TO_BOT; w.bot.water = CFG.BOT_W0;
       w.L.cellL.part = ease(cn); w.L.cellL.c = op > .35 ? 'oil' : null; w.L.cellL.a = 1;
       // pressure-control (water) pump on the bottle water-side port: brought in with the bottle, connected, valve opened
       w.pump.a = clamp(sw * 1.8 - .5, 0, 1); w.pump.x = B_PUMP_X; w.pump.V = PUMP_OIL0;
-      w.hose = true; w.L.hyd.part = ease(cn); w.L.hyd.to = 'bot'; w.L.hyd.flow = 0;
+      w.L.hyd.part = ease(cn); w.L.hyd.to = 'bot'; w.L.hyd.flow = 0;
       w.bot.bv = op > .2;
       var e1 = ease(x1), er = ease(rf), e2 = ease(x2);
       var into = OIL_T1 * e1 + OIL_T2 * e2;
@@ -547,7 +583,8 @@
       w.cell.a = clamp(1 - mt * 2, 0, 1); w.L.cellL.a = clamp(1 - mt * 3, 0, 1); w.xfCard = clamp(1 - mt * 2.5, 0, 1);
       w.stand = clamp(mt * 1.6 - .2, 0, 1); w.rockCard = clamp(mt * 2 - 1, 0, 1);
       w.bot.x = lerp(SLOT_X, STAND.x + PIV_DX, m); w.bot.y = lerp(PORT_Y, STAND.py - PIV_DY, m);
-      w.pump.a = 1; w.pump.x = B_PUMP_X; w.hose = true; w.bot.bv = true; w.bot.top = false;   // pump stays put, line stays on
+      // the water pump moves clear of the inversion stand with the bottle; its flexible line stays on the bottle water side
+      w.pump.a = 1; w.pump.x = lerp(B_PUMP_X, C_PUMP_X, m); w.hose = true; w.bot.bv = true; w.bot.top = false;
       w.L.hyd.part = 1; w.L.hyd.to = 'bot';
       w.jacket = 1; w.heat = true;                                   // jacket fitted and heating from the start of the stage
       var pe = ease(ps);
@@ -617,23 +654,51 @@
       '<circle cx="' + x + '" cy="' + (y - 17) + '" r="5" fill="none" stroke="#0a0e16" stroke-width="3"/><circle cx="' + x + '" cy="' + (y - 17) + '" r="5" fill="none" stroke="#aebccf" stroke-width="1.6"/>' +
       '<path d="M' + (x - 9) + ' ' + (y - 8) + ' L' + (x - 9) + ' ' + (y + 8) + ' L' + x + ' ' + y + ' Z M' + (x + 9) + ' ' + (y - 8) + ' L' + (x + 9) + ' ' + (y + 8) + ' L' + x + ' ' + y + ' Z" fill="' + f + '" stroke="#0a0e16" stroke-width="1.1" stroke-linejoin="round"/>';
   }
-  // tubing: dark outline + steel + fluid core + moving dashes (flow) + chevron
-  function tube(pts, L, tt, ghost) {
+  /* rounded tubing: every interior corner of a route becomes a smooth bend of radius r (shorter where the
+     segments are short), sampled as points so partial drawing, flow dashes and chevrons follow the bend */
+  function roundPts(pts, r) {
+    if (pts.length < 3) return pts.slice();
+    var out = [pts[0]];
+    for (var i = 1; i < pts.length - 1; i++) {
+      var p0 = pts[i - 1], p1 = pts[i], p2 = pts[i + 1];
+      var d1 = Math.hypot(p1[0] - p0[0], p1[1] - p0[1]), d2 = Math.hypot(p2[0] - p1[0], p2[1] - p1[1]);
+      var rr = Math.min(r || 12, d1 / 2, d2 / 2);
+      if (rr < .5 || !d1 || !d2) { out.push(p1); continue; }
+      var a = [p1[0] + (p0[0] - p1[0]) * rr / d1, p1[1] + (p0[1] - p1[1]) * rr / d1], c = [p1[0] + (p2[0] - p1[0]) * rr / d2, p1[1] + (p2[1] - p1[1]) * rr / d2];
+      for (var k = 0; k <= 6; k++) { var t = k / 6, u = 1 - t; out.push([u * u * a[0] + 2 * u * t * p1[0] + t * t * c[0], u * u * a[1] + 2 * u * t * p1[1] + t * t * c[1]]); }
+    }
+    out.push(pts[pts.length - 1]);
+    return out;
+  }
+  // compression fitting (hex nut) at a tube end, aligned with the tube direction (from the end point toward q)
+  function fitting(e, q) {
+    var ang = Math.atan2(q[1] - e[1], q[0] - e[0]) * 180 / Math.PI;
+    return '<g transform="translate(' + r1(e[0]) + ',' + r1(e[1]) + ') rotate(' + r1(ang) + ')"><rect x="0" y="-6" width="10" height="12" rx="1.6" fill="url(#rcMetal)" stroke="#0a0e16" stroke-width=".9"/>' +
+      '<line x1="3.4" y1="-6" x2="3.4" y2="6" stroke="#0a0e16" stroke-width=".5" opacity=".55"/><line x1="6.6" y1="-6" x2="6.6" y2="6" stroke="#0a0e16" stroke-width=".5" opacity=".55"/></g>';
+  }
+  // tubing: dark outline + steel + fluid core + moving dashes (flow) + chevron; fittings at both connected ends.
+  // L.hyd lines (hydraulic water) are drawn a little wider with a blue-grey jacket so they read apart from the sample lines
+  function tube(pts, L, tt, ghost, hydr) {
     if (!L || L.a <= .01) return '';
+    pts = roundPts(pts, 14);
     var o = '<g opacity="' + r1(L.a * 100) / 100 + '">';
     if (ghost && L.part < 1) o += '<path d="' + pd(pts) + '" fill="none" stroke="var(--mut)" stroke-width="1.4" stroke-dasharray="4 5" opacity=".55"/>';
     var p = ppart(pts, L.part);
     if (p.length >= 2) {
       var d = pd(p);
-      o += '<path d="' + d + '" fill="none" stroke="#0a0e16" stroke-width="7.4" stroke-linecap="round" stroke-linejoin="round"/>';
-      o += '<path d="' + d + '" fill="none" stroke="#a9b8cd" stroke-width="4.6" stroke-linecap="round" stroke-linejoin="round"/>';
-      if (L.c) o += '<path d="' + d + '" fill="none" stroke="' + FL[L.c].line + '" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/>';
+      o += '<path d="' + d + '" fill="none" stroke="#0a0e16" stroke-width="' + (hydr ? 8.4 : 7.4) + '" stroke-linecap="round" stroke-linejoin="round"/>';
+      o += '<path d="' + d + '" fill="none" stroke="' + (hydr ? '#7f9ab8' : '#a9b8cd') + '" stroke-width="' + (hydr ? 5.6 : 4.6) + '" stroke-linecap="round" stroke-linejoin="round"/>';
+      if (L.c) o += '<path d="' + d + '" fill="none" stroke="' + FL[L.c].line + '" stroke-width="' + (hydr ? 3.8 : 3.4) + '" stroke-linecap="round" stroke-linejoin="round"/>';
       if (L.c && L.flow && L.part >= 1) {
         o += '<path d="' + d + '" fill="none" stroke="' + FL[L.c].dash + '" stroke-width="2" stroke-linecap="round" stroke-dasharray="3 10" stroke-dashoffset="' + r1(-L.flow * tt * 26) + '"/>';
-        var q = pat(pts, .5), ang = q.a + (L.flow < 0 ? 180 : 0);
+        var q = pat(pts, L.chev != null ? L.chev : .5), ang = q.a + (L.flow < 0 ? 180 : 0);
         o += '<g transform="translate(' + r1(q.x) + ',' + r1(q.y) + ') rotate(' + r1(ang) + ')"><circle r="8.5" fill="' + FL[L.c].line + '" stroke="#0a0e16" stroke-width="1"/><path d="M-3 -4 L2.5 0 L-3 4" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></g>';
       }
       if (L.part < 1) { var e = p[p.length - 1]; o += '<circle cx="' + r1(e[0]) + '" cy="' + r1(e[1]) + '" r="4" fill="var(--blue)"/>'; }
+      else if (L.fit !== false) {
+        if (L.fit !== 'end') o += fitting(pts[0], pts[1]);
+        if (L.fit !== 'start') o += fitting(pts[pts.length - 1], pts[pts.length - 2]);
+      }
     }
     return o + '</g>';
   }
@@ -643,19 +708,23 @@
   function hl(w, id) { return !!(w.hl && w.hl.indexOf(id) >= 0); }
 
   /* ------------------------------------------------------------ equipment */
+  /* GSP = approved Gas Sample Bottle (components/BottleArt.js). Its own built-in top valve is the GSP valve: the
+     gas line connects straight to that valve's outlet (no separate line valve). Open / closed is shown on the
+     built-in valve: green ring round the valve body + OPEN / CLOSED tag (same indication as the other valves). */
+  var GSP_O = { x: GSP_X, y: GSP_C, s: GSP_S };
+  var GSP_PORT = BottleArt.gasPort(GSP_O, 'T');
   function drawGSP(w) {
     var g = w.gsp; if (g.a <= .01) return '';
     var x = GSP_X, fillA = .35 + .6 * clamp(g.P / CFG.GSP_P0, 0, 1);
-    var o = '<g opacity="' + r1(g.a * 100) / 100 + '">' + glow(hl(w, 'gsp'), x - 62, 146, 124, 420);
-    o += '<rect x="' + (x - 5) + '" y="160" width="10" height="14" fill="url(#rcPipe)" stroke="#0a0e16" stroke-width=".7"/>';
-    o += valveV(x, 184, g.open);
-    // approved Gas Sample Bottle (components/BottleArt.js): its top connection on the line valve (x, 196);
-    // the gas shade follows the cylinder pressure
-    o += BottleArt.gas('rcb', { x: x, y: 377, s: 0.73, fillStyle: 'opacity:' + r1(fillA * 100) / 100, bd: 'gas', ctx: 'Separator gas sample bottle (GSP) · gas source for recombination' });
+    var o = '<g opacity="' + r1(g.a * 100) / 100 + '">' + glow(hl(w, 'gsp'), x - 62, 150, 124, 420);
+    o += BottleArt.gas('rcb', { x: x, y: GSP_C, s: GSP_S, fillStyle: 'opacity:' + r1(fillA * 100) / 100, bd: 'gas', ctx: 'Separator gas sample bottle (GSP) · gas source for recombination' });
+    // valve-state ring on the built-in valve body (bottle units: body -14..14 x -222..-192)
+    o += '<g transform="translate(' + x + ' ' + GSP_C + ') scale(' + GSP_S + ')"><rect x="-19" y="-227" width="38" height="40" rx="6" fill="none" stroke="#2fa66f" stroke-width="3.4" opacity="' + (g.open ? 1 : 0) + '" style="transition:opacity .35s"/></g>';
+    var vy = GSP_C - 207 * GSP_S;
+    o += vtag(x - 20, vy + 3, g.open, 'end') + T(x - 20, vy - 9, 'GSP VALVE', { a: 'end', m: 1, s: 8, c: 'var(--mut)' });
     o += T(x, 392, 'G', { a: 'middle', m: 1, s: 20, w: 700, c: '#0d3b28' });
-    o += vtag(x - 30, 187, g.open, 'end');
-    o += T(x, 574, 'GSP Gas Cylinder', { a: 'middle', s: 14, w: 600, c: 'var(--txt)' });
-    o += T(x, 589, 'separator gas', { a: 'middle', s: 11, c: 'var(--mut)' });
+    o += T(x, 578, 'GSP Gas Cylinder', { a: 'middle', s: 14, w: 600, c: 'var(--txt)' });
+    o += T(x, 593, 'separator gas', { a: 'middle', s: 11, c: 'var(--mut)' });
     o += lcd(x - 48, 606, 96, '', n0(g.P) + ' psig', '#7fe0b4', '#2f9d72');
     return o + '</g>';
   }
@@ -725,7 +794,6 @@
     }
     o += T(X, 268, 'GAS CHAMBER', { a: 'middle', m: 1, s: 7.2, w: 600, ls: .4, c: '#1b2a3e' });
     o += T(X, 354, !b.run ? (b.gas ? 'IDLE · GAS' : 'IDLE') : disch ? 'DISCHARGE →' : comp ? 'COMPRESS' : intake ? '→ INTAKE' : '·', { a: 'middle', m: 1, s: 7.6, w: 700, c: disch ? '#1d7a55' : comp ? '#8a5a1a' : '#1b2a3e' });
-    o += T(X - 54, PY - 12, 'IN', { a: 'end', m: 1, s: 9, w: 600, c: 'var(--txt2)' }) + T(X + 54, PY - 12, 'OUT', { m: 1, s: 9, w: 600, c: 'var(--txt2)' });
     // stand
     o += '<rect x="' + (X - 58) + '" y="362" width="116" height="8" rx="2" fill="url(#rcMetal)" stroke="#0a0e16"/>';
     o += '<rect x="' + (X - 30) + '" y="358" width="8" height="5" fill="#3a485f"/><rect x="' + (X + 22) + '" y="358" width="8" height="5" fill="#3a485f"/>';
@@ -735,27 +803,47 @@
     o += T(X, 422.5, b.run ? 'RUNNING' : 'STOPPED', { a: 'middle', m: 1, s: 8.5, w: 600, ls: .6, c: b.run ? 'var(--grn)' : 'var(--mut)' });
     return o + '</g>';
   }
-  // booster inlet / outlet valves on the gas lines (no bypass)
+  // Booster In / Booster Out valves: on the booster's own inlet and outlet ports (the check valves stay inside the
+  // gas head), handwheel up, OPEN / CLOSED tag and name under the line
   function drawBooValves(w) {
     var b = w.boo; if (b.a <= .01) return '';
-    var o = '<g opacity="' + r1(b.a * 100) / 100 + '">';
-    if (w.L.gas1.part >= 1 && w.L.gas1.a > .01) o += valveH(BOO.vIn, 120, b.vin) + vtag(BOO.vIn, 140, b.vin, 'middle') + T(BOO.vIn, 156, 'BOOSTER IN', { a: 'middle', m: 1, s: 7.5, ls: .4, c: 'var(--mut)' });
-    if (w.L.gas2.part >= 1 && w.L.gas2.a > .01) o += valveH(BOO.vOut, 120, b.vout) + vtag(BOO.vOut, 140, b.vout, 'middle') + T(BOO.vOut, 156, 'BOOSTER OUT', { a: 'middle', m: 1, s: 7.5, ls: .4, c: 'var(--mut)' });
+    var o = '<g opacity="' + r1(b.a * 100) / 100 + '">', y = BOO.portY;
+    if (w.L.gas1.part >= 1 && w.L.gas1.a > .01) o += valveH(BOO.vIn, y, b.vin) + vtag(BOO.vIn, y + 22, b.vin, 'middle') + T(BOO.vIn, y + 38, 'BOOSTER IN', { a: 'middle', m: 1, s: 8, ls: .4, c: 'var(--mut)' });
+    if (w.L.gas2.part >= 1 && w.L.gas2.a > .01) o += valveH(BOO.vOut, y, b.vout) + vtag(BOO.vOut, y + 22, b.vout, 'middle') + T(BOO.vOut, y + 38, 'BOOSTER OUT', { a: 'middle', m: 1, s: 8, ls: .4, c: 'var(--mut)' });
     return o + '</g>';
   }
 
-  /* titanium cylinder: sample side (top) · floating piston · (empty gap) · hydraulic water (bottom) */
+  /* right-angle needle valve on a vessel end (titanium cylinder): steel body on the axis, side outlet to the RIGHT
+     ending at the vessel outlet x (tubing attaches there), bonnet + T-handle pointing away from the vessel (dir -1 up,
+     +1 down). Same steel finish and green state ring as the approved bottle / PVT-cell valves. */
+  function endValve(ax, y, ox, open, dir) {
+    var o = '';
+    o += '<rect x="' + r1(ax + 11) + '" y="' + r1(y - 4.5) + '" width="' + r1(ox - ax - 11) + '" height="9" fill="url(#rcbSteelV)" stroke="#0a0e16" stroke-width=".8"/>';
+    o += '<rect x="' + r1(ax - 13) + '" y="' + r1(y - 13) + '" width="26" height="26" rx="3" fill="url(#rcbSteelD)" stroke="#0a0e16" stroke-width="1"/>';
+    o += '<rect x="' + r1(ax - 10) + '" y="' + r1(y - 10) + '" width="4" height="20" rx="2" fill="#fff" opacity=".3"/>';
+    var by = dir < 0 ? y - 13 : y + 13, sy = by + dir * 9, hy = sy + dir * 9;
+    o += '<rect x="' + r1(ax - 8) + '" y="' + r1(Math.min(by, sy)) + '" width="16" height="9" rx="1.5" fill="url(#rcbSteelD)" stroke="#0a0e16" stroke-width=".8"/>';
+    o += '<rect x="' + r1(ax - 2.5) + '" y="' + r1(Math.min(sy, hy)) + '" width="5" height="9" fill="url(#rcbSteelV)" stroke="#0a0e16" stroke-width=".6"/>';
+    o += '<rect x="' + r1(ax - 17) + '" y="' + r1(hy - (dir < 0 ? 6 : 0)) + '" width="34" height="6" rx="3" fill="url(#rcbKnob)" stroke="#0a0e16" stroke-width=".7"/>';
+    o += '<rect x="' + r1(ax - 17) + '" y="' + r1(y - 17) + '" width="34" height="34" rx="6" fill="none" stroke="#2fa66f" stroke-width="2.6" opacity="' + (open ? 1 : 0) + '" style="transition:opacity .35s"/>';
+    return o;
+  }
+  /* titanium cylinder (gas receiving cylinder, its own identity: titanium body, 330 cc): sample side (top) ·
+     floating piston · (empty gap) · hydraulic water (bottom). Outlets face right at PORT_Y / HYD_Y like the bottles. */
   function drawTi(w) {
     var t = w.ti; if (t.a <= .01) return '';
     var svH = t.sv * TI_PX, wH = t.water * TI_PX, pistY = TI.ch0 + svH, wTop = TI.ch1 - wH;
-    var gapY = pistY + TI.pist, gapH = Math.max(0, wTop - gapY);
-    var o = '<g opacity="' + r1(t.a * 100) / 100 + '">' + glow(hl(w, 'ti'), t.x - 44, 176, 88, 440);
-    o += '<g transform="translate(' + r1(t.x) + ',0)">';
-    o += '<rect x="-5" y="190" width="10" height="9" fill="url(#rcPipe)" stroke="#0a0e16" stroke-width=".7"/>';
-    o += valveV(0, 208, t.top);
-    o += '<rect x="-8" y="217" width="16" height="16" rx="2" fill="url(#rcMetal)" stroke="#0a0e16"/>';
-    o += '<rect x="-32" y="232" width="64" height="334" rx="11" fill="url(#rcTi)" stroke="#0a0e16" stroke-width="1.3"/>';
-    o += '<rect x="-36" y="231" width="72" height="11" rx="3" fill="url(#rcMetal)" stroke="#0a0e16"/><rect x="-36" y="556" width="72" height="11" rx="3" fill="url(#rcMetal)" stroke="#0a0e16"/>';
+    var gapY = pistY + TI.pist, gapH = Math.max(0, wTop - gapY), ax = t.x - TI_DX;
+    var o = '<g opacity="' + r1(t.a * 100) / 100 + '">' + glow(hl(w, 'ti'), ax - 50, 168, 100 + TI_DX, 452);
+    o += '<g transform="translate(' + r1(ax) + ',0)">';
+    // necks + end caps (steel), titanium barrel
+    o += '<rect x="-6" y="' + (PORT_Y + 12) + '" width="12" height="' + (TI.cap0 - PORT_Y - 10) + '" fill="url(#rcbSteelD)" stroke="#0a0e16" stroke-width=".7"/>';
+    o += '<rect x="-6" y="' + (TI.cap1 - 2) + '" width="12" height="' + r1(HYD_Y - 12 - TI.cap1 + 2) + '" fill="url(#rcbSteelD)" stroke="#0a0e16" stroke-width=".7"/>';
+    o += '<rect x="-34" y="' + (TI.cap0 + 6) + '" width="68" height="' + (TI.cap1 - TI.cap0 - 12) + '" rx="9" fill="url(#rcTi)" stroke="#0a0e16" stroke-width="1.3"/>';
+    [TI.cap0, TI.cap1 - 14].forEach(function (y) {
+      o += '<rect x="-39" y="' + y + '" width="78" height="14" rx="4" fill="url(#rcbSteelV)" stroke="#0a0e16" stroke-width="1"/>';
+      o += '<rect x="-35" y="' + (y + 2) + '" width="70" height="2" rx="1" fill="#fff" opacity=".4"/>';
+    });
     o += '<rect x="-22" y="' + TI.ch0 + '" width="44" height="' + (TI.ch1 - TI.ch0) + '" fill="#0a1420" stroke="#33445e"/>';
     if (svH > .3) {
       if (t.gas) {
@@ -765,57 +853,65 @@
     }
     if (gapH > .3) o += '<rect x="-21.5" y="' + r1(gapY) + '" width="43" height="' + r1(gapH) + '" fill="none" stroke="#33445e" stroke-dasharray="3 3"/>';
     if (wH > .3) o += '<rect x="-22" y="' + r1(wTop) + '" width="44" height="' + r1(wH) + '" fill="url(#rcWaterG)"/>';
-    o += '<rect x="-22" y="' + r1(pistY) + '" width="44" height="' + TI.pist + '" rx="1.5" fill="url(#rcMetal)" stroke="#05080f"/>';
-    o += '<rect x="-17" y="250" width="5" height="298" rx="2.5" fill="#fff" opacity=".16"/>';
+    o += '<rect x="-22" y="' + r1(pistY) + '" width="44" height="' + TI.pist + '" rx="1.5" fill="url(#rcbSteelD)" stroke="#05080f"/>';
+    o += '<rect x="-22" y="' + r1(pistY + 3) + '" width="2.4" height="4" fill="#141920"/><rect x="19.6" y="' + r1(pistY + 3) + '" width="2.4" height="4" fill="#141920"/>';
+    o += '<rect x="-29" y="' + (TI.ch0 + 8) + '" width="4" height="' + (TI.ch1 - TI.ch0 - 16) + '" rx="2" fill="#fff" opacity=".22"/>';
     if (svH > 22) o += T(0, TI.ch0 + svH / 2 + 5, t.gas ? 'G' : t.P < -.05 ? 'VAC' : 'EMPTY', { a: 'middle', m: 1, s: t.gas ? 16 : 8.5, w: 700, c: t.gas ? '#0d3b28' : '#7f93b3' });
     if (gapH > 26) o += T(0, gapY + gapH / 2 + 4, 'EMPTY', { a: 'middle', m: 1, s: 8.5, w: 600, c: '#7f93b3' });
     if (wH > 18) o += T(0, wTop + wH / 2 + 6, 'W', { a: 'middle', m: 1, s: 16, w: 700, c: '#e6f3ff' });
-    o += '<rect x="-6" y="566" width="12" height="8" fill="url(#rcPipe)" stroke="#0a0e16" stroke-width=".7"/>';
-    o += valveV(0, 584, t.bot);
-    o += '<rect x="-5" y="593" width="10" height="11" fill="url(#rcPipe)" stroke="#0a0e16" stroke-width=".7"/>';
-    var lx = 52;
-    o += vtag(-30, 211, t.top, 'end') + vtag(26, 596, t.bot, 'start');
-    o += T(lx, 252, 'SAMPLE (GAS) SIDE', { m: 1, s: 8.5, ls: .5, c: FL.gas.line });
-    o += T(lx, 548, 'HYDRAULIC (WATER) SIDE', { m: 1, s: 8.5, ls: .5, c: FL.water.line });
-    o += T(lx, 322, 'Titanium Cylinder', { s: 14, w: 600, c: 'var(--txt)' });
-    o += T(lx, 337, 'floating piston · ' + CFG.TI_CAP + ' cc', { s: 11, c: 'var(--mut)' });
-    o += lcd(lx, 362, 104, 'CYLINDER P', pf(t.P) + ' psig', '#7fe0b4', '#2f9d72');
-    o += lcd(lx, 408, 104, 'GAS VOLUME', f1(t.gas ? t.sv : 0) + ' cc', '#7fe0b4', '#2f9d72');
-    o += lcd(lx, 454, 104, 'WATER', f1(t.water) + ' cc', '#9fd8ff', '#2a5f9d');
-    return o + '</g></g>';
+    o += endValve(0, PORT_Y, TI_DX, t.top, -1) + endValve(0, HYD_Y, TI_DX, t.bot, 1);
+    o += '</g>';
+    // valve tags (left of the valves), side names, title + readouts (right column, clear of the pump below)
+    o += vtag(ax - 21, PORT_Y + 3, t.top, 'end') + T(ax - 21, PORT_Y - 9, 'SAMPLE VALVE', { a: 'end', m: 1, s: 8, c: 'var(--mut)' });
+    o += vtag(ax - 21, HYD_Y + 3, t.bot, 'end') + T(ax - 21, HYD_Y - 9, 'HYDRAULIC VALVE', { a: 'end', m: 1, s: 8, c: 'var(--mut)' });
+    o += T(t.x + 22, 248, 'SAMPLE (GAS) SIDE', { m: 1, s: 8.5, ls: .5, c: FL.gas.line });
+    o += T(ax - 44, TI.ch1 - 6, 'HYDRAULIC (WATER) SIDE', { a: 'end', m: 1, s: 8.5, ls: .5, c: FL.water.line });
+    var lx = t.x + 22;
+    o += T(lx, 268, 'Titanium Cylinder', { s: 14, w: 600, c: 'var(--txt)' });
+    o += T(lx, 283, 'gas receiving · floating piston · ' + CFG.TI_CAP + ' cc', { s: 10.5, c: 'var(--mut)' });
+    o += lcd(lx, 312, 112, 'CYLINDER P', pf(t.P) + ' psig', '#7fe0b4', '#2f9d72');
+    o += lcd(lx, 358, 112, 'GAS VOLUME', f1(t.gas ? t.sv : 0) + ' cc', '#7fe0b4', '#2f9d72');
+    o += lcd(lx, 404, 112, 'WATER', f1(t.water) + ' cc', '#9fd8ff', '#2a5f9d');
+    return o + '</g>';
   }
 
-  /* portable vacuum pump (appears, connects through an isolation valve, is removed) */
+  /* portable vacuum pump (stage 1 only): stands below a tee in the sample-side gas line (booster OUT -> titanium),
+     suction inlet on its top; the branch hose runs straight down from the tee through the vacuum isolation valve.
+     It appears, is connected, runs, is isolated and is removed. */
   function drawVac(w) {
     var v = w.vac; if (v.a <= .01) return '';
-    var P = VACP[v.at], x = P.x + v.dx, y = P.y;
-    var o = '<g opacity="' + r1(v.a * 100) / 100 + '">' + glow(hl(w, 'vac'), x - 10, y - 10, 130, 100);
+    var x = VAC.inlet[0] - 55 + v.dx, y = VAC.inlet[1] + 14;
+    var o = '<g opacity="' + r1(v.a * 100) / 100 + '">' + glow(hl(w, 'vac'), x - 10, y - 26, 130, 108);
     o += '<g transform="translate(' + r1(x) + ',' + y + ')">';
     o += '<ellipse cx="55" cy="54" rx="58" ry="4" fill="rgba(0,0,0,.18)"/>';
     o += '<rect x="0" y="42" width="110" height="8" rx="2" fill="url(#rcMetal)" stroke="#0a0e16"/>';
-    o += '<rect x="4" y="8" width="54" height="34" rx="7" fill="url(#rcAirDrive)" stroke="#0a0e16" stroke-width="1.1"/>';
-    for (var i = 0; i < 5; i++) o += '<line x1="' + (12 + i * 9) + '" y1="12" x2="' + (12 + i * 9) + '" y2="38" stroke="#1b2f4d" stroke-width="1.4" opacity=".7"/>';
-    o += '<rect x="58" y="4" width="48" height="38" rx="5" fill="url(#rcSteelV)" stroke="#0a0e16" stroke-width="1.1"/>';
-    o += '<circle cx="82" cy="23" r="11" fill="url(#rcMetalH)" stroke="#0a0e16"/><circle cx="82" cy="23" r="8" fill="#0c1626"/>';
+    o += '<rect x="4" y="8" width="44" height="34" rx="7" fill="url(#rcAirDrive)" stroke="#0a0e16" stroke-width="1.1"/>';
+    for (var i = 0; i < 4; i++) o += '<line x1="' + (12 + i * 9) + '" y1="12" x2="' + (12 + i * 9) + '" y2="38" stroke="#1b2f4d" stroke-width="1.4" opacity=".7"/>';
+    o += '<rect x="46" y="4" width="60" height="38" rx="5" fill="url(#rcSteelV)" stroke="#0a0e16" stroke-width="1.1"/>';
+    // suction inlet: nozzle on the pump head, centred under the branch
+    o += '<rect x="50" y="-6" width="10" height="11" fill="url(#rcbSteelD)" stroke="#0a0e16" stroke-width=".8"/>';
+    o += '<rect x="48" y="-14" width="14" height="9" rx="1.5" fill="url(#rcMetal)" stroke="#0a0e16" stroke-width=".8"/>';
+    o += '<circle cx="86" cy="23" r="10" fill="url(#rcMetalH)" stroke="#0a0e16"/><circle cx="86" cy="23" r="7.2" fill="#0c1626"/>';
     var a = (-120 - 100 * (v.lvl || 0)) * Math.PI / 180;
-    o += '<line x1="82" y1="23" x2="' + r1(82 + 6.5 * Math.cos(a)) + '" y2="' + r1(23 + 6.5 * Math.sin(a)) + '" stroke="#46e0ff" stroke-width="1.5" stroke-linecap="round"/>';
-    if (v.run) o += '<circle cx="31" cy="25" r="9" fill="none" stroke="#9fd8ff" stroke-width="1.6" stroke-dasharray="4 5" stroke-dashoffset="' + r1(-w.tt * 40) + '"/>';
+    o += '<line x1="86" y1="23" x2="' + r1(86 + 6 * Math.cos(a)) + '" y2="' + r1(23 + 6 * Math.sin(a)) + '" stroke="#46e0ff" stroke-width="1.5" stroke-linecap="round"/>';
+    if (v.run) o += '<circle cx="26" cy="25" r="9" fill="none" stroke="#9fd8ff" stroke-width="1.6" stroke-dasharray="4 5" stroke-dashoffset="' + r1(-w.tt * 40) + '"/>';
     o += '</g>';
-    var lx = x + 55, ly = y + 66;
+    var lx = x + 55, ly = y + 70;
     o += T(lx, ly, 'Vacuum Pump', { a: 'middle', s: 12.5, w: 600, c: 'var(--txt)' });
     o += '<rect x="' + r1(lx - 32) + '" y="' + (ly + 5) + '" width="64" height="13" rx="6.5" fill="' + (v.run ? 'rgba(70,211,154,.16)' : 'rgba(127,147,179,.12)') + '" stroke="' + (v.run ? '#2f9d72' : 'rgba(127,147,179,.55)') + '" stroke-width=".8"/>';
     o += T(lx, ly + 14.5, v.run ? 'RUNNING' : 'STOPPED', { a: 'middle', m: 1, s: 8, w: 600, ls: .6, c: v.run ? 'var(--grn)' : 'var(--mut)' });
     return o + '</g>';
   }
+  // vacuum branch: short stub from the tee to the vacuum isolation valve (stays on the gas line, closed after use),
+  // then the removable hose from the valve down to the vacuum pump inlet
   function drawVacLine(w) {
-    var v = w.vac; if (v.a <= .01 && w.L.vacL.part <= 0) return '';
-    var P = VACP[v.at], L = { part: w.L.vacL.part, c: w.L.vacL.c, flow: w.L.vacL.flow, a: 1 };
-    var o = tube(P.pts, L, w.tt, false);
-    if (w.L.vacL.part >= 1) {
-      o += (P.h ? valveH(P.vx, P.vy, v.open) + vtag(P.vx, P.vy + 20, v.open, 'middle') : valveV(P.vx, P.vy, v.open) + vtag(P.vx - 12, P.vy + 3, v.open, 'end'));
-      o += P.h ? '' : T(P.vx - 12, P.vy - 10, 'VACUUM VALVE', { a: 'end', m: 1, s: 7.5, c: 'var(--mut)' });
-    }
-    return o;
+    var v = w.vac, g = w.L.gas2; if (!(g.part >= 1) || g.a <= .01) return '';
+    var x = VAC.tee[0], vy = VAC.vy;
+    var o = '<g opacity="' + r1(g.a * 100) / 100 + '">';
+    o += tube([VAC.tee, [x, vy - 9]], { part: 1, c: w.L.gas3.c, flow: 0, a: 1, fit: false }, w.tt, false);
+    if (w.L.vacL.part > 0) o += tube([[x, vy + 9], VAC.inlet], { part: w.L.vacL.part, c: w.L.vacL.c, flow: w.L.vacL.flow, a: 1, chev: .55 }, w.tt, false);
+    o += valveV(x, vy, v.open) + vtag(x - 12, vy + 3, v.open, 'end') + T(x - 12, vy - 10, 'VACUUM VALVE', { a: 'end', m: 1, s: 7.5, c: 'var(--mut)' });
+    return o + '</g>';
   }
 
   function drawPump(w) {
@@ -834,9 +930,10 @@
     o += '<circle cx="' + (x + 24) + '" cy="' + (y + 93) + '" r="3.6" fill="' + (act ? '#46d39a' : '#54657f') + '"/>';
     o += '<rect x="' + (x + 14) + '" y="' + (y + 110) + '" width="' + (PUMP_W - 28) + '" height="6" rx="3" fill="#0b1422"/>';
     o += '<rect x="' + (x + 14) + '" y="' + (y + 110) + '" width="' + r1((PUMP_W - 28) * clamp(p.V / CFG.PUMP_V0, 0, 1)) + '" height="6" rx="3" fill="#4a93c9"/>';
-    o += '<rect x="' + (x + PUMP_W) + '" y="' + (PUMP_PORT_Y - 6) + '" width="10" height="12" fill="url(#rcPipe)" stroke="#0a0e16" stroke-width=".7"/>';
-    o += T(x + PUMP_W / 2, y + PUMP_H + 22, 'Water Pump', { a: 'middle', s: 14, w: 600, c: 'var(--txt)' });
-    o += T(x + PUMP_W / 2, y + PUMP_H + 37, 'hydraulic water · barrel volume', { a: 'middle', s: 10.5, c: 'var(--mut)' });
+    // outlet port on the LEFT face (toward the vessel), at the vessel hydraulic-outlet level
+    o += '<rect x="' + (x - 10) + '" y="' + r1(PUMP_PORT_Y - 7) + '" width="10" height="14" rx="1.5" fill="url(#rcbSteelD)" stroke="#0a0e16" stroke-width=".8"/>';
+    o += T(x + PUMP_W / 2, y + PUMP_H + 20, 'Water Pump', { a: 'middle', s: 13.5, w: 600, c: 'var(--txt)' });
+    o += T(x + PUMP_W / 2, y + PUMP_H + 34, 'hydraulic water · barrel volume', { a: 'middle', s: 10, c: 'var(--mut)' });
     return o + '</g>';
   }
 
@@ -852,20 +949,26 @@
   }
   // piston-top y (old bore frame) for the same fill rule
   function pumpPist(v) { var h = Math.max(0, v * PXC); if (v >= .5 && h < 4) h = 4; return Math.min(219 + h, 219 + 182 - 9); }
+  /* complete integrated PVT cell setup: approved dual-cylinder cell (PVTCellArt) standing on the floor, its signal
+     cable and the approved computer + controller to its right (same arrangement as the other procedure pages) */
   function drawCell(w) {
     var c = w.cell; if (c.a <= .01) return '';
     var o = '<g opacity="' + r1(c.a * 100) / 100 + '">';
     var tot = c.A + c.B;
+    if (hl(w, 'cell')) o += '<rect x="' + r1(CELL_X0 - 14) + '" y="' + r1(CW(0, 104)[1]) + '" width="' + r1(CW(1166, 0)[0] - CELL_X0 + 14) + '" height="' + r1(FLOOR + 8 - CW(0, 104)[1]) + '" rx="14" fill="rgba(77,157,255,.06)" stroke="var(--blue)" stroke-width="1.2" stroke-dasharray="5 4"/>';
+    // signal cable (behind), then the desk
+    o += PVTCellArt.cable({ at: CELL_AT }, DESK, 14);
+    var rows = [['P psig', pf(c.P), '#7ff0bf'], ['PUMP A', f2(c.A) + ' cc', '#ffc56b'], ['PUMP B', f2(c.B) + ' cc', '#ffc56b'], ['T', CFG.LAB_T + ' °C', '#7ff0bf']];
+    o += PVTCellArt.desk('rcc', { x: DESK.x, y: DESK.y, s: DESK.s, legs: DESK.legs, raw: true, ctl: pf(c.P), rows: rows });
     o += '<g transform="' + CELL_T + '">';
-    if (hl(w, 'cell')) o += '<rect x="736" y="100" width="424" height="425" rx="14" fill="rgba(77,157,255,.06)" stroke="var(--blue)" stroke-width="1.2" stroke-dasharray="5 4"/>';
     // approved PVT cell (PVTCellArt) on the legacy frame: Pump A / Pump B valves from the scene state, Port L valve = the cell inlet valve
-    var linesOn = w.L.cellL.part > 0 || w.L.vacL.part > 0;
+    var lineOn = w.L.cellL.part > 0;
     o += PVTCellArt.cell('rcc', { raw: true,
       innerB: '<rect x="848" y="219" width="36" height="182" rx="3" fill="' + (c.P < -.05 ? '#070d16' : '#0a1420') + '"/>' + pumpFluid(848, c.B, 'oil', 'rcPumpB'),
       innerA: '<rect x="1012" y="219" width="36" height="182" rx="3" fill="' + (c.P < -.05 ? '#070d16' : '#0a1420') + '"/>' + pumpFluid(1012, c.A, c.Af || 'gas', 'rcPumpA'),
       pistonB: pumpPist(c.B), pistonA: pumpPist(c.A),
       valves: { A: !!c.aV, B: !!c.bV, L: !!c.valve },
-      ports: { L: { plug: !linesOn, nut: linesOn } },
+      ports: { L: { plug: !lineOn && c.plug, nut: lineOn } },
       disp: { P: pf(c.P), B: f2(c.B) + ' cc', A: f2(c.A) + ' cc', T: CFG.LAB_T + ' °C' },
       portLabel: { L: 'Port L' } });
     if (c.man) {
@@ -882,13 +985,19 @@
         o += '<g transform="translate(' + xx + ',190) rotate(' + (toB ? 180 : 0) + ')"><circle r="7" fill="' + FL[c.man].line + '" stroke="#0a0e16" stroke-width=".9"/><path d="M-2.5 -3.4 L2.2 0 L-2.5 3.4" fill="none" stroke="#fff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></g>';
       });
     }
-    o += T(866, 524, 'Pump B · ' + f2(c.B) + ' cc', { a: 'middle', s: 10, c: 'var(--txt2)' });
-    o += T(1030, 524, 'Pump A · ' + f2(c.A) + ' cc', { a: 'middle', s: 10, c: 'var(--txt2)' });
-    o += T(948, 538, 'capacity ' + CFG.CELL_CAP + ' cc per pump', { a: 'middle', m: 1, s: 8.5, c: 'var(--mut)' });
-    o += T(948, 556, 'PVT CELL · CALIBRATED', { a: 'middle', m: 1, s: 11, ls: .9, c: 'var(--txt2)' });
-    var cont = c.P < -.05 && tot < .01 ? 'EMPTY · VACUUM' : tot < .01 ? 'EMPTY' : (c.Af === 'oil' ? 'SEPARATOR OIL' : 'SEPARATOR GAS') + ' · ' + (c.stab >= 1 ? 'STABLE' : c.stab > 0 ? 'STABILIZING' : 'TRANSFER');
-    o += T(948, 571, cont, { a: 'middle', m: 1, s: 9, ls: .5, c: tot < .01 ? 'var(--mut)' : c.Af === 'oil' ? '#c07f2e' : '#2f9d72' });
     o += '</g>';
+    // title + contents status above the cell; integrated evacuation status while it applies
+    var ty = CW(0, 84)[1];
+    o += T(CELL_CX, ty, 'PVT Cell', { a: 'middle', s: 14, w: 600, c: 'var(--txt)' });
+    var cont = c.P < -.05 && tot < .01 ? 'EMPTY · VACUUM' : tot < .01 ? 'EMPTY' : (c.Af === 'oil' ? 'SEPARATOR OIL' : 'SEPARATOR GAS') + ' · ' + (c.stab >= 1 ? 'STABLE' : c.stab > 0 ? 'STABILIZING' : 'TRANSFER');
+    o += T(CELL_CX, ty + 15, cont + ' · capacity ' + CFG.CELL_CAP + ' cc per pump', { a: 'middle', m: 1, s: 9, ls: .4, c: tot < .01 ? 'var(--mut)' : c.Af === 'oil' ? '#b07428' : '#2f9d72' });
+    if (c.evac) {
+      var run = c.evac === 'run', txt = run ? 'CELL EVACUATION · RUNNING' : c.evac === 'set' ? 'CELL EVACUATION · SELECTED' : 'CELL UNDER VACUUM · READY';
+      var pw = txt.length * 5.9 + 26, px = CELL_CX - pw / 2, py = ty - 34;
+      o += '<rect x="' + r1(px) + '" y="' + r1(py) + '" width="' + r1(pw) + '" height="16" rx="8" fill="' + (run ? 'rgba(77,157,255,.12)' : 'rgba(86,99,122,.10)') + '" stroke="' + (run ? 'var(--blue)' : '#56637a') + '" stroke-width=".9"/>';
+      o += '<circle cx="' + r1(px + 10) + '" cy="' + r1(py + 8) + '" r="3.2" fill="' + (run ? 'var(--blue)' : '#56637a') + '" opacity="' + (run ? r1(.45 + .55 * (.5 + .5 * Math.sin(w.tt * 6))) : 1) + '"/>';
+      o += T(px + 18, py + 11.5, txt, { m: 1, s: 8.6, w: 600, ls: .4, c: run ? 'var(--blue)' : 'var(--txt2)' });
+    }
     return o + '</g>';
   }
 
@@ -983,7 +1092,7 @@
   }
   function drawJacketLabel(w) {
     if (!(w.jacket > .01)) return '';
-    var x = 632, y = 196, on = !!w.heat, la = Math.min(w.jacket, w.stand);   // label once the bottle is on the stand
+    var x = STAND.x + 196, y = 168, on = !!w.heat, la = Math.min(w.jacket, w.stand);   // label once the bottle is on the stand
     if (la <= .01) return '';
     var o = '<g opacity="' + r1(la * 100) / 100 + '">';
     o += T(x, y, 'Heating Jacket', { s: 12.5, w: 600, c: 'var(--txt)' });
@@ -1033,18 +1142,18 @@
     if (w.stand <= .01) return '';
     var x = STAND.x, y = STAND.py;
     var o = '<g opacity="' + r1(w.stand * 100) / 100 + '">';
-    o += '<ellipse cx="' + x + '" cy="618" rx="130" ry="7" fill="rgba(0,0,0,.18)"/>';
-    [x - 112, x + 104].forEach(function (fx) { o += '<rect x="' + fx + '" y="614" width="8" height="5" rx="1" fill="#1d2430" stroke="#0a0e16" stroke-width=".6"/>'; });   // levelling feet
-    o += '<rect x="' + (x - 120) + '" y="604" width="240" height="12" rx="3" fill="url(#rcMetal)" stroke="#0a0e16"/>';
-    o += '<rect x="' + (x - 116) + '" y="605.5" width="232" height="1.6" rx=".8" fill="#fff" opacity=".35"/>';
+    o += '<ellipse cx="' + x + '" cy="644" rx="130" ry="7" fill="rgba(0,0,0,.18)"/>';
+    [x - 112, x + 104].forEach(function (fx) { o += '<rect x="' + fx + '" y="640" width="8" height="5" rx="1" fill="#1d2430" stroke="#0a0e16" stroke-width=".6"/>'; });   // levelling feet
+    o += '<rect x="' + (x - 120) + '" y="630" width="240" height="12" rx="3" fill="url(#rcMetal)" stroke="#0a0e16"/>';
+    o += '<rect x="' + (x - 116) + '" y="631.5" width="232" height="1.6" rx=".8" fill="#fff" opacity=".35"/>';
     // two uprights either side of the bottle, carrying the pivot shaft
-    o += '<rect x="' + (x - 78) + '" y="' + (y - 6) + '" width="12" height="' + (610 - y) + '" fill="url(#rcMetalH)" stroke="#0a0e16"/>';
-    o += '<rect x="' + (x + 66) + '" y="' + (y - 6) + '" width="12" height="' + (610 - y) + '" fill="url(#rcMetalH)" stroke="#0a0e16"/>';
+    o += '<rect x="' + (x - 78) + '" y="' + (y - 6) + '" width="12" height="' + (636 - y) + '" fill="url(#rcMetalH)" stroke="#0a0e16"/>';
+    o += '<rect x="' + (x + 66) + '" y="' + (y - 6) + '" width="12" height="' + (636 - y) + '" fill="url(#rcMetalH)" stroke="#0a0e16"/>';
     o += '<rect x="' + (x - 78) + '" y="' + (y - 4) + '" width="156" height="8" rx="3" fill="url(#rcMetal)" stroke="#0a0e16" opacity=".9"/>';
     // bearing blocks carrying the pivot shaft + gussets at the foot of each upright
     [x - 82, x + 62].forEach(function (bx) { o += '<rect x="' + bx + '" y="' + (y - 12) + '" width="20" height="24" rx="3" fill="url(#rcMetalH)" stroke="#0a0e16"/>'; });
-    [[x - 66, 1], [x + 66, -1]].forEach(function (g) { o += '<path d="M' + g[0] + ',604 L' + g[0] + ',584 L' + (g[0] + 14 * g[1]) + ',604 Z" fill="url(#rcMetalH)" stroke="#0a0e16" stroke-width=".8"/>'; });
-    o += T(x + 120, 632, 'INVERSION STAND', { a: 'end', m: 1, s: 9, ls: .6, c: 'var(--mut)' });
+    [[x - 66, 1], [x + 66, -1]].forEach(function (g) { o += '<path d="M' + g[0] + ',630 L' + g[0] + ',610 L' + (g[0] + 14 * g[1]) + ',630 Z" fill="url(#rcMetalH)" stroke="#0a0e16" stroke-width=".8"/>'; });
+    o += T(x + 120, 662, 'INVERSION STAND', { a: 'end', m: 1, s: 9, ls: .6, c: 'var(--mut)' });
     return o + '</g>';
   }
   /* support stand at the connection slot (stages before the inversion), same parts as the Validation stands
@@ -1053,11 +1162,11 @@
      takes the bottle (stage 9). Drawing only. */
   var SLOT_STAND = null;
   function slotStand() {
-    if (!SLOT_STAND) SLOT_STAND = BottleArt.stand('rcb', { x: SLOT_X - PIV_DX, rodX: 458, ground: 620, top: 300,
-      clamps: [{ y: r1(PORT_Y + PIV_DY - 48), h: 23 }, { y: r1(PORT_Y + PIV_DY + 102), h: 23 }], baseL: 438, baseR: 490 });
+    if (!SLOT_STAND) SLOT_STAND = BottleArt.stand('rcb', { x: SLOT_X - PIV_DX, rodX: SLOT_X - PIV_DX, ground: FLOOR, top: 300,
+      clamps: [{ y: r1(PORT_Y + PIV_DY - 48), h: 23 }, { y: r1(PORT_Y + PIV_DY + 102), h: 23 }], baseL: SLOT_X - PIV_DX - 46, baseR: SLOT_X - PIV_DX + 46 });
     return SLOT_STAND;
   }
-  function slotStandOp(w) { return w.bot.kind ? clamp(1 - w.stand, 0, 1) : 0; }
+  function slotStandOp(w) { return w.bot.kind ? Math.min(w.bot.a, clamp(1 - w.stand, 0, 1)) : 0; }
   function drawSlotStand(w, part) {
     var a = slotStandOp(w); if (a <= .01) return '';
     return '<g opacity="' + r1(a * 100) / 100 + '">' + slotStand()[part] + '</g>';
@@ -1068,18 +1177,18 @@
     var a = ang * Math.PI / 180, dx = p[0] - c[0], dy = p[1] - c[1];
     return [c[0] + dx * Math.cos(a) - dy * Math.sin(a), c[1] + dx * Math.sin(a) + dy * Math.cos(a)];
   }
+  /* stage 9: flexible hydraulic line from the pump port to the bottle water-side outlet; it follows the bottle as
+     it moves onto the stand and turns (straight while both outlets are level and facing each other) */
   function drawHose(w) {
-    var b = w.bot, port = bottlePorts(b, b.x, b.y).bot;
-    if (b.ang) port = rotPt(port, b.ang, [b.x - PIV_DX, b.y + PIV_DY]);
-    var px = w.pump.x + PUMP_W + 10, py = PUMP_PORT_Y;
-    var dir = rotPt([0, 1], b.ang || 0, [0, 0]);
-    var c1 = [port[0] + dir[0] * 80, port[1] + dir[1] * 80];
-    var d = 'M' + r1(port[0]) + ',' + r1(port[1]) + ' C' + r1(c1[0]) + ',' + r1(c1[1]) + ' ' + r1(px + 120) + ',' + py + ' ' + px + ',' + py;
+    var b = w.bot, piv = [b.x - PIV_DX, b.y + PIV_DY], port = bottlePorts(b, b.x, b.y).bot, dir = [1, 0];
+    if (b.ang) { port = rotPt(port, b.ang, piv); dir = rotPt([1, 0], b.ang, [0, 0]); }
+    var pp = [w.pump.x - 10, PUMP_PORT_Y], k = Math.max(20, Math.min(110, Math.hypot(pp[0] - port[0], pp[1] - port[1]) * .45));
+    var d = 'M' + r1(port[0]) + ',' + r1(port[1]) + ' C' + r1(port[0] + dir[0] * k) + ',' + r1(port[1] + dir[1] * k + 60 * Math.min(1, (b.ang || 0) / 30)) + ' ' + r1(pp[0] - k) + ',' + r1(pp[1]) + ' ' + r1(pp[0]) + ',' + r1(pp[1]);
     var ha = Math.min(w.pump.a, w.L.hyd.part); if (ha <= .01) return '';
-    var o = '<g opacity="' + r1(ha * 100) / 100 + '"><path d="' + d + '" fill="none" stroke="#0a0e16" stroke-width="8" stroke-linecap="round"/><path d="' + d + '" fill="none" stroke="#2c3a50" stroke-width="5.6" stroke-linecap="round"/>';
-    o += '<path d="' + d + '" fill="none" stroke="' + FL.water.line + '" stroke-width="3" stroke-linecap="round"/>';
+    var o = '<g opacity="' + r1(ha * 100) / 100 + '"><path d="' + d + '" fill="none" stroke="#0a0e16" stroke-width="8.4" stroke-linecap="round"/><path d="' + d + '" fill="none" stroke="#2c3a50" stroke-width="6" stroke-linecap="round"/>';
+    o += '<path d="' + d + '" fill="none" stroke="' + FL.water.line + '" stroke-width="3.6" stroke-linecap="round"/>';
     if (w.L.hyd.flow) o += '<path d="' + d + '" fill="none" stroke="' + FL.water.dash + '" stroke-width="1.8" stroke-dasharray="3 10" stroke-dashoffset="' + r1(w.L.hyd.flow * w.tt * 26) + '"/>';
-    o += T(272, 640, 'flexible line · bottle water side', { m: 1, s: 9, c: 'var(--mut)' });
+    o += fitting(port, [port[0] + dir[0] * 10, port[1] + dir[1] * 10]) + fitting(pp, [pp[0] - 10, pp[1]]);
     return o + '</g>';
   }
 
@@ -1116,11 +1225,11 @@
   /* oil transfer record (stage 8): initial -> final pump volumes decide the transferred amount */
   function drawXfCard(w) {
     if (w.xfCard <= .01) return '';
-    var x = 28, y = 110, wd = 278, ht = 336, s = w.xf, c = w.cell;
+    var x = 18, y = 120, wd = 256, ht = 336, s = w.xf, c = w.cell;
     var o = card(x, y, wd, ht, w.xfCard) + glow(hl(w, 'xf'), x - 4, y - 4, wd + 8, ht + 8);
     o += T(x + 16, y + 26, 'OIL TRANSFER RECORD', { m: 1, s: 10.5, w: 600, ls: 1.1, c: 'var(--blue)' });
     o += T(x + 16, y + 43, 'Pump volumes at 3,000 psig · ' + CFG.LAB_T + ' °C', { s: 10.5, c: 'var(--mut)' });
-    var cx = [x + 16, x + 138, x + 200, x + wd - 14];
+    var cx = [x + 12, x + 134, x + 192, x + wd - 10];
     o += T(cx[0], y + 68, 'STEP', { m: 1, s: 8, ls: .5, c: 'var(--mut)' }) + T(cx[1], y + 68, 'PUMP A', { a: 'middle', m: 1, s: 8, ls: .5, c: 'var(--mut)' }) +
       T(cx[2], y + 68, 'PUMP B', { a: 'middle', m: 1, s: 8, ls: .5, c: 'var(--mut)' }) + T(cx[3], y + 68, 'BOTTLE', { a: 'end', m: 1, s: 8, ls: .5, c: 'var(--mut)' });
     var liveA = f1(c.A), liveB = f1(c.B);
@@ -1133,7 +1242,7 @@
       var yy = y + 80 + i * 62, act = r.p > 0 && r.p < 1, done = r.p >= 1, pend = r.p <= 0;
       o += '<rect x="' + (x + 10) + '" y="' + yy + '" width="' + (wd - 20) + '" height="54" rx="8" fill="' + (act ? 'rgba(77,157,255,.08)' : 'var(--icard)') + '" stroke="' + (act ? 'var(--blue)' : done ? 'rgba(70,211,154,.5)' : 'var(--line)') + '"/>';
       var col = pend ? 'var(--mut)' : 'var(--txt)';
-      o += T(cx[0], yy + 20, r.n, { s: 11, w: 600, c: act ? 'var(--blue)' : done ? 'var(--txt)' : 'var(--mut)' });
+      o += T(cx[0], yy + 20, r.n, { s: 10.5, w: 600, c: act ? 'var(--blue)' : done ? 'var(--txt)' : 'var(--mut)' });
       o += T(cx[0], yy + 40, pend ? 'pending' : r.note, { m: 1, s: 8.5, c: done ? 'var(--grn)' : 'var(--mut)' });
       o += T(cx[1], yy + 22, pend ? '—' : r.A[0] + ' → ' + r.A[1], { a: 'middle', m: 1, s: 10, w: 600, c: col });
       o += T(cx[2], yy + 22, pend ? '—' : r.B[0] === r.B[1] ? r.B[0] : r.B[0] + ' → ' + r.B[1], { a: 'middle', m: 1, s: 10, w: 600, c: col });
@@ -1149,7 +1258,7 @@
 
   function drawRockCard(w) {
     if (w.rockCard <= .01) return '';
-    var x = 760, y = 150, wd = 400, ht = 360, b = w.bot;
+    var x = 18, y = 150, wd = 380, ht = 360, b = w.bot;
     var o = card(x, y, wd, ht, w.rockCard);
     if (w.summary > 0) {
       o += '<g opacity="' + r1(w.summary * 100) / 100 + '">';
@@ -1182,14 +1291,14 @@
     o += T(cx, cy - R - 8, '0°', { a: 'middle', m: 1, s: 9.5, c: 'var(--mut)' }) + T(cx + R + 8, cy + 4, '90°', { m: 1, s: 9.5, c: 'var(--mut)' }) + T(cx, cy + R + 16, '180°', { a: 'middle', m: 1, s: 9.5, c: 'var(--mut)' });
     o += T(cx - 20, cy + 26, Math.round(ang) + '°', { a: 'end', m: 1, s: 13, w: 600, c: 'var(--txt)' });
     var cyc = Math.min(CFG.ROCK_N, w.cyc + (w.rockP > 0 && w.rockP < 1 ? 1 : 0));
-    o += T(x + 222, y + 100, 'CYCLE', { m: 1, s: 9, ls: .6, c: 'var(--mut)' }) + T(x + 222, y + 128, cyc + ' / ' + CFG.ROCK_N, { m: 1, s: 22, w: 600, c: 'var(--txt)' });
+    o += T(x + 206, y + 100, 'CYCLE', { m: 1, s: 9, ls: .6, c: 'var(--mut)' }) + T(x + 206, y + 128, cyc + ' / ' + CFG.ROCK_N, { m: 1, s: 22, w: 600, c: 'var(--txt)' });
     var stable = (b.settle || 0) >= 1 || w.summary > 0;
-    o += T(x + 222, y + 154, 'WORKING PRESSURE', { m: 1, s: 9, ls: .6, c: 'var(--mut)' }) + T(x + 222, y + 178, n0(b.P) + ' psig', { m: 1, s: 17, w: 600, c: 'var(--grn)' });
-    o += T(x + 222, y + 194, stable ? 'STABLE · TARGET ' + n0(CFG.WORK_P) : w.rockP > 0 ? 'SETTLING · TARGET ' + n0(CFG.WORK_P) : 'TARGET ' + n0(CFG.WORK_P) + ' psig', { m: 1, s: 8.5, w: 600, ls: .5, c: stable ? 'var(--grn)' : 'var(--mut)' });
-    o += T(x + 222, y + 222, 'RESERVOIR PRESSURE', { m: 1, s: 9, ls: .6, c: 'var(--mut)' }) + T(x + 222, y + 240, n0(CFG.RES_P) + ' psig (reference)', { m: 1, s: 11.5, w: 600, c: 'var(--txt2)' });
+    o += T(x + 206, y + 154, 'WORKING PRESSURE', { m: 1, s: 9, ls: .6, c: 'var(--mut)' }) + T(x + 206, y + 178, n0(b.P) + ' psig', { m: 1, s: 17, w: 600, c: 'var(--grn)' });
+    o += T(x + 206, y + 194, stable ? 'STABLE · TARGET ' + n0(CFG.WORK_P) : w.rockP > 0 ? 'SETTLING · TARGET ' + n0(CFG.WORK_P) : 'TARGET ' + n0(CFG.WORK_P) + ' psig', { m: 1, s: 8.5, w: 600, ls: .5, c: stable ? 'var(--grn)' : 'var(--mut)' });
+    o += T(x + 206, y + 222, 'RESERVOIR PRESSURE', { m: 1, s: 9, ls: .6, c: 'var(--mut)' }) + T(x + 206, y + 240, n0(CFG.RES_P) + ' psig (reference)', { m: 1, s: 11.5, w: 600, c: 'var(--txt2)' });
     o += T(x + 22, y + 256, 'MIXING', { m: 1, s: 9, ls: .6, c: 'var(--mut)' });
-    o += '<rect x="' + (x + 22) + '" y="' + (y + 264) + '" width="356" height="8" rx="4" fill="var(--icard)" stroke="var(--line)"/>';
-    o += '<rect x="' + (x + 22) + '" y="' + (y + 264) + '" width="' + r1(356 * (b.mix || 0)) + '" height="8" rx="4" fill="' + ((b.mix || 0) >= 1 ? 'var(--grn)' : 'var(--blue)') + '"/>';
+    o += '<rect x="' + (x + 22) + '" y="' + (y + 264) + '" width="336" height="8" rx="4" fill="var(--icard)" stroke="var(--line)"/>';
+    o += '<rect x="' + (x + 22) + '" y="' + (y + 264) + '" width="' + r1(336 * (b.mix || 0)) + '" height="8" rx="4" fill="' + ((b.mix || 0) >= 1 ? 'var(--grn)' : 'var(--blue)') + '"/>';
     var st = (b.mix || 0) >= 1 ? 'Single phase · stable at ' + n0(CFG.WORK_P) + ' psig' : (b.mix || 0) > 0 ? 'Gas bubbles dispersing through the oil, shrinking' : 'Free gas above the oil (not yet mixed)';
     o += T(x + 22, y + 294, st, { m: 1, s: 10.5, w: 600, c: (b.mix || 0) >= 1 ? 'var(--grn)' : 'var(--txt2)' });
     o += T(x + 22, y + 322, 'The water pump holds the ' + n0(CFG.WORK_P) + ' psig working pressure on the', { s: 10.5, c: 'var(--mut)' });
@@ -1197,37 +1306,40 @@
     return o + '</g>';
   }
 
+  // hydraulic line: vessel water-side outlet (right) -> water pump port (left face), one straight run at HYD_Y
   function hydPts(w) {
     var b = w.L.hyd.to === 'bot' && w.bot.kind, x = b ? w.bot.x : w.ti.x;
-    var yb = b ? w.bot.y + 562 * BOT_S : 604;
-    var pp = w.pump.x + PUMP_W + 10;
-    return [[x, yb], [x, 626], [pp + 30, 626], [pp + 30, PUMP_PORT_Y], [pp, PUMP_PORT_Y]];
+    return [[x, HYD_Y], [w.pump.x - 10, HYD_Y]];
   }
+  // sample line: vessel sample outlet -> overhead at the outlet level -> down beside the pump -> Port L of the cell
   function cellPts(w) {
     var useBot = w.bot.kind && w.bot.a > .01 && w.k >= 4;
     var x = useBot ? w.bot.x : w.ti.x, y = useBot ? w.bot.y : PORT_Y;
-    return [[x, y], [x, CELL_IN[1]], CELL_IN];
+    return [[x, y], [CELL_DROP, y], [CELL_DROP, CELL_IN[1]], CELL_IN];
   }
 
   function scene(w) {
     var o = '';
     // --- back: lines
     if (w.gsp.a > .01) {
-      // GSP -> booster inlet (left) ; booster outlet (right) -> titanium top
-      o += tube([[GSP_X, 160], [GSP_X, 120], [BOO.riseX, 120], [BOO.riseX, BOO.portY], [BOO.inX, BOO.portY]], w.L.gas1, w.tt, w.k === 0);
-      o += tube([[BOO.outX, BOO.portY], [BOO.dropX, BOO.portY], [BOO.dropX, 120], [w.ti.x, 120], [w.ti.x, 190]], w.L.gas2, w.tt, w.k === 0);
+      // GSP bottle valve -> Booster In -> booster ; booster -> Booster Out -> tee (vacuum branch) -> titanium sample valve
+      var L1 = w.L.gas1, L2 = w.L.gas2, L3 = w.L.gas3;
+      o += tube([GSP_PORT, [GSP_X, HI_Y], [BOO.riseX, HI_Y], [BOO.riseX, BOO.portY], [BOO.inX, BOO.portY]], L1, w.tt, w.k === 0);
+      o += tube([[BOO.outX, BOO.portY], [BOO.dropX, BOO.portY], [BOO.dropX, HI_Y], VAC.tee], { part: L2.part, c: L2.c, flow: L2.flow, a: L2.a, fit: 'start' }, w.tt, w.k === 0);
+      o += tube([VAC.tee, [w.ti.x + 46, HI_Y], [w.ti.x + 46, PORT_Y], [w.ti.x, PORT_Y]], { part: L3.part, c: L3.c, flow: L3.flow, a: L3.a, fit: 'end' }, w.tt, w.k === 0);
+      o += drawVacLine(w);
+      if (L2.part >= 1 && L2.a > .01) o += '<g opacity="' + r1(L2.a * 100) / 100 + '"><rect x="' + (VAC.tee[0] - 8) + '" y="' + (VAC.tee[1] - 8) + '" width="16" height="16" rx="2" fill="url(#rcMetal)" stroke="#0a0e16" stroke-width=".9"/></g>';
     }
     if (w.hose) o += drawHose(w);
     else if (w.pump.a > .01) {
       var hL = { part: w.L.hyd.part, c: 'water', flow: w.L.hyd.flow, a: Math.min(w.L.hyd.a, w.pump.a) };
-      o += tube(hydPts(w), hL, w.tt, w.k === 0);
+      o += tube(hydPts(w), hL, w.tt, w.k === 0, true);
     }
     if (w.cell.a > .01) {
-      var cL = { part: w.L.cellL.part, c: w.L.cellL.c, flow: w.L.cellL.flow, a: Math.min(w.L.cellL.a, w.cell.a) };
+      var cL = { part: w.L.cellL.part, c: w.L.cellL.c, flow: w.L.cellL.flow, a: Math.min(w.L.cellL.a, w.cell.a), chev: .3 };
       o += tube(cellPts(w), cL, w.tt, true);
     }
-    o += drawVacLine(w);
-    // --- equipment (vacuum pump first = behind)
+    // --- equipment
     o += drawVac(w);
     o += drawGSP(w) + drawBooster(w) + drawBooValves(w);
     o += drawStand(w) + drawSlotStand(w, 'back');
@@ -1236,8 +1348,8 @@
     o += drawJacketLabel(w);
     o += drawAgCard(w) + drawXfCard(w) + drawRockCard(w);
     if (w.summary > 0) {
-      o += '<g opacity="' + r1(w.summary * 100) / 100 + '"><rect x="130" y="104" width="940" height="36" rx="20" fill="rgba(70,211,154,.14)" stroke="#2f9d72" stroke-width="1.3"/>' +
-        T(600, 127.5, DONE_MSG, { a: 'middle', s: 13, w: 600, c: 'var(--grn)' }) + '</g>';
+      o += '<g opacity="' + r1(w.summary * 100) / 100 + '"><rect x="130" y="108" width="960" height="34" rx="17" fill="rgba(70,211,154,.14)" stroke="#2f9d72" stroke-width="1.3"/>' +
+        T(610, 130, DONE_MSG, { a: 'middle', s: 13, w: 600, c: 'var(--grn)' }) + '</g>';
     }
     return o;
   }
@@ -1384,10 +1496,29 @@
   }
 
 
+  /* page-header Details buttons follow the equipment in view: Cell Details only while the PVT cell is shown,
+     Bottle Details for the sample bottles of the current stage (GSP gas bottle and / or the oil-type bottle) */
+  function syncDetails(w) {
+    var pg = M.host && M.host.closest ? M.host.closest('.pg') : null; if (!pg) return;
+    var cellOn = w.cell.a > .3, kinds = [];
+    if (w.gsp.a > .3) kinds.push('gas');
+    if (w.bot.kind && w.bot.a > .3) kinds.push('oil');
+    var ctx = kinds.length === 2 ? 'Recombination · separator gas bottle (GSP) and the ' + (w.bot.kind === 'oil' ? 'separator oil bottle' : 'recombination bottle')
+      : kinds[0] === 'gas' ? 'Recombination · separator gas sample bottle (GSP), the gas source'
+      : w.bot.kind === 'oil' ? 'Recombination · separator oil sample bottle (Oil Sample Bottle)' : 'Recombination · recombination bottle (an Oil Sample Bottle) holding the gas and oil charges';
+    var key = cellOn + '|' + kinds.join('|') + '|' + ctx;
+    if (M.detKey === key && M.detPg === pg) return;
+    M.detKey = key; M.detPg = pg;
+    var bb = pg.querySelector('.pg-end [data-bd-open]'), cb = pg.querySelector('.pg-end [data-cd-open]');
+    if (bb) { bb.hidden = !kinds.length; if (kinds.length) { bb.setAttribute('data-bd-open', kinds.join('|')); bb.setAttribute('data-bd-ctx', ctx); } }
+    if (cb) cb.hidden = !cellOn;
+  }
+
   function draw() {
     if (!M.root) return;
     var w = stateAt(M.k, M.t), S = STAGES[M.k];
     M.el.dyn.innerHTML = scene(w);
+    syncDetails(w);
     var idle = !w.started;
     setText('temp', w.jacket > .01 ? (CFG.JACKET_T != null ? 'JACKET ' + CFG.JACKET_T + ' °C' : 'HEATING JACKET ON') : 'TEMP ' + CFG.LAB_T + ' °C (LAB)');
     readings(w).forEach(function (r, i) {

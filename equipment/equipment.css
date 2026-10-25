@@ -134,6 +134,7 @@ html[data-theme="light"] .bd-ov { background:rgba(30,42,60,.38); }
                        font:700 9px var(--font-mono); line-height:1; }
 #app .bd-btn:hover, #app .bd-btn:focus-visible { background:color-mix(in srgb, var(--teal) 14%, transparent); outline:none; }
 #app .bd-btn.bd-inline { margin-left:0; }
+#app .bd-btn[hidden] { display:none; }
 
 /* ---- MRMS / SPMC viewer (components/SpmcDetails.js, equipment/mrms-*.js), recovered from the former Equipment Library ---- */
 /* stage background override (Dark bg / Light bg): only the drawing stage changes, not the app theme */

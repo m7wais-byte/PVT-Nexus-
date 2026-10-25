@@ -520,6 +520,8 @@ Every Validation procedure page uses one frame, taken from Restoration (CSS at t
   and all rig coordinates are unchanged and the bottle matches the Restoration bottle size; the bottle stays on
   the bench (dimmed, disconnected) after stage 8. Computer / controller to the right of the cell (s 0.40). The
   live monitor card and the agitation readouts moved from the drawing into the sidebar.
+- PV graph (2026-10-25): the fitted-line intersection annotation reads `Psat = 2700 psig @ 31.3 cc`; it and the
+  Test Summary value are built from the same `PSAT_PV` point (StagePVTest.js); the box widens to its text.
 - PV (Validation only): the Pressure-Volume panel shows a horizontal point table (points 01-12 across, P and V rows,
   counter in the corner, the point just recorded outlined) above the graph. The graph is drawn at the measured size of
   its area (`syncGraphBox`, 1 SVG unit = 1 px) so it fills the panel. Since 2026-10-21 embedded PV (Differential
@@ -529,12 +531,15 @@ Every Validation procedure page uses one frame, taken from Restoration (CSS at t
 ## Direct Density page layout (2026-10-21)
 
 `components/StageDensity.js` only (presentation; data, timeline, valve logic and drawing coordinates unchanged).
-- Simulation area = heading · compact calculation strip `.dn-calc` (one row: Working equation | Mass · balance |
-  Volume · PVT cell | Results; wraps to a second row only when the area is too narrow) · action line · equipment
+- Simulation area = heading · calculation panel `.dn-calc` (light, 2026-10-25: Working equation | Mass · balance |
+  Volume · PVT cell, then one results row: density (current run or accepted average) · Run 1 · Run 2 · |ρ1 − ρ2|
+  vs ±0.0005 · verdict / Repeat; theme colours, placeholders `—`) · action line · equipment
   `.dn-fig` (same SVG / viewBox as before, now using the full width and remaining height). The former tall
   calculation column and the Run 1 / Run 2 chips are gone; run state (STORED / RUNNING / PENDING / LOCKED),
   |rho1 - rho2|, tolerance, verdict and Repeat are in the Results group.
 - Explain This Stage: shared overlay drawer (see "Explain drawer" below).
+- Sample flow inside the PVT cell (Pump A -> Port R): one continuous fluid-coloured line (single phase) with a
+  travelling glint and a fixed direction chevron; no dashes or gaps. The two-phase coil depiction is unchanged.
 
 ## Explain drawer — overlay on every page (2026-10-21)
 
@@ -782,6 +787,31 @@ note is unchanged.
 * The 24 h is a simulated outcome for this demonstration; it does not claim every real sample fully
   separates in 24 h.
 Backup: _backup_app_20260930_before_watersettle/
+
+### Recombination layout (revised 2026-10-25)
+`components/RecombSim.js` drawing / layout only; quantities, pressures, timings and stage order unchanged except
+where noted. One fixed viewBox (`VB 6 102 1240 584`) for all nine stages, everything on one floor (`FLOOR` 646).
+- Vessels (titanium cylinder, separator oil bottle, recombination bottle) have both valve outlets facing RIGHT at
+  the same heights (sample `PORT_Y` 200, hydraulic `HYD_Y`). The water pump stands right of the vessel with its port
+  on its LEFT face at `HYD_Y`: the hydraulic line is one short straight run with fittings at both ends. Tubing has
+  rounded bends (`roundPts`) and hex fittings at connected ends; hydraulic lines are drawn wider than sample lines.
+- Stages 1-3: GSP = approved Gas Sample Bottle; its built-in top valve is the GSP valve (state ring + tag) and the
+  gas line ends on its outlet (the separate line valve is gone). Booster In / Booster Out valves sit on the booster
+  ports (check valves unchanged inside the gas head). Vacuum pump below a tee in the booster-OUT -> titanium line;
+  the vacuum isolation valve stays on the tee stub, the hose to the pump inlet is connected / removed.
+- Titanium cylinder keeps its titanium body; end caps and right-angle valves restyled to the approved steel finish.
+- Stage 4: no external vacuum pump; the empty cell is evacuated by the integrated cell setup (status pill above the
+  cell, Port L plugged until the titanium is connected). Text / Explain updated.
+- Stages 4-8: complete integrated setup = approved PVT cell (`CELL_S` 0.95, standing on the floor) + signal cable +
+  computer / controller (`PVTCellArt.desk`, `DESK`) to its right. Sample line: vessel sample outlet -> overhead ->
+  drop at `CELL_DROP` -> Port L.
+- Stage 5: the water pump stays (no pumping) and is connected to the bottle hydraulic valve; with that valve open it
+  reads the bottle pressure (fixed volume 9.00 cc). Stage 6: pump refilled 9 -> 300 cc from its reservoir while the
+  bottles are swapped (the existing 300 cc refill, now shown in place).
+- Stage 9: inversion stand at the cell's former place (`STAND` 660, 400); the pump moves clear (`C_PUMP_X`) with its
+  flexible line on the bottle; agitation card on the left.
+- Page-header Details buttons follow the equipment in view (`syncDetails`): Cell Details only while the cell is
+  shown (stages 4-8), Bottle Details = `gas` (stages 1-3) / `oil` (bottle in view), hidden when no sample bottle.
 
 ## Direct Density — coil + two-phase visual (2026-09-30)
 `components/StageDensity.js`, drawing only (timeline T, values D, equations, controls unchanged).

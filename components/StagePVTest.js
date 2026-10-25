@@ -529,7 +529,7 @@ class Component extends DCLogic {
     };
     let pvFitAbove = '', pvFitBelow = '', pvFitAboveExt = '', pvFitBelowExt = '', pvShowBubbleMark = false;
     const _len = (x1, y1, x2, y2) => Math.hypot(x2 - x1, y2 - y1);
-    let _lA = 640, _lB = 640, _lAe = 0, _lBe = 0, _gLen = 0;
+    let _lA = 640, _lB = 640, _lAe = 0, _lBe = 0, _gLen = 0, _slA = 0;
     let pvBubbleX = px(DATA[BUBBLE_IDX][1]), pvBubbleY = py(DATA[BUBBLE_IDX][0]);
     if (n >= NPTS && this.state.pvFit && SPLIT != null) {
       // regional least-squares fits: single-phase points only / two-phase points only
@@ -551,6 +551,7 @@ class Component extends DCLogic {
       pvFitBelowExt = b0.join(',') + ' ' + be.join(',');
       _lA = _len(a0[0], a0[1], a1[0], a1[1]) + 2; _lB = _len(b0[0], b0[1], b1[0], b1[1]) + 2;
       _lAe = _len(a1[0], a1[1], ae[0], ae[1]) + 2; _lBe = _len(b0[0], b0[1], be[0], be[1]) + 2;
+      _slA = a1[0] !== a0[0] ? (a1[1] - a0[1]) / (a1[0] - a0[0]) : 0;   // single-phase line slope (px y per px x)
       pvShowBubbleMark = true;
       pvBubbleX = px(vI); pvBubbleY = py(pI);
       _gLen = Math.max(1, +pvBubbleX - left);
@@ -598,7 +599,11 @@ class Component extends DCLogic {
     // up and to the right of the crossing: clear of the single-phase line (rising to the upper left) and the
     // two-phase line (falling to the lower right)
     const pvPsatLabelX = Math.max(left + 4, Math.min(left + w - 4 - LW, _bx + (SA ? 30 : 14))).toFixed(1);
-    const pvPsatLabelY = Math.max(top + 4, Math.min(top + h - 4 - LH, _by - (SA ? 64 : 40))).toFixed(1);
+    // where the plot is too narrow to keep the box right of the crossing, lift it until its lower-left corner clears
+    // the single-phase line by 12 px
+    let _ly = _by - (SA ? 64 : 40);
+    if (_slA > 0 && +pvPsatLabelX - 12 < _bx) _ly = Math.min(_ly, _by - (_bx - (+pvPsatLabelX - 12)) * _slA - LH);
+    const pvPsatLabelY = Math.max(top + 4, Math.min(top + h - 4 - LH, _ly)).toFixed(1);
     const pvPsatLabelTitleY = (parseFloat(pvPsatLabelY) + (SA ? 4 : 3)).toFixed(1);
     const pvPsatLabelValY = (parseFloat(pvPsatLabelY) + (SA ? 17 : 13)).toFixed(1);
     const pvPsatLeader = _bx + ',' + _by + ' ' + (parseFloat(pvPsatLabelX) + 8).toFixed(1) + ',' + (parseFloat(pvPsatLabelY) + LH).toFixed(1);
