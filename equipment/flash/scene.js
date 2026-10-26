@@ -22,7 +22,8 @@
   /* placements (world units). floor = 1000 in the system scene */
   var LAYOUT = {
     // left to right: computer + controller, full-size PVT Cell (same scale as the procedure pages' cell views), Flash Unit, Gasometer
-    system: { vb: [-6, 372, 1842, 648], floor: 1000, desk: { x: 10, y: 700, s: 0.55, legs: 295 }, cell: { x: 56, y: 433, s: 0.75 }, fu: { x: 840, y: 470, s: 0.68 }, pump: { x: 1392, y: 1000, s: 0.6 }, ga: { x: 1500, y: 467, s: 0.62 } },
+    // compact computer desk; Flash Unit and Gasometer enlarged so the flask stays readable in one full frame
+    system: { vb: [-6, 150, 2012, 864], floor: 1000, desk: { x: 10, y: 771, s: 0.42, legs: 295 }, cell: { x: 7, y: 433, s: 0.75 }, fu: { x: 772, y: 328, s: 0.85 }, pump: { x: 1452, y: 1000, s: 0.6 }, ga: { x: 1600, y: 362, s: 0.74 } },
     density: { vb: [-10, 180, 1700, 840], floor: 1000, fu: { x: 40, y: 298, s: 0.9 }, dm: { x: 790, y: 353, s: 1.4 } },
     fu: { vb: [-300, -190, 1520, 1010], floor: 780, fu: { x: 0, y: 0, s: 1 }, pump: { x: 1110, y: 780, s: 1 } },
     ga: { vb: [-400, -40, 1340, 920], floor: 860, ga: { x: 0, y: 0, s: 1 } },
@@ -184,7 +185,7 @@
   /* ------------------------------------------------------------ temporary vacuum pump + hose */
   function hoseGeo(Lo) {
     var a = tf(Lo.fu, FU.port.vac), b = tf(Lo.pump, PT.PG.inlet);
-    var k = Lo.fu.s, top = a[1] - 150 * k;
+    var k = Lo.fu.s, top = a[1] - 230 * k;   // arches clear of the Balloon Valve label
     return F.path(a[0], a[1]).C(a[0], top, b[0], top, b[0], b[1]).end();
   }
   function vacMarkup(Lo, V) {

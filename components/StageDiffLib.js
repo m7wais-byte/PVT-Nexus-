@@ -471,7 +471,11 @@ class Component extends DCLogic {
       if (pl.gaso && u >= 0.72) flow.capGas = { p: u, a: fade };
       else flow.capBal = { p: u, a: fade };
     }
-    const V = { busy: !!st.busy, stage: 0, p: u, step: 0, path: 'cap', fuP: null, flowTxt: (st.flow || 0).toFixed(2), flowOn: (st.flow || 0) > 0.05, pumpA: null,
+    // no Flash Unit pressure in this procedure's data: the display shows the unit status; the flask is not used here
+    const fuPTxt = st.xStep === 'conn' ? 'CONNECTING' : st.xStep === 'disc' ? 'DISCONNECTING'
+      : !gasStep || u < 0.13 || u >= 0.95 ? 'STANDBY' : flow.capGas ? 'GAS → GASOMETER' : u >= 0.44 ? 'GAS → BALLOON' : 'GAS IN LINE';
+    const V = { busy: !!st.busy, stage: 0, p: u, step: 0, path: 'cap', fuP: null, fuPTxt: fuPTxt, balTxt: 'NOT USED', balNote: 'NOT USED IN THIS STAGE',
+      flowTxt: (st.flow || 0).toFixed(2), flowOn: (st.flow || 0) > 0.05, pumpA: null,
       flashed: 0, oil: 0, oilRec: 0, bal: 200, heTint: 0, gasTint: 0, vacTint: 0, heIn: 0, airOut: 0, drip: null, bubbles: 0,
       balloon: 250 * Math.min(1, bal / 14.5), balloonTxt: bal.toFixed(2), balloonUnit: 'psig',
       gasoVol: gaso, gasoMode: 'gas', gaso: gaso, heGas: 0, gaso2k: sp.k2, gaso1k: sp.k1, gasoT: FlashSim.GASO_T, gasoSec: '2k',
