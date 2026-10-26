@@ -112,8 +112,40 @@ window.PVT_DL = { charge: { p: P_CHARGE, v: V_CHARGE }, stages: STAGE_DATA.map(d
   const c = CFG['stage' + d.n]; return { n: d.n, target: d.target, vPre: d.vPre, stab: d.stab, remaining: d.remaining, gPre: c.gPre, gEq: c.gEq };
 }) };
 
-const IDS = ['initpv', 'stage1', 'stage2', 'stage3', 'stage4', 'stage5', 'stage6'];
-const STEPS = { initpv: 2, stage1: 5, stage2: 5, stage3: 5, stage4: 5, stage5: 5, stage6: 5 };
+// ---- Final flash (after Stage 6): the remaining Stage 6 liquid is recompressed to 2,500 psig, then flashed
+// through the approved Flash Process. Recompression only: no oil or gas is added and the sample is not replaced.
+//  * Volume along the recompression: the Stage 6 P-V data of this module (203 psig / 67.6952 cc -> Stage 6 Psat
+//    220 psig / 66.65 cc -> Stage 6 P-V table above Psat, two-leg generator). Above Psat that table is illustrative
+//    (generated compressibility), not a measured volume.
+//  * Oil mass = remaining 67.6952 cc x Stage 6 oil density 773.21 kg/m3 (data/report-data.js PVT_REPORT.dl).
+//  * Flash gas = Rs at the last DL stage x residual-oil volume; the dataset gives Rs = 0 at 203 psig (all
+//    solution gas already counted in Stages 1-6), so no further gas is counted here: no double-counting.
+//  * Density & API: the density-meter example values (FlashSim.RES, stock-tank oil density of the project).
+const P_FINAL = 2500, S6 = CFG.stage6;
+const FINAL_PATH = [[S6.target, S6.remaining], [S6.psat.p, S6.psat.v]]
+  .concat(S6.pts.filter(q => q[0] > S6.psat.p && q[0] <= P_FINAL).sort((a, b) => a[0] - b[0]));
+const V_FINAL = FINAL_PATH[FINAL_PATH.length - 1][1];          // 2,500 psig point of the Stage 6 P-V table
+function volAt(P) {
+  const pts = FINAL_PATH;
+  if (P <= pts[0][0]) return pts[0][1];
+  for (let i = 1; i < pts.length; i++) if (P <= pts[i][0]) return pts[i - 1][1] + (pts[i][1] - pts[i - 1][1]) * (P - pts[i - 1][0]) / (pts[i][0] - pts[i - 1][0]);
+  return pts[pts.length - 1][1];
+}
+let FINAL_PROF = null;                                          // built on first use (FlashSim / report data loaded by then)
+function finalProf() {
+  if (FINAL_PROF) return FINAL_PROF;
+  const dl = (window.PVT_REPORT && window.PVT_REPORT.dl) || [], last = dl[dl.length - 1] || {};
+  const RES = FlashSim.RES, oil = r4(S6.remaining * (last.den || 0) / 1000);
+  const vSto = RES.rho60 > 0 ? oil / RES.rho60 : 0, gas = Math.max(0, last.rs || 0) * vSto;
+  FINAL_PROF = { key: 'dlFinal', pumpA0: V_FINAL, flashed: V_FINAL, oil, gas, bal: Math.min(250, gas), he: 3000, vDec: 4,
+    stable: 'Stable · ' + V_FINAL.toFixed(4) + ' cc @ 2,500 psig', res: RES, vSto, rs: last.rs || 0, den: last.den || 0,
+    noGas: 'no gas evolves (DL dataset: Rs = 0 at 203 psig)' };
+  return FINAL_PROF;
+}
+const FINAL_STEPS = ['Recompress to 2,500 psig'].concat(['Stable Sample', 'Vacuum Unit', 'Fill Helium', 'Flash Sample', 'Collect Gas', 'Collect Oil', 'Density & API']);
+
+const IDS = ['initpv', 'stage1', 'stage2', 'stage3', 'stage4', 'stage5', 'stage6', 'final'];
+const STEPS = { initpv: 2, stage1: 5, stage2: 5, stage3: 5, stage4: 5, stage5: 5, stage6: 5, final: 8 };
 // ---- agitation transfer model (visual phase split only; stage numbers unchanged) ----
 const PUMP_CAP = 100;                                 // one pump bore = 100 cc (173 px, Validation true scale)
 // deterministic bubble seeds (no random jumps between renders)
@@ -123,6 +155,11 @@ const DL_BUBS = Array.from({ length: 16 }, (_, k) => ({ fx: (k * 0.618034 + 0.07
 // gas lane Pump A -> header -> Port R, outlet line from the Port R fitting, Flash Unit, Gasometer
 const DL_FX = { cellPort: [641.6, 170], cellLane: [[524, 192], [524, 170], [641.6, 170]], lineX: 30, connLine: true, labelSize: 15,
   fu: { x: 700, y: 200, s: 0.46 }, ga: { x: 1075, y: 173, s: 0.46 } };
+// final flash: room for the temporary vacuum pump between the Flash Unit and the Gasometer; Stage 7 swaps the
+// Gasometer for the density meter on its bench (floor = Flash Unit wheels)
+const DLF_FX = Object.assign({}, DL_FX, { ga: { x: 1140, y: 173, s: 0.46 }, pump: { x: 1086, y: 559, s: 0.4 } });
+const DLF_DM = { cellPort: DL_FX.cellPort, cellLane: DL_FX.cellLane, lineX: 30, connLine: true, labelSize: 15, floor: 559, syrS: 0.5,
+  fu: DL_FX.fu, dm: { x: 1058, y: 300, s: 0.5 } };
 
 class Component extends DCLogic {
   state = { stage: 'initpv', done: {}, res: {}, pending: {}, initPsat: null };
@@ -278,6 +315,7 @@ class Component extends DCLogic {
       }
       return;
     }
+    if (st.stage === 'final') { this.runFinal(s); return; }
     // ---- Stages 1-6 : one engine, stage numbers from CFG ----
     const c = this.cfg();
     if (s === 0) {
@@ -327,6 +365,47 @@ class Component extends DCLogic {
       return;
     }
   }
+  // ---- Final flash: step 0 recompresses the remaining Stage 6 liquid, steps 1-7 run the approved Flash Process
+  // (FlashSim stages with this sample's profile; equipment preparation and timing as in Validation) ----
+  runFinal(s) {
+    const FP = finalProf();
+    if (s === 0) {
+      const p0 = S6.target;
+      this.setState({ busy: true, stageTag: 'Recompressing', P: p0, V: S6.remaining, G: 0, pB: 0,
+        action: 'Recompressing the remaining Stage 6 liquid from ' + fmtP(p0) + ' to ' + fmtP(P_FINAL) + ' — Pump A advancing; no oil or gas added.' });
+      this.tween(8.0, 0, 1, (f) => {
+        const P = p0 + (P_FINAL - p0) * f;
+        this.setState({ P, V: volAt(P), action: P < S6.psat.p ? 'Recompressing — ' + fmtP(Math.round(P)) + ' · gas going back into solution (Stage 6 Psat ' + fmtP(S6.psat.p) + ').'
+          : 'Recompressing — ' + fmtP(Math.round(P)) + ' · single-phase liquid, ' + volAt(P).toFixed(4) + ' cc.' });
+      }, () => {
+        this.setState({ P: P_FINAL, V: V_FINAL, stageTag: 'Stabilizing', action: 'Holding at 2,500 psig — pressure and volume stabilizing.' });
+        this.wait(2200, () => this.done({ P: P_FINAL, V: V_FINAL, recompressed: true, stageTag: 'Stable at 2,500 psig',
+          action: 'RECOMPRESSED — 2,500 psig · ' + V_FINAL.toFixed(4) + ' cc (Stage 6 P–V model). Run the Flash Process from 2,500 psig.' }));
+      }, true);
+      return;
+    }
+    const n = s;
+    const extra = (o, q) => {
+      const x = { action: o.fStatus || this.state.fStatus };
+      if (n === 1) x.conn = q;                                       // outlet line made up (all valves closed) while the sample is checked
+      if (o.fPumpA != null) x.V = Math.max(0, o.fPumpA);              // Pump A displaces the sample at constant 2,500 psig
+      return x;
+    };
+    this.setState(Object.assign(FlashSim.stageStart(n, FP), { busy: true, stageTag: 'Final flash · ' + FlashSim.NAMES[n - 1] }, n === 1 ? { conn: 0 } : {}));
+    this.tween(FlashSim.dur(n) / PSM(), 0, 1, (q) => { const o = FlashSim.stageAt(n, q, FP); this.setState(Object.assign(o, extra(o, q))); }, () => {
+      const o = FlashSim.stageDone(n, FP), x = Object.assign(o, extra(o, 1), { stageTag: n === 7 ? 'Final flash complete' : 'Final flash · ' + FlashSim.NAMES[n - 1] + ' done' });
+      if (n === 1) x.conn = 1;
+      if (n === 7) Object.assign(x, { done: { ...this.state.done, final: true }, res: { ...this.state.res, final: this.finalRecord() },
+        action: 'FINAL FLASH COMPLETE — ' + FP.oil.toFixed(2) + ' g oil · flash gas ' + Math.round(FP.gas) + ' cc · ' + FP.res.api.toFixed(1) + ' °API (example). Recorded separately from Stages 1–6.' });
+      this.done(x);
+    });
+  }
+  // final-flash record: kept under its own key, replaced (never added) on a re-run, so nothing is counted twice
+  finalRecord() {
+    const FP = finalProf(), r = FP.res;
+    return { pStart: S6.target, vStart: S6.remaining, pFlash: P_FINAL, vFlash: V_FINAL, flashed: FP.flashed, oilG: FP.oil, gasCc: FP.gas,
+      rho: r.rho, rho60: r.rho60, sg: r.sg, api: r.api, vSto: FP.vSto };
+  }
   // live mirror of the embedded Validation PV Test (strip, control readouts, Explain panel)
   pvSync(ps) {
     if (!this.state.pvRun) return;
@@ -356,6 +435,9 @@ class Component extends DCLogic {
       pvRun: false, runKey: 0, cU: 0, psatTxt: '', startTxt: '' };
     if (id === 'initpv') return Object.assign(base, { P: 0, V: 0, stageTag: 'Ready', startTxt: '5,000 psig and 80.0000 cc', psatTxt: '2,500 @ 83.08',
       action: 'PVT cell empty and evacuated — charge 80 cc of sample at 5,000 psig.' });
+    if (id === 'final') return Object.assign(base, FlashSim.initial(finalProf()), { P: S6.target, V: S6.remaining, recompressed: false, stageTag: 'Ready',
+      startTxt: fmtP(P_FINAL) + ' and ' + V_FINAL.toFixed(4) + ' cc',
+      action: 'Final flash — inherited Stage 6 remaining liquid: ' + fmtP(S6.target) + ' · ' + S6.remaining.toFixed(4) + ' cc. Recompress it to ' + fmtP(P_FINAL) + ', then run the Flash Process.' });
     const c = CFG[id], from = c.n === 1 ? 'Initial PV charge' : 'Stage ' + (c.n - 1) + ' remaining liquid';
     return Object.assign(base, { P: c.pStart, V: c.vStart, stageTag: 'Ready',
       startTxt: fmtP(c.target) + ' and ' + c.remaining.toFixed(4) + ' cc', psatTxt: c.pvOK ? c.psat.p + ' @ ' + c.psatVs : '',
@@ -368,6 +450,12 @@ class Component extends DCLogic {
       const rows = PV_INIT_PTS.map(([p, v]) => ({ p, v, psat: p === PV_INIT.psat.p }));
       return Object.assign(f, { step: STEPS[id], P: P_CHARGE, V: V_CHARGE, pvPhase: 'done', pvN: 12, pvCount: 12, pvConfirmed: true,
         rows, cU: 1, initPsat: PV_INIT.psat, stageTag: 'Complete', action: 'Initial PV complete — Psat 2,500 psig @ 83.08 cc.' });
+    }
+    if (id === 'final') {
+      const FP = finalProf();
+      [1, 2, 3, 4, 5, 6, 7].forEach((n) => Object.assign(f, FlashSim.stageDone(n, FP)));
+      return Object.assign(f, { step: STEPS.final, P: P_FINAL, V: Math.max(0, f.fPumpA), conn: 1, recompressed: true, stageTag: 'Complete',
+        action: 'Final flash complete — ' + FP.oil.toFixed(2) + ' g oil · flash gas ' + Math.round(FP.gas) + ' cc · ' + FP.res.api.toFixed(1) + ' °API (example).' });
     }
     const c = CFG[id], pend = !!this.state.pending[id];
     const cyc = c.cycles.concat([c.stab]).map((v, i, a) => ({ n: i + 1, v, d: r4(v - (i ? a[i - 1] : c.vPre)), confirm: i === a.length - 1 }));
@@ -419,11 +507,11 @@ class Component extends DCLogic {
   /* ---- shared procedure panel (ProcCtl.js): stage = Initial PV / Stage 1-6 (existing navigation),
      Run = the current step of that stage, Restart = the existing Reset Stage ---- */
   pcInfo() {
-    const st = this.state, idx = IDS.indexOf(st.stage), isInit = st.stage === 'initpv', c = isInit ? null : this.cfg();
+    const st = this.state, idx = IDS.indexOf(st.stage), isInit = st.stage === 'initpv', isFinal = st.stage === 'final', c = isInit || isFinal ? null : this.cfg();
     const total = STEPS[st.stage], step = st.step, complete = step >= total, busy = !!st.busy || (!!st.chain && PCLK.busy()), pz = PCLK.paused();
-    const names = isInit ? ['Charge 80 cc', 'Run PV Determination']
+    const names = isInit ? ['Charge 80 cc', 'Run PV Determination'] : isFinal ? ['Recompress to 2,500 psig'].concat(FlashSim.ACTIONS)
       : ['Reduce Pressure', 'Agitate', 'Connect Flash Unit', 'Collect Gas', c.pvOK ? 'Run PV Test' : 'Disconnect & Record'];
-    const lbl = isInit ? 'Initial PV' : 'Stage ' + c.n;
+    const lbl = isInit ? 'Initial PV' : isFinal ? 'Final Flash' : 'Stage ' + c.n;
     const si = Math.min(step, total - 1);
     return { N: IDS.length, k: idx, unit: 'Stage',
       title: lbl + ' · ' + (complete ? 'complete' : 'Step ' + (si + 1) + ' / ' + total + ': ' + names[si]), q: st.action || '',
@@ -458,6 +546,7 @@ class Component extends DCLogic {
   fxView() {
     const st = this.state;
     if (st.stage === 'initpv') return null;
+    if (st.stage === 'final') return this.fxFinal();
     const stageDn = !!st.done[st.stage], pend = !!st.pending[st.stage];
     if ((stageDn && pend) || st.step < 2 || st.pvRun || (stageDn && !pend)) return null;
     const c = this.cfg(), F = FXX(), R = F.fxR, E = F.fxE, pl = this.gasPlan(c);
@@ -485,14 +574,58 @@ class Component extends DCLogic {
     return { mode: 'system', key: 'dl', opt: { inline: true, layout: DL_FX, labels: true }, V: V };
   }
 
+  // final flash: the approved Flash Process view model on this procedure's own state and sample profile;
+  // the cell (2,500 psig) stays on the page's cell drawing, the Flash Unit shows its own atmospheric pressure
+  fxFinal() {
+    const st = this.state, FP = finalProf(), n = st.fBusy ? st.fStage : st.fStep;
+    const V = FlashSim.vmOf(st, 0, FP);
+    V.conn = st.conn || 0;
+    const dens = n === 7;
+    return dens ? { mode: 'density', key: 'dlfd', opt: { inline: true, layout: DLF_DM, labels: true }, V }
+      : { mode: 'system', key: 'dlf', opt: { inline: true, layout: DLF_FX, labels: true }, V };
+  }
+  // phase of the final flash for the status panel and the Explain panel
+  finalPhase() {
+    const st = this.state, n = st.fBusy ? st.fStage : st.fStep;
+    if (st.busy && st.step === 0) return 'RECOMPRESSING';
+    if (!st.recompressed) return 'NOT STARTED';
+    if (!st.fBusy) return n >= 7 ? 'COMPLETE' : 'READY';
+    return { 1: 'PREPARING', 2: 'EVACUATING', 3: 'PREPARING · HELIUM', 4: 'FLASHING', 5: 'COLLECTING GAS', 6: 'COLLECTING OIL', 7: 'DENSITY & API' }[n] || 'RUNNING';
+  }
+  // Explain panel (StepGuide) for the final flash
+  describe() {
+    const st = this.state;
+    if (st.stage !== 'final') return null;
+    const FP = finalProf(), step = st.step || 0, nm = FINAL_STEPS[Math.min(step, 7)];
+    const W = ['Brings the remaining Stage 6 liquid back above its bubble point so the flash starts from one known single-phase condition. Only pressure changes: no oil or gas is added.',
+      'Confirms the sample is stable at 2,500 psig and makes up the outlet line to the Flash Unit with every valve closed.',
+      'Removes air from the whole section between the closed Port R valve and the closed Gasometer inlet valve, so only sample gas is measured.',
+      'Fills the evacuated flask with helium from the gasometer, so the flask starts at atmospheric pressure with a known gas.',
+      'Pump A pushes the sample at 2,500 psig through Port R into the flask; oil collects on the balance, any released gas rises to the gasometer.',
+      'Transfers flash gas to the balloon for analysis — none here: the dataset has no gas left in solution at 203 psig.',
+      'Records the oil mass on the balance (gross − tare) and the gas volume.',
+      'Measures the collected oil density at 25 °C, converts it to 60 °F and reports SG and API gravity.'];
+    return { title: 'Differential Liberation — Final Flash · Starting Pressure: 2,500 psig', tag: (st.busy ? 'RUNNING · ' : '') + 'STEP ' + Math.min(8, step + 1) + ' / 8 · ' + this.finalPhase(),
+      busy: !!st.busy, d: st.action || '', w: W[Math.min(step, 7)] + '', e: 'Step: ' + nm + '. The cell keeps its own pressure (psig); the Flash Unit display is the unit\'s own pressure (psia).',
+      o: 'Final-flash results are recorded separately from Stages 1–6.',
+      vals: [
+        { l: 'Cell pressure', v: Math.round(st.P || 0).toLocaleString('en-US'), u: 'psig' },
+        { l: 'Cell volume', v: (st.V || 0).toFixed(4), u: 'cc' },
+        { l: 'Flash Unit', v: (st.fuP == null ? 14.7 : st.fuP).toFixed(1), u: 'psia' },
+        { l: 'Oil collected', v: (st.fOil || 0).toFixed(2), u: 'g' },
+        { l: 'Flash gas', v: String(Math.round(st.fGaso || 0)), u: 'cc' } ] };
+  }
+
   renderVals() {
     const st = this.state, X = PVX(), F = FXX();
     const C = X.clamp01, R = F.fxR, E = F.fxE;
-    const isInit = st.stage === 'initpv', c = isInit ? null : this.cfg();
+    const isInit = st.stage === 'initpv', isFinal = st.stage === 'final';
+    const c = isInit ? null : isFinal ? S6 : this.cfg();            // final flash: Stage 6 liquid (cell drawing only)
     const total = STEPS[st.stage], step = st.step, busy = st.busy, complete = step >= total;
     const P = st.P, V = st.V, phase = st.pvPhase || 'idle';
     const stageDn = !!st.done[st.stage], pend = !!st.pending[st.stage];
-    const lbl = isInit ? 'Initial PV' : 'Stage ' + c.n;
+    const lbl = isInit ? 'Initial PV' : isFinal ? 'Final Flash' : 'Stage ' + c.n;
+    const FP = isFinal ? finalProf() : null, fVm = isFinal ? FlashSim.vmOf(st, 0, FP) : null;
 
     // ---- phase split between the pumps (all volumes in cc; 100 cc = 173 px of bore) ----
     // At rest : Pump A = all oil + its gas, Pump B = excess gas only (pB).
@@ -548,21 +681,27 @@ class Component extends DCLogic {
     // ---- readouts ----
     const pTxt = fmtP(Math.round(P)), vTxt = V.toFixed(4) + ' cc';
     const ang = (-140 + 100 * C((5000 - P) / 5000)) * Math.PI / 180;
-    const phaseText = isInit && V < 0.005 ? 'CELL EMPTY · EVACUATED' : gasOn ? 'LIQUID + LIBERATED GAS' : 'SINGLE-PHASE LIQUID · GAS IN SOLUTION';
+    const phaseText = isInit && V < 0.005 ? 'CELL EMPTY · EVACUATED' : isFinal && (st.fStep || 0) >= 4 && V < 0.005 ? 'PUMP A EMPTY · SAMPLE FLASHED' : gasOn ? 'LIQUID + LIBERATED GAS' : 'SINGLE-PHASE LIQUID · GAS IN SOLUTION';
     const phaseColor = gasOn ? 'var(--grn)' : 'var(--cap2)';
 
     // ---- Flash Unit (stages) : Validation sketch + transfer lanes ----
-    const flashOn = !isInit && !(stageDn && pend) && step >= 2;
+    const flashOn = isFinal || (!isInit && !(stageDn && pend) && step >= 2);
     const conn = C(st.conn || 0);
     const pl = c ? this.gasPlan(c) : { dur: 13, balEnd: 0.9, gaso: false };
     const gasStep = st.xStep === 'gas', u = gasStep ? st.xU || 0 : 0;
     // PVT-cell outlet valve (Port R); the Flash Unit / Gasometer valves are drawn by FlashHost (fxView)
-    const vCell = gasStep ? E(R(0.07, 0.13, u)) * (1 - E(R(0.95, 1, u))) : 0;
+    const vCell = isFinal ? fVm.valve.pumpA : gasStep ? E(R(0.07, 0.13, u)) * (1 - E(R(0.95, 1, u))) : 0;
     const valve = (a, cx, cy) => ({ tr: 'rotate(' + (90 * a).toFixed(1) + ' ' + cx + ' ' + cy + ')', c: a > 0.5 ? '#46d39a' : '#8fa3c2' });
     const gasoUsed = !!(c && c.gasometer > 0);
     const XPH = F.FX_PHASES;
     let xPanel = null;
-    if (st.xStep === 'disc') xPanel = { title: 'FLASH UNIT DISCONNECTION', detail: 'Valves closed · outlet line removed · ' + (c ? c.balloon.toFixed(2) : '') + ' psig recorded', ph: 4, col: '#9cc6ff' };
+    if (isFinal) {
+      const fph = this.finalPhase(), pi = FlashSim.phaseInfoOf(st, FP);
+      const det = busy && step === 0 ? 'Cell ' + fmtP(Math.round(P)) + ' · ' + V.toFixed(4) + ' cc'
+        : st.fBusy ? (st.fStatus || '') : !st.recompressed ? 'Starting pressure 2,500 psig · recompress first' : step >= total ? FP.oil.toFixed(2) + ' g oil · ' + FP.res.api.toFixed(1) + ' °API (example)' : 'Next: ' + FINAL_STEPS[step];
+      xPanel = { title: 'FINAL FLASH · ' + fph, detail: det.length > 58 ? det.slice(0, 56) + '…' : det,
+        ph: busy && step === 0 ? 2 : st.fBusy && pi ? pi.k : step >= total ? 4 : 0, col: '#8cc4ff' };
+    } else if (st.xStep === 'disc') xPanel = { title: 'FLASH UNIT DISCONNECTION', detail: 'Valves closed · outlet line removed · ' + (c ? c.balloon.toFixed(2) : '') + ' psig recorded', ph: 4, col: '#9cc6ff' };
     else if (st.xStep === 'conn') xPanel = { title: 'FLASH UNIT CONNECTION', detail: 'Outlet line being made up · valves closed', ph: conn < 1 ? 2 : 4, col: '#9cc6ff' };
     else if (gasStep) {
       const ph = u < 0.07 ? 0 : u < 0.13 ? 1 : u < 0.53 ? 2 : u < 0.90 ? 3 : 4;
@@ -577,7 +716,7 @@ class Component extends DCLogic {
     const seg = [0, 1, 2, 3, 4].map((i) => 'fill:' + (!xPanel ? 'none' : i < xPanel.ph || xPanel.ph === 4 ? '#46d39a' : i === xPanel.ph ? xPanel.col : 'rgba(150,175,210,.22)') + ';');
 
     // ---- layout : PV workspace (Validation PV Test) or cell / Flash Unit workspace ----
-    const pvOn = !!st.pvRun || (stageDn && !pend);
+    const pvOn = !isFinal && (!!st.pvRun || (stageDn && !pend));
     const pvInit = pvOn && isInit, pvSt = pvOn && !isInit;
 
     // ---- cell tag ----
@@ -592,13 +731,25 @@ class Component extends DCLogic {
       else if (step === 4) tag = 'Disconnecting Flash Unit';
     } else if (c && step === 2 && st.stabilized) tag = 'VOLUME STABILIZED · ' + c.stab.toFixed(4) + ' cc';
     else if (c && pend && stageDn) { tag = 'Recorded · PV test pending'; tagTone = 'busy'; }
+    if (isFinal) { tag = busy && step === 0 ? 'Recompressing · ' + pTxt : 'Final Flash · ' + this.finalPhase().toLowerCase() + ' · cell ' + pTxt; tagTone = busy ? 'busy' : 'good'; }
     const tagCol = tagTone === 'good' ? 'var(--grn)' : 'var(--accb3)';
 
     // ---- side panel : stage record ----
     const cell = "font-family:'IBM Plex Mono',ui-monospace,monospace;";
     const kv = (k, v, col) => ({ k, v, c: col || 'var(--txt)' });
     const dis = 'var(--dis)';
-    const rec = c ? [
+    const frec = isFinal ? this.finalRecord() : null, fdone = isFinal && step >= total;
+    const rec = isFinal ? [
+      kv('Inherited (Stage 6 remaining)', fmtP(S6.target) + ' · ' + S6.remaining.toFixed(4) + ' cc'),
+      kv('Recompressed to', st.recompressed ? fmtP(P_FINAL) + ' · ' + V_FINAL.toFixed(4) + ' cc' : '—', st.recompressed ? 'var(--grn)' : dis),
+      kv('Volume basis', 'Stage 6 P–V table (illustrative)', 'var(--mut)'),
+      kv('Flashed from Pump A', (st.fFlashed || 0) > 0.0001 ? (st.fFlashed || 0).toFixed(4) + ' cc' : '—', (st.fFlashed || 0) > 0.0001 ? 'var(--amb)' : dis),
+      kv('Oil collected (flask)', (st.fOil || 0) > 0.005 ? (st.fOil || 0).toFixed(2) + ' g' : '—', st.fMeasured ? 'var(--grn)' : (st.fOil || 0) > 0.005 ? 'var(--txt)' : dis),
+      kv('Flash gas', (st.fStep || 0) >= 4 ? Math.round(st.fGasoProduced || 0) + ' cc · Rs = 0 in dataset' : '—', (st.fStep || 0) >= 4 ? 'var(--txt)' : dis),
+      kv('Density 25 °C / 60 °F', fdone ? frec.rho.toFixed(5) + ' / ' + frec.rho60.toFixed(5) + ' g/cm³' : '—', fdone ? 'var(--amb)' : dis),
+      kv('SG 60/60 · API (example)', fdone ? frec.sg.toFixed(4) + ' · ' + frec.api.toFixed(1) + ' °API' : '—', fdone ? 'var(--grn)' : dis),
+      kv('Residual oil at 60 °F', fdone ? frec.vSto.toFixed(4) + ' cc (mass ÷ ρ60)' : '—', fdone ? 'var(--txt)' : dis)
+    ] : c ? [
       kv('Inherited (' + (c.n === 1 ? 'Initial PV' : 'Stage ' + (c.n - 1)) + ')', fmtP(c.pStart) + ' · ' + c.vStart.toFixed(4) + ' cc'),
       kv('Stage pressure', step > 0 || (busy && step === 0) ? fmtP(c.target) : '—', step > 0 ? 'var(--grn)' : dis),
       kv('Pre-agitation volume', step > 0 ? c.vPre.toFixed(4) + ' cc' : '—', step > 0 ? 'var(--txt)' : dis),
@@ -617,14 +768,17 @@ class Component extends DCLogic {
 
     // ---- result card ----
     let big = '', bigT = '', bigCol = 'var(--txt2)';
-    if (isInit) {
+    if (isFinal) {
+      if (fdone) { bigT = 'FINAL FLASH COMPLETE · RECORDED SEPARATELY'; big = frec.oilG.toFixed(2) + ' g oil · ' + frec.api.toFixed(1) + ' °API (example)'; bigCol = 'var(--grn)'; }
+      else { bigT = 'FINAL FLASH'; big = 'Starting Pressure: 2,500 psig'; bigCol = 'var(--blue)'; }
+    } else if (isInit) {
       if (stageDn) { bigT = 'INITIAL PV COMPLETE'; big = 'Psat: 2500 psig @ 83.08 cc'; bigCol = 'var(--grn)'; }
     } else if (stageDn && pend) { bigT = 'STAGE ' + c.n + ' RECORDED · PV PENDING'; big = 'Remaining ' + c.remaining.toFixed(4) + ' cc'; bigCol = 'var(--amb)'; }
     else if (stageDn) { bigT = 'STAGE ' + c.n + ' COMPLETE'; big = c.psatPre + c.psatStr; bigCol = 'var(--grn)'; }
     else if (st.stabilized && step === 2 && !busy) { bigT = 'VOLUME STABILIZED'; big = (c.pumpB ? 'A ' + c.pumpA.toFixed(4) + ' · B ' + c.pumpB.toFixed(4) + ' cc' : c.stab.toFixed(4) + ' cc') + ' @ ' + fmtP(c.target); bigCol = 'var(--grn)'; }
 
     // ---- progress / buttons / navigation ----
-    const progNames = isInit ? ['Charge 80 cc', 'PV Determination · 12 Points → Psat']
+    const progNames = isInit ? ['Charge 80 cc', 'PV Determination · 12 Points → Psat'] : isFinal ? FINAL_STEPS
       : ['Reduce to ' + fmtP(c.target), 'Agitate & Stabilize', 'Connect Flash Unit', 'Collect Gas', c.pvOK ? 'PV Test · Remaining Sample → Psat' : 'PV Test · data missing'];
     const progress = progNames.map((nm, i) => {
       const isDone = i < step, on = (i === step && !complete) || (complete && i === total - 1);
@@ -633,12 +787,12 @@ class Component extends DCLogic {
           '; white-space:nowrap; color:' + (isDone ? 'var(--txt2)' : on ? 'var(--txt)' : 'var(--mut)') + '; background:' + (isDone ? 'rgba(29,138,90,.08)' : on ? 'rgba(47,111,208,.10)' : 'var(--icard)') +
           '; border:1px solid ' + (isDone ? 'rgba(29,138,90,.30)' : on ? 'rgba(47,111,208,.35)' : 'var(--line)') + ';' };
     });
-    const stepNames = isInit ? ['Charge 80 cc', 'Run PV Determination']
+    const stepNames = isInit ? ['Charge 80 cc', 'Run PV Determination'] : isFinal ? ['Recompress to 2,500 psig'].concat(FlashSim.ACTIONS)
       : ['Reduce Pressure', 'Agitate', 'Connect Flash Unit', 'Collect Gas', c.pvOK ? 'Run PV Test' : 'Disconnect & Record'];
     const dlStages = IDS.map(id => {
-      const num = id === 'initpv' ? 0 : Number(id.slice(5)), dn = !!st.done[id], on = id === st.stage, pn = !!st.pending[id];
-      const tg = dn ? (pn ? 'PV pending' : 'Complete') : on ? (busy ? 'Running' : 'Active') : 'Ready';
-      return { name: num === 0 ? 'Initial PV' : 'Stage ' + num, tag: tg,
+      const num = id === 'initpv' ? 0 : id === 'final' ? -1 : Number(id.slice(5)), dn = !!st.done[id], on = id === st.stage, pn = !!st.pending[id];
+      const tg = dn ? (pn ? 'PV pending' : 'Complete') : on ? (busy ? 'Running' : 'Active') : num < 0 ? 'From 2,500 psig' : 'Ready';
+      return { name: num === 0 ? 'Initial PV' : num < 0 ? 'Final Flash' : 'Stage ' + num, tag: tg,
         tagColor: dn ? (pn ? 'var(--amb)' : 'var(--grn)') : on ? 'var(--blue)' : 'var(--mut)', color: 'var(--txt)',
         onClick: () => this.goStage(id),
         style: 'flex:1 1 0; min-width:0; display:flex; flex-direction:column; align-items:flex-start; text-align:left; font-family:inherit; padding:6px 10px; border-radius:9px; cursor:pointer; background:' +
@@ -652,7 +806,14 @@ class Component extends DCLogic {
 
     // ---- top strip ----
     let strip;
-    if (isInit) strip = [
+    if (isFinal) strip = [
+      { k: 'Stage', v: 'Final Flash · from 2,500 psig', color: 'var(--txt)' },
+      { k: 'Cell Pressure', v: pTxt, color: 'var(--grn)' },
+      { k: 'Cell Volume', v: vTxt, color: 'var(--amb)' },
+      { k: 'Flash Unit', v: (st.fuP == null ? 14.7 : st.fuP).toFixed(1) + ' psia', color: st.fBusy && st.fStage === 2 ? 'var(--accb3)' : 'var(--txt2)' },
+      { k: 'Oil Collected', v: (st.fOil || 0).toFixed(2) + ' g', color: (st.fOil || 0) > 0.005 ? 'var(--amb)' : 'var(--mut)' },
+      { k: 'Flash Gas', v: Math.round(st.fGasoProduced || 0) + ' cc', color: 'var(--mut)' }];
+    else if (isInit) strip = [
       { k: 'Stage', v: 'Initial PV', color: 'var(--txt)' },
       { k: 'Cell Pressure', v: pTxt, color: 'var(--grn)' },
       { k: 'Cell Volume', v: vTxt, color: 'var(--amb)' },
@@ -682,7 +843,7 @@ class Component extends DCLogic {
       dlPillBorder: pillCol === 'var(--grn)' ? 'rgba(29,138,90,.40)' : pillCol === 'var(--amb)' ? 'rgba(185,131,31,.40)' : 'var(--line2)',
       dlPillDot: 'width:7px; height:7px; border-radius:50%; background:' + pillCol + ';',
       dlStrip: strip, dlStages, dlProgress: progress,
-      dlHint: isInit ? (stageDn ? 'Psat 2,500 psig @ 83.08 cc · continue with Stage 1' : 'Charge 80 cc → PV Determination (12 points) → Psat → return to 5,000 psig')
+      dlHint: isFinal ? 'Recompress the Stage 6 liquid to 2,500 psig → approved Flash Process → Density & API' : isInit ? (stageDn ? 'Psat 2,500 psig @ 83.08 cc · continue with Stage 1' : 'Charge 80 cc → PV Determination (12 points) → Psat → return to 5,000 psig')
         : stageDn ? (pend ? 'PV pending — missing: ' + c.missing.join('; ') : c.psatPre + c.psatStr)
         : 'Reduce → agitate → connect → collect gas → PV test',
       dlRunStep: () => this.runStep(),
@@ -716,14 +877,15 @@ class Component extends DCLogic {
       // keeps the computer / control box secondary (scaled) so the cell, Flash Unit and gasometer get the width
       // compact setup: Computer above Control Box, Control Box centred on the cell pressure / volume readouts,
       // short signal line ending on the cell frame (cell view: frame x 360, readouts y 303; Flash view: frame x 326, readouts y 323)
-      dlnVb: flashOn ? '0 76 1330 530' : '290 72 580 490',
+      dlnVb: isFinal ? '0 76 1400 540' : flashOn ? '0 76 1330 530' : '290 72 580 490',
       dlnCtlTr: flashOn ? 'translate(144,64) scale(.72)' : 'translate(180,44) scale(.72)',
       dlnSigD: flashOn ? 'M284 323 H326' : 'M320 303 H360',
       dlnSigLbl: flashOn ? { x: '305', y: '317' } : { x: '340', y: '297' },
       // Flash Unit view: PVT cell enlarged about its outlet (manifold end above Pump A stays at 584,170, where the outlet line starts)
       dlnCellTr: flashOn ? 'translate(-506,-20)' : 'translate(-446,-20)',
       dlnSideW: 'flex:0 0 ' + (flashOn ? 286 : 300) + 'px;',
-      dlnTitleSub: isInit ? 'Computer → Control Box → Dual-Cylinder PVT Cell'
+      dlnTitleSub: isFinal ? 'Final Flash — Starting Pressure: 2,500 psig · PVT Cell → Port R → Flash Unit flask → Gasometer · Density Meter'
+        : isInit ? 'Computer → Control Box → Dual-Cylinder PVT Cell'
         : flashOn ? 'PVT Cell → outlet line → Flash Unit → Balloon' + (gasoUsed ? ' → Gasometer (excess gas)' : ' · Gasometer isolated')
         : 'Computer → Control Box → Dual-Cylinder PVT Cell · Flash Unit disconnected',
       dlnTag: tag, dlnTagCol: tagCol,
@@ -757,7 +919,10 @@ dlnDisc: conn < 0.001,
       dlnXBd: xPanel ? (xPanel.ph === 4 ? '#46d39a' : xPanel.col) : 'none', dlnXBg: xPanel && xPanel.ph === 4 ? '#0e2019' : '#0f1a2c',
       dlnSeg0: seg[0], dlnSeg1: seg[1], dlnSeg2: seg[2], dlnSeg3: seg[3], dlnSeg4: seg[4],
 
-      dlnRecTitle: lbl + ' Record', dlnS1Rec: rec, dlnCycRows: cycRows, dlnCycEmpty: !cycRows.length,
+      dlnRecTitle: lbl + ' Record', dlnS1Rec: rec, dlnCycRows: cycRows, dlnCycEmpty: !cycRows.length, dlnCycOn: !isFinal,
+      dlnFinOn: isFinal, dlnFinSteps: isFinal ? FINAL_STEPS.map((nm, i) => ({ n: String(i + 1).padStart(2, '0'), name: nm,
+        st: i < step ? 'DONE' : i === step && busy ? 'RUNNING' : i === step ? 'NEXT' : '',
+        col: i < step ? 'var(--grn)' : i === step ? 'var(--blue)' : 'var(--mut2)' })) : [],
       dlnStabText: st.stabilized ? 'VOLUME STABILIZED' : (busy && step === 1 ? 'AGITATING' : 'NOT YET AGITATED'),
       dlnStabCol: st.stabilized ? 'var(--grn)' : busy && step === 1 ? 'var(--amb)' : 'var(--mut)',
       dlnMissOn: !!(c && c.missing.length), dlnMissText: c ? c.missing.join(' · ') : '',
@@ -792,9 +957,9 @@ DC.define('StageDiffLib', {
       <span class="pg-eyebrow">Analysis</span>
       <h2 class="pg-title">Differential Liberation</h2>
       <span style="align-self:center; display:inline-flex; align-items:center; gap:6px; flex:0 0 auto; padding:3px 11px; border-radius:999px; background:{{ dlPillBg }}; border:1px solid {{ dlPillBorder }}; font-family:'IBM Plex Mono'; font-size:10px; letter-spacing:.7px; text-transform:uppercase; color:{{ dlPillColor }}; white-space:nowrap;"><span style="{{ dlPillDot }}"></span>{{ dlPillText }}</span>
-      <p class="pg-desc">Initial PV determination on an 80 cc charge, then stage-wise pressure reduction with liberated-gas removal</p>
+      <p class="pg-desc">Initial PV determination on an 80 cc charge, stage-wise pressure reduction with liberated-gas removal, then a final flash from 2,500 psig</p>
     </div>
-    <div class="pg-end fx-btns"><button type="button" class="bd-btn" data-cd-open="" data-cd-ctx="Differential Liberation · cell outlet at Port R">Cell Details</button><button type="button" class="bd-btn" data-fd-open="fu" data-fd-src="StageDiffLib:dl" data-fd-ctx="Differential Liberation · liberated gas to the balloon">Flash Unit Details</button><button type="button" class="bd-btn" data-fd-open="ga" data-fd-src="StageDiffLib:dl" data-fd-ctx="Differential Liberation · excess liberated gas">Gasometer Details</button></div>
+    <div class="pg-end fx-btns"><button type="button" class="bd-btn" data-cd-open="" data-cd-ctx="Differential Liberation · cell outlet at Port R">Cell Details</button><button type="button" class="bd-btn" data-fd-open="fu" data-fd-src="StageDiffLib:dl" data-fd-ctx="Differential Liberation · liberated gas to the balloon">Flash Unit Details</button><button type="button" class="bd-btn" data-fd-open="ga" data-fd-src="StageDiffLib:dl" data-fd-ctx="Differential Liberation · excess liberated gas">Gasometer Details</button><button type="button" class="bd-btn" data-fd-open="dm" data-fd-src="StageDiffLib:dl" data-fd-ctx="Differential Liberation · final flash Density &amp; API">Density Meter Details</button></div>
   </div>
 
   <!-- stage navigation : every stage is always reachable, regardless of completion -->
@@ -962,7 +1127,15 @@ DC.define('StageDiffLib', {
           <div style="font-size:10.5px; color:var(--txt2); margin-top:2px; line-height:1.35;">{{ dlnMissText }}</div>
         </div>
       </sc-if>
-      <sc-if value="{{ dlnSideOn }}" hint-placeholder-val="{{ false }}">
+      <sc-if value="{{ dlnFinOn }}" hint-placeholder-val="{{ false }}">
+        <div style="flex:0 0 auto; border:1px solid var(--line2); border-radius:9px; overflow:hidden;">
+          <div style="padding:4px 10px; background:var(--icard); border-bottom:1px solid var(--line2); font-family:'IBM Plex Mono'; font-size:9.5px; font-weight:700; letter-spacing:.5px; color:var(--mut);">FINAL FLASH STEPS</div>
+          <sc-for list="{{ dlnFinSteps }}" as="fs" hint-placeholder-count="8">
+            <div style="display:grid; grid-template-columns:24px 1fr auto; align-items:center; height:19px; padding:0 10px; border-bottom:1px solid var(--line); font-family:'IBM Plex Mono'; font-size:10px;"><span style="color:var(--mut2);">{{ fs.n }}</span><span style="color:var(--txt);">{{ fs.name }}</span><span style="font-weight:700; color:{{ fs.col }};">{{ fs.st }}</span></div>
+          </sc-for>
+        </div>
+      </sc-if>
+      <sc-if value="{{ dlnCycOn }}" hint-placeholder-val="{{ false }}">
         <div style="flex:1 1 auto; min-height:0; border:1px solid var(--line2); border-radius:9px; overflow:hidden; display:flex; flex-direction:column;">
           <div style="flex:0 0 auto; display:grid; grid-template-columns:34px 1fr 1fr; padding:0 8px; height:21px; align-items:center; background:var(--icard); border-bottom:1px solid var(--line2); font-family:'IBM Plex Mono'; font-size:9.5px; font-weight:700; color:var(--txt2);"><span>Cyc</span><span>Volume, cc</span><span>Change</span></div>
           <div style="flex:1 1 auto; min-height:0; overflow-y:auto;">

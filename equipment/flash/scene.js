@@ -107,6 +107,11 @@
       if (Lo.cell) {
         var cr = [[PA.G.x.A, PA.G.bore.top + 4], [PA.G.x.A, PA.G.hy], [PA.G.port.R.x, PA.G.hy]].map(function (p) { return PA.pt({ at: Lo.cell }, p[0], p[1]); });
         var cg = F.geo('', cr); parts.push(cg, ext.sample); pre = cg.L + ext.sample.L;
+      } else if (Lo.cellPort && ext.sample) {
+        // the page draws its own cell: the sample leaves Pump A along the page's lane to Port R
+        var cl = Lo.cellLane ? F.geo('', Lo.cellLane) : null;
+        if (cl) parts.push(cl);
+        parts.push(ext.sample); pre = (cl ? cl.L : 0) + ext.sample.L;
       }
       parts.push(sIn);
       var sg = chain(parts);
@@ -246,12 +251,12 @@
   function syringeMarkup(Lo, V) {
     if (!V.syr) return '';
     var q = V.syr.q, sp = tf(Lo.fu, FU.port.sample), inl = tf(Lo.dm, [DM.port.luer[0], DM.port.luer[1] - 2]);
-    var x = sp[0], y = sp[1], fill = 0;
-    if (q < 0.10) { var a = F.ease(ramp(0, 0.10, q)); y = sp[1] - 110 * (1 - a); x = sp[0] + 90 * (1 - a); }
+    var x = sp[0], y = sp[1], fill = 0, k = Lo.syrS || 1;          // syrS: syringe scale on a smaller page drawing
+    if (q < 0.10) { var a = F.ease(ramp(0, 0.10, q)); y = sp[1] - 110 * k * (1 - a); x = sp[0] + 90 * k * (1 - a); }
     else if (q < 0.30) fill = ramp(0.14, 0.26, q);
-    else if (q < 0.42) { fill = 1; var b = F.ease(ramp(0.30, 0.42, q)); x = sp[0] + (inl[0] - sp[0]) * b; y = sp[1] + (inl[1] - sp[1]) * b - Math.sin(b * Math.PI) * 120; }
+    else if (q < 0.42) { fill = 1; var b = F.ease(ramp(0.30, 0.42, q)); x = sp[0] + (inl[0] - sp[0]) * b; y = sp[1] + (inl[1] - sp[1]) * b - Math.sin(b * Math.PI) * 120 * k; }
     else { x = inl[0]; y = inl[1]; fill = 1 - ramp(0.42, 0.54, q); }
-    var sc = q >= 0.30 ? 1 + 0.25 * ramp(0.30, 0.42, q) : 1;
+    var sc = k * (q >= 0.30 ? 1 + 0.25 * ramp(0.30, 0.42, q) : 1);
     return '<g transform="translate(' + r1(x) + ' ' + r1(y) + ') scale(' + r1(sc) + ')">' + PT.syringe(fill, 'down', window.FlashSim.ALIQ_ML.toFixed(1) + ' mL') + '</g>';
   }
   // dm-only view: the syringe is shown already connected at the Luer adapter

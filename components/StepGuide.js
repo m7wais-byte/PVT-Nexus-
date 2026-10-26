@@ -741,6 +741,9 @@
       // Separator Test (2026-09-30): the stage supplies its own explanation (six stages, embedded PV engine)
       var sepI = isSep ? LIVE['StageSeparator'] : null;
       if (sepI && sepI.describe) { var sd = sepI.describe(PVP, ST('StagePVTest')); if (sd) return pack(sd); }
+      // Differential Liberation final flash (recompression + Flash Process) explains itself
+      var dlI = !isSep ? LIVE['StageDiffLib'] : null;
+      if (dlI && dlI.describe) { var fd = dlI.describe(); if (fd) return pack(fd); }
       var d = ST(isSep ? 'StageSeparator' : 'StageDiffLib');
       if (d) {
         var stg = d.stage || 'initpv';
