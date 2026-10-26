@@ -11,6 +11,8 @@
   var FU = window.FlashUnit, GA = window.Gasometer, DM = window.DensityMeter, PA = window.PVTCellArt, PT = window.Parts;
   var NS = 'pp';
 
+  // the first len units of a geometry
+  function cut(g, len) { var pts = [g.pts[0]], acc = 0; for (var i = 1; i < g.pts.length; i++) { var a = g.pts[i - 1], b = g.pts[i], l = Math.hypot(b[0] - a[0], b[1] - a[1]); if (acc + l >= len) { var q = l ? (len - acc) / l : 0; pts.push([a[0] + (b[0] - a[0]) * q, a[1] + (b[1] - a[1]) * q]); break; } pts.push(b); acc += l; } return F.geo('', pts); }
   function tf(at, p) { return [at.x + p[0] * at.s, at.y + p[1] * at.s]; }
   function tgeo(at, g) { return F.geo('', g.pts.map(function (p) { return tf(at, p); })); }
   function rgeo(g) { return F.geo('', g.pts.slice().reverse()); }
@@ -30,14 +32,15 @@
   /* ------------------------------------------------------------ build */
   function build(host, mode, opt) {
     opt = opt || {};
-    var Lo = LAYOUT[mode], vb = opt.vb || Lo.vb;
-    var svg = '<svg class="scene-svg" viewBox="' + vb.join(' ') + '" preserveAspectRatio="xMidYMid meet" role="img" aria-label="' + (opt.title || 'Flash Process equipment') + '">';
+    var Lo = opt.layout || LAYOUT[mode], vb = opt.vb || Lo.vb || [0, 0, 1, 1];
+    // inline: the host is an SVG <g> inside a page drawing (Differential Liberation, Separator Test); no <svg> wrapper or floor
+    var svg = opt.inline ? '' : '<svg class="scene-svg" viewBox="' + vb.join(' ') + '" preserveAspectRatio="xMidYMid meet" role="img" aria-label="' + (opt.title || 'Flash Process equipment') + '">';
     svg += '<defs>' + PA.defs(NS, { raw: true }) + F.defs() + '</defs>';
     var layers = [];
     var g = function (id, transform, inner) { return '<g data-l="' + id + '"' + (transform ? ' transform="' + transform + '"' : '') + '>' + (inner || '') + '</g>'; };
 
     var bg = '';
-    if (Lo.floor != null) bg += L(vb[0], Lo.floor, vb[0] + vb[2], Lo.floor, 'stroke="#c9d1db" stroke-width="2"');
+    if (Lo.floor != null && !opt.inline) bg += L(vb[0], Lo.floor, vb[0] + vb[2], Lo.floor, 'stroke="#c9d1db" stroke-width="2"');
     if (Lo.dm && mode === 'density') {
       // bench for the density meter
       var bx0 = Lo.dm.x - 60, bx1 = Lo.dm.x + 640 * Lo.dm.s, by = Lo.dm.y + DM.G.base * Lo.dm.s;
@@ -48,10 +51,11 @@
 
     // tubing between instruments (anchored to ports)
     var ext = {}, tubes = '';
-    if (Lo.cell && Lo.fu) {
-      var pr = PA.port({ at: Lo.cell }, 'R'), si = tf(Lo.fu, FU.port.sampleIn), xm = pr[0] + 24;
+    if ((Lo.cell || Lo.cellPort) && Lo.fu) {
+      var pr = Lo.cellPort || PA.port({ at: Lo.cell }, 'R'), si = tf(Lo.fu, FU.port.sampleIn), xm = pr[0] + (Lo.lineX || 24);
       ext.sample = F.path(pr[0], pr[1]).H(xm - 10).turn(xm, pr[1], xm, si[1], 10).V(si[1] + 10).turn(xm, si[1], si[0], si[1], 10).H(si[0]).end();
-      tubes += F.tube(ext.sample) + F.nut(pr[0] + 6, pr[1], 'h', .9);
+      // a page that makes up / breaks out the outlet line (V.conn 0..1) draws it as a live layer
+      if (!Lo.connLine) tubes += F.tube(ext.sample) + F.nut(pr[0] + 6, pr[1], 'h', .9);
     }
     if (Lo.fu && Lo.ga) {
       var go = tf(Lo.fu, FU.port.gasOut), gi = tf(Lo.ga, GA.port.gas), xg = gi[0] - 30;
@@ -69,6 +73,15 @@
     }
     if (Lo.cell) { layers.push({ id: 'cell', fn: function (V) { return cellMarkup(Lo.cell, V); } }); svg += g('cell'); }
     svg += g('tubes', '', tubes);
+    if (Lo.connLine && ext.sample) {
+      layers.push({ id: 'sline', fn: function (V) {
+        var c = V.conn == null ? 1 : F.clamp(V.conn, 0, 1);
+        if (c <= 0.01) return '';
+        var gg = c >= 0.999 ? ext.sample : cut(ext.sample, c * ext.sample.L);
+        return F.tube(gg) + (c >= 0.999 ? F.nut(ext.sample.start[0] + 6, ext.sample.start[1], 'h', .9) : '');
+      } });
+      svg += g('sline');
+    }
 
     function inst(key, mod, at, view) {
       var ls = mod.layers({ view: view });
@@ -116,6 +129,15 @@
       routes.vacSection = [ext.sample, tgeo(Lo.fu, FU.RT.vacIn), tgeo(Lo.fu, FU.RT.vac), gasVacPart(Lo, ext.gas), tgeo(Lo.fu, FU.RT.vacGas), tgeo(Lo.fu, FU.RT.vacBal)].filter(Boolean);
       var vesG = chain([gaIn('2k') && rgeo(gaIn('2k')), ext.gas && rgeo(ext.gas), tgeo(Lo.fu, FU.RT.ves)]);
       routes.vessel = { g: vesG, kind: 'gas', gate: ['gaso', 'in2k', 'iso2k', 'vessel'], kf: [[0.15, 0], [0.40, vesG.L]] };
+      // gas-cap collection (Differential Liberation, Separator Test): gas from the cell along the manifold,
+      // past the closed Flask Valve, into the balloon; excess on to the 2,000 cc section
+      if (Lo.cellPort) {
+        var pre2 = Lo.cellLane ? F.geo('', Lo.cellLane) : null;
+        var cb = chain([pre2, ext.sample, tgeo(Lo.fu, FU.RT.capBal)]), cgs = chain([pre2, ext.sample, tgeo(Lo.fu, FU.RT.capGas), ext.gas, gaIn('2k')]);
+        var jL = (pre2 ? pre2.L : 0) + ext.sample.L + FU.G.balT * Lo.fu.s;
+        routes.capBal = { g: cb, kind: 'gas', gate: ['pumpA'], kf: [[0.13, 0], [0.38, jL], [0.50, jL], [0.56, cb.L]] };
+        routes.capGas = { g: cgs, kind: 'gas', gate: ['gaso'], kf: [[0.72, jL], [0.78, cgs.L]] };
+      }
     } else if (Lo.ga) {
       var g2 = gaIn('2k'), g1 = gaIn('1k');
       routes.gas = { g: g2, kind: 'gas', gate: ['in2k', 'iso2k'], kf: [[0.40, 0], [0.47, g2.L]] };
@@ -131,7 +153,7 @@
     else if (Lo.dm) { layers.push({ id: 'syr', fn: function (V) { return syringeAtMeter(Lo, V); } }); svg += g('syr'); }
     if (opt.labels && opt.labelsFn) svg += g('labs', '', opt.labelsFn(Lo, tf));
     else if (opt.labels) { layers.push({ id: 'labs', fn: function (V) { return sceneLabels(mode, Lo, V); } }); svg += g('labs'); }
-    svg += '</svg>';
+    if (!opt.inline) svg += '</svg>';
     host.innerHTML = svg;
 
     var els = {}, last = {};
@@ -242,7 +264,7 @@
   /* ------------------------------------------------------------ light labels for the overall scenes */
   function sceneLabels(mode, Lo, V) {
     var s = '', lab = function (x, y, n, sub, an) {
-      return T(x, y, n, 'text-anchor="' + (an || 'middle') + '" ' + SANS + ' font-size="18" font-weight="700" fill="#1d2836"') + (sub ? T(x, y + 18, sub, 'text-anchor="' + (an || 'middle') + '" ' + SANS + ' font-size="12.5" fill="#566578"') : '');
+      return T(x, y, n, 'text-anchor="' + (an || 'middle') + '" ' + SANS + ' font-size="' + (Lo.labelSize || 18) + '" font-weight="700" fill="var(--txt, #1d2836)"') + (sub ? T(x, y + 18, sub, 'text-anchor="' + (an || 'middle') + '" ' + SANS + ' font-size="12.5" fill="var(--mut, #566578)"') : '');
     };
     if (Lo.cell) { var cp = PA.pt({ at: Lo.cell }, 615, 8); s += lab(cp[0], cp[1], 'PVT Cell', ''); }
     if (Lo.fu) { var f0 = tf(Lo.fu, [FU.G.W / 2, -104]); s += lab(f0[0], f0[1], 'Flash Unit', ''); }

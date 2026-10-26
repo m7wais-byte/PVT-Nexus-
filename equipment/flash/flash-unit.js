@@ -79,6 +79,9 @@
     var g = G, M = g.M, up = function (p) { return p.turn(g.vacX, M, g.vacX, g.vacY, 8).V(g.vacY - 14).end(); };
     RT.vacIn = up(F.path(0, M).H(g.vacX - 8));                                     // sample line + manifold (inlet valves open)
     RT.vacGas = up(F.path(g.W, M).H(g.vacX + 8));                                  // Gasometer line up to the Flash Unit
+    // gas-cap collection used by Differential Liberation / Separator Test (Flask Valve closed)
+    RT.capBal = F.path(0, M).H(g.balT - 8).turn(g.balT, M, g.balT, g.vesNeck, 8).V(g.ves.y - Parts.VG.h + 4).end();
+    RT.capGas = F.path(0, M).H(g.W).end();
     RT.vacBal = up(F.path(g.balT - 12, M).H(g.vacX + 8));                          // manifold up to the CLOSED Balloon Valve junction (balloon side isolated)
   })();
   RT.shared = { x: cx, y0: G.M, y1: G.tip };
@@ -201,7 +204,7 @@
       else o += '<g transform="rotate(' + (on ? 90 : 0) + ' ' + x + ' ' + y + ')">' + R(x - 22, y - 3.6, 44, 7.2, 'rx="3.6" fill="#1b1f24" stroke="#000" stroke-width=".8"') + '</g>' + C(x, y, 4, 'fill="#c5ccd6" stroke="#2a3443" stroke-width=".8"');
       o += R(x - 27, y - 40, 54, 16, 'rx="8" fill="' + (on ? '#dff3e8' : '#e4e8ee') + '" stroke="' + (on ? '#4fae80' : '#9aa6b5') + '" stroke-width=".9"') +
         T(x, y - 28, on ? 'OPEN' : 'CLOSED', 'text-anchor="middle" ' + MONO + ' font-size="9" font-weight="700" fill="' + (on ? '#14603f' : '#566578') + '"');
-      o += T(x, y - 48, name, 'text-anchor="middle" ' + SANS + ' font-size="12" font-weight="700" fill="#1d2836"');
+      o += T(x, y - 48, name, 'text-anchor="middle" ' + SANS + ' font-size="12" font-weight="700" fill="var(--txt, #1d2836)"');
       if (on) o += C(x, y, 24, 'fill="none" stroke="#1d8a5a" stroke-width="2" opacity=".9"');
       return o;
     };
@@ -309,7 +312,7 @@
     s += R(g.vacX - 7, qy - 10, 14, 12, 'rx="2" fill="url(#ppSteelD)" stroke="#2a3443" stroke-width=".9"');
     if (h < 0.98) s += R(g.vacX - 8, qy - 20, 16, 11, 'rx="2.5" fill="#c8323c" stroke="#7e1a22" stroke-width=".8" opacity="' + r1(1 - h) + '"');
     var lx = g.vacX - 62;
-    s += T(lx, qy - 30, 'Vacuum QC', 'text-anchor="middle" ' + SANS + ' font-size="12" font-weight="700" fill="#1d2836"');
+    s += T(lx, qy - 30, 'Vacuum QC', 'text-anchor="middle" ' + SANS + ' font-size="12" font-weight="700" fill="var(--txt, #1d2836)"');
     s += R(lx - 27, qy - 22, 54, 16, 'rx="8" fill="' + (h > 0.98 ? '#dff3e8' : '#e4e8ee') + '" stroke="' + (h > 0.98 ? '#4fae80' : '#9aa6b5') + '" stroke-width=".9"') +
       T(lx, qy - 10, h > 0.98 ? 'HOSE ON' : 'CAPPED', 'text-anchor="middle" ' + MONO + ' font-size="9" font-weight="700" fill="' + (h > 0.98 ? '#14603f' : '#566578') + '"');
     return s;
@@ -317,8 +320,8 @@
   function displays(V) {
     var s = '', y = G.box0 + 46;
     var pc = V.fuP < 0.5 ? '#7ff0bf' : V.path === 'vac' ? '#5fd4ff' : '#ffc56b';
-    s += T(160, y, (V.fuP == null ? 14.7 : V.fuP).toFixed(1) + '<tspan font-size="10" fill="#8fb3cc"> psia</tspan>', 'text-anchor="end" ' + MONO + ' font-size="17" font-weight="600" fill="' + pc + '"');
-    s += T(320, y, (V.flowOn ? '0.3' : '0.0') + '<tspan font-size="10" fill="#8fb3cc"> mL/min</tspan>', 'text-anchor="end" ' + MONO + ' font-size="17" font-weight="600" fill="' + (V.flowOn ? '#ffc56b' : '#5fd4ff') + '"');
+    s += T(160, y, (V.fuP == null ? '—' : V.fuP.toFixed(1)) + '<tspan font-size="10" fill="#8fb3cc"> psia</tspan>', 'text-anchor="end" ' + MONO + ' font-size="17" font-weight="600" fill="' + pc + '"');
+    s += T(320, y, (V.flowTxt != null ? V.flowTxt : V.flowOn ? '0.3' : '0.0') + '<tspan font-size="10" fill="#8fb3cc"> mL/min</tspan>', 'text-anchor="end" ' + MONO + ' font-size="17" font-weight="600" fill="' + (V.flowOn || V.flowTxt ? '#ffc56b' : '#5fd4ff') + '"');
     s += T(cx + 48, G.balance.top + 27, (V.bal == null ? 200 : V.bal).toFixed(1) + '<tspan font-size="10" fill="#8fb3cc"> g</tspan>', 'text-anchor="end" ' + MONO + ' font-size="17" font-weight="600" fill="' + ((V.oil || 0) > 0.5 ? '#ffc56b' : '#5fd4ff') + '"');
     return s;
   }
