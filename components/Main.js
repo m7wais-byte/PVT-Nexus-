@@ -1,68 +1,18 @@
 /* Main shell + all process logic */
 (function () {
-/* ===== Flash Process — transfer paths (SVG user units of the flash drawing) =====
-   Every path is written SOURCE -> RECEIVER, so the front, particles and chevrons
-   always travel in the physical flow direction.
-   Phase timing (fraction of the stage): Preparing 0-.07 · Valve Open .07-.15 ·
-   Flowing .15-arrival · Receiving arrival-.90 · Transfer Complete .90-1 (valves close). */
+/* ===== transfer timing helpers (shared, read-only: Differential Liberation / Separator Test use them) =====
+   Phase timing (fraction of a stage): Preparing 0-.07 · Valve Open .07-.15 · Flowing .15-arrival ·
+   Receiving arrival-.90 · Transfer Complete .90-1 (valves close).
+   The Validation Flash Process runs on the shared flash equipment (equipment/flash: FlashSim stage
+   functions + Scene), see runFlashStage / fxView. */
 const FXP = { valve: 0.07, flow: 0.15, end: 0.90, shut: 0.97 };
-const FX = {
-  2: { name: 'EVACUATION', col: '#9cc6ff', bg: '#0f1a2c', recv: 0.38,
-       lanes: [{ kind: 'gas', col: '#9cc6ff', f: [0.15, 0.38], pts: [[855, 219], [855, 528]] }],
-       src: [694, 144, 322, 346], dst: [779, 524, 158, 70] },
-  3: { name: 'HELIUM CHARGE', col: '#6fc7f0', bg: '#0f1a2c', recv: 0.36,
-       lanes: [{ kind: 'gas', col: '#6fc7f0', f: [0.15, 0.36], pts: [[1140, 215], [982, 215]] },
-               { kind: 'gas', col: '#6fc7f0', f: [0.36, 0.52], pts: [[982, 215], [730, 215]] }],
-       src: [1130, 190, 118, 262], dst: [694, 144, 322, 346] },
-  4: { name: 'SAMPLE TRANSFER', col: '#e7b15a', bg: '#1c1a12', recv: 0.287,
-       lanes: [{ kind: 'liq', col: '#e6c04a', f: [0.15, 0.42], pts: [[524, 192], [524, 170], [672, 170], [672, 215], [790, 215], [790, 322]] },   // Pump A -> header -> Port R valve -> sample line
-               { kind: 'gas', col: '#8be8d0', f: [0.35, 0.47], pts: [[790, 215], [1140, 215]] }],
-       src: [490, 150, 68, 190], dst: [694, 144, 322, 346] },
-  5: { name: 'GAS COLLECTION', col: '#8cc4ff', bg: '#0f1a2c', recv: 0.40,
-       lanes: [{ kind: 'gas', col: '#8cc4ff', f: [0.15, 0.40], pts: [[1140, 215], [930, 215], [930, 256]] }],
-       src: [1130, 190, 118, 262], dst: [896, 240, 114, 162] }
-};
-const FX_TXT = {
-  2: ['Preparing evacuation · vacuum valve closed', 'Vacuum valve opening', 'Air evacuating from Flash Unit to Vacuum Pump', 'Air evacuating from Flash Unit to Vacuum Pump', 'Vacuum valve closed · Flash Unit at 0 psia'],
-  3: ['Preparing helium transfer · Gasometer valve closed', 'Gasometer valve opening', 'Helium flowing from Gasometer to Flash Unit', 'Helium flowing from Gasometer to Flash Unit', 'Gasometer valve closed · helium charged'],
-  4: ['Preparing transfer · Pump A outlet valve closed', 'Pump A outlet valve opening', 'Sample fluid transferring from Pump A to Flash Unit', 'Sample fluid transferring from Pump A to Flash Unit', 'Valves closed · 50 cc flashed'],
-  5: ['Preparing collection · balloon valve closed', 'Gasometer and balloon valves opening', 'Gas flowing from Gasometer to Flash Unit manifold', 'Gas flowing from Flash Unit to collection balloon', 'Valves closed · balloon filled']
-};
-const FX_DONE = {
-  2: 'Flash Unit evacuated · 0.0 psia',
-  3: 'Helium charged · 14.7 psia · Gasometer empty',
-  4: '50 cc flashed · 40 g oil · 400 cc gas',
-  5: 'Balloon 250 cc · 14.5 psi · 150 cc left in gasometer'
-};
 const FX_PHASES = ['PREPARING', 'VALVE OPEN', 'FLOWING', 'RECEIVING', 'TRANSFER COMPLETE'];
 const fxR = (a, b, p) => Math.max(0, Math.min(1, (p - a) / (b - a)));
 const fxE = (x) => x * x * (3 - 2 * x);
-const fxPhase = (n, p) => p < FXP.valve ? 0 : p < FXP.flow ? 1 : p < FX[n].recv ? 2 : p < FXP.end ? 3 : 4;
-// valve opening 0..1: opens during Valve Open, closes at Transfer Complete
-const fxValve = (p) => fxE(fxR(FXP.valve, FXP.flow, p)) * (1 - fxE(fxR(FXP.end, FXP.shut, p)));
-const fxPoly = (pts) => {
-  const segs = []; let L = 0;
-  for (let i = 1; i < pts.length; i++) {
-    const [x1, y1] = pts[i - 1], [x2, y2] = pts[i];
-    const len = Math.hypot(x2 - x1, y2 - y1);
-    segs.push({ x1, y1, x2, y2, len, s0: L, ang: Math.atan2(y2 - y1, x2 - x1) * 180 / Math.PI });
-    L += len;
-  }
-  const at = (s) => {
-    s = Math.max(0, Math.min(L, s));
-    for (const g of segs) if (s <= g.s0 + g.len || g === segs[segs.length - 1]) {
-      const q = g.len ? (s - g.s0) / g.len : 0;
-      return { x: g.x1 + (g.x2 - g.x1) * q, y: g.y1 + (g.y2 - g.y1) * q, ang: g.ang };
-    }
-  };
-  return { L, at, d: 'M' + pts.map((pt) => pt[0] + ' ' + pt[1]).join(' L') };
-};
-Object.keys(FX).forEach((k) => FX[k].lanes.forEach((ln) => { ln.g = fxPoly(ln.pts); }));
-const FX_NP = 14;   // particle slots per lane
-// shared, read-only: Flash Unit transfer helpers reused by Differential Liberation (StageDiffLib)
-window.PVT_FX = { FXP, FX_PHASES, fxR, fxE, fxPoly, fxValve, FX_NP };
+// shared, read-only: phase names and easing reused by Differential Liberation / Separator Test (gas-collection timing)
+window.PVT_FX = { FXP, FX_PHASES, fxR, fxE };
 class Component extends DCLogic {
-  state = { bhMode: 'open', bhDepth: 0, bhP: 0, bhT: 78, screen: 'splash', m01View: 'overview', m01Method: null, m01Phase: 'idle', m01Pressure: 0, activePoint: 'bottomhole', phase: 'idle', mechPressure: 0, restorePhase: 'idle', curP: 1500, qcStep: 1, qcPhase: 'idle', xfer: 0, resP: 0, resT: 75, water: 0, qcSettle: 0, qcDk: 0, agitate: false, qcDone: { 1:false, 2:false, 3:false, 4:false }, curT: 80, calcMode: '', test03: 'cce', repSec: 'cover', aboutTab: 'modules', chargeStep: 0, chargeStage: 0, chargeBusy: false, chargeFront: 0, chargeValveOpen: false, drainBack: false, cellVac: 0, cellP: 0, cellStatus: 'Cell Ready', tpVol: 100, pumpA: 0, pumpB: 0, deadVol: 0, initRead: 0, vBottle: false, vCell: false, vPumpA: false, vPumpB: false, bottleOn: false, agCycle: 0, agHalf: 0, agDir: 'idle', agStable: false, agResult: '', baro: [], fStep: 0, fStage: 0, fBusy: false, fuP: 14.7, fHe: 0, fPumpA: 80, fFlashed: 0, fOil: 0, fGas: 0, fVac: false, fMeasured: false, fPath: 'idle', fStatus: 'Awaiting Stable Sample', theme: 'dark', viscState: (window.VISC_MODULE ? window.VISC_MODULE.initialState() : {}) };
+  state = { bhMode: 'open', bhDepth: 0, bhP: 0, bhT: 78, screen: 'splash', m01View: 'overview', m01Method: null, m01Phase: 'idle', m01Pressure: 0, activePoint: 'bottomhole', phase: 'idle', mechPressure: 0, restorePhase: 'idle', curP: 1500, qcStep: 1, qcPhase: 'idle', xfer: 0, resP: 0, resT: 75, water: 0, qcSettle: 0, qcDk: 0, agitate: false, qcDone: { 1:false, 2:false, 3:false, 4:false }, curT: 80, calcMode: '', test03: 'cce', repSec: 'cover', aboutTab: 'modules', chargeStep: 0, chargeStage: 0, chargeBusy: false, chargeFront: 0, chargeValveOpen: false, drainBack: false, cellVac: 0, cellP: 0, cellStatus: 'Cell Ready', tpVol: 100, pumpA: 0, pumpB: 0, deadVol: 0, initRead: 0, vBottle: false, vCell: false, vPumpA: false, vPumpB: false, bottleOn: false, agCycle: 0, agHalf: 0, agDir: 'idle', agStable: false, agResult: '', baro: [], fStep: 0, fStage: 0, fBusy: false, fuP: 14.7, fHe: 0, fHeGas: 3000, fPumpA: 80, fFlashed: 0, fOil: 0, fGaso: 0, fBalloon: 0, fVac: false, fMeasured: false, fPath: 'idle', fPr: 0, fQ: 0, dmP: 0, dmDone: false, fStatus: 'Awaiting Stable Sample', theme: 'dark', viscState: (window.VISC_MODULE ? window.VISC_MODULE.initialState() : {}) };
 
   oilCalcHost = { current: null };
   bhHost = { current: null };   // Bottom Hole page: native BottomHoleSim module mounts here
@@ -370,7 +320,7 @@ class Component extends DCLogic {
       });
     });
   }
-  // ===== Flash Process — 5-stage sequence =====
+  // ===== Flash Process — 7-stage sequence (stage values / timing: FlashSim, equipment/flash/sim.js) =====
   fStop() {
     if (this.fRAF) PCLK.cancelRaf(this.fRAF);
     this.fRAF = null;
@@ -392,60 +342,22 @@ class Component extends DCLogic {
   }
   flashReset() {
     this.fStop();
-    this.setState({ fStep: 0, fStage: 0, fBusy: false, fuP: 14.7, fHe: 0, fHeGas: 3000, fPumpA: 80, fFlashed: 0, fOil: 0, fGaso: 0, fGasoProduced: 0, fBalloon: 0, fVac: false, fMeasured: false, fPath: 'idle', fPr: 0, fClk: 0, fDur: 1, fStatus: 'Awaiting Stable Sample' });
+    this.setState(Object.assign(FlashSim.initial(), { fBusy: false, fStage: 0, fStep: 0 }));
   }
   flashAction() {
     if (this.state.fBusy) return;
     const d = this.state.fStep || 0;
-    if (d >= 6) { this.flashReset(); return; }
+    if (d >= 7) { this.flashReset(); return; }
     this.runFlashStage(d + 1);
   }
   runFlashStage(n) {
-    // Flash learning pace: 5.0 s x PROCESS_SPEED_MULTIPLIER (1.7) = ~8.5 s per active step.
-    // Stage 4 (flashing) keeps its 6.5 s base (~11 s), already longer than the target.
-    const FLASH_STEP_S = 5.0;
+    // Stages 1-6 keep the existing values and pace (5.0 s base, 5.3 s for the flash, x PROCESS_SPEED_MULTIPLIER);
+    // Stage 2 adds the temporary vacuum-pump connect / disconnect around the unchanged evacuation;
+    // Stage 7 (Density & API) uses the collected oil, the recorded oil mass is never changed.
     this.fStop();
     const S = (o) => this.setState(o);
-    const fin = (x) => this.setState(Object.assign({ fBusy: false, fStage: 0, fStep: n }, x || {}));
-    S({ fBusy: true, fStage: n });
-    if (n === 1) {
-      S({ fStatus: 'Verifying Stable Sample', fVer: 0 });
-      // 3 visual checks (pressure hold -> Pump A volume -> single-phase scan) over the same step time
-      this.fTween(FLASH_STEP_S, (p) => S({ fVer: p }), () => fin({ fVer: 1, fStatus: 'Stable · 80 cc @ 5,000 psi' }));
-    } else if (n >= 2 && n <= 5) {
-      // phased transfer: Preparing -> Valve Open -> Flowing -> Receiving -> Transfer Complete
-      const dur = n === 4 ? 5.3 : FLASH_STEP_S;          // x1.7 -> ~9.0 s / ~8.5 s
-      const R = fxR, E = fxE;
-      const path = { 2: 'vac', 3: 'he', 4: 'sample', 5: 'balloon' }[n];
-      const durS = PT(dur * 1000) / 1000;
-      S({ fPath: path, fVac: n === 2, fPr: 0, fClk: 0, fDur: durS, fStatus: FX_TXT[n][0] });
-      const vals = (p) => {
-        if (n === 2) return { fuP: 14.7 * (1 - E(R(0.15, 0.88, p))) };
-        if (n === 3) return { fHeGas: 3000 * (1 - R(0.15, 0.90, p)), fHe: R(0.36, 0.88, p), fuP: 14.7 * E(R(0.36, 0.88, p)) };
-        if (n === 4) {
-          // Pump A displaces at a constant rate once the valve is open; the Flash Unit only
-          // receives after the fluid front reaches its inlet (the line hold-up is purged by the end).
-          const g = 400 * R(0.47, 0.90, p);
-          return { fPumpA: 80 - 50 * R(0.15, 0.90, p), fFlashed: 50 * R(FX[4].recv, 0.90, p),
-                   fOil: 40 * R(0.42, 0.90, p), fGaso: g, fGasoProduced: g };
-        }
-        return { fGaso: 400 - 250 * R(0.15, 0.90, p), fBalloon: 250 * R(0.40, 0.90, p) };
-      };
-      this.fTween(dur, (p) => {
-        S(Object.assign({ fPr: p, fClk: p * durS, fStatus: FX_TXT[n][fxPhase(n, p)] }, vals(p)));
-      }, () => {
-        const done = {
-          2: { fuP: 0, fVac: false, fStatus: 'Vacuumed · 0 psia' },
-          3: { fHe: 1, fHeGas: 0, fuP: 14.7, fStatus: 'Helium Charged · Gasometer Empty' },
-          4: { fPumpA: 30, fFlashed: 50, fOil: 40, fGaso: 400, fGasoProduced: 400, fStatus: 'Flash Complete · 50 cc' },
-          5: { fGaso: 150, fBalloon: 250, fStatus: 'Balloon Filled · 14.5 psi' }
-        }[n];
-        fin(Object.assign({ fPath: 'idle', fPr: 1 }, done));
-      });
-    } else if (n === 6) {
-      S({ fStatus: 'Measuring Oil and Gas' });
-      this.fAt(FLASH_STEP_S * 1000, () => fin({ fMeasured: true, fStatus: 'Oil in Glass · Gas in Balloon' }));
-    }
+    S(FlashSim.stageStart(n));
+    this.fTween(FlashSim.dur(n) / PSM(), (q) => S(FlashSim.stageAt(n, q)), () => S(FlashSim.stageDone(n)));
   }
   stepPh(phase, ms) { this.timers.push(PCLK.setTimeout(() => this.setState({ phase }), PT(ms))); }
   bhLog(text) {
@@ -791,7 +703,7 @@ class Component extends DCLogic {
     if (id === 'transfer') { if (this.state.xfrPhase === 'done') return 'Complete'; return scr === 'mdtXfer' ? 'Active' : 'Not Started'; }
     if (m[id]) { const n = m[id]; if (d[n]) return 'Complete'; return (scr === 'module02' && q === n) ? 'Active' : 'Not Started'; }
     if (id === 'charging') return cs >= 12 ? 'Complete' : ((scr === 'module03' || cs > 0) ? 'Active' : 'Not Started');
-    if (id === 'flash') return fs >= 6 ? 'Complete' : ((scr === 'module03' && cs >= 12) ? 'Active' : 'Not Started');
+    if (id === 'flash') return fs >= 7 ? 'Complete' : ((scr === 'module03' && cs >= 12) ? 'Active' : 'Not Started');
     if (id === 'density') {
       if (this.state.dsVerified) return 'Complete';
       return scr === 'density' ? 'Active' : 'Not Started';
@@ -1012,7 +924,7 @@ class Component extends DCLogic {
     const I = (window.__SG && window.__SG.info) || {};
     const strip = (t) => String(t || '').replace(/^(Stage|Step)\s*\d+\s*·\s*/, '');
     if (which === 'charge') return [1,2,3,4,5,6,7,8,9,10,11,12].map(n => strip(I.CHARGE && I.CHARGE[n] && I.CHARGE[n].t));
-    if (which === 'flash') return [1,2,3,4,5,6].map(n => strip(I.FLASH && I.FLASH[n] && I.FLASH[n].t));
+    if (which === 'flash') return [1,2,3,4,5,6,7].map(n => strip(I.FLASH && I.FLASH[n] && I.FLASH[n].t));
     if (which === 'xfer') return [1,2,3,4,5,6,7].map(n => strip(I.XFER && I.XFER[n] && I.XFER[n].t));
     if (which === 'qc') return [1,2,3,4].map(n => strip(I.qcText ? I.qcText(n, this.valSource()).t : ''));
     if (which === 'm01') {
@@ -1092,8 +1004,18 @@ class Component extends DCLogic {
     if ((s.qcStep || 1) === 3) back.qcPhase = 'idle';
     this.setState(back);
   }
-  /* Flash scene framing in the shared Validation layout (2026-10-21): equipment extent only, no empty margins */
-  flashViewBox() { return '36 84 1280 525'; }
+  /* Validation Flash Process drawing: shared flash equipment (equipment/flash) bound by FlashHost.
+     The view model is the page's own flash state; the frame focuses on the Flash Unit and Gasometer
+     while gas or sample moves (Stages 2-6) so the flask is readable in the main view. */
+  fxView(arg) {
+    const s = this.state;
+    if (arg !== 'flash' || s.screen !== 'module03' || (s.chargeStep || 0) < 12) return null;
+    const n = s.fBusy ? s.fStage : s.fStep, dens = n === 7;
+    const mode = dens ? 'density' : 'system';
+    const focus = !dens && s.fBusy && n >= 2 && n <= 6;
+    const vb = dens ? [-10, 236, 1700, 784] : focus ? [548, 372, 1300, 648] : [-6, 372, 1842, 648];
+    return { mode, key: mode, opt: { labels: true, title: 'Validation Flash Process equipment' }, V: FlashSim.vmOf(s, 0), vb };
+  }
   pcChargeNext() { return Math.min(12, (this.state.chargeStep || 0) + 1); }
   pcInfo(which) {
     const s = this.state, names = this.pcNames(which), N = names.length;
@@ -1110,12 +1032,12 @@ class Component extends DCLogic {
     }
     if (which === 'flash') {
       if (s.screen !== 'module03' || (s.chargeStep || 0) < 12) return null;
-      const busy = !!s.fBusy, d = s.fStep || 0, all = d >= 6;
-      const k = busy ? (s.fStage || 1) - 1 : Math.min(5, d);
+      const busy = !!s.fBusy, d = s.fStep || 0, all = d >= 7;
+      const k = busy ? (s.fStage || 1) - 1 : Math.min(6, d);
       return { N, k, title: names[k], q: s.fStatus || '', unit: 'Stage',
         status: busy ? (pz ? 'paused' : 'running') : all ? 'complete' : 'ready', allDone: all,
-        frac: busy ? (s.fPr != null && s.fBusy && (s.fStage >= 2 && s.fStage <= 5) ? s.fPr : null) : 0,
-        canPrev: k > 0, canNext: k < 5 && !all, canRestart: busy || all,
+        frac: busy ? (s.fQ != null ? s.fQ : null) : 0,
+        canPrev: k > 0, canNext: k < 6 && !all, canRestart: busy || all,
         again: 'Run Flash Again', reset: 'Reset Flash', resetDisabled: !busy && !d };
     }
     if (which === 'qc') {
@@ -1192,14 +1114,14 @@ class Component extends DCLogic {
     }
     if (which === 'flash') {
       const busy = !!s.fBusy, d = s.fStep || 0;
-      const k = busy ? (s.fStage || 1) - 1 : Math.min(5, d);
+      const k = busy ? (s.fStage || 1) - 1 : Math.min(6, d);
       const upto = (m) => { const l = []; for (let i = 1; i <= m; i++) l.push(i); return l; };
       if (a === 'run') { if (!busy) { PCLK.resume(); this.flashAction(); } }
       else if (a === 'pause') { if (busy) PCLK.pause(); }
       else if (a === 'resume') PCLK.resume();
       else if (a === 'restart') this.pcReplay('flash', upto(k));
       else if (a === 'prev') this.pcReplay('flash', upto(Math.max(0, k - 1)));
-      else if (a === 'next') { PCLK.resume(); if (busy) PCLK.flush(); else if (d < 6) { this.runFlashStage(d + 1); PCLK.flush(); } }
+      else if (a === 'next') { PCLK.resume(); if (busy) PCLK.flush(); else if (d < 7) { this.runFlashStage(d + 1); PCLK.flush(); } }
       else if (a === 'again') { this.pcReplay('flash', []); this.flashAction(); }
       else if (a === 'reset') { PCLK.clearAll(); PCLK.resume(); this.flashReset(); }
       return;
@@ -1816,254 +1738,51 @@ const hi_d = (on) => on ? 'opacity:1; transition:opacity .5s ease;' : 'opacity:.
     const nextBtnColor = restored ? '#06241a' : 'var(--mut2)';
     const nextBtnCursor = restored ? 'pointer' : 'default';
 
-    // ===== Flash Process — derived values =====
+    // ===== Flash Process — derived values (drawing: shared scene via fxView) =====
     const fStep = this.state.fStep || 0;
     const fStage = this.state.fStage || 0;
     const fBusy = !!this.state.fBusy;
-    const fAct = fBusy ? fStage : Math.min(6, fStep + 1);
-    const fuP = this.state.fuP === undefined ? 14.7 : this.state.fuP;
-    const fPumpA = this.state.fPumpA === undefined ? 80 : this.state.fPumpA;
-    const fFlashed = this.state.fFlashed || 0;
-    const fOil = this.state.fOil || 0;
-    const fGaso = this.state.fGaso || 0;
-    const fGasoProduced = this.state.fGasoProduced || 0;
-    const fBalloon = this.state.fBalloon || 0;
-    const fHe = this.state.fHe || 0;
-    const fPath = this.state.fPath || 'idle';
-    const fMeasured = !!this.state.fMeasured;
     const fStatusText = this.state.fStatus || 'Awaiting Stable Sample';
-    const _pc = (n) => Math.max(0, Math.min(100, n));
-
-    // Pump A column — drains through the top port (Module 03 cylinder box)
-    const fPumpFillH = Math.max(0, Math.min(1, fPumpA / 100)) * 176;
-    const fPumpFillStyle = { opacity: fPumpFillH > 0.5 ? 1 : 0 };
-    const fPumpPistonY = (227 + fPumpFillH - 4.5).toFixed(1);
-    const fPistonTrans = { transition: 'y .12s linear' };
-    const fPumpAText = Math.round(fPumpA) + ' cc';
-    const fPumpABox = Math.round(fPumpA).toFixed(0);
-    const fPumpAColor = '#e7b15a';   // dark control-box display: fixed colour, readable in both themes
-    const fPumpALbl = 'var(--amb)';
-
-    // balloon — inflates downward from the neck, filled only from the gasometer balloon-collection step
-    const _bry = 13 + Math.max(0, Math.min(1, fBalloon / 250)) * 44;
-    const fBalloonRy = _bry.toFixed(1);
-    const fBalloonRx = (_bry * 0.95).toFixed(1);
-    const fBalloonCy = (239 + _bry).toFixed(1);
-    const fBalloonGlintX = (930 - _bry * 0.42).toFixed(1);
-    const fBalloonGlintY = (239 + _bry * 0.62).toFixed(1);
-    const fBalloonTrans = { transition: 'rx .15s linear, ry .15s linear, cx .15s linear, cy .15s linear' };
-    // the balloon is read as pressure: empty at 0, fully inflated at 14.5 psi
-    const fBalloonPsi = (14.5 * Math.max(0, Math.min(1, fBalloon / 250))).toFixed(1);
-    const fGasText = fBalloonPsi + ' psi';
-    const fGasColor = fBalloon > 1 ? '#8cc4ff' : '#8a9bb3';   // on the dark flash-unit panel
-    const fBalloonText = fGasText;
-
-    // glass — oil settles in the base
-    const _oh = Math.max(0, Math.min(1, fOil / 40)) * 30;
-    const fOilH = _oh.toFixed(1);
-    const fOilY = (438 - _oh).toFixed(1);
-    const fOilTrans = { transition: 'y .12s linear, height .12s linear' };
-    const fGlassText = (200 + fOil).toFixed(0) + ' g';
-    const fGlassColor = fOil > 1 ? '#f0c56a' : '#9fb0c8';   // balance display (dark)
-
-    // glass — oil droplets during flashing (visual only; driven by the same progress as fOil / balance)
-    // 16 drops over the flash step, 2.5 g each: drop k merges into the layer exactly when fOil reaches 2.5·k g.
-    const _dOn = fBusy && fStage === 4;
-    const _dP = Math.max(0, Math.min(1, fOil / 40));
-    const _dN = 16, _dI = 1 / _dN;
-    const _dGrow = 0.85 * _dI, _dFall = 0.85 * _dI, _dMerge = 0.75 * _dI;
-    const _dTip = 325, _dSurf = 438 - _oh;
-    const _dHide = { opacity: 0 };
-    const _dSlot = (j) => {
-      const out = { cx: 790, cy: _dTip, rx: 0, ry: 0, st: _dHide, rcy: _dSurf, rrx: 0, rry: 0, rst: _dHide };
-      if (!_dOn) return out;
-      for (let k = j + 1; k <= _dN; k += 3) {
-        const land = k * _dI, fallStart = land - _dFall, growStart = fallStart - _dGrow, end = land + _dMerge;
-        if (_dP < growStart || _dP > end) continue;
-        if (_dP < fallStart) {                       // hanging at the inlet tip, growing
-          const q = Math.max(0, (_dP - growStart) / _dGrow);
-          const r = 1.2 + 2.8 * q;
-          out.rx = r; out.ry = r * (1 + 0.3 * q); out.cy = _dTip + out.ry * 0.9;
-        } else if (_dP < land) {                     // free fall under gravity
-          const q = (_dP - fallStart) / _dFall;
-          const y0 = _dTip + 4, y1 = _dSurf - 4;
-          out.rx = 3.3; out.ry = 4.2; out.cy = y0 + (y1 - y0) * q * q;
-        } else {                                     // merging into the oil layer + ripple
-          const q = (_dP - land) / _dMerge;
-          const m = Math.max(0, 1 - q / 0.45);
-          out.rx = 3.3 * m; out.ry = 3.9 * m; out.cy = _dSurf - 1.5 + 2 * q;
-          out.rrx = 3.5 + 17 * q; out.rry = 0.8 + 1.6 * q; out.rcy = _dSurf + 0.5;
-          out.rst = { opacity: (0.75 * (1 - q)).toFixed(3) };
-        }
-        out.st = { opacity: out.rx > 0.05 ? 1 : 0 };
-        break;
-      }
-      ['cy', 'rx', 'ry', 'rcy', 'rrx', 'rry'].forEach((key) => { out[key] = (+out[key]).toFixed(2); });
-      return out;
-    };
-    const fDrop0 = _dSlot(0), fDrop1 = _dSlot(1), fDrop2 = _dSlot(2);
-
-    // single gasometer chamber, 3,000 cc capacity — holds helium first, then reuses the same tank for flashed gas
-    const _usingGas = fGaso > 0.5;
-    const fHeGas = this.state.fHeGas === undefined ? 3000 : this.state.fHeGas;
-    const _heFrac = Math.max(0, Math.min(1, fHeGas / 3000));
-    const _gasoFrac = Math.max(0, Math.min(1, fGaso / 3000));
-    const _chamberFrac = _usingGas ? _gasoFrac : _heFrac;
-    const _heH = 242 * _chamberFrac;
-    const fHeH = _heH.toFixed(1);
-    const fHeY = '200';   // gas collects at the TOP of the gasometer and grows downward
-    const fHeTrans = { transition: 'y .15s linear, height .15s linear' };
-    const fChamberFill = _usingGas ? 'url(#f-gas2)' : 'url(#f-he)';
-    // internal piston: rides directly under the gas column, so its travel IS the chamber reading
-    const _gpY = 200 + Math.min(_heH, 229);
-    const fGasoPistonY = _gpY.toFixed(1);
-    const fGasoRodY = (_gpY + 13).toFixed(1);
-    const fGasoRodH = Math.max(0, 442 - (_gpY + 13)).toFixed(1);
-    const fGasoPistonTrans = { transition: 'y .15s linear, height .15s linear' };
-    const fChamberBoxText = (_usingGas ? Math.round(fGaso) : Math.round(fHeGas)) + ' cc';
-    const fChamberBoxColor = _usingGas ? (fGaso > 1 ? '#46d39a' : '#6f819b') : (_heFrac > 0.02 ? '#a8dcf6' : '#6f819b');
-    const fChamberLabel = _usingGas ? 'GAS' : 'HELIUM';
-    const fChamberLabelColor = _usingGas ? '#46d39a' : '#8cc4ff';
-    const _hAng = (-140 + 100 * _chamberFrac) * Math.PI / 180;
-    const fChamberNeedleX = (1272 + 10 * Math.cos(_hAng)).toFixed(1);
-    const fChamberNeedleY = (232 + 10 * Math.sin(_hAng)).toFixed(1);
-    const fChamberNeedleColor = _usingGas ? 'var(--accg)' : 'var(--hdb3)';
-    const fChamberNeedleTrans = { transition: 'x2 .15s linear, y2 .15s linear' };
-
-    // ===== transfer visualisation — one active path, drawn source -> receiver =====
-    const _fxOff = { opacity: 0, animation: 'none' };
-    const fSampleFlow = _fxOff, fSampleArrow = _fxOff, fHeFlow = _fxOff, fHeArrow = _fxOff;
-    const fVacFlow = _fxOff, fVacArrow = _fxOff, fOilFlow = _fxOff;
-    const fGasFlowStyle = _fxOff, fGasArrowStyle = _fxOff, fBalloonFlowStyle = _fxOff, fBalloonArrowStyle = _fxOff;
-    const fPr = this.state.fPr || 0, fClk = this.state.fClk || 0, fDur = this.state.fDur || 1;
-    const fXActive = fBusy && fStage >= 2 && fStage <= 5;
-    const fXCfg = fXActive ? FX[fStage] : null;
-    const fXPh = fXActive ? fxPhase(fStage, fPr) : -1;
-    const _fxFade = fXActive ? (1 - fxR(FXP.end, FXP.shut, fPr)) : 0;          // flow stops as valves close
-    const _fxClkEnd = FXP.end * fDur;
-    const _fxHide = (() => {
-      const o = { d: 'M0 0', lit: '0 9999', col: 'none', glowW: 0, coreW: 0, glowSt: { opacity: 0 }, coreSt: { opacity: 0 },
-        h: { cx: 0, cy: 0, r: 0, st: { opacity: 0 } }, pr: 0, pc: 'none' };
-      for (let i = 0; i < FX_NP; i++) o['p' + i] = { cx: 0, cy: 0, st: { opacity: 0 } };
-      for (let i = 0; i < 3; i++) o['a' + i] = { tr: 'translate(0 0)', st: { opacity: 0 } };
-      return o;
-    })();
-    const _fxLane = (ln) => {
-      if (!ln) return _fxHide;
-      const g = ln.g, L = g.L, liq = ln.kind === 'liq';
-      const front = fxR(ln.f[0], ln.f[1], fPr);
-      if (front <= 0) return _fxHide;
-      const lit = front * L;
-      const v = Math.max(55, L / ((ln.f[1] - ln.f[0]) * fDur));             // particles travel with the fluid
-      const tf = Math.max(0, Math.min(fClk, _fxClkEnd) - ln.f[0] * fDur);
-      const gap = Math.max(20, L / 12), period = FX_NP * gap;
-      const o = { d: g.d, lit: lit.toFixed(1) + ' 9999', col: ln.col,
-        glowW: liq ? 8 : 7, coreW: liq ? 3.4 : 1.5,
-        glowSt: { opacity: ((liq ? 0.30 : 0.34) * _fxFade).toFixed(3) },
-        coreSt: { opacity: ((liq ? 1 : 0.6) * _fxFade).toFixed(3) },
-        pr: liq ? 1.15 : 2.4, pc: liq ? '#fff3c0' : ln.col };
-      for (let i = 0; i < FX_NP; i++) {
-        const s = (v * tf + i * gap) % period;
-        const on = s <= lit - 4 && s <= L - 2;
-        const q = on ? g.at(s) : { x: 0, y: 0 };
-        o['p' + i] = { cx: q.x.toFixed(1), cy: q.y.toFixed(1), st: { opacity: on ? ((liq ? 0.7 : 0.95) * _fxFade).toFixed(3) : 0 } };
-      }
-      [0.22, 0.5, 0.78].forEach((fr, i) => {
-        const s = fr * L, q = g.at(s);
-        o['a' + i] = { tr: 'translate(' + q.x.toFixed(1) + ' ' + q.y.toFixed(1) + ') rotate(' + q.ang.toFixed(0) + ')',
-          st: { opacity: lit >= s + 6 ? _fxFade.toFixed(3) : 0 } };
-      });
-      const hq = g.at(lit);
-      const pulse = 0.5 + 0.5 * Math.sin(fClk * 9);
-      o.h = { cx: hq.x.toFixed(1), cy: hq.y.toFixed(1), r: ((liq ? 3.3 : 3.6) + pulse * 1.2).toFixed(2),
-        st: { opacity: front < 1 ? (0.95 * _fxFade).toFixed(3) : 0 } };
-      return o;
-    };
-    const fLaneA = _fxLane(fXCfg && fXCfg.lanes[0]);
-    const fLaneB = _fxLane(fXCfg && fXCfg.lanes[1]);
-    // source / receiver highlight frames
-    const _fxRing = (box, on, col) => box && on > 0
-      ? { x: box[0], y: box[1], w: box[2], h: box[3], c: col, st: { opacity: (0.9 * on).toFixed(3) } }
-      : { x: 0, y: 0, w: 0, h: 0, c: 'none', st: { opacity: 0 } };
-    const _fxSrcOn = fXActive ? fxR(0, 0.04, fPr) * (1 - fxR(0.45, 0.55, fPr)) : 0;
-    const _fxDstOn = fXActive ? fxR(fXCfg.recv - 0.02, fXCfg.recv + 0.03, fPr) * (1 - fxR(FXP.end, 1, fPr)) : 0;
-    const fSrcRing = _fxRing(fXCfg && fXCfg.src, _fxSrcOn, fXCfg ? fXCfg.col : 'none');
-    const fDstRing = _fxRing(fXCfg && fXCfg.dst, _fxDstOn, '#46d39a');
-    // helium arrival: dead space inside the unit tints cyan
-    const fHeTint = { opacity: (fXActive && fStage === 3) ? (0.16 * fxR(0.36, 0.55, fPr) * (1 - fxR(FXP.end, 1, fPr))).toFixed(3) : 0 };
-    // valves: handle perpendicular to the pipe = closed, parallel = open (turns green)
-    const _fxVo = (stages) => fXActive && stages.indexOf(fStage) >= 0 ? fxValve(fPr) : 0;
-    const _fxVring = (stages) => ({ opacity: (fXActive && stages.indexOf(fStage) >= 0) ? (fxR(0.03, 0.07, fPr) * (1 - fxR(0.2, 0.28, fPr))).toFixed(3) : 0 });
-    const _fxValve = (stages, cx, cy) => {
-      const a = _fxVo(stages);
-      return { tr: 'rotate(' + (90 * a).toFixed(1) + ' ' + cx + ' ' + cy + ')', c: a > 0.5 ? '#46d39a' : '#8fa3c2', ring: _fxVring(stages) };
-    };
-    const fVS = _fxValve([4], 656, 170);          // Pump A outlet valve (sample line)
-    const fVG = _fxValve([3, 4, 5], 1078, 215);   // gasometer valve (helium / gas line)
-    const fVOil = _fxValve([4], 806, 239);        // flask valve
-    const fVBal = _fxValve([5], 949, 229);        // balloon valve
-    const _fxVv = _fxVo([2]);
-    const fVacWheel = { transform: 'rotate(' + (90 * _fxVv).toFixed(1) + 'deg)', transformOrigin: '855px 512px' };
-    const fVacWheelCol = _fxVv > 0.5 ? '#46d39a' : '#8fa3c2';
-    const fVacLed = _fxVv > 0.5 ? '#46d39a' : '#3a4a63';
-    const fVacLedStyle = { animation: _fxVv > 0.5 ? 'blink 1.1s ease-in-out infinite' : 'none' };
-    // stage panel: stage name + phase + live message, 5-segment phase bar
-    const fXDoneN = (!fBusy && fStep >= 2 && fStep <= 5) ? fStep : 0;
-    const fXOn = fXActive || fXDoneN > 0;
-    const _fxN = fXActive ? fStage : fXDoneN;
-    const _fxPh = fXActive ? fXPh : 4;
-    const fX = fXOn ? {
-      title: FX[_fxN].name + ' · ' + FX_PHASES[_fxPh],
-      detail: fXActive ? FX_TXT[_fxN][_fxPh] : FX_DONE[_fxN],
-      bg: _fxPh === 4 ? '#0e2019' : FX[_fxN].bg,
-      bd: _fxPh === 4 ? '#46d39a' : FX[_fxN].col,
-      tc: _fxPh === 4 ? '#46d39a' : FX[_fxN].col,
-      seg: [0, 1, 2, 3, 4].map((i) => 'fill:' + (i < _fxPh || _fxPh === 4 ? '#46d39a' : i === _fxPh ? FX[_fxN].col : 'rgba(150,175,210,.22)') + ';')
-    } : { title: '', detail: '', bg: 'none', bd: 'none', tc: 'none', seg: ['', '', '', '', ''] };
-    const fXSeg0 = fX.seg[0], fXSeg1 = fX.seg[1], fXSeg2 = fX.seg[2], fXSeg3 = fX.seg[3], fXSeg4 = fX.seg[4];
-
-    // readouts
-    const fuPText = fuP.toFixed(1) + ' psia';
-    const fuPBox = fuP.toFixed(1);
-    const fuPColor = fuP < 0.5 ? '#46d39a' : fPath === 'vac' ? '#8cc4ff' : '#e7b15a';
-    const fuPStroke = fuP < 0.5 ? '#3a9d63' : '#3c4d68';
-    const fFlashedText = Math.round(fFlashed) + ' cc';
-    const fFlashedBox = Math.round(fFlashed).toFixed(0);
-    const fRateText = (fXActive && fStage === 4 && fPr >= FXP.flow && fPr < FXP.end) ? '0.3 mL/min' : '0.0 mL/min';
-
-    // grouped gauge cards
-    const _row = (k, v, c, pct, bc) => ({ k: k, v: v, c: c,
-      barStyle: 'width:' + _pc(pct).toFixed(1) + '%; height:100%; border-radius:3px; background:' + (bc || c) + '; transition:width .15s linear;' });
+    const fV = FlashSim.vmOf(this.state, 0);
+    const fRes = fV.dm.res || {};
+    const _ex = (fStep >= 6 || (fBusy && fStage === 7));
     const fReadouts = [
       { label: 'Cell Pressure', value: '5,000 psi', color: 'var(--accg)', sub: 'PVT cell' },
-      { label: 'Pump A', value: fPumpAText, color: fPumpALbl, sub: 'sample side' },
-      { label: 'Flash Unit', value: fuPText, color: fuP < 0.5 ? 'var(--accg)' : fPath === 'vac' ? 'var(--accb3)' : 'var(--amb)', sub: 'unit pressure' },
-      { label: 'Flashed Volume', value: fFlashedText, color: fFlashed > 0.5 ? 'var(--amb)' : 'var(--mut)', sub: 'from Pump A' },
-      { label: 'Flow Rate', value: fRateText, color: 'var(--txt2)', sub: 'controlled' },
-      { label: 'Glass Mass', value: fGlassText, color: 'var(--accb3)', sub: 'tare + oil' },
-      { label: 'Oil Collected', value: Math.round(fOil) + ' g', color: fMeasured ? 'var(--accg)' : 'var(--txt2)', sub: 'in glass' },
-      { label: 'Gasometer Reading', value: Math.round(fGaso) + ' cc', color: fGaso > 1 ? '#0e8f7a' : 'var(--dis)', sub: 'of 3,000 cc' },
-      { label: 'Balloon Pressure', value: fBalloonText, color: fBalloon > 0 ? 'var(--accg)' : 'var(--txt2)', sub: 'gas collected' }
-    ];
-    const fGroups = [
-      { title: 'Cell Conditions', tint: 'width:7px;height:7px;border-radius:50%;flex:0 0 auto;background:var(--accg);', rows: [
-        _row('Cell Pressure', '5,000 psi', 'var(--accg)', 100),
-        _row('Pump A', fPumpAText, fPumpALbl, fPumpA / 100 * 100, '#e0a52c'),
-        ] },
-      { title: 'Flash Conditions', tint: 'width:7px;height:7px;border-radius:50%;flex:0 0 auto;background:var(--accb3);', rows: [
-        _row('Flash Unit Pressure', fuPText, fuP < 0.5 ? 'var(--accg)' : fPath === 'vac' ? 'var(--accb3)' : 'var(--amb)', fuP / 14.7 * 100, 'var(--accb3)'),
-        _row('Flashed Volume', fFlashedText, fFlashed > 0.5 ? 'var(--amb)' : 'var(--mut)', fFlashed / 50 * 100, '#e0a52c'),
-        _row('Flow Rate', fRateText, 'var(--txt2)', (fXActive && fStage === 4 && fPr >= FXP.flow && fPr < FXP.end) ? 100 : 0, 'var(--accb3)') ] },
-      { title: 'Collected Products', tint: 'width:7px;height:7px;border-radius:50%;flex:0 0 auto;background:var(--amb);', rows: [
-        _row('Glass Mass', fGlassText, 'var(--accb3)', fOil / 40 * 100, 'var(--accb3)'),
-        _row('Oil Collected', Math.round(fOil) + ' g', fMeasured ? 'var(--accg)' : 'var(--txt2)', fOil / 40 * 100, '#c9a72e') ] },
-      { title: 'Gasometer & Balloon', tint: 'width:7px;height:7px;border-radius:50%;flex:0 0 auto;background:#0e8f7a;', rows: [
-        _row('Gasometer Reading', Math.round(fGaso) + ' cc', fGaso > 1 ? '#0e8f7a' : 'var(--dis)', fGaso / 3000 * 100, '#0e8f7a'),
-        _row('Balloon Pressure', fBalloonText, fBalloon > 0 ? 'var(--accg)' : 'var(--txt2)', fBalloon / 250 * 100, 'var(--accb3)') ] }
-    ];
+      { label: 'Pump A', value: fV.pumpA.toFixed(1) + ' cc', color: 'var(--amb)', sub: 'sample side' },
+      { label: 'Flash Unit', value: fV.fuP.toFixed(1) + ' psia', color: fV.fuP < 0.5 ? 'var(--accg)' : fV.path === 'vac' ? 'var(--accb3)' : 'var(--amb)', sub: fBusy && fStage === 2 ? 'evacuated section' : 'unit pressure' },
+      { label: 'Flashed Volume', value: Math.round(fV.flashed) + ' cc', color: fV.flashed > 0.5 ? 'var(--amb)' : 'var(--mut)', sub: 'from Pump A' },
+      { label: 'Flow Rate', value: (fV.flowOn ? '0.3' : '0.0') + ' mL/min', color: 'var(--txt2)', sub: 'controlled' },
+      { label: 'Glass Mass', value: fV.bal.toFixed(1) + ' g', color: 'var(--accb3)', sub: fV.bal < 200 + (this.state.fOil || 0) - 0.05 ? 'tare 200 g + oil · after density aliquot' : 'tare 200 g + oil' },
+      { label: 'Oil Collected', value: Math.round(this.state.fOil || 0) + ' g', color: this.state.fMeasured ? 'var(--accg)' : 'var(--txt2)', sub: this.state.fMeasured ? 'recorded' : 'in flask' },
+      { label: 'Gasometer', value: Math.round(fV.gasoVol).toLocaleString('en-US') + ' cc', color: fV.gasoMode === 'he' ? 'var(--accb3)' : fV.gaso > 1 ? '#0e8f7a' : 'var(--dis)', sub: fV.gasoMode === 'he' && fV.gasoVol > 0.5 ? 'helium · of 3,000 cc' : 'flash gas · of 3,000 cc' },
+      { label: '2,000 | 1,000 cc', value: Math.round(fV.gaso2k).toLocaleString('en-US') + ' | ' + Math.round(fV.gaso1k).toLocaleString('en-US'), color: 'var(--txt2)', sub: 'section readings, cc' },
+      { label: 'Balloon', value: (14.5 * Math.min(1, fV.balloon / 250)).toFixed(1) + ' psi', color: fV.balloon > 0 ? 'var(--accg)' : 'var(--txt2)', sub: 'gas sample' }
+    ].concat(_ex ? [
+      { label: 'Density · 25 °C', value: fRes.rho ? fRes.rho.toFixed(5) : '—', color: 'var(--amb)', sub: 'g/cm³ · example' },
+      { label: 'Density · 60 °F', value: fRes.rho60 ? fRes.rho60.toFixed(5) : '—', color: 'var(--amb)', sub: 'g/cm³ · example' },
+      { label: 'SG 60/60 °F', value: fRes.sg ? fRes.sg.toFixed(4) : '—', color: 'var(--txt2)', sub: 'example' },
+      { label: 'API Gravity', value: fRes.api ? fRes.api.toFixed(1) + ' °API' : '—', color: 'var(--accg)', sub: 'example' }
+    ] : []);
+    // route check: live valve states and temporary connections
+    const _op = (x) => x > 0.5, _vv = fV.valve, _busy = (k) => fBusy && fStage === k, _flowAt = (k, a) => _busy(k) && (this.state.fPr || 0) >= a && (this.state.fPr || 0) < 0.9;
+    const _st = (active, open, done) => active ? ['ACTIVE', 'on'] : open ? ['OPEN', 'on'] : done ? ['COMPLETE', 'done'] : ['CLOSED', 'off'];
+    const _vac = _busy(2) ? (fV.vacHose > 0.98 ? (_op(_vv.vac) ? ['CONNECTED · ACTIVE', 'on'] : ['CONNECTED · CLOSED', 'on']) : fV.vacPump > 0.02 ? ['CONNECTING', 'on'] : ['NOT INSTALLED', 'off'])
+      : fStep >= 2 ? ['DISCONNECTED', 'done'] : ['NOT INSTALLED', 'off'];
+    const fRoutes = [
+      ['Pump A → Flash Unit inlet', _st(_flowAt(4, 0.15) && (this.state.fPr || 0) < 0.36, _op(_vv.pumpA), fStep >= 4)],
+      ['Manifold → flask (shared connection, down)', _st(_flowAt(4, 0.287), _busy(4) && _op(_vv.inlet), fStep >= 4)],
+      ['Flask headspace → shared connection → Gasometer', _st(_flowAt(4, 0.40), _busy(4) && _op(_vv.in2k), fStep >= 4)],
+      ['Gasometer helium → flask', _st(_flowAt(3, 0.15), _busy(3) && _op(_vv.gaso), fStep >= 3)],
+      ['Gasometer → balloon', _st(_flowAt(5, 0.15), _busy(5) && _op(_vv.vessel), fStep >= 5)],
+      ['Port R ⇢ line ⇢ flask ⇢ Gasometer inlet valve → temporary pump', _vac],
+      ['Boundaries: Port R · Gasometer inlet valve · Balloon Valve', _busy(2) ? ['ALL CLOSED', 'on'] : ['—', 'off']],
+      ['Collected oil → Density Meter syringe', _busy(7) && (this.state.dmP || 0) < 0.54 ? ['ACTIVE', 'on'] : (fStep >= 7 || (this.state.dmP || 0) >= 0.54) ? ['COMPLETE', 'done'] : ['NOT STARTED', 'off']],
+      ['Direct sample → Gasometer', ['NO SUCH PATH', 'off']]
+    ].map((r) => ({ name: r[0], state: r[1][0], cls: r[1][1] }));
 
     // horizontal step tracker
-    const fStepLabels = ['Stable Sample', 'Vacuum Unit', 'Fill Helium', 'Flash Sample', 'Collect Gas', 'Collect Oil'];
+    const fAct = fBusy ? fStage : Math.min(7, fStep + 1);
+    const fStepLabels = FlashSim.NAMES;
     const fSteps = fStepLabels.map((label, i) => {
       const n = i + 1, done = n <= fStep, active = n === fAct && !done;
       const c = done ? 'var(--accg)' : active ? 'var(--blue)' : 'var(--dis)';
@@ -2072,49 +1791,13 @@ const hi_d = (on) => on ? 'opacity:1; transition:opacity .5s ease;' : 'opacity:.
         chip: 'flex:0 0 auto; width:22px; height:22px; border-radius:50%; display:flex; align-items:center; justify-content:center;' +
           "font-family:'IBM Plex Mono',ui-monospace,monospace; font-size:10px; font-weight:700; background:" + bg +
           '; border:1.5px solid ' + c + '; color:' + c + ';' + ((active && fBusy) ? ' animation:pvtpulse 1.2s ease-in-out infinite;' : ''),
-        connector: 'flex:1 1 12px; min-width:10px; height:1.5px; border-radius:1px; background:' + (n === 6 ? 'transparent' : (done ? 'var(--accg)' : 'var(--track)')) + ';' };
+        connector: 'flex:1 1 12px; min-width:10px; height:1.5px; border-radius:1px; background:' + (n === 7 ? 'transparent' : (done ? 'var(--accg)' : 'var(--track)')) + ';' };
     });
-
-    // actions
-    const _fNames = ['Confirm Stable Sample', 'Vacuum Flash Unit', 'Fill with Helium', 'Start Flash', 'Collect Gas into Balloon', 'Collect Oil and Gas'];
-    const fDone = fStep >= 6;
-    const fBtnText = fBusy ? 'Running\u2026' : fDone ? 'Reset Flash Process' : _fNames[fAct - 1];
-    const fBtnBg = (fBusy || fDone) ? 'rgba(150,175,210,.07)' : 'linear-gradient(180deg,#3f8ae0,#2f6fd0)';
-    const fBtnBorder = fBusy ? '#3f6fae' : fDone ? 'var(--line2)' : '#5a9bea';
-    const fBtnColor = fBusy ? 'var(--mut)' : fDone ? 'var(--mut)' : '#fff';
-    const fBtnCursor = fBusy ? 'default' : 'pointer';
-    const gasBtnBg = fDone ? 'rgba(70,211,154,.10)' : 'rgba(150,175,210,.04)';
-    const gasBtnBorder = fDone ? 'rgba(70,211,154,.4)' : 'var(--line2)';
-    const gasBtnColor = fDone ? 'var(--accg)' : 'var(--dis)';
-    const gasBtnCursor = fDone ? 'not-allowed' : 'default';
-    const _fTone = fMeasured ? 'good' : fBusy ? 'busy' : fStep >= 1 ? 'good' : 'idle';
+    const _fTone = this.state.fMeasured ? 'good' : fBusy ? 'busy' : fStep >= 1 ? 'good' : 'idle';
     const fPillColor = _fTone === 'good' ? 'var(--accg)' : _fTone === 'busy' ? 'var(--blue)' : 'var(--mut)';
     const fPillBg = _fTone === 'good' ? 'rgba(70,211,154,.10)' : _fTone === 'busy' ? 'rgba(80,150,235,.12)' : 'rgba(150,175,210,.06)';
     const fPillBorder = _fTone === 'good' ? 'rgba(70,211,154,.35)' : _fTone === 'busy' ? 'rgba(80,150,235,.35)' : 'var(--line2)';
     const fPillDot = 'width:7px;height:7px;border-radius:50%;flex:0 0 auto;background:' + fPillColor + ';' + (fBusy ? 'animation:pvtpulse 1.2s ease-in-out infinite;' : '');
-    const fVacConnOn = fBusy && fStage === 2;
-    const fNoteVac = fBusy && fStage === 2;
-    const fNoteHe = fBusy && fStage === 3;
-    const fNoteFlash = fBusy && fStage === 4;
-    const fNoteBalloonRun = fBusy && fStage === 5;
-    const fNoteBalloonDone = fStep === 5 && !(fBusy && fStage === 6);
-    const fNoteCollectOG = fMeasured;
-    // Step 1 — verify stable sample: three sequential visual checks
-    const fVerOn = fBusy && fStage === 1;
-    const fVerP = Math.max(0, Math.min(1, this.state.fVer || 0));
-    const fVerIdx = fVerP < 1 / 3 ? 0 : (fVerP < 2 / 3 ? 1 : 2);
-    const _fvS = (i) => fVerIdx === i
-      ? { opacity: 1, animation: 'glowpulse 1.4s ease-in-out infinite', transition: 'opacity .4s ease' }
-      : { opacity: fVerIdx > i ? 0.6 : 0, animation: 'none', transition: 'opacity .4s ease' };
-    const fVerS0 = _fvS(0), fVerS1 = _fvS(1);
-    const fVerCol0 = fVerIdx > 0 ? '#46d39a' : '#46e0ff';
-    const fVerCol1 = fVerIdx > 1 ? '#46d39a' : '#46e0ff';
-    const _fvQ = Math.max(0, Math.min(1, (fVerP - 2 / 3) * 3));
-    const fVerScanY = (227 + _fvQ * Math.max(0, fPumpFillH - 4)).toFixed(1);
-    const fVerBandY = (227 + _fvQ * Math.max(0, fPumpFillH - 4) - 16).toFixed(1);
-    const fVerScanStyle = { opacity: fVerIdx === 2 ? 1 : 0, transition: 'opacity .3s ease' };
-    const fVerText = ['Check 1 of 3 · pressure holding at 5,000 psi', 'Check 2 of 3 · Pump A volume steady at 80 cc', 'Check 3 of 3 · single phase, no free gas'][fVerIdx];
-    const fVerBarW = (286 * fVerP).toFixed(1);
 
     // ===== Charge to PVT Cell — 12-stage sequence =====
     const cStep = this.state.chargeStep || 0;              // completed stages
@@ -2915,25 +2598,7 @@ const hi_d = (on) => on ? 'opacity:1; transition:opacity .5s ease;' : 'opacity:.
       dsMarkVerified: () => this.setState({ dsVerified: true }),
       pvBtnBgAct: 'linear-gradient(180deg,#46d39a,#2f9d72)', pvBtnBorderAct: '#2f9d72', pvBtnColorAct: '#06231a',
       pvBackToFlash: () => this.setState({ screen: 'module03' }),
-      fGroups, fReadouts, fSteps, fStatusText, fPillBg, fPillBorder, fPillColor, fPillDot,
-      fBtnText, fBtnBg, fBtnBorder, fBtnColor, fBtnCursor,
-      gasBtnBg, gasBtnBorder, gasBtnColor, gasBtnCursor,
-      fVacArrow, fVacConnOn,
-      fPumpFillH, fPumpFillStyle, fPumpPistonY, fPistonTrans, fPumpAText, fPumpABox, fPumpAColor,
-      fBalloonRx, fBalloonRy, fBalloonCy, fBalloonGlintX, fBalloonGlintY, fBalloonTrans, fGasText, fGasColor,
-      fGasoPistonY, fGasoRodY, fGasoRodH, fGasoPistonTrans,
-      fOilH, fOilY, fOilTrans, fGlassText, fGlassColor, fOilFlow,
-      fDrop0, fDrop1, fDrop2,
-      fHeH, fHeY, fHeTrans, fHeFlow, fHeArrow,
-      fChamberFill, fChamberBoxText, fChamberBoxColor, fChamberLabel, fChamberLabelColor,
-      fChamberNeedleX, fChamberNeedleY, fChamberNeedleColor, fChamberNeedleTrans,
-      fGasFlowStyle, fGasArrowStyle, fBalloonFlowStyle, fBalloonArrowStyle,
-      fSampleFlow, fSampleArrow, fVacFlow, fVacWheel, fVacLed, fVacLedStyle,
-      fuPText, fuPBox, fuPColor, fuPStroke, fFlashedText, fFlashedBox, fRateText,
-      fNoteVac, fNoteHe, fNoteFlash, fNoteCollectOG, fNoteBalloonRun, fNoteBalloonDone,
-      fLaneA, fLaneB, fSrcRing, fDstRing, fHeTint, fVS, fVG, fVOil, fVBal, fVacWheelCol,
-      fXOn, fX, fXSeg0, fXSeg1, fXSeg2, fXSeg3, fXSeg4,
-      fVerOn, fVerS0, fVerS1, fVerCol0, fVerCol1, fVerScanY, fVerBandY, fVerScanStyle, fVerText, fVerBarW,
+      fReadouts, fRoutes, fSteps, fStatusText, fPillBg, fPillBorder, fPillColor, fPillDot,
       showReport: scr === 'module04',
       goReport: () => this.setState({ screen: 'module04' }),
       setRepSec: (e) => { const s = e && e.currentTarget && e.currentTarget.getAttribute('data-sec'); if (s) this.setState({ repSec: s }); },
@@ -2996,7 +2661,7 @@ const hi_d = (on) => on ? 'opacity:1; transition:opacity .5s ease;' : 'opacity:.
       pumpBValveHotStyle, pumpBValveLeverStyle, pumpBValveLabelColor, pumpBHeldStyle, seg4bFlowStyle,
       cbPsi, cbPsiColor, cbMl, initReadText, initReadStroke, initReadColor,
       vacBig, vacBarW, vacPanelColor, vacPanelStroke, vacHeadline, connPipeStyle, connRevealStyle, bottleOff,
-      chargeViewBox, flashViewBox: this.flashViewBox(), chargeDeskStyle, chargeMonWrapStyle, chargeSigD, chargeSig2D, chargeSigStyle, chargeSig2Style, agMarkX, agMarkTrans,
+      chargeViewBox, chargeDeskStyle, chargeMonWrapStyle, chargeSigD, chargeSig2D, chargeSigStyle, chargeSig2Style, agMarkX, agMarkTrans,
       showBottleRig, monShow, monLabel, monBig, monUnit, monStartText, monTargetText, monBarW, monColor, monStroke,
       pumpAText, pumpBText, pumpAColor, pumpBColor, showPumpASealed, pumpAPistonY, pumpBPistonY, pumpPistonTrans, tpText, vacText, deadText, showDead,
       agFlowStyle, agDashStyle, agArrowD, agDirText, agCycleText, agHalfText, cellPText,

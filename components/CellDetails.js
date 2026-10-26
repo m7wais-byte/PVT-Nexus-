@@ -275,6 +275,7 @@
   function open(ctx) {
     if (window.BottleDetails && BottleDetails.isOpen()) BottleDetails.close();
     if (window.SpmcDetails && SpmcDetails.isOpen()) SpmcDetails.close();
+    if (window.FlashDetails && FlashDetails.isOpen()) FlashDetails.close();
     if (ov) close();
     lastFocus = document.activeElement;
     if (window.PC && PC.hold) PC.hold(true, true);                 // pause; restore the previous playback on close

@@ -107,7 +107,7 @@
           o: 'The screen switching to the flash sequence with "ready to flash".' }
   };
 
-  /* ---- Module 03 : flash process (6 stages) ---- */
+  /* ---- Module 03 : flash process (7 stages; shared flash equipment, equipment/flash) ---- */
   var FLASH = {
     0: { t: 'Flash unit idle',
          d: 'The flash unit is at atmospheric pressure and waiting for a verified sample.',
@@ -120,30 +120,35 @@
          e: 'Reading step — no movement.',
          o: '"Stable · 80 cc @ 5,000 psi" before continuing.' },
     2: { t: 'Stage 2 · Vacuum the flash unit',
-         d: 'The flash unit and its lines are pulled from 14.7 psia down to zero.',
-         w: 'Any air left in the unit would be counted as produced gas and would inflate the GOR and contaminate the GC gas analysis.',
-         e: 'Vacuum path opens; the flash-unit gauge falls.',
-         o: 'Flash-unit pressure reaching 0 psia and holding.' },
+         d: 'A portable vacuum pump is placed beside the unit and its hose connected to the red-capped quick-connect on the top panel. The Port R valve (PVT Cell) and the Gasometer inlet valve stay closed as the two boundaries; between them the inlet-control, flow-control, Flask and vacuum valves open, so the whole section is evacuated — sample line, manifold, shared flask connection, flask and the line up to the Gasometer inlet valve. The Balloon Valve stays closed.',
+         w: 'Air left in the flask or lines would be counted as produced gas and would contaminate the GC analysis. The pump is temporary equipment, not part of the Flash Unit.',
+         e: 'Pump wheeled in and connected; air drawn from every branch toward the pump; the vacuum valve closes first, then the hose is disconnected and the pump removed.',
+         o: 'Section pressure 14.7 → 0 psia; nothing is drawn from the PVT Cell, the balloon or the Gasometer chambers.' },
     3: { t: 'Stage 3 · Fill the dead space with helium',
-         d: 'Helium is admitted to the evacuated dead volume until the unit reads atmospheric.',
-         w: 'Helium is inert and is not part of the reservoir fluid, so it can be identified and subtracted in the GC. It gives a known, non-reactive starting condition at 14.7 psia.',
-         e: 'Helium flows from the cylinder into the flash unit; the gasometer empties.',
-         o: 'Flash unit returning to 14.7 psia with helium, gasometer at 0 cc.' },
+         d: 'The Gasometer inlet and isolation valves open. Helium held in the two sections (1,000 cc section first, then the 2,000 cc section) flows along the gas line to the manifold and down the shared flask connection into the evacuated flask until the unit reads atmospheric.',
+         w: 'Helium is inert and not part of the reservoir fluid, so it can be identified and subtracted in the GC. It is not collected sample gas.',
+         e: 'Helium (light blue) leaves the Gasometer; the flask fills with helium.',
+         o: 'Gasometer helium 3,000 → 0 cc (1,000 + 2,000); unit pressure 0 → 14.7 psia.' },
     4: { t: 'Stage 4 · Flash the sample',
-         d: '50 cc of live sample is displaced from Pump A into the flash unit, where it drops to atmospheric conditions and separates into oil and gas.',
-         w: 'Flashing to standard conditions is what defines the solution gas–oil ratio: the gas that comes out of solution and the residual oil are both measured from this one step.',
-         e: 'Pump A empties by 50 cc; liquid collects in the glass, gas rises to the gasometer.',
-         o: 'Pump A 80 → 30 cc, residual oil building to 40 cc, gas to about 400 cc.' },
+         d: '50 cc of live sample is displaced from Pump A through Port R. It passes the inlet-control and flow-control valves, where its pressure is let down, and goes down the one shared flask connection. Oil drops from its open end and collects at the bottom of the flask; gas released from the sample rises through the oil into the headspace and returns up the same connection, then along the manifold to the 2,000 cc section of the Gasometer.',
+         w: 'Flashing to standard conditions defines the solution gas–oil ratio. Separation is shown inside the glass: oil stays in the flask and only gas goes back up. Collection and gas release run together — the flask does not have to fill first.',
+         e: 'In the shared connection the oil (amber, arrows down) and the gas (green, arrows up) move in opposite directions; the gasometer reading starts only after gas leaves the flask.',
+         o: 'Pump A 80 → 30 cc · balance 200 → 240 g (40 g oil) · Gasometer 0 → 400 cc (2,000 cc section).' },
     5: { t: 'Stage 5 · Collect gas into the balloon',
-         d: 'Part of the flashed gas is transferred from the gasometer into the sampling balloon.',
-         w: 'The balloon is the sample container for the gas chromatograph; the gasometer keeps the remainder for the volume measurement.',
-         e: 'Gas moves from the gasometer to the balloon, which inflates.',
-         o: 'Balloon filling to about 250 cc at roughly 14.5 psi.' },
-    6: { t: 'Stage 6 · Measure oil and gas',
-         d: 'Residual oil volume in the glass and gas volume in the gasometer/balloon are read off.',
-         w: 'GOR = gas volume at standard conditions ÷ residual oil volume. These two readings are the basis of the flash result and of the recombination check.',
-         e: 'Reading step — oil in the glass, gas in the balloon.',
-         o: 'Both volumes stable before they are recorded.' }
+         d: 'The 2,000 cc section valves and the Balloon Valve (handle above the top panel, valve at the manifold junction) open. Gas leaves the Gasometer along the gas line, runs along the manifold and straight down into the blue balloon. The Flask Valve and the inlet-control valve stay closed.',
+         w: 'The balloon is the sample container for the gas chromatograph; the Gasometer keeps the remainder for the volume measurement.',
+         e: 'Gas moves from the Gasometer to the balloon; the balloon pressure rises.',
+         o: 'Gasometer 400 → 150 cc; balloon 0 → 14.5 psi.' },
+    6: { t: 'Stage 6 · Collect oil and gas',
+         d: 'The oil collected in the flask is read from the balance (gross − tare) and the gas from the Gasometer (2,000 cc + 1,000 cc readings) and the balloon.',
+         w: 'GOR = gas volume at standard conditions ÷ residual oil. These readings are the basis of the flash result and of the recombination check.',
+         e: 'Reading step — oil in the flask, gas in the Gasometer and balloon.',
+         o: 'Recorded: oil 40 g (240 − 200 g tare), balloon 14.5 psi, 150 cc left in the Gasometer.' },
+    7: { t: 'Stage 7 · Density & API',
+         d: 'A syringe is fitted to the flask sampling side-arm and a small aliquot of the collected oil is drawn. It is injected into the density meter: the oil runs along the lower leg of the long horizontal U-tube, round the return bend and back along the upper leg, pushing the air out to the waste container. The cell stabilizes at 25.00 °C, the oscillation period is measured and the meter reports density at 25 °C, density at 60 °F, SG 60/60 °F and API gravity.',
+         w: 'API gravity is defined on specific gravity at 60/60 °F, so the reading at 25 °C is first converted to the 60 °F reference (API MPMS 11.1 / ASTM D1250 crude-oil correction); API = 141.5 / SG − 131.5. The 40 g recorded at Stage 6 stays the flash result — the aliquot does not overwrite it.',
+         e: 'Syringe loading, continuous filling of the U-tube, temperature stabilization, measurement, then the four results.',
+         o: 'Example values back-calculated from the project stock-tank oil density: 0.79400 g/cm³ at 25 °C → 0.80126 g/cm³ at 60 °F → SG 0.8020 → 44.9 °API.' }
   };
 
   /* ---- Module 01 : field sampling phases ---- */
@@ -526,11 +531,11 @@
         });
       }
       var fs0 = m.fStep || 0;
-      var f = m.fBusy ? (m.fStage || 0) : (fs0 > 0 && fs0 < 6 ? fs0 + 1 : fs0);
+      var f = m.fBusy ? (m.fStage || 0) : (fs0 > 0 && fs0 < 7 ? fs0 + 1 : fs0);
       var fk = FLASH[f] || FLASH[0];
       return pack({
         title: 'Flash Process — ' + fk.t,
-        tag: m.fBusy ? 'RUNNING · STAGE ' + (m.fStage || 0) + ' / 6' : (fs0 >= 6 ? 'STAGE 6 / 6 COMPLETE' : 'READY · STAGE ' + Math.max(1, f) + ' / 6'),
+        tag: m.fBusy ? 'RUNNING · STAGE ' + (m.fStage || 0) + ' / 7' : (fs0 >= 7 ? 'STAGE 7 / 7 COMPLETE' : 'READY · STAGE ' + Math.max(1, f) + ' / 7'),
         busy: !!m.fBusy,
         d: fk.d + (m.fStatus ? '  Status: ' + m.fStatus + '.' : ''),
         w: fk.w, e: fk.e, o: fk.o,
@@ -538,9 +543,9 @@
           V('Flash unit pressure', num(m.fuP, 1), 'psia'),
           V('Pump A', num(m.fPumpA, 1), 'cc'),
           V('Flashed volume', num(m.fFlashed, 1), 'cc'),
-          V('Residual oil', num(m.fOil, 1), 'cc'),
-          V('Gasometer', num(m.fGaso, 0), 'cc'),
-          V('Balloon', num(m.fBalloon, 0), 'cc')
+          V('Oil collected', num(m.fOil, 1), 'g'),
+          V('Gasometer', num((m.fGaso || 0) > 0.5 ? m.fGaso : (m.fHeGas == null ? 3000 : m.fHeGas), 0), 'cc'),
+          V('Balloon', num(14.5 * Math.min(1, (m.fBalloon || 0) / 250), 1), 'psi')
         ]
       });
     }

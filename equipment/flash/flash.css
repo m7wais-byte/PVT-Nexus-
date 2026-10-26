@@ -1,0 +1,13 @@
+/* Shared flash equipment (equipment/flash) on procedure pages and in Flash / Gasometer / Density Meter Details */
+.fx-host { position:relative; display:block; width:100%; height:100%; min-height:0; }
+.fx-host > svg { display:block; width:100%; height:100%; }
+.vl-fig > .fx-host { flex:1 1 auto; align-self:stretch; }
+.fd-demo { display:inline-flex; align-items:center; gap:8px; flex-wrap:wrap; }
+.fd-demo .ui-btn { padding:6px 10px; }
+.fd-2d .labs .lead { fill:none; stroke:var(--eq-lead); }
+.fd-2d .labs .dot { fill:var(--blue); }
+.fx-btns { display:flex; gap:6px; flex-wrap:wrap; justify-content:flex-end; }
+.fx-route { display:flex; flex-direction:column; gap:4px; }
+.fx-route div { display:flex; justify-content:space-between; gap:8px; font-size:11.5px; padding:4px 8px; border-radius:6px; background:var(--chipbg); color:var(--txt2); }
+.fx-route div b { font:600 10px var(--font-mono); letter-spacing:.4px; white-space:nowrap; }
+.fx-route .on b { color:var(--grn); } .fx-route .off b { color:var(--mut); } .fx-route .done b { color:var(--blue); }

@@ -119,9 +119,10 @@ const PUMP_CAP = 100;                                 // one pump bore = 100 cc 
 // deterministic bubble seeds (no random jumps between renders)
 const DL_BUBS = Array.from({ length: 16 }, (_, k) => ({ fx: (k * 0.618034 + 0.07) % 1, ph: (k * 0.381966 + 0.13) % 1,
   sp: 0.75 + ((k * 0.7549) % 1) * 0.5, r: 1.0 + ((k * 0.5698) % 1) * 1.1, th: k / 16 }));
-// Pump A -> header -> Port R valve -> outlet line -> Flash Unit manifold (approved cell, legacy frame shifted -506,-20)
-const LANE_PTS = [[524, 192], [524, 170], [672, 170], [672, 215], [930, 215], [930, 256]];
-const S_STOP = 480, S_TEE = 473;                      // balloon-valve stop / manifold tee on lane 1
+// approved flash equipment on this page's drawing (page units; approved cell on the legacy frame shifted -506,-20):
+// gas lane Pump A -> header -> Port R, outlet line from the Port R fitting, Flash Unit, Gasometer
+const DL_FX = { cellPort: [641.6, 170], cellLane: [[524, 192], [524, 170], [641.6, 170]], lineX: 30, connLine: true, labelSize: 15,
+  fu: { x: 700, y: 200, s: 0.46 }, ga: { x: 1075, y: 173, s: 0.46 } };
 
 class Component extends DCLogic {
   state = { stage: 'initpv', done: {}, res: {}, pending: {}, initPsat: null };
@@ -453,22 +454,31 @@ class Component extends DCLogic {
     this.setState(Object.assign(this.freshNew('initpv'), { stage: 'initpv', done: {}, res: {}, pending: {}, initPsat: null }));
   }
 
-  // lane particles / chevrons / front — Main.js Flash transfer-lane visual, parameterised
-  laneVals(g, lit, active, fade, tf, speed) {
-    const F = FXX(), out = { d: g.d, lit: lit.toFixed(1) + ' 9999',
-      glowSt: 'opacity:' + (active ? 0.34 * fade : 0).toFixed(3) + ';', coreSt: 'opacity:' + (active ? 0.6 * fade : 0).toFixed(3) + ';',
-      parts: [], arrows: [] };
-    const gap = Math.max(20, g.L / 12), period = F.FX_NP * gap;
-    for (let i = 0; i < F.FX_NP; i++) {
-      const sp = (speed * tf + i * gap) % period, on = active && sp <= lit - 4 && sp <= g.L - 2, q = on ? g.at(sp) : { x: 0, y: 0 };
-      out.parts.push({ x: q.x.toFixed(1), y: q.y.toFixed(1), st: 'opacity:' + (on ? 0.95 * fade : 0).toFixed(3) + ';' });
+  // view model for the shared Flash Unit / Gasometer drawing (FlashHost): this page's own values and valve timing only
+  fxView() {
+    const st = this.state;
+    if (st.stage === 'initpv') return null;
+    const stageDn = !!st.done[st.stage], pend = !!st.pending[st.stage];
+    if ((stageDn && pend) || st.step < 2 || st.pvRun || (stageDn && !pend)) return null;
+    const c = this.cfg(), F = FXX(), R = F.fxR, E = F.fxE, pl = this.gasPlan(c);
+    const gasStep = st.xStep === 'gas', u = gasStep ? st.xU || 0 : 0, fade = gasStep ? 1 - R(0.95, 1, u) : 0;
+    const vCell = gasStep ? E(R(0.07, 0.13, u)) * (1 - E(R(0.95, 1, u))) : 0;
+    const vBal = gasStep ? E(R(0.44, 0.50, u)) * (1 - E(pl.gaso ? R(0.70, 0.74, u) : R(0.95, 1, u))) : 0;
+    const vGas = gasStep && pl.gaso ? E(R(0.72, 0.76, u)) * (1 - E(R(0.95, 1, u))) : 0;
+    const bal = st.balloon || 0, gaso = st.gaso || 0, sp = Gasometer.split(gaso);
+    const flow = {};
+    if (gasStep && u >= 0.13 && fade > 0) {
+      if (pl.gaso && u >= 0.72) flow.capGas = { p: u, a: fade };
+      else flow.capBal = { p: u, a: fade };
     }
-    [0.12, 0.40, 0.66, 0.92].forEach((k) => {
-      const sp = k * g.L, q = g.at(sp);
-      out.arrows.push({ tr: 'translate(' + q.x.toFixed(1) + ' ' + q.y.toFixed(1) + ') rotate(' + q.ang.toFixed(0) + ')',
-        st: 'opacity:' + (active && lit >= sp + 6 ? fade : 0).toFixed(3) + ';' });
-    });
-    return out;
+    const V = { busy: !!st.busy, stage: 0, p: u, step: 0, path: 'cap', fuP: null, flowTxt: (st.flow || 0).toFixed(2), flowOn: (st.flow || 0) > 0.05, pumpA: null,
+      flashed: 0, oil: 0, oilRec: 0, bal: 200, heTint: 0, gasTint: 0, vacTint: 0, heIn: 0, airOut: 0, drip: null, bubbles: 0,
+      balloon: 250 * Math.min(1, bal / 14.5), balloonTxt: bal.toFixed(2), balloonUnit: 'psig',
+      gasoVol: gaso, gasoMode: 'gas', gaso: gaso, heGas: 0, gaso2k: sp.k2, gaso1k: sp.k1, gasoT: FlashSim.GASO_T, gasoSec: '2k',
+      valve: { pumpA: vCell, inlet: vCell, flask: 0, vac: 0, vessel: vBal, in2k: vGas, iso2k: vGas, in1k: 0, iso1k: 0, gaso: vGas },
+      vacPump: 0, vacHose: 0, conn: st.conn || 0, flow: flow, cock: 0, aliq: 0, dmQ: 0,
+      dm: { phase: 'await', inj: 0, flush: 0, air: 0, T: 0, Tset: 0, prog: 0, start: 0, osc: 0, res: {} } };
+    return { mode: 'system', key: 'dl', opt: { inline: true, layout: DL_FX, labels: true }, V: V };
   }
 
   renderVals() {
@@ -539,31 +549,12 @@ class Component extends DCLogic {
 
     // ---- Flash Unit (stages) : Validation sketch + transfer lanes ----
     const flashOn = !isInit && !(stageDn && pend) && step >= 2;
-    const conn = C(st.conn || 0), LINE1 = 103.4;   // outlet line length from the Port R fitting
+    const conn = C(st.conn || 0);
     const pl = c ? this.gasPlan(c) : { dur: 13, balEnd: 0.9, gaso: false };
     const gasStep = st.xStep === 'gas', u = gasStep ? st.xU || 0 : 0;
+    // PVT-cell outlet valve (Port R); the Flash Unit / Gasometer valves are drawn by FlashHost (fxView)
     const vCell = gasStep ? E(R(0.07, 0.13, u)) * (1 - E(R(0.95, 1, u))) : 0;
-    const vBal = gasStep ? E(R(0.44, 0.50, u)) * (1 - E(pl.gaso ? R(0.70, 0.74, u) : R(0.95, 1, u))) : 0;
-    const vGas = gasStep && pl.gaso ? E(R(0.72, 0.76, u)) * (1 - E(R(0.95, 1, u))) : 0;
-    if (!this.gLane) { this.gLane = F.fxPoly(LANE_PTS); this.gLane2 = F.fxPoly([[930, 215], [1140, 215]]); }
-    const gl = this.gLane, gl2 = this.gLane2;
-    const durS = PT(pl.dur * 1000) / 1000, speed = Math.max(55, S_STOP / (0.25 * durS));
-    const gasActive = gasStep && u >= 0.13, fade = gasStep ? 1 - R(0.95, 1, u) : 0;
-    let lit = !gasActive ? 0 : u < 0.38 ? S_STOP * E(R(0.13, 0.38, u)) : u < 0.50 ? S_STOP : S_STOP + (gl.L - S_STOP) * E(R(0.50, 0.56, u));
-    if (pl.gaso && u >= 0.72) lit = S_TEE;                // balloon branch closed: gas continues along the manifold only
-    const holding = (u >= 0.38 && u < 0.50) || (pl.gaso && u >= 0.70 && u < 0.76);
-    const clkEnd = 0.90 * durS, gc = Math.min(st.gasClk || 0, clkEnd);
-    const tf1 = holding ? Math.max(0, 0.38 * durS - 0.13 * durS) : Math.max(0, gc - 0.13 * durS);
-    const lane = this.laneVals(gl, lit, gasActive, fade, tf1, speed);
-    const lit2 = pl.gaso && gasActive && u >= 0.74 ? gl2.L * E(R(0.74, 0.78, u)) : 0;
-    const lane2 = this.laneVals(gl2, lit2, lit2 > 0, fade, Math.max(0, gc - 0.74 * durS), speed);
-    const hq = lit2 > 0 && lit2 < gl2.L - 1 ? gl2.at(lit2) : gl.at(lit), pulse = 0.5 + 0.5 * Math.sin((st.gasClk || 0) * 9);
-    const headOn = gasActive && fade > 0 && ((lit > 2 && lit < gl.L - 1 && !(pl.gaso && u >= 0.72)) || (lit2 > 0 && lit2 < gl2.L - 1));
     const valve = (a, cx, cy) => ({ tr: 'rotate(' + (90 * a).toFixed(1) + ' ' + cx + ' ' + cy + ')', c: a > 0.5 ? '#46d39a' : '#8fa3c2' });
-    const bFrac = C((st.balloon || 0) / 14.5), bry = 13 + bFrac * 44;
-    // gasometer : Validation 3,000 cc chamber, gas at the top, piston riding under it
-    const gFrac = C((st.gaso || 0) / 3000), gH = 242 * gFrac, gpY = 200 + Math.min(gH, 229);
-    const gAng = (-140 + 100 * gFrac) * Math.PI / 180;
     const gasoUsed = !!(c && c.gasometer > 0);
     const XPH = F.FX_PHASES;
     let xPanel = null;
@@ -754,22 +745,10 @@ class Component extends DCLogic {
 
       dlnFlashOn: flashOn,
       dlnValveA: true, dlnValveB: st.pvPhase === 'a2b' || st.pvPhase === 'hold' || st.pvPhase === 'b2a',
-      dlnConnDash: (conn * LINE1).toFixed(1) + ' 9999', dlnConnOn: conn > 0.001, dlnDisc: conn < 0.001,
+dlnDisc: conn < 0.001,
       dlnValveOn: conn > 0.45,
-      dlnVC: valve(vCell, 656, 170), dlnVB: valve(vBal, 949, 229), dlnVG: valve(vGas, 1078, 215),
-      dlnGasoValveText: vGas > 0.5 ? 'OPEN' : 'CLOSED', dlnGasoValveCol: vGas > 0.5 ? 'var(--grn)' : 'var(--mut)',
-      dlnLane: lane, dlnLane2: lane2,
-      dlnHead: { x: hq.x.toFixed(1), y: hq.y.toFixed(1), r: (3.6 + pulse * 1.2).toFixed(2), st: 'opacity:' + (headOn ? 0.95 : 0) + ';' },
+      dlnVC: valve(vCell, 656, 170),
       dlnCellValveText: vCell > 0.5 ? 'OPEN' : 'CLOSED', dlnCellValveCol: vCell > 0.5 ? 'var(--grn)' : 'var(--mut)',
-      dlnFlow: (st.flow || 0).toFixed(2) + ' mL/min', dlnFlowCol: (st.flow || 0) > 0.05 ? '#8cc4ff' : '#8a9bb3',
-      dlnBalRy: bry.toFixed(1), dlnBalRx: (bry * 0.95).toFixed(1), dlnBalCy: (239 + bry).toFixed(1),
-      dlnBalGx: (930 - bry * 0.42).toFixed(1), dlnBalGy: (239 + bry * 0.62).toFixed(1),
-      dlnBalText: (st.balloon || 0).toFixed(2) + ' psig', dlnBalCol: (st.balloon || 0) > 0.01 ? '#8cc4ff' : '#8a9bb3',
-      dlnGasoText: Math.round(st.gaso || 0) + ' cc', dlnGasoCol: (st.gaso || 0) > 0.5 ? '#46d39a' : '#6f819b',
-      dlnGasoH: gH.toFixed(1), dlnGasoPY: gpY.toFixed(1), dlnGasoRodY: (gpY + 13).toFixed(1), dlnGasoRodH: Math.max(0, 442 - (gpY + 13)).toFixed(1),
-      dlnGasoNX: (1272 + 10 * Math.cos(gAng)).toFixed(1), dlnGasoNY: (232 + 10 * Math.sin(gAng)).toFixed(1),
-      dlnGasoMode: !gasoUsed ? 'ISOLATED' : st.gasoRouting ? 'RECEIVING' : (st.gaso || 0) > 0.5 ? 'HOLDING' : 'STANDBY',
-      dlnGasoModeCol: st.gasoRouting ? '#46d39a' : '#8a9bb3',
       dlnXOn: !!xPanel, dlnXTitle: xPanel ? xPanel.title : '', dlnXDetail: xPanel ? xPanel.detail : '',
       dlnXBd: xPanel ? (xPanel.ph === 4 ? '#46d39a' : xPanel.col) : 'none', dlnXBg: xPanel && xPanel.ph === 4 ? '#0e2019' : '#0f1a2c',
       dlnSeg0: seg[0], dlnSeg1: seg[1], dlnSeg2: seg[2], dlnSeg3: seg[3], dlnSeg4: seg[4],
@@ -811,7 +790,7 @@ DC.define('StageDiffLib', {
       <span style="align-self:center; display:inline-flex; align-items:center; gap:6px; flex:0 0 auto; padding:3px 11px; border-radius:999px; background:{{ dlPillBg }}; border:1px solid {{ dlPillBorder }}; font-family:'IBM Plex Mono'; font-size:10px; letter-spacing:.7px; text-transform:uppercase; color:{{ dlPillColor }}; white-space:nowrap;"><span style="{{ dlPillDot }}"></span>{{ dlPillText }}</span>
       <p class="pg-desc">Initial PV determination on an 80 cc charge, then stage-wise pressure reduction with liberated-gas removal</p>
     </div>
-    <div class="pg-end"><button type="button" class="bd-btn" data-cd-open="" data-cd-ctx="Differential Liberation · cell outlet at Port R">Cell Details</button></div>
+    <div class="pg-end fx-btns"><button type="button" class="bd-btn" data-cd-open="" data-cd-ctx="Differential Liberation · cell outlet at Port R">Cell Details</button><button type="button" class="bd-btn" data-fd-open="fu" data-fd-src="StageDiffLib:dl" data-fd-ctx="Differential Liberation · liberated gas to the balloon">Flash Unit Details</button><button type="button" class="bd-btn" data-fd-open="ga" data-fd-src="StageDiffLib:dl" data-fd-ctx="Differential Liberation · excess liberated gas">Gasometer Details</button></div>
   </div>
 
   <!-- stage navigation : every stage is always reachable, regardless of completion -->
@@ -919,127 +898,21 @@ DC.define('StageDiffLib', {
             <text text-anchor="middle" font-family="IBM Plex Mono" font-size="8.5" letter-spacing=".3" fill="var(--amb)"><tspan x="672" y="251">NOT</tspan><tspan x="672" y="262">CONNECTED</tspan></text>
             <line x1="652" y1="170" x2="686" y2="215" stroke="var(--mut2)" stroke-width="1" stroke-dasharray="3 5" opacity=".6"></line>
           </sc-if>
-          <!-- outlet line : PVT cell -> Flash Unit inlet (drawn as it is made up) -->
-          <sc-if value="{{ dlnConnOn }}" hint-placeholder-val="{{ false }}">
-            <path d="M641.6 170 H672 V215 H700" fill="none" stroke="#0a0e16" stroke-width="8" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="{{ dlnConnDash }}"></path>
-            <path d="M641.6 170 H672 V215 H700" fill="none" stroke="#8ea0b8" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="{{ dlnConnDash }}"></path>
-          </sc-if>
-          
-          <!-- Flash Unit body -->
-          <rect x="700" y="150" width="310" height="334" rx="8" fill="#0c1728" stroke="#4d9dff" stroke-width="1.4" style="filter:drop-shadow(0 0 5px rgba(77,157,255,.45))"></rect>
-          <rect x="707" y="193" width="296" height="284" rx="6" fill="rgba(8,16,30,.55)" stroke="#22344e" stroke-width="1"></rect>
-          <rect x="700" y="150" width="310" height="36" rx="8" fill="rgba(77,157,255,.07)"></rect>
-          <line x1="700" y1="186" x2="1010" y2="186" stroke="#2a3852" stroke-width="1.3"></line>
-          <text x="716" y="175" font-family="'IBM Plex Sans','Segoe UI',Arial,sans-serif" font-size="15" font-weight="600" fill="#eef4fc">Flash Unit</text>
-          <rect x="878" y="158" width="120" height="22" rx="4" fill="#06101e" stroke="#3c4d68" stroke-width="1.2"></rect>
-          <foreignObject x="878" y="160" width="120" height="18"><div style="margin:0; display:flex; align-items:center; justify-content:center; height:100%; white-space:nowrap; line-height:1.1; font-family:'IBM Plex Mono',ui-monospace,monospace; font-size:11.5px; font-weight:600; color:{{ dlnFlowCol }};">{{ dlnFlow }}</div></foreignObject>
-          <rect x="690" y="206" width="12" height="18" rx="2" fill="url(#dln-metal)" stroke="#0a0e16" stroke-width="1"></rect>
-          <!-- manifold -->
-          <line x1="700" y1="215" x2="980" y2="215" stroke="#0a0e16" stroke-width="6" stroke-linecap="round"></line>
-          <line x1="700" y1="215" x2="980" y2="215" stroke="#9fb0c8" stroke-width="3.4" stroke-linecap="round"></line>
-          <line x1="700" y1="213.6" x2="980" y2="213.6" stroke="#e8f1fb" stroke-width="1" opacity=".35"></line>
-          <rect x="977" y="207" width="9" height="17" rx="2" fill="url(#dln-metal)" stroke="#0a0e16" stroke-width="0.8"></rect>
-          <text x="855" y="203" text-anchor="middle" font-family="'IBM Plex Sans','Segoe UI',Arial,sans-serif" font-size="10.5" font-weight="600" letter-spacing=".4" fill="#aebfd6">Manifold</text>
-          <circle cx="790" cy="215" r="4" fill="url(#dln-metal)" stroke="#0a0e16" stroke-width="0.7"></circle>
-          <circle cx="930" cy="215" r="4" fill="url(#dln-metal)" stroke="#0a0e16" stroke-width="0.7"></circle>
-          <!-- flash flask (oil side) : isolated, valve closed for liberated-gas collection -->
-          <line x1="790" y1="215" x2="790" y2="320" stroke="#0a0e16" stroke-width="5" stroke-linecap="round"></line>
-          <line x1="790" y1="215" x2="790" y2="320" stroke="#9fb0c8" stroke-width="2.6" stroke-linecap="round"></line>
-          <rect x="782" y="232" width="16" height="15" rx="3" fill="url(#dln-metal)" stroke="#0a0e16" stroke-width="0.9"></rect>
-          <circle cx="806" cy="239" r="6.5" fill="#0c1626" stroke="#8fa3c2" stroke-width="1.6"></circle>
-          <g stroke="#8fa3c2" stroke-width="1.3" stroke-linecap="round"><line x1="799.5" y1="239" x2="812.5" y2="239"></line></g>
-          <rect x="785" y="290" width="10" height="34" fill="rgba(200,228,248,.08)" stroke="#c3ddf5" stroke-width="1.4"></rect>
-          <text text-anchor="end" font-family="'IBM Plex Sans','Segoe UI',Arial,sans-serif" font-size="11.5" font-weight="600" fill="#e3ecf8"><tspan x="778" y="292">Flash Flask</tspan><tspan x="778" y="306" font-size="10" font-weight="500" fill="#8a9bb3">closed</tspan></text>
-          <path d="M783 320 L783 337 Q782 347 771 352 L748 430 Q745 438 753 438 L827 438 Q835 438 832 430 L809 352 Q798 347 797 337 L797 320 Z" fill="rgba(15,24,40,.55)" stroke="#5fb0ff" stroke-width="1.8" stroke-linejoin="round" style="filter:drop-shadow(0 0 4px rgba(95,176,255,.5))"></path>
-          <rect x="738" y="439" width="104" height="5" rx="1.5" fill="url(#dln-metal)" stroke="#0a0e16" stroke-width="0.8"></rect>
-          <path d="M730 450 Q730 446 734 446 L846 446 Q850 446 850 450 L850 472 Q850 474 848 474 L732 474 Q730 474 730 472 Z" fill="#1b2638" stroke="#56709a" stroke-width="1.2"></path>
-          <text x="736" y="463" font-family="'IBM Plex Sans','Segoe UI',Arial,sans-serif" font-size="7.5" font-weight="700" letter-spacing=".4" fill="#9fb3cc">BALANCE</text>
-          <rect x="781" y="450" width="52" height="20" rx="2.5" fill="#06101e" stroke="#2f4462" stroke-width="1"></rect>
-          <foreignObject x="781" y="451" width="52" height="18"><div style="margin:0; display:flex; align-items:center; justify-content:center; height:100%; white-space:nowrap; line-height:1.1; font-family:'IBM Plex Mono',ui-monospace,monospace; font-size:12.5px; font-weight:700; color:#9fb0c8;">200 g</div></foreignObject>
-          <!-- balloon : liberated-gas collection (right stud) -->
-          <rect x="928" y="213" width="4" height="4" fill="url(#dln-metal)" stroke="#0a0e16" stroke-width="0.6"></rect>
-          <circle cx="949" cy="229" r="6.5" fill="#0c1626" stroke="{{ dlnVB.c }}" stroke-width="1.6"></circle>
-          <g stroke="{{ dlnVB.c }}" stroke-width="1.3" stroke-linecap="round" transform="{{ dlnVB.tr }}"><line x1="942.5" y1="229" x2="955.5" y2="229"></line></g>
-          <rect x="936" y="224" width="8" height="10" rx="2" fill="url(#dln-metal)" stroke="#0a0e16" stroke-width="0.8"></rect>
-          <rect x="923" y="215" width="14" height="35" rx="2" fill="url(#dln-metal)" stroke="#0a0e16" stroke-width="0.8"></rect>
-          <g transform="translate(930,250) rotate(-20) scale(1.3) translate(-930,-250)">
-            <path d="M916 250 Q930 246 944 250 L946 268 Q947 274 941 274 L919 274 Q913 274 914 268 Z" fill="url(#dln-metal)" stroke="#0a0e16" stroke-width="1"></path>
-            <path d="M919 274 L919 278 Q919 288 902 294 L902 345 Q902 365 930 365 Q958 365 958 345 L958 294 Q941 288 941 278 L941 274 Z" fill="rgba(15,24,40,.55)" stroke="#5fb0ff" stroke-width="1.8" style="filter:drop-shadow(0 0 4px rgba(95,176,255,.5))"></path>
-            <clipPath id="dln-bottle-clip"><path d="M921 276 L921 280 Q921 289 904 295 L904 344 Q904 363 930 363 Q956 363 956 344 L956 295 Q939 289 939 280 L939 276 Z"></path></clipPath>
-            <g clip-path="url(#dln-bottle-clip)">
-              <g transform="translate(0,11)">
-                <ellipse cx="930" cy="{{ dlnBalCy }}" rx="{{ dlnBalRx }}" ry="{{ dlnBalRy }}" fill="rgba(95,176,255,.32)"></ellipse>
-                <ellipse cx="{{ dlnBalGx }}" cy="{{ dlnBalGy }}" rx="6" ry="9" fill="rgba(220,240,255,.3)"></ellipse>
-              </g>
-            </g>
-          </g>
-          <text x="936" y="412" text-anchor="middle" font-family="'IBM Plex Sans','Segoe UI',Arial,sans-serif" font-size="11.5" font-weight="600" fill="#e3ecf8">Balloon Pressure</text>
-          <rect x="890" y="419" width="92" height="20" rx="4" fill="#06101e" stroke="#2a3852" stroke-width="1"></rect>
-          <foreignObject x="890" y="420" width="92" height="18"><div style="margin:0; display:flex; align-items:center; justify-content:center; height:100%; white-space:nowrap; line-height:1.1; font-family:'IBM Plex Mono',ui-monospace,monospace; font-size:12.5px; font-weight:600; color:{{ dlnBalCol }};">{{ dlnBalText }}</div></foreignObject>
-          <!-- support table -->
-          <rect x="694" y="484" width="322" height="10" rx="2" fill="#34455e" stroke="#1c2637" stroke-width="1"></rect>
-          <rect x="706" y="494" width="298" height="7" fill="#26344a" stroke="#1c2637" stroke-width="0.8"></rect>
-          <rect x="709" y="494" width="9" height="96" fill="#3a4c66" stroke="#1c2637" stroke-width="0.9"></rect>
-          <rect x="992" y="494" width="9" height="96" fill="#3a4c66" stroke="#1c2637" stroke-width="0.9"></rect>
-          <rect x="718" y="552" width="274" height="6" fill="#34455e" stroke="#1c2637" stroke-width="0.8"></rect>
-          <rect x="703" y="590" width="21" height="6" rx="1.5" fill="#4a5f7e" stroke="#1c2637" stroke-width="0.8"></rect>
-          <rect x="986" y="590" width="21" height="6" rx="1.5" fill="#4a5f7e" stroke="#1c2637" stroke-width="0.8"></rect>
-
-          <!-- gasometer line + valve (isolated in Stage 1) -->
-          <path d="M1136 215 H1010" fill="none" stroke="#0a0e16" stroke-width="8" stroke-linecap="round"></path>
-          <path d="M1136 215 H1010" fill="none" stroke="#8ea0b8" stroke-width="4.5" stroke-linecap="round"></path>
-          <circle cx="1078" cy="215" r="6.5" fill="#0c1626" stroke="{{ dlnVG.c }}" stroke-width="1.6"></circle>
-          <g stroke="{{ dlnVG.c }}" stroke-width="1.5" stroke-linecap="round" transform="{{ dlnVG.tr }}"><line x1="1078" y1="208.5" x2="1078" y2="221.5"></line></g>
-          <text x="1078" y="240" text-anchor="middle" font-family="IBM Plex Mono" font-size="9.5" letter-spacing=".4" fill="{{ dlnGasoValveCol }}">{{ dlnGasoValveText }}</text>
-          <!-- gasometer -->
-          <rect x="1120" y="150" width="186" height="346" rx="6" fill="#0c1728" stroke="#4a5f7e" stroke-width="1.8"></rect>
-          <line x1="1120" y1="186" x2="1306" y2="186" stroke="#4a5f7e" stroke-width="1.3"></line>
-          <text x="1134" y="175" font-family="'IBM Plex Sans','Segoe UI',Arial,sans-serif" font-size="15" font-weight="600" fill="#eef4fc">Gasometer</text>
-          <rect x="1212" y="157" width="86" height="22" rx="4" fill="#06101e" stroke="#1d3350" stroke-width="1"></rect>
-          <foreignObject x="1212" y="159" width="86" height="18"><div style="margin:0; display:flex; align-items:center; justify-content:center; height:100%; white-space:nowrap; line-height:1.1; font-family:'IBM Plex Mono',ui-monospace,monospace; font-size:11.5px; font-weight:600; color:{{ dlnGasoCol }};">{{ dlnGasoText }}</div></foreignObject>
-          <rect x="1136" y="196" width="106" height="250" rx="4" fill="url(#dln-gcyl)" stroke="#0a0e16" stroke-width="1.4"></rect>
-          <clipPath id="dln-gaso-clip"><rect x="1140" y="200" width="98" height="242" rx="3"></rect></clipPath>
-          <g clip-path="url(#dln-gaso-clip)">
-            <rect x="1140" y="200" width="98" height="{{ dlnGasoH }}" fill="rgba(139,232,208,.55)"></rect>
-            <rect x="1183" y="{{ dlnGasoRodY }}" width="12" height="{{ dlnGasoRodH }}" fill="url(#dln-metal)" opacity=".8"></rect>
-            <rect x="1140" y="{{ dlnGasoPY }}" width="98" height="13" fill="url(#dln-metal)" stroke="#05080f" stroke-width="1.1"></rect>
-          </g>
-          <line x1="1152" y1="206" x2="1152" y2="436" stroke="#eef4fb" stroke-width="1.2" opacity=".28"></line>
-          <circle cx="1272" cy="232" r="17" fill="url(#dln-metal)" stroke="#0a0e16" stroke-width="1.3"></circle>
-          <circle cx="1272" cy="232" r="12" fill="#0c1626" stroke="#2a3852" stroke-width="1"></circle>
-          <line x1="1272" y1="232" x2="{{ dlnGasoNX }}" y2="{{ dlnGasoNY }}" stroke="#8fa3c2" stroke-width="1.8" stroke-linecap="round"></line>
-          <circle cx="1272" cy="232" r="2.2" fill="#8fa3c2"></circle>
-          <foreignObject x="1196" y="459" width="96" height="18"><div style="margin:0; display:flex; align-items:center; justify-content:center; height:100%; white-space:nowrap; line-height:1.1; font-family:'IBM Plex Mono',ui-monospace,monospace; font-size:12px; font-weight:600; letter-spacing:1px; color:{{ dlnGasoModeCol }};">{{ dlnGasoMode }}</div></foreignObject>
-
-          <!-- liberated-gas transfer lane : lit pipe grows from the gas cap, particles, chevrons, leading front -->
-          <path d="{{ dlnLane.d }}" fill="none" stroke="#8cc4ff" stroke-width="7" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="{{ dlnLane.lit }}" style="{{ dlnLane.glowSt }}"></path>
-          <path d="{{ dlnLane.d }}" fill="none" stroke="#8cc4ff" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="{{ dlnLane.lit }}" style="{{ dlnLane.coreSt }}"></path>
-          <sc-for list="{{ dlnLane.parts }}" as="gp" hint-placeholder-count="14">
-            <circle cx="{{ gp.x }}" cy="{{ gp.y }}" r="2.4" fill="#8cc4ff" style="{{ gp.st }}"></circle>
-          </sc-for>
-          <sc-for list="{{ dlnLane.arrows }}" as="ga" hint-placeholder-count="4">
-            <path d="M-4 -4.5 L2 0 L-4 4.5" transform="{{ ga.tr }}" fill="none" stroke="#f4f8ff" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" style="{{ ga.st }}"></path>
-          </sc-for>
-          <path d="{{ dlnLane2.d }}" fill="none" stroke="#8cc4ff" stroke-width="7" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="{{ dlnLane2.lit }}" style="{{ dlnLane2.glowSt }}"></path>
-          <path d="{{ dlnLane2.d }}" fill="none" stroke="#8cc4ff" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="{{ dlnLane2.lit }}" style="{{ dlnLane2.coreSt }}"></path>
-          <sc-for list="{{ dlnLane2.parts }}" as="gp2" hint-placeholder-count="14">
-            <circle cx="{{ gp2.x }}" cy="{{ gp2.y }}" r="2.4" fill="#8cc4ff" style="{{ gp2.st }}"></circle>
-          </sc-for>
-          <sc-for list="{{ dlnLane2.arrows }}" as="ga2" hint-placeholder-count="4">
-            <path d="M-4 -4.5 L2 0 L-4 4.5" transform="{{ ga2.tr }}" fill="none" stroke="#f4f8ff" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" style="{{ ga2.st }}"></path>
-          </sc-for>
-          <circle cx="{{ dlnHead.x }}" cy="{{ dlnHead.y }}" r="{{ dlnHead.r }}" fill="#8cc4ff" stroke="#ffffff" stroke-width="1" style="{{ dlnHead.st }}"></circle>
+          <!-- approved Flash Unit (flask isolated, balloon on the manifold) + two-section Gasometer (equipment/flash), drawn
+               from this page's own values by FlashHost: outlet line made up / broken out with conn, gas-cap gas along the
+               manifold past the closed Flask Valve into the balloon, excess on to the 2,000 cc section -->
+          <g class="fx-host" data-fx="StageDiffLib:dl"></g>
           <!-- (PVT-cell outlet valve = the cell's Port R isolation valve; its OPEN/CLOSED tag is on the cell) -->
           <!-- phase panel (Validation Flash status panel) -->
           <sc-if value="{{ dlnXOn }}" hint-placeholder-val="{{ false }}">
-            <rect x="690" y="93" width="330" height="50" rx="7" fill="{{ dlnXBg }}" stroke="{{ dlnXBd }}" stroke-width="1.4"></rect>
-            <foreignObject x="690" y="97" width="330" height="20"><div style="margin:0; display:flex; align-items:center; justify-content:center; height:100%; white-space:nowrap; line-height:1.1; font-family:'IBM Plex Mono',ui-monospace,monospace; font-size:13px; font-weight:600; letter-spacing:.8px; color:{{ dlnXBd }};">{{ dlnXTitle }}</div></foreignObject>
-            <foreignObject x="690" y="116" width="330" height="18"><div style="margin:0; display:flex; align-items:center; justify-content:center; height:100%; white-space:nowrap; line-height:1.1; font-family:'IBM Plex Sans',sans-serif; font-size:12px; color:#e8f1fb;">{{ dlnXDetail }}</div></foreignObject>
-            <rect x="703" y="137" width="58" height="2.6" rx="1.3" style="{{ dlnSeg0 }}"></rect>
-            <rect x="765" y="137" width="58" height="2.6" rx="1.3" style="{{ dlnSeg1 }}"></rect>
-            <rect x="827" y="137" width="58" height="2.6" rx="1.3" style="{{ dlnSeg2 }}"></rect>
-            <rect x="889" y="137" width="58" height="2.6" rx="1.3" style="{{ dlnSeg3 }}"></rect>
-            <rect x="951" y="137" width="58" height="2.6" rx="1.3" style="{{ dlnSeg4 }}"></rect>
+            <rect x="690" y="80" width="330" height="50" rx="7" fill="{{ dlnXBg }}" stroke="{{ dlnXBd }}" stroke-width="1.4"></rect>
+            <foreignObject x="690" y="84" width="330" height="20"><div style="margin:0; display:flex; align-items:center; justify-content:center; height:100%; white-space:nowrap; line-height:1.1; font-family:'IBM Plex Mono',ui-monospace,monospace; font-size:13px; font-weight:600; letter-spacing:.8px; color:{{ dlnXBd }};">{{ dlnXTitle }}</div></foreignObject>
+            <foreignObject x="690" y="103" width="330" height="18"><div style="margin:0; display:flex; align-items:center; justify-content:center; height:100%; white-space:nowrap; line-height:1.1; font-family:'IBM Plex Sans',sans-serif; font-size:12px; color:#e8f1fb;">{{ dlnXDetail }}</div></foreignObject>
+            <rect x="703" y="124" width="58" height="2.6" rx="1.3" style="{{ dlnSeg0 }}"></rect>
+            <rect x="765" y="124" width="58" height="2.6" rx="1.3" style="{{ dlnSeg1 }}"></rect>
+            <rect x="827" y="124" width="58" height="2.6" rx="1.3" style="{{ dlnSeg2 }}"></rect>
+            <rect x="889" y="124" width="58" height="2.6" rx="1.3" style="{{ dlnSeg3 }}"></rect>
+            <rect x="951" y="124" width="58" height="2.6" rx="1.3" style="{{ dlnSeg4 }}"></rect>
           </sc-if>
         </sc-if>
       </svg>

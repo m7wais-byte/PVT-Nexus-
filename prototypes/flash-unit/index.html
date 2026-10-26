@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Flash Equipment Prototype</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="flash.css">
+</head>
+<body>
+<div class="app">
+  <header class="top">
+    <img class="logo" src="../../assets/logo.png" alt="VAPS">
+    <div class="ttl">
+      <div class="eyebrow">PVT NEXUS · DESIGN REVIEW · VALIDATION → FLASH PROCESS</div>
+      <h1>Flash Unit, Gasometer &amp; Density Meter — Prototype 02</h1>
+    </div>
+    <div class="ctl" role="group" aria-label="View">
+      <span class="cl">View</span>
+      <div class="seg" id="viewSeg"><button type="button" data-v="auto" class="on">Follow stage</button><button type="button" data-v="system">System</button><button type="button" data-v="fu">Flash Unit</button><button type="button" data-v="ga">Gasometer</button><button type="button" data-v="dm">Density Meter</button></div>
+    </div>
+    <label class="sw"><input type="checkbox" id="lblChk" checked><span></span><em>Labels</em></label>
+  </header>
+
+  <main class="body">
+    <section class="stage card">
+      <div class="stage-head">
+        <div class="sh-l"><span class="sh-k" id="shK">SYSTEM</span><span class="sh-t" id="shT">PVT Cell → Flash Unit → Gasometer</span></div>
+        <div class="sh-r">
+          <button type="button" class="dbtn" data-details="fu">Flash Unit Details</button>
+          <button type="button" class="dbtn" data-details="ga">Gasometer Details</button>
+          <button type="button" class="dbtn" data-details="dm">Density Meter Details</button>
+        </div>
+      </div>
+      <div id="stage" class="stage-svg"></div>
+      <div class="steps" id="steps"></div>
+      <footer class="foot">
+        <div class="read" id="read"></div>
+        <div class="run">
+          <div class="status"><div class="act" id="act">Idle</div><div class="track"><div class="bar" id="bar"></div></div><p class="msg" id="msg" aria-live="polite"></p></div>
+          <div class="spd seg" id="spdSeg" title="Playback speed (inspection only — stage timing is unchanged)"><button type="button" data-v="0.5">½×</button><button type="button" data-v="1" class="on">1×</button><button type="button" data-v="2">2×</button></div>
+          <button class="btn" id="btnPause" type="button">Pause</button><button class="btn" id="btnReplay" type="button">Replay stage</button><button class="btn" id="btnReset" type="button">Reset</button>
+        </div>
+      </footer>
+    </section>
+
+    <aside class="side card" aria-label="Procedure and explanation">
+      <div class="grp">
+        <div class="gh">Procedure</div>
+        <button class="btn primary" id="btnRun" type="button">Confirm Stable Sample</button>
+        <div class="row3"><button class="btn" id="btnPrev" type="button">◂ Previous</button><button class="btn" id="btnNext" type="button">Next ▸</button><button class="btn" id="btnAll" type="button">Jump to end</button></div>
+      </div>
+      <div class="grp explain" id="explain" aria-live="polite"></div>
+      <div class="grp">
+        <div class="gh">Route check <small>live, from the valve states</small></div>
+        <div class="route" id="route"></div>
+      </div>
+      <p class="note">Values for Stages 1–6 come from the live simulator (Main.js) without change. Stage 7 values are <b>example values</b> derived from the project stock-tank oil density (report data). Prototype only — the live Flash Process page is unchanged.</p>
+    </aside>
+  </main>
+</div>
+<script src="../../data/report-data.js"></script>
+<script src="../../components/PVTCellArt.js"></script>
+<script src="../../equipment/flash/common.js"></script>
+<script src="../../equipment/flash/parts.js"></script>
+<script src="../../equipment/flash/flash-unit.js"></script>
+<script src="../../equipment/flash/gasometer.js"></script>
+<script src="../../equipment/flash/density-meter.js"></script>
+<script src="../../equipment/flash/sim.js"></script>
+<script src="../../equipment/flash/scene.js"></script>
+<script src="details.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

@@ -9,6 +9,7 @@
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="theme.css">
 <link rel="stylesheet" href="equipment/equipment.css">
+<link rel="stylesheet" href="equipment/flash/flash.css">
 <!-- three.js for the Bottle Details / SPMC Details 3D views; nothing is fetched until a 3D view is opened -->
 <script type="importmap">
 { "imports": {
@@ -38,6 +39,16 @@
 <script src="equipment/mrms-draw.js"></script>
 <script src="components/SpmcDetails.js"></script>
 <script src="components/CellDetails.js"></script>
+<!-- shared flash equipment: Flash Unit (flask + balloon), two-section Gasometer, density meter, scene and page binder -->
+<script src="equipment/flash/common.js"></script>
+<script src="equipment/flash/parts.js"></script>
+<script src="equipment/flash/flash-unit.js"></script>
+<script src="equipment/flash/gasometer.js"></script>
+<script src="equipment/flash/density-meter.js"></script>
+<script src="equipment/flash/sim.js"></script>
+<script src="equipment/flash/scene.js"></script>
+<script src="equipment/flash/flash-host.js"></script>
+<script src="components/FlashDetails.js"></script>
   <script src="screens/showTopBar.js"></script>
   <script src="screens/showSplash.js"></script>
   <script src="screens/showDash.js"></script>
