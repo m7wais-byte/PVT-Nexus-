@@ -22,7 +22,7 @@
       principle: [
         'One upper horizontal stainless manifold runs under the top panel: sample inlet, inlet-control (isolation) valve, solenoid flow-control valve, the Flask Valve junction, pressure transducer, the balloon branch, the vacuum branch and the Gasometer outlet.',
         'Two connections go down from it. The flask has ONE shared connection through its neck: the sample goes down it and drops from its open end into the flask; gas released inside the flask rises into the headspace and returns up the same connection to the manifold and on to the Gasometer.',
-        'The blue gas balloon hangs in the right bay from its own valve assembly: the balloon branch reaches the side fitting of its brass valve, and the valve’s stem housing runs up to a collar under the top panel; the valve is worked from above the panel (Balloon Valve). There is no second valve in the line and no stand or clamp.',
+        'The blue gas balloon hangs in the right bay directly below its valve, arranged like the flask: Balloon Valve handle above the top panel, stem down to the valve body at the manifold junction, one straight tube down into the balloon neck — all on one vertical centreline. No second valve, stand or clamp.',
         'Flask Valve and Balloon Valve handles and the red-capped vacuum quick-connect sit above the top panel. In Stage 2 the temporary pump evacuates the whole section between the closed Port R valve and the closed Gasometer inlet valve — sample line, manifold, shared connection, flask and Gasometer line — with the Balloon Valve closed.'
       ],
       parts: {
@@ -40,9 +40,9 @@
         headspace: { n: 'Gas headspace', d: 'Space above the oil where gas gathers before rising up the shared connection.', in: B },
         pt: { n: 'Pressure transducer', d: 'On the manifold; reads the unit pressure shown on the lower PRESSURE display.', in: B },
         gasLine: { n: 'Gasometer line', d: 'Manifold outlet on the right post to the Gasometer inlet.', in: B },
-        balloonValve: { n: 'Balloon Valve', d: 'The balloon’s own brass valve, worked from above the top panel through an extension stem. Open only in Stage 5.', in: B },
-        balloonConn: { n: 'Balloon connection', d: 'Branch from the manifold down to the side fitting of the balloon valve.', in: B },
-        vessel: { n: 'Blue gas balloon', d: 'Tall dark-blue cylinder suspended from its own brass valve assembly (no stand or clamps), clear of the lower deck. Holds the GC gas sample; its pressure is shown below it.', in: B },
+        balloonValve: { n: 'Balloon Valve', d: 'Valve at the manifold junction above the balloon, handle above the top panel (same arrangement as the Flask Valve). Open only in Stage 5; closed during evacuation so the balloon is isolated.', in: B },
+        balloonConn: { n: 'Balloon connection', d: 'One straight vertical tube from the Balloon Valve junction down into the balloon neck.', in: B },
+        vessel: { n: 'Blue gas balloon', d: 'Tall dark-blue cylinder suspended from its straight connection below the Balloon Valve (no stand or clamps), clear of the lower deck. Holds the GC gas sample; its pressure is shown below it.', in: B },
         vacConn: { n: 'Temporary vacuum connection', d: 'Vacuum valve on the branch rising from the manifold, and a red-capped quick-connect above the top panel. The pump is external: its hose connects there for Stage 2 only, then it is disconnected and removed.', in: B },
         balance: { n: 'Balance', d: 'Weighs the flask and contents: 200 g tare, the oil collected is the gain.', in: B },
         platform: { n: 'Adjustable platform', d: 'Lab jack under the balance.', in: B },

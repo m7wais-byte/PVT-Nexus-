@@ -33,6 +33,10 @@ const { chromium } = require('playwright');
     out.stage2StartsAtGasometerInletValve = starts.some(q => Math.abs(q[1] - gv[1]) < 1 && gv[0] - q[0] > 0 && gv[0] - q[0] < 12);
     out.stage2StartsInFlask = starts.some(q => { const l = loc(q); return Math.abs(l[0] - FU.RT.shared.x) < 4 && Math.abs(l[1] - G.tip) < 1; });
     out.stage2NothingBeyondBoundaries = vl.every(x => x.g.pts.every(q => q[0] >= pr0[0] - 1 && q[0] <= gv[0]));
+    // balloon connection: one vertical centreline (valve junction, straight tube, neck); Stage 2 stops at the closed valve
+    const vr = R.vessel.g, vend = loc(vr.end), vlast = vr.pts.slice(-2).map(loc);
+    out.balloonRouteStraightIntoNeck = vlast.every(q => Math.abs(q[0] - G.balT) < .5) && Math.abs(vend[0] - G.ves.x) < .5 && vend[1] > G.vesNeck && vend[1] < G.ves.y - Parts.VG.h + 10;
+    out.stage2BalloonBranchStopsAtClosedValve = R.vac.list.every(x => x.g.pts.every(q => loc(q)[1] <= G.M + 1 || Math.abs(loc(q)[0] - G.balT) > 1 || loc(q)[1] < G.vesNeck - 40));
     const lanes = (V) => { sc.update(V); return host.querySelector('[data-l="lanes"]').innerHTML.split('class="lane"').length - 1; };
     const sim = FlashSim.create(); sim.jump([1, 2, 3]); sim.start(4); sim.tick(6);
     let V = sim.vm(6); out.stage4Lanes = lanes(V); V.valve.inlet = 0; out.stage4LanesInletClosed = lanes(V);

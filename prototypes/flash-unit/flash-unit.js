@@ -22,7 +22,7 @@
     flask: { cx: cx, neckTop: 268, neckBot: 318, neckHW: 32, wallIn: 4, bodyBot: 586, bodyHW: 150, bot: 600, botHW: 132 },
     head: { x0: cx - 40, x1: cx + 40, y0: 240, y1: 268 },
     tip: 334,                                                // open end of the shared connection, inside the flask
-    M: 70, iso: 70, sol: 150, pt: 384, balT: 548, vacX: 470, vacValveY: 46, vacY: -10,   // vacuum QC on top of the panel
+    M: 70, iso: 70, sol: 150, pt: 384, balT: 600, vacX: 470, vacValveY: 46, vacY: -10,   // vacuum QC on top of the panel
     ves: { x: 600, y: 468 },                                 // vessel origin (base centre); side fitting at y 128
     handleY: -16,                                            // handle level above the top panel
     balance: { x0: cx - 130, x1: cx + 130, pan: 600, top: 614, bot: 652 },
@@ -30,8 +30,8 @@
     arm: { y: 566, x1: cx + 172, top: 532, cock: cx + 158 },
     oilMaxH: 52                                              // drawing scale: 40 g (existing flash result) fills 52 units
   };
-  G.vesSide = [G.ves.x + Parts.VG.side[0] - 6, G.ves.y + Parts.VG.side[1]];
-  G.vesValveTop = G.ves.y + Parts.VG.valve1;
+  // balloon on the same vertical centreline as its valve: handle, junction on the manifold, straight tube, balloon neck
+  G.vesNeck = G.ves.y - Parts.VG.h - Parts.VG.sh - 10;     // top of the neck fitting
   var fl = G.flask;
 
   function hwIn(y) {
@@ -69,7 +69,7 @@
     RT.sInValve = g.sol;
     RT.gOut = F.path(cx + GX, g.tip).V(M + 8).turn(cx + GX, M, g.W, M, 8).H(g.W).end();
     RT.vac = F.path(cx + GX, g.tip).V(M + 8).turn(cx + GX, M, g.vacX, M, 8).H(g.vacX - 8).turn(g.vacX, M, g.vacX, g.vacY, 8).V(g.vacY - 14).end();
-    RT.ves = F.path(g.W, M).H(g.balT + 8).turn(g.balT, M, g.balT, g.vesSide[1], 8).V(g.vesSide[1] - 8).turn(g.balT, g.vesSide[1], g.vesSide[0], g.vesSide[1], 8)
+    RT.ves = F.path(g.W, M).H(g.balT + 8).turn(g.balT, M, g.balT, g.vesNeck, 8).V(g.vesNeck)
       .H(g.ves.x).V(g.ves.y - Parts.VG.h + 4).end();
   })();
   RT.heIn = F.geo('', RT.gOut.pts.slice().reverse());
@@ -79,7 +79,7 @@
     var g = G, M = g.M, up = function (p) { return p.turn(g.vacX, M, g.vacX, g.vacY, 8).V(g.vacY - 14).end(); };
     RT.vacIn = up(F.path(0, M).H(g.vacX - 8));                                     // sample line + manifold (inlet valves open)
     RT.vacGas = up(F.path(g.W, M).H(g.vacX + 8));                                  // Gasometer line up to the Flash Unit
-    RT.vacBal = up(F.path(g.vesSide[0], g.vesSide[1]).H(g.balT - 8).turn(g.balT, g.vesSide[1], g.balT, M, 8).V(M + 8).turn(g.balT, M, g.vacX, M, 8).H(g.vacX + 8));   // balloon stub up to its CLOSED valve
+    RT.vacBal = up(F.path(g.balT - 12, M).H(g.vacX + 8));                          // manifold up to the CLOSED Balloon Valve junction (balloon side isolated)
   })();
   RT.shared = { x: cx, y0: G.M, y1: G.tip };
 
@@ -168,12 +168,13 @@
     var g = G, s = '', M = g.M;
     s += F.tube(F.path(0, M).H(g.W).end());                                                        // the one upper manifold
     s += F.tube(F.path(cx, M).V(g.head.y0 - 16).end());                                             // flask connection (down)
-    s += F.tube(F.path(g.balT, M).V(g.vesSide[1] - 8).turn(g.balT, g.vesSide[1], g.vesSide[0], g.vesSide[1], 8).H(g.vesSide[0]).end());   // balloon connection (down)
+    s += F.tube(F.path(g.balT, M).V(g.vesNeck).end());                                           // balloon connection: straight down to the neck
     s += F.tube(F.path(g.vacX, M).V(g.vacY).end());                                                // vacuum branch, up through the top panel
     s += F.tube(F.path(g.pt, M).V(M + 26).end());
-    [g.pt, g.balT, g.vacX].forEach(function (x) { s += F.tee(x, M); });
+    [g.pt, g.vacX].forEach(function (x) { s += F.tee(x, M); });
     [[112, M], [206, M], [326, M], [510, M], [620, M]].forEach(function (q) { s += F.nut(q[0], q[1], 'h', .9); });
-    s += F.nut(cx, 170, 'v', .9) + F.nut(g.balT, 104, 'v', .9);
+    s += F.nut(cx, 170, 'v', .9) + F.nut(g.balT, 110, 'v', .9);
+    s += R(g.balT - 17, M - 13, 34, 26, 'rx="3" fill="url(#ppSteelD)" stroke="#2a3443" stroke-width="1.1"') + R(g.balT - 14, M - 10, 28, 3, 'fill="#fff" opacity=".45"');   // Balloon Valve body at the junction
     [[0, M], [g.W, M]].forEach(function (q) { var x = q[0] ? g.W - g.post : 0; s += R(x - 2, q[1] - 11, g.post + 4, 22, 'rx="2" fill="url(#ppSteelD)" stroke="#2a3443" stroke-width=".9"'); });
     // solenoid flow-control valve on the manifold
     var sx = g.sol;
@@ -185,7 +186,7 @@
     // flask-valve body at the junction, balloon valve extension stem guide
     s += R(cx - 17, M - 13, 34, 26, 'rx="3" fill="url(#ppSteelD)" stroke="#2a3443" stroke-width="1.1"') + R(cx - 14, M - 10, 28, 3, 'fill="#fff" opacity=".45"');
     s += T(26, M + 30, 'SAMPLE IN', MONO + ' font-size="9" font-weight="600" letter-spacing=".7" fill="#566578"');
-    s += T(g.W - 28, M - 20, 'TO GASOMETER', 'text-anchor="end" ' + MONO + ' font-size="9" font-weight="600" letter-spacing=".7" fill="#566578"');
+    s += T(g.W - 28, M + 30, 'TO GASOMETER', 'text-anchor="end" ' + MONO + ' font-size="9" font-weight="600" letter-spacing=".7" fill="#566578"');
     return s;
   }
   // top-panel controls: stems through the panel, handles above it (Flask Valve, Balloon Valve)
@@ -193,9 +194,8 @@
     var g = G, v = V.valve || {}, s = '', y = g.handleY;
     var ctl = function (x, yBody, open, name, knob) {
       var on = open > 0.5, o = '';
-      var w = knob ? 12 : 7;
+      var w = 7;
       o += L(x, yBody, x, y + 6, 'stroke="#2a3443" stroke-width="' + w + '"') + L(x, yBody, x, y + 6, 'stroke="#c3cad4" stroke-width="' + (w - 2) + '"');
-      if (knob) o += R(x - 10, G.rail, 20, 10, 'rx="2" fill="url(#ppSteelD)" stroke="#2a3443" stroke-width=".8"');   // hanger collar under the panel
       o += R(x - 9, -2, 18, 6, 'rx="1.5" fill="url(#ppSteelD)" stroke="#2a3443" stroke-width=".8"');            // gland on the panel
       if (knob) o += R(x - 18, y - 8, 36, 16, 'rx="5" fill="#1b1f24" stroke="#000" stroke-width="1"') + L(x - 12, y - 5, x - 12, y + 5, 'stroke="#3a414b" stroke-width="1.4"') + L(x, y - 5, x, y + 5, 'stroke="#3a414b" stroke-width="1.4"') + L(x + 12, y - 5, x + 12, y + 5, 'stroke="#3a414b" stroke-width="1.4"');
       else o += '<g transform="rotate(' + (on ? 90 : 0) + ' ' + x + ' ' + y + ')">' + R(x - 22, y - 3.6, 44, 7.2, 'rx="3.6" fill="#1b1f24" stroke="#000" stroke-width=".8"') + '</g>' + C(x, y, 4, 'fill="#c5ccd6" stroke="#2a3443" stroke-width=".8"');
@@ -206,7 +206,7 @@
       return o;
     };
     s += ctl(cx, g.M - 13, v.flask || 0, 'Flask Valve', false);
-    s += ctl(g.ves.x, g.vesValveTop, v.vessel || 0, 'Balloon Valve', true);
+    s += ctl(g.balT, g.M - 13, v.vessel || 0, 'Balloon Valve', true);
     return s;
   }
 
@@ -291,7 +291,7 @@
   function vesselSupport() { return ''; }
   function vessel(V) {
     var v = G.ves, s = '';
-    s += '<g transform="translate(' + v.x + ' ' + v.y + ')">' + Parts.vessel(V, { stem: true }) + '</g>';
+    s += '<g transform="translate(' + v.x + ' ' + v.y + ')">' + Parts.vessel(V, { neck: true }) + '</g>';
     var bp = 14.5 * F.clamp((V.balloon || 0) / 250, 0, 1), ty = v.y + 18;
     s += R(v.x - 40, ty, 80, 24, 'rx="3" fill="url(#ppScreen)" stroke="#3a4656" stroke-width="1"');
     s += T(v.x + 32, ty + 17, bp.toFixed(1) + '<tspan font-size="9" fill="#8fb3cc"> psi</tspan>', 'text-anchor="end" ' + MONO + ' font-size="13" font-weight="600" fill="' + (bp > 0.05 ? '#7ff0bf' : '#5fd4ff') + '"');
@@ -362,9 +362,9 @@
     { id: 'gasLine', n: 'Gasometer line', s: 'gas from the flask headspace', a: [G.W + 4, G.M], p: [770, 96], an: 'start' },
     { id: 'pt', n: 'Pressure transducer', s: 'unit pressure · psia', a: [G.pt + 11, G.M + 40], p: [770, 150], an: 'start' },
     { id: 'vacConn', n: 'Temporary vacuum connection', s: 'QC on the top panel · pump is external', a: [G.vacX + 10, G.vacY - 4], p: [770, -20], an: 'start' },
-    { id: 'balloonConn', n: 'Balloon connection', s: 'branch to the side fitting', a: [G.balT + 4, 104], p: [770, 274], an: 'start' },
+    { id: 'balloonConn', n: 'Balloon connection', s: 'straight down to the balloon neck', a: [G.balT + 4, 110], p: [770, 274], an: 'start' },
     { id: 'headspace', n: 'Gas headspace', s: 'gas gathers, then rises up the connection', a: [cx + 40, 380], p: [770, 334], an: 'start' },
-    { id: 'vessel', n: 'Blue gas balloon', s: 'hangs from its own valve assembly', a: [G.ves.x + 30, 330], p: [770, 394], an: 'start' },
+    { id: 'vessel', n: 'Blue gas balloon', s: 'hangs below the Balloon Valve', a: [G.ves.x + 30, 330], p: [770, 394], an: 'start' },
     { id: 'release', n: 'Gas-release region', s: 'bubbles rise through the oil', a: [cx + 80, 556], p: [770, 470], an: 'start' },
     { id: 'arm', n: 'Oil sampling side-arm', s: 'stopcock · Stage 7', a: [G.arm.x1 + 6, G.arm.top + 4], p: [770, 540], an: 'start' }
   ];

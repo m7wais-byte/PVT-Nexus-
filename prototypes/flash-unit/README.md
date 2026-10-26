@@ -14,6 +14,11 @@ No build step. `build-preview.py OUT.html` bundles the page into one file for th
 
 Review links: `?stage=n` (end of stage n) · `&run=1&t=<s>&hold=1` (run stage n, fast-forward, pause) · `&view=auto|system|fu|ga|dm` · `&labels=0` · `&details=fu|ga|dm&dview=overall|internal&demo=<stage>&dt=<s>`.
 
+## Rev. G — balloon connection matches the flask
+
+- Balloon Valve handle above the top panel → stem → valve body at the manifold junction → one straight tube → balloon neck, all on one vertical centreline, the same arrangement as the Flask Valve. The side elbow, offset branch and brass side entry are removed; a simple neck fitting remains. No second valve.
+- The gas-collection flow path follows the straight tube. In Stage 2 the evacuation reaches only the closed Balloon Valve junction, so the balloon interior stays isolated. Valve function, timing and values are unchanged.
+
 ## Rev. F — Stage 2 evacuates the whole connected section
 
 - Boundaries: the **Port R valve** (PVT Cell) and a **Gasometer inlet valve** on the external gas line. That valve is the existing gasometer valve, open in Stages 3–5 as before. Both are closed in Stage 2 and marked "BOUNDARY · SHUT".
