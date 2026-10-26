@@ -3,7 +3,7 @@
    blue gas-collection vessel and the Stage 7 syringe. The main preview and the Details views call the
    same instrument modules (FlashUnit, Gasometer, DensityMeter, Parts, PVTCellArt).
 
-   Modes: 'system' (PVT Cell -> Flash Unit -> Gasometer, vessel beside the unit), 'density' (Stage 7:
+   Modes: 'system' (computer + controller, PVT Cell -> Flash Unit (flask + blue vessel inside) -> Gasometer), 'density' (Stage 7:
    Flash Unit + Density Meter), 'fu' / 'ga' / 'dm' (one instrument, with what it connects to). */
 (function () {
   'use strict';
@@ -19,7 +19,8 @@
 
   /* placements (world units). floor = 1000 in the system scene */
   var LAYOUT = {
-    system: { vb: [-4, 236, 1778, 784], floor: 1000, cell: { x: -112, y: 622, s: 0.5 }, fu: { x: 430, y: 298, s: 0.9 }, ves: { x: 1272, y: 1000, s: 0.95 }, pump: { x: 1150, y: 1000, s: 0.8 }, ga: { x: 1344, y: 312, s: 0.8 } },
+    // left to right: computer + controller, full-size PVT Cell (same scale as the procedure pages' cell views), Flash Unit, Gasometer
+    system: { vb: [-6, 404, 1842, 616], floor: 1000, desk: { x: 10, y: 700, s: 0.55, legs: 295 }, cell: { x: 56, y: 433, s: 0.75 }, fu: { x: 840, y: 470, s: 0.68 }, pump: { x: 1392, y: 1000, s: 0.6 }, ga: { x: 1500, y: 467, s: 0.62 } },
     density: { vb: [-10, 236, 1700, 784], floor: 1000, fu: { x: 40, y: 298, s: 0.9 }, dm: { x: 790, y: 423, s: 1.4 } },
     fu: { vb: [-300, -60, 1340, 880], floor: 780, fu: { x: 0, y: 0, s: 1 }, pump: { x: 860, y: 780, s: 1 } },
     ga: { vb: [-400, -40, 1340, 920], floor: 860, ga: { x: 0, y: 0, s: 1 } },
@@ -57,13 +58,15 @@
       ext.gas = F.path(go[0], go[1]).H(xg - 10).turn(xg, go[1], xg, gi[1], 10).V(gi[1] - 10).turn(xg, gi[1], gi[0], gi[1], 10).H(gi[0]).end();
       tubes += F.tube(ext.gas);
     }
-    var vesAt = Lo.ves;
-    if (Lo.fu && vesAt) {
-      var vo = tf(Lo.fu, FU.port.vessel), vs = tf(vesAt, [PT.VG.side[0] - 6, PT.VG.side[1]]), xv = vs[0] - 30;
-      ext.ves = F.path(vo[0], vo[1]).H(xv - 10).turn(xv, vo[1], xv, vs[1], 10).V(vs[1] - 10).turn(xv, vs[1], vs[0], vs[1], 10).H(vs[0]).end();
-      tubes += F.tube(ext.ves);
+    // computer + controller and the signal cable (approved shared desk drawing)
+    if (Lo.desk && Lo.cell) {
+      layers.push({ id: 'desk', fn: function (V) {
+        return PA.desk(NS, { x: Lo.desk.x, y: Lo.desk.y, s: Lo.desk.s, legs: Lo.desk.legs, raw: true, ctl: '5,000',
+          rows: [['CELL psig', '5,000', '#7ff0bf'], ['PUMP A cc', (V.pumpA == null ? 80 : V.pumpA).toFixed(1), '#ffc56b'], ['PUMP B cc', '0.0', '#ffc56b'], ['T °C', '114.0', '#7ff0bf']] }) +
+          PA.cable({ at: Lo.cell }, Lo.desk, 40);
+      } });
+      svg += g('desk');
     }
-
     if (Lo.cell) { layers.push({ id: 'cell', fn: function (V) { return cellMarkup(Lo.cell, V); } }); svg += g('cell'); }
     svg += g('tubes', '', tubes);
 
@@ -73,7 +76,6 @@
       return g(key, place(at), inner);
     }
     if (Lo.fu) svg += inst('fu', FU, Lo.fu, opt.fuView || 'internal');
-    if (vesAt) { layers.push({ id: 'ves', fn: function (V) { return PT.vessel(V); } }); svg += g('ves', place(vesAt)); }
     if (Lo.ga) svg += inst('ga', GA, Lo.ga, opt.gaView || 'internal');
     if (Lo.dm) svg += inst('dm', DM, Lo.dm, opt.dmView || 'internal');
 
@@ -104,7 +106,7 @@
       });
       var vg = chain([tgeo(Lo.fu, FU.RT.vac), Lo.pump ? hoseGeo(Lo) : null]);
       routes.vac = { g: vg, kind: 'vac', gate: ['vac'], need: 'vacHose', kf: [[0.15, 0], [0.38, vg.L]] };
-      var vesG = chain([gaIn('2k') && rgeo(gaIn('2k')), ext.gas && rgeo(ext.gas), tgeo(Lo.fu, FU.RT.ves), ext.ves, vesAt ? tgeo(vesAt, PT.vesselRoute) : null]);
+      var vesG = chain([gaIn('2k') && rgeo(gaIn('2k')), ext.gas && rgeo(ext.gas), tgeo(Lo.fu, FU.RT.ves)]);
       routes.vessel = { g: vesG, kind: 'gas', gate: ['in2k', 'iso2k', 'vessel'], kf: [[0.15, 0], [0.40, vesG.L]] };
     } else if (Lo.ga) {
       var g2 = gaIn('2k'), g1 = gaIn('1k');
@@ -150,7 +152,7 @@
   /* ------------------------------------------------------------ temporary vacuum pump + hose */
   function hoseGeo(Lo) {
     var a = tf(Lo.fu, FU.port.vac), b = tf(Lo.pump, PT.PG.inlet);
-    return F.path(a[0], a[1]).C(a[0] + 60, a[1], b[0], b[1] - 90, b[0], b[1]).end();
+    return F.path(a[0], a[1]).C(a[0] + 50, a[1], b[0] - 8, b[1] - 200, b[0], b[1]).end();
   }
   function vacMarkup(Lo, V) {
     var show = V.vacPump || 0, h = V.vacHose || 0;
@@ -209,15 +211,10 @@
     var s = '', lab = function (x, y, n, sub, an) {
       return T(x, y, n, 'text-anchor="' + (an || 'middle') + '" ' + SANS + ' font-size="18" font-weight="700" fill="#1d2836"') + (sub ? T(x, y + 18, sub, 'text-anchor="' + (an || 'middle') + '" ' + SANS + ' font-size="12.5" fill="#566578"') : '');
     };
-    if (Lo.cell) { var cp = PA.pt({ at: Lo.cell }, 615, 30); s += lab(cp[0], cp[1] - 4, 'PVT Cell', 'Pump A → Port R'); }
+    if (Lo.cell) { var cp = PA.pt({ at: Lo.cell }, 615, 8); s += lab(cp[0], cp[1], 'PVT Cell', ''); }
     if (Lo.fu) { var f0 = tf(Lo.fu, [FU.G.W / 2, -14]); s += lab(f0[0], f0[1] - 18, 'Flash Unit', ''); }
     if (Lo.ga) { var g0 = tf(Lo.ga, [GA.G.W / 2, -16]); s += lab(g0[0], g0[1] - 18, 'Gasometer', ''); }
     if (Lo.dm) { var d0 = tf(Lo.dm, [235, -30]); s += lab(d0[0], d0[1] - 18, 'Density Meter', 'DMA 4100 M–style'); }
-    if (Lo.ves) {
-      var v0 = tf(Lo.ves, [0, -PT.VG.h - 96]), bp = 14.5 * F.clamp((V.balloon || 0) / 250, 0, 1);
-      s += T(v0[0], v0[1] - 44, 'Gas vessel', 'text-anchor="middle" ' + SANS + ' font-size="13" font-weight="700" fill="#1d2836"');
-      s += R(v0[0] - 38, v0[1] - 36, 76, 22, 'rx="4" fill="#0d1a2b"') + T(v0[0], v0[1] - 20, bp.toFixed(1) + ' psi', 'text-anchor="middle" ' + MONO + ' font-size="13" font-weight="600" fill="' + (bp > 0.05 ? '#7ff0bf' : '#5fd4ff') + '"');
-    }
     if ((V.vacPump || 0) > 0.3 && Lo.pump) { var p0 = tf(Lo.pump, [0, -PT.PG.h - 24]); s += T(p0[0], p0[1], 'Temporary vacuum pump', 'text-anchor="middle" ' + SANS + ' font-size="12.5" font-weight="700" fill="#2f6fd0" opacity="' + r1(V.vacPump) + '"'); }
     return s;
   }

@@ -14,7 +14,14 @@ No build step. `build-preview.py OUT.html` bundles the page into one file for th
 
 Review links: `?stage=n` (end of stage n) · `&run=1&t=<s>&hold=1` (run stage n, fast-forward, pause) · `&view=auto|system|fu|ga|dm` · `&labels=0` · `&details=fu|ga|dm&dview=overall|internal&demo=<stage>&dt=<s>`.
 
-## Rev. B (this revision)
+## Rev. C — layout (this revision)
+
+- System view arranged left to right like the live Flash Process page: computer + controller (shared `PVTCellArt.desk` + signal cable), the **full-size PVT Cell** (scale 0.75, shared drawing), Flash Unit, Gasometer.
+- The **blue gas-collection vessel stands inside the Flash Unit** frame, right bay, on the lower deck with a strap clamp; the large flask moved left within the frame (same size). Gas-collection line: Gasometer → gas line → Flash Unit manifold → vessel branch → the vessel's own top valve (no extra valve). Vessel pressure display above the vessel.
+- Vacuum branch moved to a quick-connect high on the right post; the temporary pump stands between the Flash Unit and the Gasometer during Stage 2 only.
+- Same components in System, Flash Unit, Stage 7 and Details views. Values and timings unchanged.
+
+## Rev. B
 
 Equipment redrawn from the written description of the laboratory photographs. **The photographs themselves were not available in the session**, so proportions come from the description; please compare against the photos.
 

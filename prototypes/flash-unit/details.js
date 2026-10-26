@@ -23,7 +23,7 @@
         'Sample from Pump A enters at the sample inlet and passes the inlet-control (isolation) valve and the solenoid flow-control valve on the upper stainless-steel manifold, where its pressure is let down.',
         'The sample delivery tube runs down through the sealed flask head; its tip is inside the large flask. Oil falls from the tip and collects at the bottom of the flask, which stands on the balance on an adjustable platform.',
         'Gas released from the sample rises through the oil into the headspace and leaves only through the headspace gas outlet — a separate passage in the head, opening above the liquid — to the Gasometer line.',
-        'The gas manifold also carries the gas-collection vessel line (Stage 5) and a capped quick-connect for a temporary vacuum pump (Stage 2). The vacuum pump is external equipment: it is connected for Stage 2 and removed afterwards.'
+        'The gas manifold also carries the branch to the blue gas-collection vessel, which stands inside the same frame to the right of the flask (Stage 5) and a capped quick-connect for a temporary vacuum pump (Stage 2). The vacuum pump is external equipment: it is connected for Stage 2 and removed afterwards.'
       ],
       parts: {
         sampleIn: { n: 'Sample inlet', d: 'Bulkhead on the left post where the sample line from the PVT Cell (Pump A through the Port R valve) enters.', in: B },
@@ -40,7 +40,8 @@
         headspace: { n: 'Gas headspace', d: 'Space above the oil where the released gas gathers before leaving through the headspace outlet.', in: B },
         outlet: { n: 'Headspace gas outlet', d: 'Opening of the outlet passage in the neck, above the liquid — never submerged. It leads up to the gas manifold and the Gasometer line.', in: B },
         gasLine: { n: 'Gasometer line', d: 'Gas manifold outlet to the Gasometer inlet. Gas reaches it only from the flask headspace (or from the Gasometer, for helium and vessel filling).', in: B },
-        vesselConn: { n: 'Gas-collection vessel connection', d: 'Branch of the gas manifold to the blue vessel; the vessel’s own top valve isolates it. Used in Stage 5.', in: B },
+        vesselConn: { n: 'Gas-collection vessel connection', d: 'Branch of the gas manifold down to the side connection of the blue vessel’s top valve; that valve is the only isolation. Used in Stage 5.', in: B },
+        vessel: { n: 'Blue gas-collection vessel', d: 'Tall dark-blue cylinder with a brass top valve and black knob, standing on the lower deck in the right bay of the frame with a strap clamp to the post. It holds the GC gas sample; its pressure is shown on the small display above it.', in: B },
         vacConn: { n: 'Temporary vacuum connection', d: 'Vacuum valve and a capped quick-connect on the right post. The vacuum pump itself is external and temporary: connected for Stage 2, then disconnected and removed.', in: B },
         balance: { n: 'Balance', d: 'Weighs the flask and contents: 200 g tare, the oil collected is the gain.', in: B },
         platform: { n: 'Adjustable platform', d: 'Lab jack under the balance, used to raise the flask to the head and lower it for removal.', in: B },

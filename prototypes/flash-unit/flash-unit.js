@@ -15,18 +15,19 @@
   'use strict';
   var F = window.FX, R = F.R, C = F.C, E = F.E, P = F.P, L = F.L, T = F.T, MONO = F.MONO, SANS = F.SANS, r1 = F.r1;
 
-  var cx = 340;
+  var cx = 262;
   var G = {
     W: 720, H: 780, post: 18, rail: 22, box0: 690, box1: 752,
     flask: { cx: cx, neckTop: 268, neckBot: 318, neckHW: 32, wallIn: 4, bodyBot: 586, bodyHW: 150, bot: 600, botHW: 132 },
     head: { x0: cx - 46, x1: cx + 46, y0: 236, y1: 268, insertBot: 292 },
     inlet: { x: cx - 22, tip: 392 },
     outlet: { x: cx + 22, open: 300 },
-    sY: 72, gY: 120, iso: 84, sol: 166, pt: 446, vacX: 560, vacValveY: 430, vesX: 640, vesY: 200, vacY: 600,
+    sY: 72, gY: 120, iso: 84, sol: 160, pt: 380, vacX: 660, vacValveY: 162, vesX: 500, vesY: 350, vacY: 214,
+    ves: { x: 600, y: 690 },                                 // blue gas-collection vessel, standing inside the frame (right bay)
     plate: { x0: 34, x1: 702, y0: 34, y1: 148 },
     balance: { x0: cx - 130, x1: cx + 130, pan: 600, top: 614, bot: 652 },
     jack: { top: 652, bot: 690, hw: 140 },
-    arm: { y: 566, x1: cx + 176, top: 532, cock: cx + 160 },
+    arm: { y: 566, x1: cx + 172, top: 532, cock: cx + 158 },
     oilMaxH: 52                                              // drawing scale: 40 g (existing flash result) fills 52 units
   };
   var fl = G.flask;
@@ -67,7 +68,9 @@
     // evacuation: opening -> gas manifold -> vacuum valve -> quick-connect on the right post
     RT.vac = F.path(ox, g.outlet.open).V(g.gY + 8).turn(ox, g.gY, g.vacX, g.gY, 8).H(g.vacX - 8).turn(g.vacX, g.gY, g.vacX, g.vacY, 8).V(g.vacY - 8).turn(g.vacX, g.vacY, g.W, g.vacY, 8).H(g.W).end();
     // gas-collection vessel: from the Gasometer bulkhead along the manifold to the vessel bulkhead
-    RT.ves = F.path(g.W, g.gY).H(g.vesX + 8).turn(g.vesX, g.gY, g.vesX, g.vesY, 8).V(g.vesY - 8).turn(g.vesX, g.vesY, g.W, g.vesY, 8).H(g.W).end();
+    // gas-collection: from the Gasometer bulkhead along the manifold, down the vessel branch, into the vessel's own top valve
+    var vsx = g.ves.x + Parts.VG.side[0] - 6, vtop = g.ves.y - Parts.VG.h + 4;
+    RT.ves = F.path(g.W, g.gY).H(g.vesX + 8).turn(g.vesX, g.gY, g.vesX, g.vesY, 8).V(g.vesY - 8).turn(g.vesX, g.vesY, vsx, g.vesY, 8).H(g.ves.x).V(vtop).end();
   })();
   RT.heIn = F.geo('', RT.gOut.pts.slice().reverse());
 
@@ -165,13 +168,13 @@
     s += F.tube(F.path(0, g.sY).H(ix - 8).turn(ix, g.sY, ix, g.head.y0 - 16, 8).V(g.head.y0 - 16).end());
     s += F.tube(F.path(ox, g.head.y0 - 16).V(g.gY + 8).turn(ox, g.gY, g.W, g.gY, 8).H(g.W).end());
     s += F.tube(F.path(g.vacX, g.gY).V(g.vacY - 8).turn(g.vacX, g.vacY, g.W, g.vacY, 8).H(g.W).end());
-    s += F.tube(F.path(g.vesX, g.gY).V(g.vesY - 8).turn(g.vesX, g.vesY, g.W, g.vesY, 8).H(g.W).end());
+    s += F.tube(F.path(g.vesX, g.gY).V(g.vesY - 8).turn(g.vesX, g.vesY, g.ves.x + Parts.VG.side[0] - 6, g.vesY, 8).H(g.ves.x + Parts.VG.side[0] - 6).end());
     s += F.tube(F.path(g.pt, g.gY).V(g.gY - 26).end());
     [g.pt, g.vacX, g.vesX].forEach(function (x) { s += F.tee(x, g.gY); });
-    [[100 + 30, g.sY], [250, g.sY], [ox + 52, g.gY], [520, g.gY], [686, g.gY]].forEach(function (q) { s += F.nut(q[0], q[1], 'h', .9); });
-    s += F.nut(ix, 160, 'v', .9) + F.nut(ox, 170, 'v', .9) + F.nut(g.vacX, 300, 'v', .9);
+    [[124, g.sY], [206, g.sY], [ox + 44, g.gY], [440, g.gY], [580, g.gY]].forEach(function (q) { s += F.nut(q[0], q[1], 'h', .9); });
+    s += F.nut(ix, 160, 'v', .9) + F.nut(ox, 170, 'v', .9) + F.nut(g.vesX, 250, 'v', .9);
     // bulkheads on the posts
-    [[0, g.sY], [g.W, g.gY], [g.W, g.vesY], [g.W, g.vacY]].forEach(function (q) { var x = q[0] ? g.W - g.post : 0; s += R(x - 2, q[1] - 11, g.post + 4, 22, 'rx="2" fill="url(#ppSteelD)" stroke="#2a3443" stroke-width=".9"'); });
+    [[0, g.sY], [g.W, g.gY], [g.W, g.vacY]].forEach(function (q) { var x = q[0] ? g.W - g.post : 0; s += R(x - 2, q[1] - 11, g.post + 4, 22, 'rx="2" fill="url(#ppSteelD)" stroke="#2a3443" stroke-width=".9"'); });
     // solenoid flow-control valve: body on the line, coil above, cable
     var sx = g.sol;
     s += R(sx - 15, g.sY - 11, 30, 22, 'rx="2" fill="url(#ppSteelD)" stroke="#2a3443" stroke-width="1"');
@@ -184,8 +187,8 @@
     // labels printed on the mounting plate
     s += T(116, 110, 'SAMPLE IN', MONO + ' font-size="9" font-weight="600" letter-spacing=".7" fill="#566578"');
     s += T(g.W - 30, g.gY - 14, 'TO GASOMETER', 'text-anchor="end" ' + MONO + ' font-size="9" font-weight="600" letter-spacing=".7" fill="#566578"');
-    s += T(g.W - 30, g.vesY - 12, 'GAS VESSEL', 'text-anchor="end" ' + MONO + ' font-size="9" font-weight="600" letter-spacing=".7" fill="#566578"');
-    s += T(g.W - 30, g.vacY - 12, 'VACUUM QC', 'text-anchor="end" ' + MONO + ' font-size="9" font-weight="600" letter-spacing=".7" fill="#566578"');
+    s += T(g.vesX + 12, g.vesY - 10, 'TO VESSEL', MONO + ' font-size="9" font-weight="600" letter-spacing=".7" fill="#566578"');
+    s += T(g.W - 30, g.vacY + 24, 'VACUUM QC', 'text-anchor="end" ' + MONO + ' font-size="9" font-weight="600" letter-spacing=".7" fill="#566578"');
     return s;
   }
 
@@ -254,12 +257,29 @@
     s += R(a.x1 - 7, a.top - 8, 14, 12, 'rx="2" fill="url(#ppSteelD)" stroke="#2a3443" stroke-width=".8"') + R(a.x1 - 5, a.top - 13, 10, 6, 'rx="1" fill="#e9edf2" stroke="#5d6878" stroke-width=".7"');
     return s;
   }
+  // blue gas-collection vessel inside the right bay: stands on the lower deck, strap clamp to the right post
+  function vesselSupport() {
+    var v = G.ves, s = '', yc = v.y - 150;
+    s += R(v.x - 44, v.y - 6, 88, 6, 'rx="1.5" fill="url(#ppSteelV)" stroke="#5d6878" stroke-width=".8"');
+    s += R(v.x + 30, yc - 4, G.W - G.post - v.x - 30, 8, 'fill="url(#ppSteelV)" stroke="#5d6878" stroke-width=".7"');
+    return s;
+  }
+  function vessel(V) {
+    var v = G.ves, s = '', yc = v.y - 150;
+    s += '<g transform="translate(' + v.x + ' ' + v.y + ')">' + Parts.vessel(V) + '</g>';
+    s += R(v.x - 33, yc - 6, 66, 12, 'rx="3" fill="none" stroke="#1b1f24" stroke-width="3"');
+    var bp = 14.5 * F.clamp((V.balloon || 0) / 250, 0, 1), ty = v.y - Parts.VG.h - 142;
+    s += R(v.x - 40, ty, 80, 24, 'rx="3" fill="url(#ppScreen)" stroke="#3a4656" stroke-width="1"');
+    s += T(v.x + 32, ty + 17, bp.toFixed(1) + '<tspan font-size="9" fill="#8fb3cc"> psi</tspan>', 'text-anchor="end" ' + MONO + ' font-size="13" font-weight="600" fill="' + (bp > 0.05 ? '#7ff0bf' : '#5fd4ff') + '"');
+    s += T(v.x, ty - 6, 'GAS VESSEL', 'text-anchor="middle" ' + MONO + ' font-size="8.5" font-weight="600" letter-spacing=".7" fill="#566578"');
+    return s;
+  }
   function valves(V) {
     var g = G, v = V.valve || {}, s = '';
     s += F.valve(g.iso, g.sY, 'h', v.inlet || 0, { side: 'up', tag: [0, 34] });
     // solenoid state lamp (energised = open)
     s += C(g.sol, g.sY - 30, 3.6, 'fill="' + ((v.inlet || 0) > 0.5 ? '#2fbf7f' : '#59626e') + '"');
-    s += F.valve(g.vacX, g.vacValveY, 'v', v.vac || 0, { side: 'left', tag: [-56, 0] });
+    s += F.valve(g.vacX, g.vacValveY, 'v', v.vac || 0, { side: 'left', tag: [-58, 2] });
     // quick-connect: capped unless the temporary vacuum hose is attached
     var h = V.vacHose || 0;
     s += R(g.W + 2, g.vacY - 8, 14, 16, 'rx="2" fill="url(#ppSteelD)" stroke="#2a3443" stroke-width=".9"');
@@ -288,6 +308,8 @@
       { id: 'fu-drop', fn: drops },
       { id: 'fu-ffront', html: flaskFront() + head(cut) },
       { id: 'fu-arm', fn: arm },
+      { id: 'fu-vsup', html: vesselSupport() },
+      { id: 'fu-ves', fn: vessel },
       { id: 'fu-valves', fn: valves },
       { id: 'fu-front', html: frameFront() },
       { id: 'fu-disp', fn: displays }
@@ -302,23 +324,24 @@
     { id: 'tube', n: 'Sample delivery tube', s: 'through the head', a: [G.inlet.x - 3, 200], p: [-34, 196], an: 'end' },
     { id: 'head', n: 'Flask head', s: 'sealed · 2 passages', a: [G.head.x0, 250], p: [-34, 258], an: 'end' },
     { id: 'tip', n: 'Delivery tip', s: 'inside the flask', a: [G.inlet.x - 4, G.inlet.tip], p: [-34, 330], an: 'end' },
-    { id: 'flask', n: 'Large glass flask', s: 'separation happens here', a: [210, 470], p: [-34, 420], an: 'end' },
-    { id: 'oil', n: 'Collected oil', s: 'weighed on the balance', a: [214, 586], p: [-34, 520], an: 'end' },
-    { id: 'balance', n: 'Balance', s: 'tare + oil', a: [212, 630], p: [-34, 610], an: 'end' },
-    { id: 'platform', n: 'Adjustable platform', s: 'lab jack', a: [200, 672], p: [-34, 680], an: 'end' },
-    { id: 'flowCtl', n: 'Flow-control component', s: 'solenoid valve', a: [G.sol, 20], p: [G.sol + 60, -40], an: 'middle' },
-    { id: 'pt', n: 'Pressure transducer', s: 'unit pressure · psia', a: [G.pt, 58], p: [G.pt + 40, -40], an: 'middle' },
-    { id: 'gasLine', n: 'Gasometer line', s: 'headspace gas out', a: [G.W + 4, G.gY], p: [770, G.gY], an: 'start' },
-    { id: 'vesselConn', n: 'Gas-collection vessel connection', s: 'line to the blue vessel', a: [G.W + 4, G.vesY], p: [770, G.vesY], an: 'start' },
-    { id: 'outlet', n: 'Headspace gas outlet', s: 'opening above the liquid', a: [G.outlet.x + 4, G.outlet.open], p: [770, 280], an: 'start' },
-    { id: 'headspace', n: 'Gas headspace', s: 'gas gathers here', a: [cx + 60, 380], p: [770, 360], an: 'start' },
-    { id: 'release', n: 'Gas-release region', s: 'bubbles rise through the oil', a: [cx + 90, 540], p: [770, 450], an: 'start' },
-    { id: 'arm', n: 'Oil sampling side-arm', s: 'stopcock · Stage 7', a: [G.arm.x1 + 6, G.arm.top + 4], p: [770, 530], an: 'start' },
-    { id: 'vacConn', n: 'Temporary vacuum connection', s: 'quick-connect · pump is external', a: [G.W + 20, G.vacY], p: [770, G.vacY + 20], an: 'start' }
+    { id: 'flask', n: 'Large glass flask', s: 'separation happens here', a: [cx - 130, 470], p: [-34, 420], an: 'end' },
+    { id: 'oil', n: 'Collected oil', s: 'weighed on the balance', a: [cx - 126, 586], p: [-34, 520], an: 'end' },
+    { id: 'balance', n: 'Balance', s: 'tare + oil', a: [cx - 128, 630], p: [-34, 610], an: 'end' },
+    { id: 'platform', n: 'Adjustable platform', s: 'lab jack', a: [cx - 140, 672], p: [-34, 680], an: 'end' },
+    { id: 'flowCtl', n: 'Flow-control component', s: 'solenoid valve', a: [G.sol, 20], p: [G.sol + 40, -40], an: 'middle' },
+    { id: 'pt', n: 'Pressure transducer', s: 'unit pressure · psia', a: [G.pt, 58], p: [G.pt + 70, -40], an: 'middle' },
+    { id: 'gasLine', n: 'Gasometer line', s: 'headspace gas out', a: [G.W + 4, G.gY], p: [770, 96], an: 'start' },
+    { id: 'vacConn', n: 'Temporary vacuum connection', s: 'quick-connect · pump is external', a: [G.W + 20, G.vacY], p: [770, 176], an: 'start' },
+    { id: 'outlet', n: 'Headspace gas outlet', s: 'opening above the liquid', a: [G.outlet.x + 4, G.outlet.open], p: [770, 256], an: 'start' },
+    { id: 'vesselConn', n: 'Gas-collection vessel connection', s: 'branch to the vessel valve', a: [G.vesX + 4, 300], p: [770, 316], an: 'start' },
+    { id: 'headspace', n: 'Gas headspace', s: 'gas gathers here', a: [cx + 50, 380], p: [770, 376], an: 'start' },
+    { id: 'vessel', n: 'Blue gas-collection vessel', s: 'own top valve · inside the frame', a: [G.ves.x + 30, 470], p: [770, 450], an: 'start' },
+    { id: 'release', n: 'Gas-release region', s: 'bubbles rise through the oil', a: [cx + 80, 556], p: [770, 520], an: 'start' },
+    { id: 'arm', n: 'Oil sampling side-arm', s: 'stopcock · Stage 7', a: [G.arm.x1 + 6, G.arm.top + 4], p: [770, 590], an: 'start' }
   ];
 
   window.FlashUnit = {
     G: G, RT: RT, layers: layers, oilTop: oilTop, LABELS: LABELS,
-    port: { sampleIn: [0, G.sY], gasOut: [G.W, G.gY], vessel: [G.W, G.vesY], vac: [G.W + 16, G.vacY], sample: [G.arm.x1, G.arm.top - 13] }
+    port: { sampleIn: [0, G.sY], gasOut: [G.W, G.gY], vac: [G.W + 16, G.vacY], sample: [G.arm.x1, G.arm.top - 13] }
   };
 })();
