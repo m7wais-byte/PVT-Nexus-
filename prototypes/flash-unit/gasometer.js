@@ -17,6 +17,7 @@
   var F = window.FX, R = F.R, C = F.C, E = F.E, P = F.P, L = F.L, T = F.T, MONO = F.MONO, SANS = F.SANS, r1 = F.r1;
 
   var G = {
+    inV: -48,                                                // Gasometer inlet isolation valve on the external gas line
     W: 520, H: 860, foot: 840, supY: 254, valveY: 292, isoY: 330,
     ch0: 372, ch1: 744,
     sec: [
@@ -30,7 +31,7 @@
   /* routes: external inlet (left side) -> supply line -> section inlet valve -> junction -> isolation -> chamber top */
   var RT = {};
   G.sec.forEach(function (s) {
-    RT['in' + s.k] = F.path(0, G.supY).H(s.inX - 8).turn(s.inX, G.supY, s.inX, G.valveY, 8).V(G.valveY - 8).turn(s.inX, G.valveY, s.cx, G.valveY, 8)
+    RT['in' + s.k] = F.path(G.inV - 26, G.supY).H(s.inX - 8).turn(s.inX, G.supY, s.inX, G.valveY, 8).V(G.valveY - 8).turn(s.inX, G.valveY, s.cx, G.valveY, 8)
       .H(s.cx - 8).turn(s.cx, G.valveY, s.cx, G.ch0 + 4, 8).V(G.ch0 + 4).end();
     RT['out' + s.k] = F.geo('', RT['in' + s.k].pts.slice().reverse());
   });
@@ -72,6 +73,7 @@
     // external inlet bulkhead (left side) + supply line
     s += F.tube(F.path(0, G.supY).H(G.sec[1].inX).end());
     G.sec.forEach(function (sc) { s += F.tube(F.path(sc.inX, G.supY).V(G.valveY - 8).turn(sc.inX, G.valveY, sc.cx, G.valveY, 8).H(sc.cx - 8).turn(sc.cx, G.valveY, sc.cx, G.ch0, 8).V(G.ch0).end()); s += F.tee(sc.inX, G.supY); });
+    s += F.tube(F.path(G.inV - 26, G.supY).H(-8).end());
     s += R(-8, G.supY - 11, 14, 22, 'rx="2" fill="url(#ppSteelD)" stroke="#2a3443" stroke-width=".9"') + F.nut(-12, G.supY, 'h', .9);
     s += T(12, G.supY - 14, 'GAS IN', MONO + ' font-size="8.5" font-weight="700" letter-spacing=".6" fill="#33404f"');
     return s;
@@ -136,6 +138,7 @@
   }
   function valves(V) {
     var s = '', v = V.valve || {};
+    s += F.valve(G.inV, G.supY, 'h', v.gaso || 0, { side: 'up', tag: [0, -42] });
     G.sec.forEach(function (sc) {
       s += F.valve(sc.inX, (G.supY + G.valveY) / 2 + 2, 'v', v['in' + sc.k] || 0, { side: 'right', ring: true });
       s += F.valve(sc.ventX, G.valveY, 'h', 0, { side: 'down' });
@@ -157,12 +160,13 @@
   }
 
   var LABELS = [
-    { id: 'inlets', n: 'Inlets', s: 'gas in · section inlet valves', a: [-10, G.supY], p: [-50, G.supY], an: 'end' },
-    { id: 'isolation', n: 'Isolation valves', s: 'one per chamber', a: [G.sec[0].cx - 10, G.isoY], p: [-50, G.isoY + 20], an: 'end' },
-    { id: 'chamber2k', n: '2,000 cc chamber', s: 'used first', a: [G.sec[0].cx - G.sec[0].hw - 30, 450], p: [-50, 440], an: 'end' },
-    { id: 'chambers', n: 'Transparent chambers', s: 'gas column + boundary', a: [G.sec[0].cx - G.sec[0].hw, 560], p: [-50, 540], an: 'end' },
-    { id: 'scales', n: 'Graduated scales', s: 'cc', a: [G.sec[0].cx - G.sec[0].hw - 20, 650], p: [-50, 640], an: 'end' },
-    { id: 'knobs', n: 'Lower control knobs', s: 'manual volume control', a: [G.sec[0].cx - 26, 798], p: [-50, 790], an: 'end' },
+    { id: 'mainInlet', n: 'Gasometer inlet valve', s: 'isolates the meter · closed in Stage 2', a: [G.inV, G.supY - 22], p: [-90, 190], an: 'end' },
+    { id: 'inlets', n: 'Inlets', s: 'gas in · section inlet valves', a: [-10, G.supY + 8], p: [-90, G.supY + 30], an: 'end' },
+    { id: 'isolation', n: 'Isolation valves', s: 'one per chamber', a: [G.sec[0].cx - 10, G.isoY], p: [-90, G.isoY + 50], an: 'end' },
+    { id: 'chamber2k', n: '2,000 cc chamber', s: 'used first', a: [G.sec[0].cx - G.sec[0].hw - 30, 450], p: [-90, 440], an: 'end' },
+    { id: 'chambers', n: 'Transparent chambers', s: 'gas column + boundary', a: [G.sec[0].cx - G.sec[0].hw, 560], p: [-90, 540], an: 'end' },
+    { id: 'scales', n: 'Graduated scales', s: 'cc', a: [G.sec[0].cx - G.sec[0].hw - 20, 650], p: [-90, 640], an: 'end' },
+    { id: 'knobs', n: 'Lower control knobs', s: 'manual volume control', a: [G.sec[0].cx - 26, 798], p: [-90, 790], an: 'end' },
     { id: 'volDisp', n: 'Volume displays', s: 'cc per section', a: [G.sec[1].x1 - 16, 68], p: [560, 60], an: 'start' },
     { id: 'tempDisp', n: 'Temperature displays', s: 'example ambient value', a: [G.sec[1].x1 - 16, 113], p: [560, 116], an: 'start' },
     { id: 'gauges', n: 'Compound gauges', s: 'vacuum | pressure', a: [(G.sec[1].x0 + G.sec[1].x1) / 2 + 48, 186], p: [560, 186], an: 'start' },
@@ -174,5 +178,5 @@
   // split of the existing total reading across the two sections (2,000 cc first)
   function split(total) { var a = Math.min(Math.max(total, 0), 2000); return { k2: a, k1: Math.max(0, total - 2000) }; }
 
-  window.Gasometer = { G: G, RT: RT, layers: layers, LABELS: LABELS, split: split, port: { gas: [-20, G.supY] } };
+  window.Gasometer = { G: G, RT: RT, layers: layers, LABELS: LABELS, split: split, port: { gas: [G.inV - 26, G.supY], valve: [G.inV, G.supY] } };
 })();

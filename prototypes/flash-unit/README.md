@@ -14,6 +14,12 @@ No build step. `build-preview.py OUT.html` bundles the page into one file for th
 
 Review links: `?stage=n` (end of stage n) · `&run=1&t=<s>&hold=1` (run stage n, fast-forward, pause) · `&view=auto|system|fu|ga|dm` · `&labels=0` · `&details=fu|ga|dm&dview=overall|internal&demo=<stage>&dt=<s>`.
 
+## Rev. F — Stage 2 evacuates the whole connected section
+
+- Boundaries: the **Port R valve** (PVT Cell) and a **Gasometer inlet valve** on the external gas line. That valve is the existing gasometer valve, open in Stages 3–5 as before. Both are closed in Stage 2 and marked "BOUNDARY · SHUT".
+- Between them, the inlet-control, flow-control, Flask and vacuum valves are open. The Balloon Valve stays closed. Evacuation flows from four branches to the pump: the sample line from Port R, the flask up the shared connection, the Gasometer line, and the balloon stub up to its closed valve. The whole section is tinted while evacuating.
+- Valve-state change: the inlet-control and flow-control valves now also open in Stage 2 (before, only in Stage 4) so the sample line is evacuated. Pump A and Port R stay closed. Values and timing are unchanged; the vacuum valve closes before the hose is disconnected.
+
 ## Rev. E — balloon mounting and vacuum quick-connect
 
 - The balloon's stand, ring clamps and post brackets are removed. The balloon hangs from its own brass valve assembly: the manifold branch goes to the side fitting, and the valve's stem housing rises to a collar under the top panel and the Balloon Valve handle above it. The body is clear of the lower deck.

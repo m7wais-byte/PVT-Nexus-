@@ -17,13 +17,13 @@
       eyebrow: 'Flash Unit Details', name: 'Atmospheric Flash Unit', variant: 'Black frame · clear panels', mod: 'FlashUnit', mode: 'fu',
       views: [['overall', 'Overall'], ['internal', 'Internal / flow']], viewArg: { overall: 'exterior', internal: 'internal' },
       vb: [-330, -200, 1560, 1020], ls: 1.15,
-      demos: [[4, 'Sample down · gas back up'], [2, 'Evacuation (temporary pump)'], [3, 'Helium fill'], [5, 'Gas to balloon']],
+      demos: [[4, 'Sample down · gas back up'], [2, 'Evacuation (whole section)'], [3, 'Helium fill'], [5, 'Gas to balloon']],
       measures: 'Measures the collected oil (balance: gross − tare) and passes the flashed gas, from the flask headspace only, to the Gasometer.',
       principle: [
         'One upper horizontal stainless manifold runs under the top panel: sample inlet, inlet-control (isolation) valve, solenoid flow-control valve, the Flask Valve junction, pressure transducer, the balloon branch, the vacuum branch and the Gasometer outlet.',
         'Two connections go down from it. The flask has ONE shared connection through its neck: the sample goes down it and drops from its open end into the flask; gas released inside the flask rises into the headspace and returns up the same connection to the manifold and on to the Gasometer.',
         'The blue gas balloon hangs in the right bay from its own valve assembly: the balloon branch reaches the side fitting of its brass valve, and the valve’s stem housing runs up to a collar under the top panel; the valve is worked from above the panel (Balloon Valve). There is no second valve in the line and no stand or clamp.',
-        'Flask Valve and Balloon Valve handles and the red-capped vacuum quick-connect sit above the top panel. The quick-connect is used only with the temporary pump in Stage 2; the pump is external.'
+        'Flask Valve and Balloon Valve handles and the red-capped vacuum quick-connect sit above the top panel. In Stage 2 the temporary pump evacuates the whole section between the closed Port R valve and the closed Gasometer inlet valve — sample line, manifold, shared connection, flask and Gasometer line — with the Balloon Valve closed.'
       ],
       parts: {
         sampleIn: { n: 'Sample inlet', d: 'Bulkhead on the left post where the sample line from the PVT Cell (Pump A through the Port R valve) enters the manifold.', in: B },
@@ -69,6 +69,7 @@
         volDisp: { n: 'Volume displays', d: 'One per section, in cc. Left + right = total Gasometer reading.', in: B },
         tempDisp: { n: 'Temperature displays', d: 'One per section, °C. The simulator does not carry a gasometer temperature, so an example ambient value (22.0 °C) is shown.', in: B },
         gauges: { n: 'Compound gauges', d: 'Vacuum and pressure scale; the needle stays near atmospheric while the section measures.', in: B },
+        mainInlet: { n: 'Gasometer inlet valve', d: 'Isolation valve on the external gas line at the Gasometer. Open in Stages 3–5; closed in Stage 2 so the evacuation stops here and the measuring chambers are not evacuated.', in: B },
         inlets: { n: 'Inlets', d: 'External gas connection and each section’s inlet valve (black handle).', in: B },
         vents: { n: 'Vents', d: 'Vent valve per section to atmosphere; closed throughout this procedure.', in: B },
         isolation: { n: 'Isolation valves', d: 'Connect each chamber to its section line; open only while that section is measuring.', in: B },

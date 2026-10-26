@@ -23,6 +23,16 @@ const { chromium } = require('playwright');
     out.gasEndsIn2000ccChamber = Math.abs(gEnd[0] - s2.cx) < 1 && Math.abs(gEnd[1] - Gasometer.G.ch0 - 4) < 1;
     const pr = PVTCellArt.port({ at: sc.Lo.cell }, 'R');
     out.sampleRoutePassesPortR = R.sample.g.pts.some(q => Math.hypot(q[0] - pr[0], q[1] - pr[1]) < .6);
+    // Stage 2: evacuation covers the whole section; boundaries closed; balloon closed; nothing drawn from cell, balloon or chambers
+    const s2v = FlashSim.create(); s2v.jump([1]); s2v.start(2); s2v.tick(6); const V2 = s2v.vm(6), vv = V2.valve;
+    out.stage2Boundaries = { portR_pumpA: vv.pumpA, gasometerInlet: vv.gaso, balloon: vv.vessel, flask: vv.flask > .5, inlet: vv.inlet > .5, vac: vv.vac > .5 };
+    const vl = R.vac.list, vends = vl.map(x => x.g.end), starts = vl.map(x => x.g.start);
+    out.stage2AllBranchesEndAtPump = vends.every(e => Math.hypot(e[0] - vends[0][0], e[1] - vends[0][1]) < 1);
+    const pr0 = PVTCellArt.port({ at: sc.Lo.cell }, 'R'), gv = [sc.Lo.ga.x + Gasometer.port.valve[0] * sc.Lo.ga.s, sc.Lo.ga.y + Gasometer.port.valve[1] * sc.Lo.ga.s];
+    out.stage2StartsAtPortR = starts.some(q => Math.hypot(q[0] - pr0[0], q[1] - pr0[1]) < 1);
+    out.stage2StartsAtGasometerInletValve = starts.some(q => Math.abs(q[1] - gv[1]) < 1 && gv[0] - q[0] > 0 && gv[0] - q[0] < 12);
+    out.stage2StartsInFlask = starts.some(q => { const l = loc(q); return Math.abs(l[0] - FU.RT.shared.x) < 4 && Math.abs(l[1] - G.tip) < 1; });
+    out.stage2NothingBeyondBoundaries = vl.every(x => x.g.pts.every(q => q[0] >= pr0[0] - 1 && q[0] <= gv[0]));
     const lanes = (V) => { sc.update(V); return host.querySelector('[data-l="lanes"]').innerHTML.split('class="lane"').length - 1; };
     const sim = FlashSim.create(); sim.jump([1, 2, 3]); sim.start(4); sim.tick(6);
     let V = sim.vm(6); out.stage4Lanes = lanes(V); V.valve.inlet = 0; out.stage4LanesInletClosed = lanes(V);

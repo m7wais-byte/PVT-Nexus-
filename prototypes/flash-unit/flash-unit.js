@@ -73,6 +73,14 @@
       .H(g.ves.x).V(g.ves.y - Parts.VG.h + 4).end();
   })();
   RT.heIn = F.geo('', RT.gOut.pts.slice().reverse());
+  // Stage 2 evacuation covers the whole section between the closed boundary valves (Port R at the PVT Cell,
+  // Gasometer inlet valve): each connected branch is drawn toward the vacuum branch and up to the QC.
+  (function () {
+    var g = G, M = g.M, up = function (p) { return p.turn(g.vacX, M, g.vacX, g.vacY, 8).V(g.vacY - 14).end(); };
+    RT.vacIn = up(F.path(0, M).H(g.vacX - 8));                                     // sample line + manifold (inlet valves open)
+    RT.vacGas = up(F.path(g.W, M).H(g.vacX + 8));                                  // Gasometer line up to the Flash Unit
+    RT.vacBal = up(F.path(g.vesSide[0], g.vesSide[1]).H(g.balT - 8).turn(g.balT, g.vesSide[1], g.balT, M, 8).V(M + 8).turn(g.balT, M, g.vacX, M, 8).H(g.vacX + 8));   // balloon stub up to its CLOSED valve
+  })();
   RT.shared = { x: cx, y0: G.M, y1: G.tip };
 
   /* ------------------------------------------------------------ static parts */

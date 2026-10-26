@@ -25,13 +25,13 @@
   var ACTIONS = ['Confirm Stable Sample', 'Vacuum Flash Unit', 'Fill with Helium', 'Start Flash', 'Collect Gas into Balloon', 'Collect Oil and Gas', 'Measure Density & API'];
   var PHASES = ['PREPARING', 'VALVE OPEN', 'FLOWING', 'RECEIVING', 'TRANSFER COMPLETE'];
   var TXT = {
-    2: ['Temporary vacuum pump connected · vacuum valve closed', 'Vacuum valve opening', 'Air drawn from the flask up the shared connection to the temporary vacuum pump', 'Air drawn from the flask up the shared connection to the temporary vacuum pump', 'Vacuum valve closed · Flash Unit at 0 psia'],
+    2: ['Pump connected · Port R and Gasometer inlet valves closed (boundaries)', 'Vacuum, Flask and inlet valves opening', 'Evacuating Port R → line → manifold → flask → line to the Gasometer inlet valve', 'Evacuating Port R → line → manifold → flask → line to the Gasometer inlet valve', 'Vacuum valve closed · whole section at 0 psia'],
     3: ['Preparing helium transfer · gasometer valves closed', 'Gasometer inlet and isolation valves opening', 'Helium leaving the gasometer (1,000 cc section first) along the gas line', 'Helium entering the flask down the shared connection', 'Gasometer valves closed · helium charged'],
     4: ['Preparing transfer · Pump A and inlet-control valves closed', 'Pump A, Port R, inlet-control, flow-control and Flask valves opening', 'Sample travelling from Pump A to the flask inlet', 'Oil drops and collects in the flask · gas rises back up the shared connection to the 2,000 cc section', 'Valves closed · 50 cc flashed'],
     5: ['Preparing collection · Balloon Valve closed', 'Gasometer valves and the Balloon Valve opening', 'Gas leaving the 2,000 cc section along the gas line', 'Gas entering the blue balloon', 'Valves closed · balloon filled']
   };
   var DONE = {                                                // Main.js FX_DONE
-    2: 'Flash Unit evacuated · 0.0 psia',
+    2: 'Section Port R → Gasometer inlet valve evacuated · 0.0 psia',
     3: 'Helium charged · 14.7 psia · Gasometer empty',
     4: '50 cc flashed · 40 g oil · 400 cc gas',
     5: 'Balloon 250 cc · 14.5 psi · 150 cc left in gasometer'
@@ -144,7 +144,7 @@
     V.gasoVol = total; V.gasoMode = usingGas ? 'gas' : 'he'; V.gaso = S.fGaso; V.heGas = S.fHeGas; V.gaso2k = sp.k2; V.gaso1k = sp.k1; V.gasoT = GASO_T;
     var sec = n === 3 && S.fHeGas > 2000 ? '1k' : '2k', g = act([3, 4, 5]);
     V.gasoSec = sec;
-    V.valve = { pumpA: act([4]), inlet: act([4]), flask: act([2, 3, 4]), vac: act([2]), vessel: act([5]),
+    V.valve = { pumpA: act([4]), inlet: act([2, 4]), flask: act([2, 3, 4]), vac: act([2]), vessel: act([5]),
       in2k: sec === '2k' ? g : 0, iso2k: sec === '2k' ? g : 0, in1k: sec === '1k' ? g : 0, iso1k: sec === '1k' ? g : 0, gaso: g };
     // temporary vacuum pump (Stage 2 only): wheeled in, hose attached, then detached and removed
     var qq = S.fQ, c0 = n === 2 ? CONN / S.fDur : 0;

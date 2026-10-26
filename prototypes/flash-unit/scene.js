@@ -99,15 +99,23 @@
       routes.sample = { g: sg, kind: 'liq', gate: ['pumpA', 'inlet', 'flask'], kf: [[0.15, 0], [0.287, pre + vDist], [0.36, sg.L]] };
       var gOut = tgeo(Lo.fu, FU.RT.gOut);
       var gasG = chain([gOut, ext.gas, gaIn('2k')]);
-      routes.gas = { g: gasG, kind: 'gas', gate: ['flask', 'in2k', 'iso2k'], kf: [[0.40, 0], [0.47, gasG.L]] };
+      routes.gas = { g: gasG, kind: 'gas', gate: ['flask', 'gaso', 'in2k', 'iso2k'], kf: [[0.40, 0], [0.47, gasG.L]] };
       ['1k', '2k'].forEach(function (k) {
         var hg = chain([gaIn(k) && rgeo(gaIn(k)), ext.gas && rgeo(ext.gas), rgeo(gOut)]);
-        routes['he' + k] = { g: hg, kind: 'he', gate: ['flask', 'in' + k, 'iso' + k], kf: k === '1k' ? [[0.15, 0], [0.36, hg.L]] : [[0.39, 0], [0.42, hg.L]] };
+        routes['he' + k] = { g: hg, kind: 'he', gate: ['flask', 'gaso', 'in' + k, 'iso' + k], kf: k === '1k' ? [[0.15, 0], [0.36, hg.L]] : [[0.39, 0], [0.42, hg.L]] };
       });
-      var vg = chain([tgeo(Lo.fu, FU.RT.vac), Lo.pump ? hoseGeo(Lo) : null]);
-      routes.vac = { g: vg, kind: 'vac', gate: ['flask', 'vac'], need: 'vacHose', kf: [[0.15, 0], [0.38, vg.L]] };
+      // evacuation: every branch of the section between the closed Port R and Gasometer inlet valves
+      var hose = Lo.pump ? hoseGeo(Lo) : null, VK = [[0.15, 0], [0.32, 1]];
+      var vpieces = [
+        { g: chain([tgeo(Lo.fu, FU.RT.vac), hose]), gate: ['flask', 'vac'] },                                   // flask interior, up the shared connection
+        { g: chain([ext.sample, tgeo(Lo.fu, FU.RT.vacIn), hose]), gate: ['inlet', 'vac'] },                     // Port R outward side -> sample line -> manifold
+        { g: chain([gasVacPart(Lo, ext.gas), tgeo(Lo.fu, FU.RT.vacGas), hose]), gate: ['vac'] },               // Gasometer inlet valve -> line -> manifold
+        { g: chain([tgeo(Lo.fu, FU.RT.vacBal), hose]), gate: ['vac'] }                                          // balloon stub (balloon valve closed)
+      ];
+      routes.vac = { list: vpieces.map(function (v) { return { g: v.g, kind: 'vac', gate: v.gate, need: 'vacHose', kf: VK.map(function (k) { return [k[0], k[1] * v.g.L]; }) }; }) };
+      routes.vacSection = [ext.sample, tgeo(Lo.fu, FU.RT.vacIn), tgeo(Lo.fu, FU.RT.vac), gasVacPart(Lo, ext.gas), tgeo(Lo.fu, FU.RT.vacGas), tgeo(Lo.fu, FU.RT.vacBal)].filter(Boolean);
       var vesG = chain([gaIn('2k') && rgeo(gaIn('2k')), ext.gas && rgeo(ext.gas), tgeo(Lo.fu, FU.RT.ves)]);
-      routes.vessel = { g: vesG, kind: 'gas', gate: ['in2k', 'iso2k', 'vessel'], kf: [[0.15, 0], [0.40, vesG.L]] };
+      routes.vessel = { g: vesG, kind: 'gas', gate: ['gaso', 'in2k', 'iso2k', 'vessel'], kf: [[0.15, 0], [0.40, vesG.L]] };
     } else if (Lo.ga) {
       var g2 = gaIn('2k'), g1 = gaIn('1k');
       routes.gas = { g: g2, kind: 'gas', gate: ['in2k', 'iso2k'], kf: [[0.40, 0], [0.47, g2.L]] };
@@ -115,6 +123,8 @@
       routes.he2k = { g: rgeo(g2), kind: 'he', gate: ['in2k', 'iso2k'], kf: [[0.39, 0], [0.42, g2.L]] };
       routes.vessel = { g: rgeo(g2), kind: 'gas', gate: ['in2k', 'iso2k'], kf: [[0.15, 0], [0.40, g2.L]] };
     }
+    layers.push({ id: 'vsec', fn: function (V) { return vacSection(Lo, routes, V); } });
+    svg += g('vsec');
     layers.push({ id: 'lanes', fn: function (V) { return lanes(routes, V); } });
     svg += g('lanes');
     if (Lo.fu && Lo.dm) { layers.push({ id: 'syr', fn: function (V) { return syringeMarkup(Lo, V); } }); svg += g('syr'); }
@@ -170,11 +180,29 @@
     return s;
   }
 
+  // part of the Gasometer line on the evacuated side of the (closed) Gasometer inlet valve, flowing toward the Flash Unit
+  function gasVacPart(Lo, ext) {
+    if (!ext) return null;
+    if (!Lo.ga) return null;
+    var vp = tf(Lo.ga, GA.port.valve), pts = ext.pts.slice().reverse().filter(function (q) { return q[0] <= vp[0] - 12 * Lo.ga.s || q[1] !== vp[1]; });
+    return F.geo('', [[vp[0] - 12 * Lo.ga.s, vp[1]]].concat(pts));
+  }
+  // Stage 2: the evacuated section is tinted; the two closed boundary valves are marked
+  function vacSection(Lo, routes, V) {
+    var a = V.vacTint || 0, s = '';
+    if (a <= 0.01 || !routes.vacSection) return '';
+    routes.vacSection.forEach(function (g) { s += P(g.d, 'fill="none" stroke="#7d93b8" stroke-width="13" stroke-linecap="round" stroke-linejoin="round" opacity="' + r1(0.28 * a) + '"'); });
+    var mark = function (p, txt) { return R(p[0] - 46, p[1] + 16, 92, 15, 'rx="7.5" fill="#fff4e5" stroke="#b0701a" stroke-width=".8" opacity="' + r1(a) + '"') + T(p[0], p[1] + 26.5, txt, 'text-anchor="middle" ' + MONO + ' font-size="8.5" font-weight="700" fill="#8a5410" opacity="' + r1(a) + '"'); };
+    if (Lo.cell) { var pq = PA.port({ at: Lo.cell }, 'R'); s += mark([pq[0] + 54, pq[1]], 'BOUNDARY · SHUT'); }
+    if (Lo.ga) s += mark(tf(Lo.ga, GA.port.valve), 'BOUNDARY · SHUT');
+    return s;
+  }
+
   /* ------------------------------------------------------------ flow lanes */
   function lanes(routes, V) {
     var s = '', fl = V.flow || {}, vv = V.valve || {};
-    Object.keys(fl).forEach(function (k) {
-      var r = routes[k]; if (!r || !r.g) return;
+    var one = function (r, k) {
+      if (!r.g) return;
       var p = fl[k].p, a = fl[k].a;
       // a closed valve (or a disconnected temporary hose) anywhere on the route stops the flow
       r.gate.forEach(function (gk) { a *= ramp(0.35, 0.65, vv[gk] || 0); });
@@ -183,6 +211,10 @@
       if (p <= kf[0][0]) return;
       for (var i = 1; i < kf.length; i++) { if (p <= kf[i][0]) { d = kf[i - 1][1] + (kf[i][1] - kf[i - 1][1]) * (p - kf[i - 1][0]) / (kf[i][0] - kf[i - 1][0]); break; } d = kf[i][1]; }
       s += F.lane(r.g, d / r.g.L, V.t, a, r.kind);
+    };
+    Object.keys(fl).forEach(function (k) {
+      var r = routes[k]; if (!r) return;
+      (r.list || [r]).forEach(function (x) { if (x.g) one(x, k); });
     });
     return s;
   }
