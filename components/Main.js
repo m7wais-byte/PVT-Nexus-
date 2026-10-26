@@ -1,6 +1,6 @@
 /* Main shell + all process logic */
 (function () {
-/* ===== transfer-lane helpers (shared, read-only: Differential Liberation / Separator Test use them) =====
+/* ===== transfer timing helpers (shared, read-only: Differential Liberation / Separator Test use them) =====
    Phase timing (fraction of a stage): Preparing 0-.07 · Valve Open .07-.15 · Flowing .15-arrival ·
    Receiving arrival-.90 · Transfer Complete .90-1 (valves close).
    The Validation Flash Process runs on the shared flash equipment (equipment/flash: FlashSim stage
@@ -9,28 +9,8 @@ const FXP = { valve: 0.07, flow: 0.15, end: 0.90, shut: 0.97 };
 const FX_PHASES = ['PREPARING', 'VALVE OPEN', 'FLOWING', 'RECEIVING', 'TRANSFER COMPLETE'];
 const fxR = (a, b, p) => Math.max(0, Math.min(1, (p - a) / (b - a)));
 const fxE = (x) => x * x * (3 - 2 * x);
-// valve opening 0..1: opens during Valve Open, closes at Transfer Complete
-const fxValve = (p) => fxE(fxR(FXP.valve, FXP.flow, p)) * (1 - fxE(fxR(FXP.end, FXP.shut, p)));
-const fxPoly = (pts) => {
-  const segs = []; let L = 0;
-  for (let i = 1; i < pts.length; i++) {
-    const [x1, y1] = pts[i - 1], [x2, y2] = pts[i];
-    const len = Math.hypot(x2 - x1, y2 - y1);
-    segs.push({ x1, y1, x2, y2, len, s0: L, ang: Math.atan2(y2 - y1, x2 - x1) * 180 / Math.PI });
-    L += len;
-  }
-  const at = (s) => {
-    s = Math.max(0, Math.min(L, s));
-    for (const g of segs) if (s <= g.s0 + g.len || g === segs[segs.length - 1]) {
-      const q = g.len ? (s - g.s0) / g.len : 0;
-      return { x: g.x1 + (g.x2 - g.x1) * q, y: g.y1 + (g.y2 - g.y1) * q, ang: g.ang };
-    }
-  };
-  return { L, at, d: 'M' + pts.map((pt) => pt[0] + ' ' + pt[1]).join(' L') };
-};
-const FX_NP = 14;   // particle slots per lane
-// shared, read-only: Flash Unit transfer helpers reused by Differential Liberation (StageDiffLib)
-window.PVT_FX = { FXP, FX_PHASES, fxR, fxE, fxPoly, fxValve, FX_NP };
+// shared, read-only: phase names and easing reused by Differential Liberation / Separator Test (gas-collection timing)
+window.PVT_FX = { FXP, FX_PHASES, fxR, fxE };
 class Component extends DCLogic {
   state = { bhMode: 'open', bhDepth: 0, bhP: 0, bhT: 78, screen: 'splash', m01View: 'overview', m01Method: null, m01Phase: 'idle', m01Pressure: 0, activePoint: 'bottomhole', phase: 'idle', mechPressure: 0, restorePhase: 'idle', curP: 1500, qcStep: 1, qcPhase: 'idle', xfer: 0, resP: 0, resT: 75, water: 0, qcSettle: 0, qcDk: 0, agitate: false, qcDone: { 1:false, 2:false, 3:false, 4:false }, curT: 80, calcMode: '', test03: 'cce', repSec: 'cover', aboutTab: 'modules', chargeStep: 0, chargeStage: 0, chargeBusy: false, chargeFront: 0, chargeValveOpen: false, drainBack: false, cellVac: 0, cellP: 0, cellStatus: 'Cell Ready', tpVol: 100, pumpA: 0, pumpB: 0, deadVol: 0, initRead: 0, vBottle: false, vCell: false, vPumpA: false, vPumpB: false, bottleOn: false, agCycle: 0, agHalf: 0, agDir: 'idle', agStable: false, agResult: '', baro: [], fStep: 0, fStage: 0, fBusy: false, fuP: 14.7, fHe: 0, fHeGas: 3000, fPumpA: 80, fFlashed: 0, fOil: 0, fGaso: 0, fBalloon: 0, fVac: false, fMeasured: false, fPath: 'idle', fPr: 0, fQ: 0, dmP: 0, dmDone: false, fStatus: 'Awaiting Stable Sample', theme: 'dark', viscState: (window.VISC_MODULE ? window.VISC_MODULE.initialState() : {}) };
 

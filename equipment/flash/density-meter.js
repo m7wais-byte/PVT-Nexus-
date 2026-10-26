@@ -107,6 +107,8 @@
     // header
     s += R(sc.x0, sc.y0, sc.x1 - sc.x0, 22, 'rx="3" fill="#1d3a66"');
     s += T(x0 + 2, sc.y0 + 15.5, 'Crude Oil (API)', SANS + ' font-size="12.5" font-weight="700" fill="#fff"');
+    // the results are the simulator's example values (see FlashSim.RES), not a laboratory measurement
+    if (r.rho != null) s += T(x0 + 106, sc.y0 + 15, 'EXAMPLE VALUES', MONO + ' font-size="7.2" font-weight="700" letter-spacing=".5" fill="#ffd27a"');
     s += R(x1 - 120, sc.y0 + 4, 120, 14, 'rx="7" fill="' + ST[1] + '"') + T(x1 - 60, sc.y0 + 14, ST[0].toUpperCase(), 'text-anchor="middle" ' + MONO + ' font-size="7.2" font-weight="700" fill="#fff"');
     // four result panels, 2 × 2
     var tset = (dm.Tset || 25).toFixed(2);

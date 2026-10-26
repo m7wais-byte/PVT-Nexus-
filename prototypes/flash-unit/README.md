@@ -1,6 +1,8 @@
 # Flash Unit, Gasometer & Density Meter — Prototype 02, rev. B (design review)
 
-Standalone review page for the redesigned Validation → Flash Process equipment. It is not linked to the simulator. No existing page, component or value was changed; `components/PVTCellArt.js` and `data/report-data.js` are only read.
+Standalone review page for the redesigned Validation → Flash Process equipment (approved version 7). It is not linked from the simulator.
+
+**Integrated:** the equipment modules now live in `equipment/flash/` and are used by the app (Validation → Flash Process, Differential Liberation, Separator Test, and the Flash Unit / Gasometer / Density Meter Details in `components/FlashDetails.js`). This page loads the same files from `../../equipment/flash/`; only `app.js`, `details.js`, `flash.css` and `index.html` remain here.
 
 ## Preview
 
@@ -149,4 +151,4 @@ The flask side-arm replaces a septum on the head: a needle long enough to reach 
 1. Gasometer internals: confirm against the real instrument used in the lab.
 2. Side-arm for oil sampling vs. another sampling method used in the lab.
 3. Measuring temperature (20 °C) and aliquot volume are example choices.
-4. After approval: replace the Flash Process drawing in `screens/showTest.js` / `Main.js`, add Stage 7 to the live sequence, and move these modules into `equipment/`.
+4. Done: the Flash Process drawing in `screens/showTest.js` / `Main.js` was replaced, Stage 7 added to the live sequence, and these modules moved into `equipment/flash/`.

@@ -295,9 +295,10 @@
   function vessel(V) {
     var v = G.ves, s = '';
     s += '<g transform="translate(' + v.x + ' ' + v.y + ')">' + Parts.vessel(V, { neck: true }) + '</g>';
+    // a page with its own balloon reading (Differential Liberation psig, two decimals) passes it as V.balloonTxt
     var bp = 14.5 * F.clamp((V.balloon || 0) / 250, 0, 1), ty = v.y + 18;
     s += R(v.x - 40, ty, 80, 24, 'rx="3" fill="url(#ppScreen)" stroke="#3a4656" stroke-width="1"');
-    s += T(v.x + 32, ty + 17, bp.toFixed(1) + '<tspan font-size="9" fill="#8fb3cc"> psi</tspan>', 'text-anchor="end" ' + MONO + ' font-size="13" font-weight="600" fill="' + (bp > 0.05 ? '#7ff0bf' : '#5fd4ff') + '"');
+    s += T(v.x + 32, ty + 17, (V.balloonTxt != null ? V.balloonTxt : bp.toFixed(1)) + '<tspan font-size="9" fill="#8fb3cc"> ' + (V.balloonUnit || 'psi') + '</tspan>', 'text-anchor="end" ' + MONO + ' font-size="13" font-weight="600" fill="' + (bp > 0.05 ? '#7ff0bf' : '#5fd4ff') + '"');
     s += T(v.x, ty + 38, 'BALLOON', 'text-anchor="middle" ' + MONO + ' font-size="8.5" font-weight="600" letter-spacing=".7" fill="#566578"');
     return s;
   }
