@@ -10,12 +10,12 @@
   var EX = {
     0: { t: 'Flash unit idle', d: 'The flash unit is at atmospheric pressure, waiting for a verified sample.', w: 'Flashing an unverified sample would give a meaningless GOR.', o: 'Run Stage 1 to verify the sample in Pump A.' },
     1: { t: 'Stage 1 · Verify the stable sample', d: 'The charge in Pump A is re-checked as single phase at 80 cc and 5,000 psi.', w: 'The flash result is only valid if the feed is a homogeneous single-phase sample of known volume.', o: 'Reading step — no flow. "Stable · 80 cc @ 5,000 psi".' },
-    2: { t: 'Stage 2 · Vacuum the flash unit', d: 'A <b>portable vacuum pump</b> is placed beside the unit and its hose is connected to the vacuum quick-connect. The vacuum valve opens and air is drawn from the flask headspace, out through the <b>headspace gas outlet</b> and along the gas manifold to the pump. After evacuation the valve closes, the hose is disconnected and the pump is removed.', w: 'Air left in the flask or lines would be counted as produced gas and would contaminate the GC analysis. The pump is temporary equipment, not part of the Flash Unit.', o: 'Unit pressure 14.7 → 0 psia; the inlet-control valve stays closed.' },
-    3: { t: 'Stage 3 · Fill the dead space with helium', d: 'The Gasometer inlet and isolation valves open. Helium held in the two chambers (1,000 cc section first, then the 2,000 cc section) flows along the gas line, in through the <b>headspace gas outlet</b> and into the evacuated flask until the unit reads atmospheric.', w: 'Helium is inert and not part of the reservoir fluid, so it can be identified and subtracted in the GC. It is not collected sample gas.', o: 'Gasometer helium 3,000 → 0 cc (1,000 + 2,000); unit pressure 0 → 14.7 psia.' },
-    4: { t: 'Stage 4 · Flash the sample', d: 'Pump A displaces 50 cc through Port R. The sample passes the <b>inlet-control</b> and <b>flow-control</b> valves, where its pressure is let down, and the <b>delivery tube</b> carries it through the head into the flask. Oil falls from the <b>delivery tip</b> and <b>collects</b> at the bottom; gas released from the sample <b>rises</b> through the oil into the <b>headspace</b> and leaves only through the <b>headspace gas outlet</b>, to the 2,000 cc section of the Gasometer.', w: 'Separation and oil collection are shown inside the flask; only gas leaves, from the headspace. Collection and gas release run together — the flask does not have to fill first.', o: 'Pump A 80 → 30 cc · balance 200 → 240 g (40 g oil) · Gasometer 0 → 400 cc (2,000 cc section).' },
-    5: { t: 'Stage 5 · Collect gas into the vessel', d: 'The 2,000 cc section valves and the <b>blue vessel’s own top valve</b> open. Gas leaves the Gasometer along the gas line, passes the Flash Unit manifold to the vessel connection and enters the vessel. The inlet-control valve stays closed.', w: 'The vessel holds the gas sample for the chromatograph; the Gasometer keeps the remainder for the volume record.', o: 'Gasometer 400 → 150 cc; vessel 0 → 14.5 psi.' },
+    2: { t: 'Stage 2 · Vacuum the flash unit', d: 'A <b>portable vacuum pump</b> is placed beside the unit and its hose is connected to the vacuum quick-connect. The Flask Valve and the vacuum valve open and air is drawn from the flask up through the <b>shared flask connection</b> and along the manifold to the pump. After evacuation the valve closes, the hose is disconnected and the pump is removed.', w: 'Air left in the flask or lines would be counted as produced gas and would contaminate the GC analysis. The pump is temporary equipment, not part of the Flash Unit.', o: 'Unit pressure 14.7 → 0 psia; the inlet-control valve stays closed.' },
+    3: { t: 'Stage 3 · Fill the dead space with helium', d: 'The Gasometer inlet and isolation valves open. Helium held in the two chambers (1,000 cc section first, then the 2,000 cc section) flows along the gas line to the manifold and down the <b>shared flask connection</b> into the evacuated flask (Flask Valve open) until the unit reads atmospheric.', w: 'Helium is inert and not part of the reservoir fluid, so it can be identified and subtracted in the GC. It is not collected sample gas.', o: 'Gasometer helium 3,000 → 0 cc (1,000 + 2,000); unit pressure 0 → 14.7 psia.' },
+    4: { t: 'Stage 4 · Flash the sample', d: 'Pump A displaces 50 cc through Port R. The sample passes the <b>inlet-control</b> and <b>flow-control</b> valves on the upper manifold, where its pressure is let down, and goes down the <b>shared flask connection</b> (Flask Valve open). Oil drops from its open end and <b>collects</b> at the bottom of the flask; gas released from the sample <b>rises</b> through the oil into the <b>headspace</b> and returns <b>up the same connection</b>, then along the manifold to the 2,000 cc section of the Gasometer.', w: 'Separation is shown inside the glass: oil stays in the flask, only gas goes back up. In the shared connection the oil (amber, left, arrows down) and the gas (green, right, arrows up) move in opposite directions. Collection and gas release run together.', o: 'Pump A 80 → 30 cc · balance 200 → 240 g (40 g oil) · Gasometer 0 → 400 cc (2,000 cc section).' },
+    5: { t: 'Stage 5 · Collect gas into the balloon', d: 'The 2,000 cc section valves and the <b>Balloon Valve</b> (the balloon’s own brass valve, worked from above the top panel) open. Gas leaves the Gasometer along the gas line, runs along the upper manifold and down the balloon connection into the blue balloon. The Flask Valve and the inlet-control valve stay closed.', w: 'The balloon holds the gas sample for the chromatograph; the Gasometer keeps the remainder for the volume record.', o: 'Gasometer 400 → 150 cc; balloon 0 → 14.5 psi.' },
     6: { t: 'Stage 6 · Measure oil and gas', d: 'The oil collected in the flask is read from the balance (gross − tare) and the gas from the Gasometer (2,000 cc + 1,000 cc readings) and the vessel.', w: 'GOR = gas volume at standard conditions ÷ residual oil. These readings are the basis of the flash result.', o: 'Recorded: oil 40 g (240 − 200 g tare), vessel 14.5 psi, 150 cc left in the Gasometer.' },
-    7: { t: 'Stage 7 · Density & API (new)', d: 'A syringe is fitted to the flask sampling side-arm and a small aliquot of the collected oil is drawn. The syringe is connected to the density meter inlet tube; the oil fills the oscillating U-tube from the lower inlet and pushes the air up and out to waste. The cell stabilizes at 25.00 °C, the period is measured and the meter reports density, SG 60/60 °F and °API. The used sample is then pushed to the waste container.', w: 'API gravity is defined on specific gravity at 60/60 °F, so the reading at 25 °C is first converted to the 60 °F reference. The 40 g recorded at Stage 6 stays the flash result; the aliquot does not overwrite it.', o: 'calc' }
+    7: { t: 'Stage 7 · Density & API (new)', d: 'A syringe is fitted to the flask sampling side-arm and a small aliquot of the collected oil is drawn. The syringe is connected to the density meter inlet; the oil runs along the lower leg of the long horizontal U-tube, round the return bend and back along the upper leg, pushing the air out to waste. The cell stabilizes at 25.00 °C, the period is measured and the meter reports density, SG 60/60 °F and °API. The used sample is then pushed to the waste container.', w: 'API gravity is defined on specific gravity at 60/60 °F, so the reading at 25 °C is first converted to the 60 °F reference. The 40 g recorded at Stage 6 stays the flash result; the aliquot does not overwrite it.', o: 'calc' }
   };
   function calcBlock() {
     var r = RES;
@@ -36,11 +36,11 @@
     return n === 7 ? 'density' : 'system';
   }
   var HEAD = {
-    system: ['SYSTEM', 'PVT Cell → flask → headspace outlet → Gasometer → vessel'],
+    system: ['SYSTEM', 'PVT Cell → flask (shared connection) → Gasometer → balloon'],
     density: ['STAGE 7', 'Collected oil → syringe → Density Meter'],
-    fu: ['FLASH UNIT', 'Sample inlet → delivery tube → flask → headspace outlet'],
+    fu: ['FLASH UNIT', 'Upper manifold · shared flask connection · suspended balloon'],
     ga: ['GASOMETER', '2,000 cc + 1,000 cc sections · combined 3,000 cc'],
-    dm: ['DENSITY METER', 'DMA 4100 M–style · U-tube shown in the internal view']
+    dm: ['DENSITY METER', 'DMA 4100 M–style · horizontal U-tube · four result panels']
   };
   function ensureScene() {
     var m = modeFor(), key = m + '|' + labels;
@@ -100,7 +100,7 @@
       ['Oil collected', Math.round(S.fOil), 'g', S.fMeasured ? 'recorded' : ''],
       ['Gasometer total' + (V.gasoMode === 'he' && V.gasoVol > 0.5 ? ' · He' : ''), Math.round(V.gasoVol).toLocaleString('en-US'), 'cc'],
       ['2,000 | 1,000 cc', Math.round(V.gaso2k).toLocaleString('en-US') + ' | ' + Math.round(V.gaso1k).toLocaleString('en-US'), 'cc'],
-      ['Gas vessel', (14.5 * Math.min(1, V.balloon / 250)).toFixed(1), 'psi']
+      ['Balloon', (14.5 * Math.min(1, V.balloon / 250)).toFixed(1), 'psi']
     ];
     if (S.fStep >= 6 || (S.fBusy && S.fStage === 7)) {
       var r = V.dm.res || {};
@@ -122,10 +122,10 @@
     var dmq = V.dmQ || 0;
     var rows = [
       ['Pump A → Flash Unit inlet', state(flowAt(4, FS.FXP.flow) && S.fPr < 0.36, op(v.pumpA), st >= 4)],
-      ['Flash inlet → internal delivery tip', state(flowAt(4, 0.287), op(v.inlet), st >= 4)],
-      ['Flask headspace → Gasometer inlet', state(flowAt(4, 0.40), busy(4) && op(v.in2k), st >= 4)],
+      ['Manifold → flask (shared connection, down)', state(flowAt(4, 0.287), op(v.inlet), st >= 4)],
+      ['Flask headspace → shared connection → Gasometer', state(flowAt(4, 0.40), busy(4) && op(v.in2k), st >= 4)],
       ['Gasometer helium → flask', state(flowAt(3, FS.FXP.flow), busy(3) && op(v.gaso), st >= 3)],
-      ['Gasometer → blue gas vessel', state(flowAt(5, FS.FXP.flow), busy(5) && op(v.vessel), st >= 5)],
+      ['Gasometer → balloon', state(flowAt(5, FS.FXP.flow), busy(5) && op(v.vessel), st >= 5)],
       ['Flask vacuum port → temporary pump', vacRow],
       ['Collected oil → Density Meter syringe', busy(7) && dmq < 0.54 ? ['ACTIVE', 'on'] : st >= 7 || dmq >= 0.54 ? ['COMPLETE', 'done'] : ['NOT STARTED', 'off']],
       ['Direct sample → Gasometer', ['NO SUCH PATH', 'off']]

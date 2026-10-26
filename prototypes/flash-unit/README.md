@@ -14,7 +14,24 @@ No build step. `build-preview.py OUT.html` bundles the page into one file for th
 
 Review links: `?stage=n` (end of stage n) · `&run=1&t=<s>&hold=1` (run stage n, fast-forward, pause) · `&view=auto|system|fu|ga|dm` · `&labels=0` · `&details=fu|ga|dm&dview=overall|internal&demo=<stage>&dt=<s>`.
 
-## Rev. C — layout (this revision)
+## Rev. D — shared flask connection, suspended balloon, horizontal U-tube (this revision)
+
+Supersedes the earlier two-passage flask head, the balloon on the lower deck and the small vertical U-tube.
+
+- **Flash Unit**: one horizontal upper manifold under the top panel (inlet → inlet-control valve → solenoid flow-control → Flask Valve junction → pressure transducer → balloon branch → vacuum branch → Gasometer outlet) with two downward vessel connections.
+  - **Flask**: ONE shared connection through the neck. Sample goes down it and drops from its open end; gas released in the flask rises into the headspace and returns up the same connection. In the animation the oil (amber, left of the bore, arrows down) and gas (green, right of the bore, arrows up) move in opposite directions; the gas lane starts at the open end inside the flask.
+  - **Balloon**: hung in the right bay on two ring clamps from the right post; the branch reaches the side fitting of its own brass valve, worked from above the top panel through an extension stem (Balloon Valve). No second valve.
+  - **Flask Valve** and **Balloon Valve** handles above the top panel with OPEN/CLOSED tags.
+- **Density meter**: long horizontal U-tube across the lower body (enlarged educational view), filled lower leg → bend → upper leg → outlet with one continuous front; the screen shows four result panels (measured density at 25.00 °C, density at 60 °F, SG 60/60 °F, API at 60 °F), a set/actual temperature line, the same horizontal U-tube strip and a status/progress/Start strip.
+- Checks (`tools/verify.js`) now verify the shared connection: sample ends at its open end in the flask, gas starts there, the two routes meet only in that connection, and the sample never continues along the manifold past the flask junction.
+
+**Uncertainties (rev. D)**
+1. Flask Valve timing: the live code opens its "flask valve" only in Stage 4. With one shared connection the flask must be open to the manifold for evacuation (Stage 2) and the helium fill (Stage 3), so the Flask Valve is shown open in Stages 2–4 and closed in Stage 5. No values change.
+2. Where the sample and gas paths meet inside the Flask Valve body is not established; it is drawn as one junction.
+3. The balloon valve is shown worked through an extension stem from above the top panel; the photographs (not available in this session) may show a different linkage.
+4. The U-tube length and the cell bay are an enlarged educational view, not measured dimensions.
+
+## Rev. C — layout
 
 - System view arranged left to right like the live Flash Process page: computer + controller (shared `PVTCellArt.desk` + signal cable), the **full-size PVT Cell** (scale 0.75, shared drawing), Flash Unit, Gasometer.
 - The **blue gas-collection vessel stands inside the Flash Unit** frame, right bay, on the lower deck with a strap clamp; the large flask moved left within the frame (same size). Gas-collection line: Gasometer → gas line → Flash Unit manifold → vessel branch → the vessel's own top valve (no extra valve). Vessel pressure display above the vessel.

@@ -20,11 +20,11 @@
   /* placements (world units). floor = 1000 in the system scene */
   var LAYOUT = {
     // left to right: computer + controller, full-size PVT Cell (same scale as the procedure pages' cell views), Flash Unit, Gasometer
-    system: { vb: [-6, 404, 1842, 616], floor: 1000, desk: { x: 10, y: 700, s: 0.55, legs: 295 }, cell: { x: 56, y: 433, s: 0.75 }, fu: { x: 840, y: 470, s: 0.68 }, pump: { x: 1392, y: 1000, s: 0.6 }, ga: { x: 1500, y: 467, s: 0.62 } },
-    density: { vb: [-10, 236, 1700, 784], floor: 1000, fu: { x: 40, y: 298, s: 0.9 }, dm: { x: 790, y: 423, s: 1.4 } },
-    fu: { vb: [-300, -60, 1340, 880], floor: 780, fu: { x: 0, y: 0, s: 1 }, pump: { x: 860, y: 780, s: 1 } },
+    system: { vb: [-6, 372, 1842, 648], floor: 1000, desk: { x: 10, y: 700, s: 0.55, legs: 295 }, cell: { x: 56, y: 433, s: 0.75 }, fu: { x: 840, y: 470, s: 0.68 }, pump: { x: 1392, y: 1000, s: 0.6 }, ga: { x: 1500, y: 467, s: 0.62 } },
+    density: { vb: [-10, 180, 1700, 840], floor: 1000, fu: { x: 40, y: 298, s: 0.9 }, dm: { x: 790, y: 353, s: 1.4 } },
+    fu: { vb: [-300, -130, 1340, 950], floor: 780, fu: { x: 0, y: 0, s: 1 }, pump: { x: 860, y: 780, s: 1 } },
     ga: { vb: [-400, -40, 1340, 920], floor: 860, ga: { x: 0, y: 0, s: 1 } },
-    dm: { vb: [-300, -100, 1170, 440], floor: 320, dm: { x: 0, y: 0, s: 1 } }
+    dm: { vb: [-300, -110, 1180, 500], floor: 362, dm: { x: 0, y: 0, s: 1 } }
   };
 
   /* ------------------------------------------------------------ build */
@@ -40,7 +40,7 @@
     if (Lo.floor != null) bg += L(vb[0], Lo.floor, vb[0] + vb[2], Lo.floor, 'stroke="#c9d1db" stroke-width="2"');
     if (Lo.dm && mode === 'density') {
       // bench for the density meter
-      var bx0 = Lo.dm.x - 60, bx1 = Lo.dm.x + 640 * Lo.dm.s, by = Lo.dm.y + 312 * Lo.dm.s;
+      var bx0 = Lo.dm.x - 60, bx1 = Lo.dm.x + 640 * Lo.dm.s, by = Lo.dm.y + DM.G.base * Lo.dm.s;
       bg += R(bx0, by, bx1 - bx0, 14, 'fill="url(#fxBench)" stroke="#8a96a6" stroke-width="1"') + R(bx0 + 6, by + 14, bx1 - bx0 - 12, 6, 'fill="url(#ppNavyV)"');
       [bx0 + 14, bx1 - 32].forEach(function (x) { bg += R(x, by + 20, 18, Lo.floor - by - 20, 'fill="url(#ppNavy)"'); });
     }
@@ -96,16 +96,16 @@
       }
       parts.push(sIn);
       var sg = chain(parts);
-      routes.sample = { g: sg, kind: 'liq', gate: ['pumpA', 'inlet'], kf: [[0.15, 0], [0.287, pre + vDist], [0.36, sg.L]] };
+      routes.sample = { g: sg, kind: 'liq', gate: ['pumpA', 'inlet', 'flask'], kf: [[0.15, 0], [0.287, pre + vDist], [0.36, sg.L]] };
       var gOut = tgeo(Lo.fu, FU.RT.gOut);
       var gasG = chain([gOut, ext.gas, gaIn('2k')]);
-      routes.gas = { g: gasG, kind: 'gas', gate: ['in2k', 'iso2k'], kf: [[0.40, 0], [0.47, gasG.L]] };
+      routes.gas = { g: gasG, kind: 'gas', gate: ['flask', 'in2k', 'iso2k'], kf: [[0.40, 0], [0.47, gasG.L]] };
       ['1k', '2k'].forEach(function (k) {
         var hg = chain([gaIn(k) && rgeo(gaIn(k)), ext.gas && rgeo(ext.gas), rgeo(gOut)]);
-        routes['he' + k] = { g: hg, kind: 'he', gate: ['in' + k, 'iso' + k], kf: k === '1k' ? [[0.15, 0], [0.36, hg.L]] : [[0.39, 0], [0.42, hg.L]] };
+        routes['he' + k] = { g: hg, kind: 'he', gate: ['flask', 'in' + k, 'iso' + k], kf: k === '1k' ? [[0.15, 0], [0.36, hg.L]] : [[0.39, 0], [0.42, hg.L]] };
       });
       var vg = chain([tgeo(Lo.fu, FU.RT.vac), Lo.pump ? hoseGeo(Lo) : null]);
-      routes.vac = { g: vg, kind: 'vac', gate: ['vac'], need: 'vacHose', kf: [[0.15, 0], [0.38, vg.L]] };
+      routes.vac = { g: vg, kind: 'vac', gate: ['flask', 'vac'], need: 'vacHose', kf: [[0.15, 0], [0.38, vg.L]] };
       var vesG = chain([gaIn('2k') && rgeo(gaIn('2k')), ext.gas && rgeo(ext.gas), tgeo(Lo.fu, FU.RT.ves)]);
       routes.vessel = { g: vesG, kind: 'gas', gate: ['in2k', 'iso2k', 'vessel'], kf: [[0.15, 0], [0.40, vesG.L]] };
     } else if (Lo.ga) {
@@ -212,10 +212,10 @@
       return T(x, y, n, 'text-anchor="' + (an || 'middle') + '" ' + SANS + ' font-size="18" font-weight="700" fill="#1d2836"') + (sub ? T(x, y + 18, sub, 'text-anchor="' + (an || 'middle') + '" ' + SANS + ' font-size="12.5" fill="#566578"') : '');
     };
     if (Lo.cell) { var cp = PA.pt({ at: Lo.cell }, 615, 8); s += lab(cp[0], cp[1], 'PVT Cell', ''); }
-    if (Lo.fu) { var f0 = tf(Lo.fu, [FU.G.W / 2, -14]); s += lab(f0[0], f0[1] - 18, 'Flash Unit', ''); }
+    if (Lo.fu) { var f0 = tf(Lo.fu, [FU.G.W / 2, -104]); s += lab(f0[0], f0[1], 'Flash Unit', ''); }
     if (Lo.ga) { var g0 = tf(Lo.ga, [GA.G.W / 2, -16]); s += lab(g0[0], g0[1] - 18, 'Gasometer', ''); }
     if (Lo.dm) { var d0 = tf(Lo.dm, [235, -30]); s += lab(d0[0], d0[1] - 18, 'Density Meter', 'DMA 4100 M–style'); }
-    if ((V.vacPump || 0) > 0.3 && Lo.pump) { var p0 = tf(Lo.pump, [0, -PT.PG.h - 24]); s += T(p0[0], p0[1], 'Temporary vacuum pump', 'text-anchor="middle" ' + SANS + ' font-size="12.5" font-weight="700" fill="#2f6fd0" opacity="' + r1(V.vacPump) + '"'); }
+    if ((V.vacPump || 0) > 0.3 && Lo.pump) { var p0 = tf(Lo.pump, [0, 0]); p0[1] += 15; s += T(p0[0], p0[1], 'Temporary vacuum pump', 'text-anchor="middle" ' + SANS + ' font-size="12.5" font-weight="700" fill="#2f6fd0" opacity="' + r1(V.vacPump) + '"'); }
     return s;
   }
 

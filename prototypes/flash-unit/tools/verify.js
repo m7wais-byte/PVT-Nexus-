@@ -9,11 +9,16 @@ const { chromium } = require('playwright');
     const out = {}, FU = FlashUnit, G = FU.G;
     const host = document.createElement('div'), sc = Scene.build(host, 'system', {});
     const R = sc.routes, at = sc.Lo.fu, loc = (pt) => [(pt[0] - at.x) / at.s, (pt[1] - at.y) / at.s];
-    const sEnd = loc(R.sample.g.end), gStart = loc(R.gas.g.start), oilTopMax = FU.oilTop(40);
-    out.sampleEndsAtTipInsideFlask = Math.abs(sEnd[0] - G.inlet.x) < .5 && Math.abs(sEnd[1] - G.inlet.tip) < .5 && G.inlet.tip > G.flask.neckBot && G.inlet.tip < oilTopMax;
-    out.gasStartsAtHeadspaceOutlet = Math.abs(gStart[0] - G.outlet.x) < .5 && Math.abs(gStart[1] - G.outlet.open) < .5 && G.outlet.open < oilTopMax;
-    let minD = 1e9; R.sample.g.pts.forEach(a => R.gas.g.pts.forEach(c => { minD = Math.min(minD, Math.hypot(a[0] - c[0], a[1] - c[1])); }));
-    out.minDistSampleVsGasRoute = +minD.toFixed(1);
+    const sEnd = loc(R.sample.g.end), gStart = loc(R.gas.g.start), oilTopMax = FU.oilTop(40), SH = FU.RT.shared;
+    // ONE shared flask connection: the sample route ends at its open end, the gas route starts there
+    out.sampleEndsAtSharedOpenEndInFlask = Math.abs(sEnd[0] - SH.x) < 3 && Math.abs(sEnd[1] - G.tip) < .5 && G.tip > G.flask.neckBot && G.tip < oilTopMax;
+    out.gasOriginatesInFlaskAtSharedOpenEnd = Math.abs(gStart[0] - SH.x) < 3 && Math.abs(gStart[1] - G.tip) < .5;
+    // the two routes overlap only inside the shared connection (x = SH.x, between the manifold and the open end)
+    const nearShared = (q) => { const l = loc(q); return Math.abs(l[0] - SH.x) < 4 && l[1] >= SH.y0 - 10 && l[1] <= SH.y1 + 1; };
+    let minD = 1e9; R.sample.g.pts.forEach(a => { if (nearShared(a)) return; R.gas.g.pts.forEach(c => { if (nearShared(c)) return; minD = Math.min(minD, Math.hypot(a[0] - c[0], a[1] - c[1])); }); });
+    out.minDistOutsideSharedConnection = +minD.toFixed(1);
+    // sample turns DOWN at the flask junction; it never continues along the manifold toward the Gasometer
+    out.sampleNeverPastFlaskJunction = R.sample.g.pts.filter(q => q[1] < at.y + 200 * at.s).every(q => loc(q)[0] <= SH.x + 3);
     const ga = sc.Lo.ga, gEnd = [(R.gas.g.end[0] - ga.x) / ga.s, (R.gas.g.end[1] - ga.y) / ga.s], s2 = Gasometer.G.sec[0];
     out.gasEndsIn2000ccChamber = Math.abs(gEnd[0] - s2.cx) < 1 && Math.abs(gEnd[1] - Gasometer.G.ch0 - 4) < 1;
     const pr = PVTCellArt.port({ at: sc.Lo.cell }, 'R');

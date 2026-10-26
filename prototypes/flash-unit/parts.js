@@ -12,10 +12,12 @@
 
   /* ------------------------------------------------------------ blue gas-collection vessel */
   var VG = { r: 30, h: 300, sh: 20, neck: 8, valve0: -328, valve1: -352, side: [-26, -340], knob: [-372, -352] };   // side connection faces left
-  function vessel(V) {
+  // o.stem: the valve is operated through an extension stem from above (Flash Unit top panel); no knob drawn here
+  function vessel(V, o) {
+    o = o || {};
     var g = VG, s = '', open = (V && V.valve ? V.valve.vessel : 0) || 0, top = -g.h;
-    s += E(0, 2, g.r + 10, 5, 'fill="#1b2a40" opacity=".14"');
-    s += R(-g.r - 4, -10, 2 * g.r + 8, 10, 'rx="2" fill="#1b2533"');                       // foot ring
+    if (!o.stem) s += E(0, 2, g.r + 10, 5, 'fill="#1b2a40" opacity=".14"');
+    s += R(-g.r - 4, -10, 2 * g.r + 8, 10, 'rx="' + (o.stem ? 5 : 2) + '" fill="#1b2533"');      // foot ring / bottom cap
     s += P('M' + -g.r + ' -10 V' + top + ' Q' + -g.r + ' ' + (top - g.sh) + ' -9 ' + (top - g.sh - 2) + ' H9 Q' + g.r + ' ' + (top - g.sh) + ' ' + g.r + ' ' + top + ' V-10 Z', 'fill="url(#fxBlue)" stroke="#0e1c33" stroke-width="1.2"');
     s += R(-g.r + 7, top + 6, 6, g.h - 22, 'rx="3" fill="#fff" opacity=".22"');
     s += R(-g.r + 2, -60, 2 * g.r - 4, 3, 'fill="#0e1c33" opacity=".35"');
@@ -23,13 +25,15 @@
     s += R(-8, top - g.sh - 10, 16, 12, 'fill="url(#fxBrass)" stroke="#6b4e12" stroke-width=".8"');
     s += R(-14, g.valve1, 28, g.valve0 - g.valve1 + 6, 'rx="3" fill="url(#fxBrass)" stroke="#6b4e12" stroke-width="1"');
     s += R(-26, g.side[1] - 4, 12, 8, 'rx="1.5" fill="url(#fxBrass)" stroke="#6b4e12" stroke-width=".8"') + R(-30, g.side[1] - 5.5, 6, 11, 'rx="1.5" fill="url(#fxBrass)" stroke="#6b4e12" stroke-width=".8"');
-    s += R(-4, g.knob[1] - 6, 8, 8, 'fill="url(#fxBrass)" stroke="#6b4e12" stroke-width=".7"');
-    s += R(-22, g.knob[0], 44, g.knob[1] - g.knob[0] - 4, 'rx="5" fill="#1b1f24" stroke="#000" stroke-width="1"');
-    for (var i = -16; i <= 16; i += 6) s += L(i, g.knob[0] + 3, i, g.knob[1] - 7, 'stroke="#3a414b" stroke-width="1.4"');
-    // open indication: ring and tag beside the knob
-    s += C(0, g.knob[0] + 8, 30, 'fill="none" stroke="#1d8a5a" stroke-width="2" opacity="' + (open > 0.5 ? .9 : 0) + '"');
-    s += R(-26, g.knob[0] - 26, 52, 16, 'rx="8" fill="' + (open > 0.5 ? '#dff3e8' : '#e4e8ee') + '" stroke="' + (open > 0.5 ? '#4fae80' : '#9aa6b5') + '" stroke-width=".9"') +
-      T(0, g.knob[0] - 14, open > 0.5 ? 'OPEN' : 'CLOSED', 'text-anchor="middle" ' + MONO + ' font-size="9" font-weight="700" fill="' + (open > 0.5 ? '#14603f' : '#566578') + '"');
+    if (!o.stem) {
+      s += R(-4, g.knob[1] - 6, 8, 8, 'fill="url(#fxBrass)" stroke="#6b4e12" stroke-width=".7"');
+      s += R(-22, g.knob[0], 44, g.knob[1] - g.knob[0] - 4, 'rx="5" fill="#1b1f24" stroke="#000" stroke-width="1"');
+      for (var i = -16; i <= 16; i += 6) s += L(i, g.knob[0] + 3, i, g.knob[1] - 7, 'stroke="#3a414b" stroke-width="1.4"');
+      // open indication: ring and tag beside the knob
+      s += C(0, g.knob[0] + 8, 30, 'fill="none" stroke="#1d8a5a" stroke-width="2" opacity="' + (open > 0.5 ? .9 : 0) + '"');
+      s += R(-26, g.knob[0] - 26, 52, 16, 'rx="8" fill="' + (open > 0.5 ? '#dff3e8' : '#e4e8ee') + '" stroke="' + (open > 0.5 ? '#4fae80' : '#9aa6b5') + '" stroke-width=".9"') +
+        T(0, g.knob[0] - 14, open > 0.5 ? 'OPEN' : 'CLOSED', 'text-anchor="middle" ' + MONO + ' font-size="9" font-weight="700" fill="' + (open > 0.5 ? '#14603f' : '#566578') + '"');
+    }
     // gas inside (cutaway hint): a faint fill that grows with the collected gas
     var f = F.clamp(((V && V.balloon) || 0) / 250, 0, 1);
     if (f > 0.01) s += R(-g.r + 3, top + 2, 2 * g.r - 6, g.h - 14, 'rx="3" fill="#2fa88a" opacity="' + r1(0.10 + 0.25 * f) + '"');
