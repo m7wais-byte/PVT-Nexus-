@@ -16,14 +16,14 @@
     fu: {
       eyebrow: 'Flash Unit Details', name: 'Atmospheric Flash Unit', variant: 'Black frame · clear panels', mod: 'FlashUnit', mode: 'fu',
       views: [['overall', 'Overall'], ['internal', 'Internal / flow']], viewArg: { overall: 'exterior', internal: 'internal' },
-      vb: [-330, -140, 1400, 960], ls: 1.15,
+      vb: [-330, -200, 1560, 1020], ls: 1.15,
       demos: [[4, 'Sample down · gas back up'], [2, 'Evacuation (temporary pump)'], [3, 'Helium fill'], [5, 'Gas to balloon']],
       measures: 'Measures the collected oil (balance: gross − tare) and passes the flashed gas, from the flask headspace only, to the Gasometer.',
       principle: [
         'One upper horizontal stainless manifold runs under the top panel: sample inlet, inlet-control (isolation) valve, solenoid flow-control valve, the Flask Valve junction, pressure transducer, the balloon branch, the vacuum branch and the Gasometer outlet.',
         'Two connections go down from it. The flask has ONE shared connection through its neck: the sample goes down it and drops from its open end into the flask; gas released inside the flask rises into the headspace and returns up the same connection to the manifold and on to the Gasometer.',
-        'The blue gas balloon hangs in the right bay on two ring clamps from the right post. The balloon branch reaches the side fitting of its own brass valve; that valve is worked from above the top panel through an extension stem (Balloon Valve). There is no second valve in the line.',
-        'Flask Valve and Balloon Valve handles sit above the top panel. The vacuum quick-connect is used only with the temporary pump in Stage 2; the pump is external.'
+        'The blue gas balloon hangs in the right bay from its own valve assembly: the balloon branch reaches the side fitting of its brass valve, and the valve’s stem housing runs up to a collar under the top panel; the valve is worked from above the panel (Balloon Valve). There is no second valve in the line and no stand or clamp.',
+        'Flask Valve and Balloon Valve handles and the red-capped vacuum quick-connect sit above the top panel. The quick-connect is used only with the temporary pump in Stage 2; the pump is external.'
       ],
       parts: {
         sampleIn: { n: 'Sample inlet', d: 'Bulkhead on the left post where the sample line from the PVT Cell (Pump A through the Port R valve) enters the manifold.', in: B },
@@ -42,8 +42,8 @@
         gasLine: { n: 'Gasometer line', d: 'Manifold outlet on the right post to the Gasometer inlet.', in: B },
         balloonValve: { n: 'Balloon Valve', d: 'The balloon’s own brass valve, worked from above the top panel through an extension stem. Open only in Stage 5.', in: B },
         balloonConn: { n: 'Balloon connection', d: 'Branch from the manifold down to the side fitting of the balloon valve.', in: B },
-        vessel: { n: 'Blue gas balloon', d: 'Tall dark-blue cylinder with a brass top valve, hung from the right post by two ring clamps. Holds the GC gas sample; its pressure is shown below it.', in: B },
-        vacConn: { n: 'Temporary vacuum connection', d: 'Vacuum valve and capped quick-connect on the right post. The pump is external: connected for Stage 2, then disconnected and removed.', in: B },
+        vessel: { n: 'Blue gas balloon', d: 'Tall dark-blue cylinder suspended from its own brass valve assembly (no stand or clamps), clear of the lower deck. Holds the GC gas sample; its pressure is shown below it.', in: B },
+        vacConn: { n: 'Temporary vacuum connection', d: 'Vacuum valve on the branch rising from the manifold, and a red-capped quick-connect above the top panel. The pump is external: its hose connects there for Stage 2 only, then it is disconnected and removed.', in: B },
         balance: { n: 'Balance', d: 'Weighs the flask and contents: 200 g tare, the oil collected is the gain.', in: B },
         platform: { n: 'Adjustable platform', d: 'Lab jack under the balance.', in: B },
         arm: { n: 'Oil sampling side-arm', d: 'Glass arm with a stopcock below the oil level, closed during flashing; used in Stage 7 to draw the oil aliquot by syringe.', in: B }

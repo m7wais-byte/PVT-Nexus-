@@ -22,7 +22,7 @@
     flask: { cx: cx, neckTop: 268, neckBot: 318, neckHW: 32, wallIn: 4, bodyBot: 586, bodyHW: 150, bot: 600, botHW: 132 },
     head: { x0: cx - 40, x1: cx + 40, y0: 240, y1: 268 },
     tip: 334,                                                // open end of the shared connection, inside the flask
-    M: 70, iso: 70, sol: 150, pt: 384, balT: 548, vacX: 668, vacValveY: 146, vacY: 214,
+    M: 70, iso: 70, sol: 150, pt: 384, balT: 548, vacX: 470, vacValveY: 46, vacY: -10,   // vacuum QC on top of the panel
     ves: { x: 600, y: 468 },                                 // vessel origin (base centre); side fitting at y 128
     handleY: -16,                                            // handle level above the top panel
     balance: { x0: cx - 130, x1: cx + 130, pan: 600, top: 614, bot: 652 },
@@ -68,7 +68,7 @@
     RT.sIn = F.path(0, M).H(cx + SX - 8).turn(cx + SX, M, cx + SX, g.tip, 8).V(g.tip).end();
     RT.sInValve = g.sol;
     RT.gOut = F.path(cx + GX, g.tip).V(M + 8).turn(cx + GX, M, g.W, M, 8).H(g.W).end();
-    RT.vac = F.path(cx + GX, g.tip).V(M + 8).turn(cx + GX, M, g.vacX, M, 8).H(g.vacX - 8).turn(g.vacX, M, g.vacX, g.vacY, 8).V(g.vacY - 8).turn(g.vacX, g.vacY, g.W, g.vacY, 8).H(g.W).end();
+    RT.vac = F.path(cx + GX, g.tip).V(M + 8).turn(cx + GX, M, g.vacX, M, 8).H(g.vacX - 8).turn(g.vacX, M, g.vacX, g.vacY, 8).V(g.vacY - 14).end();
     RT.ves = F.path(g.W, M).H(g.balT + 8).turn(g.balT, M, g.balT, g.vesSide[1], 8).V(g.vesSide[1] - 8).turn(g.balT, g.vesSide[1], g.vesSide[0], g.vesSide[1], 8)
       .H(g.ves.x).V(g.ves.y - Parts.VG.h + 4).end();
   })();
@@ -161,12 +161,12 @@
     s += F.tube(F.path(0, M).H(g.W).end());                                                        // the one upper manifold
     s += F.tube(F.path(cx, M).V(g.head.y0 - 16).end());                                             // flask connection (down)
     s += F.tube(F.path(g.balT, M).V(g.vesSide[1] - 8).turn(g.balT, g.vesSide[1], g.vesSide[0], g.vesSide[1], 8).H(g.vesSide[0]).end());   // balloon connection (down)
-    s += F.tube(F.path(g.vacX, M).V(g.vacY - 8).turn(g.vacX, g.vacY, g.W, g.vacY, 8).H(g.W).end());  // vacuum branch
+    s += F.tube(F.path(g.vacX, M).V(g.vacY).end());                                                // vacuum branch, up through the top panel
     s += F.tube(F.path(g.pt, M).V(M + 26).end());
     [g.pt, g.balT, g.vacX].forEach(function (x) { s += F.tee(x, M); });
-    [[112, M], [206, M], [326, M], [470, M], [620, M]].forEach(function (q) { s += F.nut(q[0], q[1], 'h', .9); });
+    [[112, M], [206, M], [326, M], [510, M], [620, M]].forEach(function (q) { s += F.nut(q[0], q[1], 'h', .9); });
     s += F.nut(cx, 170, 'v', .9) + F.nut(g.balT, 104, 'v', .9);
-    [[0, M], [g.W, M], [g.W, g.vacY]].forEach(function (q) { var x = q[0] ? g.W - g.post : 0; s += R(x - 2, q[1] - 11, g.post + 4, 22, 'rx="2" fill="url(#ppSteelD)" stroke="#2a3443" stroke-width=".9"'); });
+    [[0, M], [g.W, M]].forEach(function (q) { var x = q[0] ? g.W - g.post : 0; s += R(x - 2, q[1] - 11, g.post + 4, 22, 'rx="2" fill="url(#ppSteelD)" stroke="#2a3443" stroke-width=".9"'); });
     // solenoid flow-control valve on the manifold
     var sx = g.sol;
     s += R(sx - 15, M - 11, 30, 22, 'rx="2" fill="url(#ppSteelD)" stroke="#2a3443" stroke-width="1"');
@@ -178,7 +178,6 @@
     s += R(cx - 17, M - 13, 34, 26, 'rx="3" fill="url(#ppSteelD)" stroke="#2a3443" stroke-width="1.1"') + R(cx - 14, M - 10, 28, 3, 'fill="#fff" opacity=".45"');
     s += T(26, M + 30, 'SAMPLE IN', MONO + ' font-size="9" font-weight="600" letter-spacing=".7" fill="#566578"');
     s += T(g.W - 28, M - 20, 'TO GASOMETER', 'text-anchor="end" ' + MONO + ' font-size="9" font-weight="600" letter-spacing=".7" fill="#566578"');
-    s += T(g.W - 28, g.vacY + 52, 'VACUUM QC', 'text-anchor="end" ' + MONO + ' font-size="9" font-weight="600" letter-spacing=".7" fill="#566578"');
     return s;
   }
   // top-panel controls: stems through the panel, handles above it (Flask Valve, Balloon Valve)
@@ -186,7 +185,9 @@
     var g = G, v = V.valve || {}, s = '', y = g.handleY;
     var ctl = function (x, yBody, open, name, knob) {
       var on = open > 0.5, o = '';
-      o += L(x, yBody, x, y + 6, 'stroke="#2a3443" stroke-width="7"') + L(x, yBody, x, y + 6, 'stroke="#c3cad4" stroke-width="5"');
+      var w = knob ? 12 : 7;
+      o += L(x, yBody, x, y + 6, 'stroke="#2a3443" stroke-width="' + w + '"') + L(x, yBody, x, y + 6, 'stroke="#c3cad4" stroke-width="' + (w - 2) + '"');
+      if (knob) o += R(x - 10, G.rail, 20, 10, 'rx="2" fill="url(#ppSteelD)" stroke="#2a3443" stroke-width=".8"');   // hanger collar under the panel
       o += R(x - 9, -2, 18, 6, 'rx="1.5" fill="url(#ppSteelD)" stroke="#2a3443" stroke-width=".8"');            // gland on the panel
       if (knob) o += R(x - 18, y - 8, 36, 16, 'rx="5" fill="#1b1f24" stroke="#000" stroke-width="1"') + L(x - 12, y - 5, x - 12, y + 5, 'stroke="#3a414b" stroke-width="1.4"') + L(x, y - 5, x, y + 5, 'stroke="#3a414b" stroke-width="1.4"') + L(x + 12, y - 5, x + 12, y + 5, 'stroke="#3a414b" stroke-width="1.4"');
       else o += '<g transform="rotate(' + (on ? 90 : 0) + ' ' + x + ' ' + y + ')">' + R(x - 22, y - 3.6, 44, 7.2, 'rx="3.6" fill="#1b1f24" stroke="#000" stroke-width=".8"') + '</g>' + C(x, y, 4, 'fill="#c5ccd6" stroke="#2a3443" stroke-width=".8"');
@@ -278,19 +279,11 @@
     s += R(a.x1 - 7, a.top - 8, 14, 12, 'rx="2" fill="url(#ppSteelD)" stroke="#2a3443" stroke-width=".8"') + R(a.x1 - 5, a.top - 13, 10, 6, 'rx="1" fill="#e9edf2" stroke="#5d6878" stroke-width=".7"');
     return s;
   }
-  // blue gas balloon: hung inside the right bay by two ring clamps on arms from the right post
-  function vesselSupport() {
-    var v = G.ves, s = '';
-    [v.y - 228, v.y - 60].forEach(function (y) {
-      s += R(v.x + 30, y - 4, G.W - G.post - v.x - 30, 8, 'fill="url(#ppSteelV)" stroke="#5d6878" stroke-width=".7"');
-      s += R(G.W - G.post - 10, y - 12, 10, 24, 'rx="2" fill="#4a525d"');
-    });
-    return s;
-  }
+  // the balloon hangs from its own valve assembly: branch to the side fitting + stem housing up to the top-panel gland
+  function vesselSupport() { return ''; }
   function vessel(V) {
     var v = G.ves, s = '';
     s += '<g transform="translate(' + v.x + ' ' + v.y + ')">' + Parts.vessel(V, { stem: true }) + '</g>';
-    [v.y - 228, v.y - 60].forEach(function (y) { s += R(v.x - 33, y - 6, 66, 12, 'rx="3" fill="none" stroke="#1b1f24" stroke-width="3"'); });
     var bp = 14.5 * F.clamp((V.balloon || 0) / 250, 0, 1), ty = v.y + 18;
     s += R(v.x - 40, ty, 80, 24, 'rx="3" fill="url(#ppScreen)" stroke="#3a4656" stroke-width="1"');
     s += T(v.x + 32, ty + 17, bp.toFixed(1) + '<tspan font-size="9" fill="#8fb3cc"> psi</tspan>', 'text-anchor="end" ' + MONO + ' font-size="13" font-weight="600" fill="' + (bp > 0.05 ? '#7ff0bf' : '#5fd4ff') + '"');
@@ -301,10 +294,16 @@
     var g = G, v = V.valve || {}, s = '';
     s += F.valve(g.iso, g.M, 'h', v.inlet || 0, { side: 'down', tag: [0, 46] });
     s += C(g.sol, g.M - 28, 3.6, 'fill="' + ((v.inlet || 0) > 0.5 ? '#2fbf7f' : '#59626e') + '"');      // solenoid lamp (energised = open)
-    s += F.valve(g.vacX, g.vacValveY, 'v', v.vac || 0, { side: 'left', tag: [0, -40] });
-    var h = V.vacHose || 0;
-    s += R(g.W + 2, g.vacY - 8, 14, 16, 'rx="2" fill="url(#ppSteelD)" stroke="#2a3443" stroke-width=".9"');
-    if (h < 0.98) s += R(g.W + 14, g.vacY - 7, 8, 14, 'rx="2" fill="#c8323c" stroke="#7e1a22" stroke-width=".8" opacity="' + r1(1 - h) + '"');
+    s += F.valve(g.vacX, g.vacValveY, 'v', v.vac || 0, { side: 'left' });
+    // vacuum quick-connect above the top panel: red cap unless the temporary hose is attached
+    var h = V.vacHose || 0, qy = g.vacY;
+    s += R(g.vacX - 9, -2, 18, 6, 'rx="1.5" fill="url(#ppSteelD)" stroke="#2a3443" stroke-width=".8"');
+    s += R(g.vacX - 7, qy - 10, 14, 12, 'rx="2" fill="url(#ppSteelD)" stroke="#2a3443" stroke-width=".9"');
+    if (h < 0.98) s += R(g.vacX - 8, qy - 20, 16, 11, 'rx="2.5" fill="#c8323c" stroke="#7e1a22" stroke-width=".8" opacity="' + r1(1 - h) + '"');
+    var lx = g.vacX - 62;
+    s += T(lx, qy - 30, 'Vacuum QC', 'text-anchor="middle" ' + SANS + ' font-size="12" font-weight="700" fill="#1d2836"');
+    s += R(lx - 27, qy - 22, 54, 16, 'rx="8" fill="' + (h > 0.98 ? '#dff3e8' : '#e4e8ee') + '" stroke="' + (h > 0.98 ? '#4fae80' : '#9aa6b5') + '" stroke-width=".9"') +
+      T(lx, qy - 10, h > 0.98 ? 'HOSE ON' : 'CAPPED', 'text-anchor="middle" ' + MONO + ' font-size="9" font-weight="700" fill="' + (h > 0.98 ? '#14603f' : '#566578') + '"');
     return s;
   }
   function displays(V) {
@@ -354,16 +353,16 @@
     { id: 'manifold', n: 'Upper manifold', s: 'one horizontal stainless line', a: [G.W - 70, G.M + 4], p: [770, 40], an: 'start' },
     { id: 'gasLine', n: 'Gasometer line', s: 'gas from the flask headspace', a: [G.W + 4, G.M], p: [770, 96], an: 'start' },
     { id: 'pt', n: 'Pressure transducer', s: 'unit pressure · psia', a: [G.pt + 11, G.M + 40], p: [770, 150], an: 'start' },
-    { id: 'vacConn', n: 'Temporary vacuum connection', s: 'quick-connect · pump is external', a: [G.W + 20, G.vacY], p: [770, 214], an: 'start' },
+    { id: 'vacConn', n: 'Temporary vacuum connection', s: 'QC on the top panel · pump is external', a: [G.vacX + 10, G.vacY - 4], p: [770, -20], an: 'start' },
     { id: 'balloonConn', n: 'Balloon connection', s: 'branch to the side fitting', a: [G.balT + 4, 104], p: [770, 274], an: 'start' },
     { id: 'headspace', n: 'Gas headspace', s: 'gas gathers, then rises up the connection', a: [cx + 40, 380], p: [770, 334], an: 'start' },
-    { id: 'vessel', n: 'Blue gas balloon', s: 'hung from the right post', a: [G.ves.x + 30, 330], p: [770, 394], an: 'start' },
+    { id: 'vessel', n: 'Blue gas balloon', s: 'hangs from its own valve assembly', a: [G.ves.x + 30, 330], p: [770, 394], an: 'start' },
     { id: 'release', n: 'Gas-release region', s: 'bubbles rise through the oil', a: [cx + 80, 556], p: [770, 470], an: 'start' },
     { id: 'arm', n: 'Oil sampling side-arm', s: 'stopcock · Stage 7', a: [G.arm.x1 + 6, G.arm.top + 4], p: [770, 540], an: 'start' }
   ];
 
   window.FlashUnit = {
     G: G, RT: RT, layers: layers, oilTop: oilTop, LABELS: LABELS,
-    port: { sampleIn: [0, G.M], gasOut: [G.W, G.M], vac: [G.W + 16, G.vacY], sample: [G.arm.x1, G.arm.top - 13] }
+    port: { sampleIn: [0, G.M], gasOut: [G.W, G.M], vac: [G.vacX, G.vacY - 12], sample: [G.arm.x1, G.arm.top - 13] }
   };
 })();

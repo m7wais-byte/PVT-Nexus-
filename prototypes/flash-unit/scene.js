@@ -22,7 +22,7 @@
     // left to right: computer + controller, full-size PVT Cell (same scale as the procedure pages' cell views), Flash Unit, Gasometer
     system: { vb: [-6, 372, 1842, 648], floor: 1000, desk: { x: 10, y: 700, s: 0.55, legs: 295 }, cell: { x: 56, y: 433, s: 0.75 }, fu: { x: 840, y: 470, s: 0.68 }, pump: { x: 1392, y: 1000, s: 0.6 }, ga: { x: 1500, y: 467, s: 0.62 } },
     density: { vb: [-10, 180, 1700, 840], floor: 1000, fu: { x: 40, y: 298, s: 0.9 }, dm: { x: 790, y: 353, s: 1.4 } },
-    fu: { vb: [-300, -130, 1340, 950], floor: 780, fu: { x: 0, y: 0, s: 1 }, pump: { x: 860, y: 780, s: 1 } },
+    fu: { vb: [-300, -190, 1520, 1010], floor: 780, fu: { x: 0, y: 0, s: 1 }, pump: { x: 1110, y: 780, s: 1 } },
     ga: { vb: [-400, -40, 1340, 920], floor: 860, ga: { x: 0, y: 0, s: 1 } },
     dm: { vb: [-300, -110, 1180, 500], floor: 362, dm: { x: 0, y: 0, s: 1 } }
   };
@@ -152,7 +152,8 @@
   /* ------------------------------------------------------------ temporary vacuum pump + hose */
   function hoseGeo(Lo) {
     var a = tf(Lo.fu, FU.port.vac), b = tf(Lo.pump, PT.PG.inlet);
-    return F.path(a[0], a[1]).C(a[0] + 50, a[1], b[0] - 8, b[1] - 200, b[0], b[1]).end();
+    var k = Lo.fu.s, top = a[1] - 150 * k;
+    return F.path(a[0], a[1]).C(a[0], top, b[0], top, b[0], b[1]).end();
   }
   function vacMarkup(Lo, V) {
     var show = V.vacPump || 0, h = V.vacHose || 0;
@@ -164,7 +165,7 @@
       // hose grows from the pump toward the quick-connect (drawn from the pump end)
       var rev = F.geo('', hg.pts.slice().reverse());
       s += '<g fill="none" stroke-linecap="round"><path d="' + rev.d + '" stroke="#1f2833" stroke-width="10" stroke-dasharray="' + r1(h * len) + ' 9999"/><path d="' + rev.d + '" stroke="#3b4757" stroke-width="7.5" stroke-dasharray="' + r1(h * len) + ' 9999"/></g>';
-      if (h > 0.98) { var a = tf(Lo.fu, FU.port.vac); s += R(a[0] - 2, a[1] - 9, 18, 18, 'rx="3" fill="#1b1f24" stroke="#000" stroke-width=".8"'); }
+      if (h > 0.98) { var a = tf(Lo.fu, FU.port.vac), k = Lo.fu.s; s += R(a[0] - 9 * k, a[1] - 14 * k, 18 * k, 16 * k, 'rx="3" fill="#1b1f24" stroke="#000" stroke-width=".8"'); }
     }
     return s;
   }

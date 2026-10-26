@@ -14,6 +14,12 @@ No build step. `build-preview.py OUT.html` bundles the page into one file for th
 
 Review links: `?stage=n` (end of stage n) · `&run=1&t=<s>&hold=1` (run stage n, fast-forward, pause) · `&view=auto|system|fu|ga|dm` · `&labels=0` · `&details=fu|ga|dm&dview=overall|internal&demo=<stage>&dt=<s>`.
 
+## Rev. E — balloon mounting and vacuum quick-connect
+
+- The balloon's stand, ring clamps and post brackets are removed. The balloon hangs from its own brass valve assembly: the manifold branch goes to the side fitting, and the valve's stem housing rises to a collar under the top panel and the Balloon Valve handle above it. The body is clear of the lower deck.
+- The red-capped vacuum quick-connect moved from the right post to above the top panel. Its branch rises straight from the manifold through the vacuum valve. The temporary pump's hose attaches there in Stage 2 only.
+- No new valves, and valve timing is unchanged.
+
 ## Rev. D — shared flask connection, suspended balloon, horizontal U-tube (this revision)
 
 Supersedes the earlier two-passage flask head, the balloon on the lower deck and the small vertical U-tube.
