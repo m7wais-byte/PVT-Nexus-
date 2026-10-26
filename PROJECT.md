@@ -812,8 +812,12 @@ where noted. One fixed viewBox (`VB 6 102 1240 584`) for all nine stages, everyt
 - Stage 5: the water pump stays (no pumping) and is connected to the bottle hydraulic valve; with that valve open it
   reads the bottle pressure (fixed volume 9.00 cc). Stage 6: pump refilled 9 -> 300 cc from its reservoir while the
   bottles are swapped (the existing 300 cc refill, now shown in place).
-- Stage 9: inversion stand at the cell's former place (`STAND` 660, 400); the pump moves clear (`C_PUMP_X`) with its
-  flexible line on the bottle; agitation card on the left.
+- Stage 9 (2026-10-26): the inversion stand is the Validation · Agitation stand + rotating cradle, shared through
+  `QcAgitSim.stand(id, px, py)` / `QcAgitSim.cradle(id)` (Validation output unchanged, byte-identical), drawn at
+  `STAND_K` = 0.67 / 0.56 so the mounting proportions match, base on FLOOR, pivot `STAND` (660, FLOOR - 225 K). The
+  bottle turns counter-clockwise as on Validation (`sAng`); cradle + Restoration jacket + bottle + clamps rotate
+  together. Pump at `C_PUMP_X` 990; the flexible line goes through a waypoint that moves round the bottle end
+  when the inverted outlet faces away from the pump. Jacket label under the agitation card.
 - Page-header Details buttons follow the equipment in view (`syncDetails`): Cell Details only while the cell is
   shown (stages 4-8), Bottle Details = `gas` (stages 1-3) / `oil` (bottle in view), hidden when no sample bottle.
 

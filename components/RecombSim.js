@@ -167,7 +167,7 @@
   var PUMP_DX = 56;                         // vessel outlet -> water pump body (port fitting 10 + 46 line)
   var A_PUMP_X = A_TI_X + PUMP_DX;          // stage 1-3 water pump
   var B_PUMP_X = SLOT_X + PUMP_DX;          // stage 4-8 water pump (beside the vessel at the slot)
-  var C_PUMP_X = 930;                       // stage 9 water pump (moves clear of the inversion stand)
+  var C_PUMP_X = 990;                       // stage 9 water pump (moves clear of the inversion stand)
   var PUMP_W = 180, PUMP_H = 132, PUMP_Y = FLOOR - PUMP_H, PUMP_PORT_Y = HYD_Y;
   var GSP_X = 120, GSP_C = 377, GSP_S = 0.73;   // approved Gas Sample Bottle (top valve outlet at y 196)
   var HI_Y = 128;                           // overhead run of the gas lines
@@ -196,7 +196,13 @@
   var PIV_DY = 281 * BOT_S;                 // sample-valve outlet -> body centre of the bottle
   // gas receiving bottle: the same approved bottle and placement as the sample bottles (axis TI_DX left of the outlets)
   var TI_DX = PIV_DX;
-  var STAND = { x: 660, py: 400 };          // inversion stand pivot (stage 9) = bottle body centre
+  /* stage 9 inversion stand = the Validation · Agitation stand + rotating cradle (QcAgitSim.stand / .cradle), drawn
+     at this page's bottle scale (SK = BOT_S / the Agitation bottle scale) so the mounting proportions are the same;
+     its base stands on FLOOR. The bottle turns the same way as on Validation (screen angle = -ang). */
+  var STAND_K = BOT_S / QcAgitSim.S2;
+  var STAND = { x: 660, py: FLOOR - 225 * STAND_K };   // pivot = bottle body centre
+  var STAND_ID = { steelV: 'rcbSteelV', steelD: 'rcbSteelD', pipe: 'rcqPipe', cyl: 'rcqCyl', metal: 'rcqMetal' };
+  function sAng(b) { return -(b.ang || 0); }   // drawn rotation of the bottle (counter-clockwise, as on Validation)
   // vacuum pump on a tee in the sample-side gas line (booster OUT -> receiving bottle), stage 1 only
   var VAC = { tee: [740, HI_Y], inlet: [740, 228], vy: 166 };
 
@@ -1004,7 +1010,7 @@
     var y0 = -226, yb = 226, PX = BOT_PX, X0 = -22, X1 = 22, PS = 46;
     var samp = Math.max(0, CFG.BOTTLE_CAP - b.water), pistY = y0 + samp * PX;
     var liq = clamp(b.oil, 0, samp), mix = b.mix || 0, tt = w.tt;
-    var a = (b.ang || 0) * Math.PI / 180, n = [-Math.sin(a), -Math.cos(a)];     // local "up"
+    var a = sAng(b) * Math.PI / 180, n = [-Math.sin(a), -Math.cos(a)];          // local "up"
     var R = [[X0, y0], [X1, y0], [X1, pistY], [X0, pistY]], target = liq * PX * (X1 - X0);
     var ds = R.map(function (q) { return q[0] * n[0] + q[1] * n[1]; }), lo = Math.min.apply(null, ds), hi = Math.max.apply(null, ds), c = lo;
     if (target >= parea(R) - .01) c = hi; else if (target > .01) { for (var it = 0; it < 32; it++) { c = (lo + hi) / 2; if (parea(clipHalf(R, n, c)) < target) lo = c; else hi = c; } }
@@ -1046,7 +1052,7 @@
     o += PBDraw.piston('rcb', pistY);
     // phase letters (counter-rotated so they stay readable); long labels run along the bore
     var lab = function (p, s, sz, col, along) {
-      var rot = along ? -90 : -(b.ang || 0);
+      var rot = along ? -90 : -sAng(b);
       return '<text x="' + r1(p[0]) + '" y="' + r1(p[1] + sz * .35) + '" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="' + sz + '" font-weight="700" fill="' + col + '"' +
         (rot ? ' transform="rotate(' + r1(rot) + ' ' + r1(p[0]) + ' ' + r1(p[1]) + ')"' : '') + '>' + esc(s) + '</text>';
     };
@@ -1079,7 +1085,7 @@
   }
   function drawJacketLabel(w) {
     if (!(w.jacket > .01)) return '';
-    var x = STAND.x + 196, y = 168, on = !!w.heat, la = Math.min(w.jacket, w.stand);   // label once the bottle is on the stand
+    var x = 24, y = 536, on = !!w.heat, la = Math.min(w.jacket, w.stand);   // label once the bottle is on the stand
     if (la <= .01) return '';
     var o = '<g opacity="' + r1(la * 100) / 100 + '">';
     o += T(x, y, 'Heating Jacket', { s: 12.5, w: 600, c: 'var(--txt)' });
@@ -1098,8 +1104,12 @@
       ctx: b.kind === 'oil' ? 'Recombination · separator oil bottle (Oil Sample Bottle, ' + CFG.BOTTLE_CAP + ' cc) · separator oil source' : 'Recombination · recombination bottle (Oil Sample Bottle, ' + CFG.BOTTLE_CAP + ' cc) · holds the gas and oil charges',
       ringT: b.top ? '#46d39a' : '#8fa3c2', needleT: BottleArt.needle(b.top ? 1 : 0), ringB: b.bv ? '#46d39a' : '#8fa3c2', needleB: BottleArt.needle(b.bv ? 1 : 0) });
     if (w.jacket > .01) body = '<g transform="translate(' + r1(cx) + ' ' + r1(cy) + ') scale(' + BOT_S + ')">' + jacketMarkup(w) + '</g>' + body;
+    if (w.stand > .01) {      // Agitation cradle: plate + arm behind (jacket, bottle), clamp brackets in front
+      var cr = QcAgitSim.cradle(STAND_ID), cf = '<g opacity="' + r1(w.stand * 100) / 100 + '" transform="translate(' + r1(cx) + ' ' + r1(cy) + ') scale(' + BOT_S + ')">';
+      body = cf + cr.back + '</g>' + body + cf + cr.front + '</g>';
+    }
     var o = '<g opacity="' + r1(b.a * 100) / 100 + '">' + glow(hl(w, 'bot'), cx - 50, y - 60, 100, 490);
-    if (b.ang) o += '<g transform="rotate(' + r1(b.ang) + ' ' + r1(cx) + ' ' + r1(cy) + ')">' + body + '</g>';
+    if (b.ang) o += '<g transform="rotate(' + r1(sAng(b)) + ' ' + r1(cx) + ' ' + r1(cy) + ')">' + body + '</g>';
     else o += body;
     var name = b.kind === 'oil' ? 'Separator Oil Bottle' : 'Recombination Bottle';
     if (w.stand <= 0) {
@@ -1127,21 +1137,8 @@
 
   function drawStand(w) {
     if (w.stand <= .01) return '';
-    var x = STAND.x, y = STAND.py;
-    var o = '<g opacity="' + r1(w.stand * 100) / 100 + '">';
-    o += '<ellipse cx="' + x + '" cy="644" rx="130" ry="7" fill="rgba(0,0,0,.18)"/>';
-    [x - 112, x + 104].forEach(function (fx) { o += '<rect x="' + fx + '" y="640" width="8" height="5" rx="1" fill="#1d2430" stroke="#0a0e16" stroke-width=".6"/>'; });   // levelling feet
-    o += '<rect x="' + (x - 120) + '" y="630" width="240" height="12" rx="3" fill="url(#rcMetal)" stroke="#0a0e16"/>';
-    o += '<rect x="' + (x - 116) + '" y="631.5" width="232" height="1.6" rx=".8" fill="#fff" opacity=".35"/>';
-    // two uprights either side of the bottle, carrying the pivot shaft
-    o += '<rect x="' + (x - 78) + '" y="' + (y - 6) + '" width="12" height="' + (636 - y) + '" fill="url(#rcMetalH)" stroke="#0a0e16"/>';
-    o += '<rect x="' + (x + 66) + '" y="' + (y - 6) + '" width="12" height="' + (636 - y) + '" fill="url(#rcMetalH)" stroke="#0a0e16"/>';
-    o += '<rect x="' + (x - 78) + '" y="' + (y - 4) + '" width="156" height="8" rx="3" fill="url(#rcMetal)" stroke="#0a0e16" opacity=".9"/>';
-    // bearing blocks carrying the pivot shaft + gussets at the foot of each upright
-    [x - 82, x + 62].forEach(function (bx) { o += '<rect x="' + bx + '" y="' + (y - 12) + '" width="20" height="24" rx="3" fill="url(#rcMetalH)" stroke="#0a0e16"/>'; });
-    [[x - 66, 1], [x + 66, -1]].forEach(function (g) { o += '<path d="M' + g[0] + ',630 L' + g[0] + ',610 L' + (g[0] + 14 * g[1]) + ',630 Z" fill="url(#rcMetalH)" stroke="#0a0e16" stroke-width=".8"/>'; });
-    o += T(x + 120, 662, 'INVERSION STAND', { a: 'end', m: 1, s: 9, ls: .6, c: 'var(--mut)' });
-    return o + '</g>';
+    return '<g opacity="' + r1(w.stand * 100) / 100 + '"><g transform="translate(' + STAND.x + ' ' + r1(STAND.py) + ') scale(' + STAND_K.toFixed(4) + ')">' + QcAgitSim.stand(STAND_ID, 0, 0) + '</g>' +
+      T(STAND.x - 112 * STAND_K, FLOOR + 14, 'INVERSION STAND', { a: 'end', m: 1, s: 9, ls: .6, c: 'var(--mut)' }) + '</g>';
   }
   /* support stand at the connection slot (stages before the inversion), same parts as the Validation stands
      (BottleArt.stand): rod right of the bottle with its own base (clear of the hydraulic line under the bottle),
@@ -1158,7 +1155,6 @@
     var a = slotStandOp(w); if (a <= .01) return '';
     return '<g opacity="' + r1(a * 100) / 100 + '">' + slotStand()[part] + '</g>';
   }
-  function standHub() { return '<circle cx="' + STAND.x + '" cy="' + STAND.py + '" r="11" fill="url(#rcMetal)" stroke="#0a0e16" stroke-width="1.3"/><circle cx="' + STAND.x + '" cy="' + STAND.py + '" r="4" fill="#0a1420"/>'; }
 
   function rotPt(p, ang, c) {
     var a = ang * Math.PI / 180, dx = p[0] - c[0], dy = p[1] - c[1];
@@ -1168,9 +1164,22 @@
      it moves onto the stand and turns (straight while both outlets are level and facing each other) */
   function drawHose(w) {
     var b = w.bot, piv = [b.x - PIV_DX, b.y + PIV_DY], port = bottlePorts(b, b.x, b.y).bot, dir = [1, 0];
-    if (b.ang) { port = rotPt(port, b.ang, piv); dir = rotPt([1, 0], b.ang, [0, 0]); }
+    if (b.ang) { port = rotPt(port, sAng(b), piv); dir = rotPt([1, 0], sAng(b), [0, 0]); }
     var pp = [w.pump.x - 10, PUMP_PORT_Y], k = Math.max(20, Math.min(110, Math.hypot(pp[0] - port[0], pp[1] - port[1]) * .45));
-    var d = 'M' + r1(port[0]) + ',' + r1(port[1]) + ' C' + r1(port[0] + dir[0] * k) + ',' + r1(port[1] + dir[1] * k + 60 * Math.min(1, (b.ang || 0) / 30)) + ' ' + r1(pp[0] - k) + ',' + r1(pp[1]) + ' ' + r1(pp[0]) + ',' + r1(pp[1]);
+    // two smooth spans through a waypoint W. While the outlet faces the pump W lies on the direct curve; as the
+    // inverted outlet turns away from the pump, W moves out past the bottle end (clear of the swept bottle and the
+    // stand), so the hose goes round the end instead of across the bottle.
+    var D0 = [port[0] + dir[0] * k, port[1] + dir[1] * k + 60 * Math.min(1, (b.ang || 0) / 30)], D1 = [pp[0] - k, pp[1]];
+    var Wd = [.125 * port[0] + .375 * D0[0] + .375 * D1[0] + .125 * pp[0], .125 * port[1] + .375 * D0[1] + .375 * D1[1] + .125 * pp[1]];
+    var rx = port[0] - piv[0], ry = port[1] - piv[1], rl = Math.hypot(rx, ry) || 1, ux = rx / rl, uy = ry / rl;
+    var Wo = [piv[0] + ux * 275, Math.max(PORT_Y - 82, piv[1] + uy * 275)];
+    var wg = smooth((-dir[0] - .1) / .5), W = [lerp(Wd[0], Wo[0], wg), lerp(Wd[1], Wo[1], wg)];
+    // at W the hose runs round the bottle end, i.e. perpendicular to the bottle radius, on the pump side
+    var px_ = -uy, py_ = ux; if (px_ < 0) { px_ = -px_; py_ = -py_; }
+    var tw = [lerp((D1[0] - D0[0]) * .35, px_ * 190, wg), lerp((D1[1] - D0[1]) * .35, py_ * 190, wg)];
+    var k1 = lerp(k * .5, 60, wg);
+    var d = 'M' + r1(port[0]) + ',' + r1(port[1]) + ' C' + r1(port[0] + dir[0] * k1) + ',' + r1(port[1] + dir[1] * k1 + (1 - wg) * 30 * Math.min(1, (b.ang || 0) / 30)) + ' ' + r1(W[0] - tw[0]) + ',' + r1(W[1] - tw[1]) + ' ' + r1(W[0]) + ',' + r1(W[1]) +
+      ' C' + r1(W[0] + tw[0]) + ',' + r1(W[1] + tw[1]) + ' ' + r1(D1[0]) + ',' + r1(D1[1]) + ' ' + r1(pp[0]) + ',' + r1(pp[1]);
     var ha = Math.min(w.pump.a, w.L.hyd.part); if (ha <= .01) return '';
     var o = '<g opacity="' + r1(ha * 100) / 100 + '"><path d="' + d + '" fill="none" stroke="#0a0e16" stroke-width="8.4" stroke-linecap="round"/><path d="' + d + '" fill="none" stroke="#2c3a50" stroke-width="6" stroke-linecap="round"/>';
     o += '<path d="' + d + '" fill="none" stroke="' + FL.water.line + '" stroke-width="3.6" stroke-linecap="round"/>';
@@ -1331,7 +1340,6 @@
     o += drawGSP(w) + drawBooster(w) + drawBooValves(w);
     o += drawStand(w) + drawSlotStand(w, 'back');
     o += drawTi(w) + drawBottle(w) + drawSlotStand(w, 'front') + drawPump(w) + drawCell(w);
-    if (w.stand > .01) o += '<g opacity="' + r1(w.stand * 100) / 100 + '">' + standHub() + '</g>';
     o += drawJacketLabel(w);
     o += drawAgCard(w) + drawXfCard(w) + drawRockCard(w);
     if (w.summary > 0) {
@@ -1344,6 +1352,9 @@
   function defs() {
     var sb = window.SampleBottle ? BottleArt.raw(SampleBottle.defs('rcb')) : '';
     return '<defs>' + sb + PVTCellArt.defs('rcc', { raw: true }) +
+      '<linearGradient id="rcqMetal" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#283750"/><stop offset=".15" stop-color="#6377a0"/><stop offset=".42" stop-color="#b3c1d8"/><stop offset=".58" stop-color="#7e90b0"/><stop offset=".8" stop-color="#41506e"/><stop offset="1" stop-color="#1f2a3e"/></linearGradient>' +
+      '<linearGradient id="rcqCyl" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#3a485f"/><stop offset=".2" stop-color="#8094b2"/><stop offset=".5" stop-color="#aebcd2"/><stop offset=".8" stop-color="#54657f"/><stop offset="1" stop-color="#222c3e"/></linearGradient>' +
+      '<linearGradient id="rcqPipe" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#6e82a4"/><stop offset=".4" stop-color="#9cb0cd"/><stop offset=".55" stop-color="#41526c"/><stop offset="1" stop-color="#232f44"/></linearGradient>' +
       '<linearGradient id="rcMetal" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#b3c1d8"/><stop offset=".5" stop-color="#7e90b0"/><stop offset="1" stop-color="#3a485f"/></linearGradient>' +
       '<linearGradient id="rcMetalH" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#283750"/><stop offset=".42" stop-color="#b3c1d8"/><stop offset=".58" stop-color="#7e90b0"/><stop offset="1" stop-color="#1f2a3e"/></linearGradient>' +
       '<linearGradient id="rcCyl" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#3a485f"/><stop offset=".2" stop-color="#8094b2"/><stop offset=".5" stop-color="#aebcd2"/><stop offset=".8" stop-color="#54657f"/><stop offset="1" stop-color="#222c3e"/></linearGradient>' +

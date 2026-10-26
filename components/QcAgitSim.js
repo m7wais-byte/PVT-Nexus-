@@ -108,22 +108,47 @@
     return o;
   }
 
+  /* inversion stand + rotating cradle - shared with Validation · Recombination stage 9 (RecombSim), which draws
+     the same parts around its own bottle. id = gradient ids { steelV, steelD, pipe, cyl, metal }; this page uses the
+     q* gradients of screens/showRestore.js. Coordinates: stand in page units around the pivot (px, py), base plate
+     210-225 below it; cradle in the bottle frame (approved bottle units, bottle centre on the pivot). */
+  var QID = { steelV: 'qSteelV', steelD: 'qSteelD', pipe: 'qPipe', cyl: 'qCyl', metal: 'qMetal' };
+  // static stand (behind the bottle): base plate on levelling feet, twin-leg column with a lightening window,
+  // bearing housing at the pivot (same styling as the Validation clamp stands, BottleArt.stand)
+  function stand(id, PX, PY) {
+    var s = '', K = 'stroke="#0a0e16"';
+    s += '<ellipse cx="' + PX + '" cy="' + (PY + 223) + '" rx="112" ry="6" fill="rgba(0,0,0,.3)"/>';
+    [PX - 92, PX + 84].forEach(function (fx) { s += '<rect x="' + fx + '" y="' + (PY + 220) + '" width="8" height="5" rx="1" fill="#1d2430" ' + K + ' stroke-width=".6"/>'; });
+    s += '<rect x="' + (PX - 100) + '" y="' + (PY + 210) + '" width="200" height="11" rx="3" fill="url(#' + id.steelV + ')" ' + K + ' stroke-width="1"/>';
+    s += '<rect x="' + (PX - 96) + '" y="' + (PY + 211.5) + '" width="192" height="1.6" rx=".8" fill="#fff" opacity=".35"/>';
+    s += '<path d="M' + (PX - 46) + ',' + (PY + 210) + ' L' + (PX - 15) + ',' + (PY + 20) + ' L' + (PX + 15) + ',' + (PY + 20) + ' L' + (PX + 46) + ',' + (PY + 210) + ' Z ' +
+      'M' + (PX - 24) + ',' + (PY + 198) + ' L' + (PX - 7) + ',' + (PY + 52) + ' L' + (PX + 7) + ',' + (PY + 52) + ' L' + (PX + 24) + ',' + (PY + 198) + ' Z" fill="url(#' + id.steelD + ')" fill-rule="evenodd" ' + K + ' stroke-width="1"/>';
+    s += '<rect x="' + (PX - 52) + '" y="' + (PY + 198) + '" width="104" height="12" rx="2.5" fill="url(#' + id.steelD + ')" ' + K + ' stroke-width=".9"/>';
+    s += '<circle cx="' + PX + '" cy="' + PY + '" r="26" fill="url(#' + id.steelD + ')" ' + K + ' stroke-width="1.2"/>';
+    s += '<circle cx="' + PX + '" cy="' + PY + '" r="18" fill="none" stroke="#0a0e16" stroke-width=".8" opacity=".55"/>';
+    for (var bi = 0; bi < 6; bi++) { var ba = bi * Math.PI / 3; s += '<circle cx="' + r1(PX + 22 * Math.cos(ba)) + '" cy="' + r1(PY + 22 * Math.sin(ba)) + '" r="1.8" fill="#1f2630" stroke="#8b97a8" stroke-width=".5"/>'; }
+    return s;
+  }
+  // rotating cradle, bottle frame: back = plate + arm to the pivot hub (behind the bottle);
+  // front = the two clamp brackets from the cradle plate to the bottle wall (nothing crosses in front of the bore)
+  function cradle(id) {
+    var back = '<rect x="-52" y="-12" width="52" height="24" rx="5" fill="url(#' + id.pipe + ')" stroke="#0a0e16" stroke-width="1.4"/>' +
+      '<rect x="-74" y="-196" width="22" height="392" rx="5" fill="url(#' + id.cyl + ')" stroke="#0a0e16" stroke-width="1.6"/>', front = '';
+    [-110, 110].forEach(function (y) {
+      front += '<rect x="-54" y="' + (y - 8) + '" width="22" height="16" rx="4" fill="url(#' + id.pipe + ')" stroke="#0a0e16" stroke-width="1.2"/>';
+      front += '<rect x="-40" y="' + (y - 13) + '" width="8" height="26" rx="3" fill="url(#' + id.metal + ')" stroke="#0a0e16" stroke-width="1.2"/>';
+    });
+    return { back: back, front: front };
+  }
+
   /* approved Oil Sample Bottle on its cradle, clamps and heating jacket - all rotate together (bottle frame) */
   function bottle(st, wf) {
-    var o = '';
-    // rotating cradle: back plate + arm to the pivot hub (behind the bottle)
-    o += '<rect x="-52" y="-12" width="52" height="24" rx="5" fill="url(#qPipe)" stroke="#0a0e16" stroke-width="1.4"/>';
-    o += '<rect x="-74" y="-196" width="22" height="392" rx="5" fill="url(#qCyl)" stroke="#0a0e16" stroke-width="1.6"/>';
+    var c = cradle(QID), o = c.back;
     // heating jacket (holds the restoration temperature), between the end caps
     o += '<rect x="-44" y="-212" width="88" height="424" rx="14" fill="rgba(231,117,46,.10)" stroke="#e7752e" stroke-width="2.6"/>';
     o += '<g class="bd-hit" data-bd-open="oil" data-bd-ctx="SPS/PDS sample bottle · inversion agitation">' +
       BottleArt.raw(BottleArt.oil('q', { x: 0, y: 0, s: 1, inner: interior(st, wf), ringB: '#46d39a', needleB: BottleArt.needle(1) })) + '</g>';
-    // two clamp brackets from the cradle plate to the bottle wall (nothing crosses in front of the bore)
-    [-110, 110].forEach(function (y) {
-      o += '<rect x="-54" y="' + (y - 8) + '" width="22" height="16" rx="4" fill="url(#qPipe)" stroke="#0a0e16" stroke-width="1.2"/>';
-      o += '<rect x="-40" y="' + (y - 13) + '" width="8" height="26" rx="3" fill="url(#qMetal)" stroke="#0a0e16" stroke-width="1.2"/>';
-    });
-    return o;
+    return o + c.front;
   }
 
   function rot(p, a) {   // local bottle coords -> screen
@@ -145,20 +170,7 @@
       '<linearGradient id="qAgLight" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffe2a6" stop-opacity="0"/><stop offset=".5" stop-color="#ffe2a6" stop-opacity=".7"/><stop offset="1" stop-color="#ffe2a6" stop-opacity="0"/></linearGradient>' +
       '</defs>';
     var PX = CFG.PX, PY = CFG.PY;
-    // ---- inversion stand (static, behind the bottle): base plate on levelling feet, twin-leg
-    //      column with a lightening window, bearing housing at the pivot (same styling as the
-    //      Validation clamp stands, BottleArt.stand) ----
-    var K = 'stroke="#0a0e16"';
-    s += '<ellipse cx="' + PX + '" cy="468" rx="112" ry="6" fill="rgba(0,0,0,.3)"/>';
-    [PX - 92, PX + 84].forEach(function (fx) { s += '<rect x="' + fx + '" y="465" width="8" height="5" rx="1" fill="#1d2430" ' + K + ' stroke-width=".6"/>'; });
-    s += '<rect x="' + (PX - 100) + '" y="455" width="200" height="11" rx="3" fill="url(#qSteelV)" ' + K + ' stroke-width="1"/>';
-    s += '<rect x="' + (PX - 96) + '" y="456.5" width="192" height="1.6" rx=".8" fill="#fff" opacity=".35"/>';
-    s += '<path d="M' + (PX - 46) + ',455 L' + (PX - 15) + ',' + (PY + 20) + ' L' + (PX + 15) + ',' + (PY + 20) + ' L' + (PX + 46) + ',455 Z ' +
-      'M' + (PX - 24) + ',443 L' + (PX - 7) + ',' + (PY + 52) + ' L' + (PX + 7) + ',' + (PY + 52) + ' L' + (PX + 24) + ',443 Z" fill="url(#qSteelD)" fill-rule="evenodd" ' + K + ' stroke-width="1"/>';
-    s += '<rect x="' + (PX - 52) + '" y="443" width="104" height="12" rx="2.5" fill="url(#qSteelD)" ' + K + ' stroke-width=".9"/>';
-    s += '<circle cx="' + PX + '" cy="' + PY + '" r="26" fill="url(#qSteelD)" ' + K + ' stroke-width="1.2"/>';
-    s += '<circle cx="' + PX + '" cy="' + PY + '" r="18" fill="none" stroke="#0a0e16" stroke-width=".8" opacity=".55"/>';
-    for (var bi = 0; bi < 6; bi++) { var ba = bi * Math.PI / 3; s += '<circle cx="' + r1(PX + 22 * Math.cos(ba)) + '" cy="' + r1(PY + 22 * Math.sin(ba)) + '" r="1.8" fill="#1f2630" stroke="#8b97a8" stroke-width=".5"/>'; }
+    s += stand(QID, PX, PY);
     // ---- pressure pump (stationary), same drawing as the Restoration transfer pump ----
     var ledOn = true;
     s += '<ellipse cx="765" cy="466" rx="86" ry="7" fill="rgba(0,0,0,.32)"/>';
@@ -227,5 +239,5 @@
     return s;
   }
 
-  window.QcAgitSim = { CFG: CFG, TOT: TOT, info: info, svg: svg };
+  window.QcAgitSim = { CFG: CFG, TOT: TOT, info: info, svg: svg, stand: stand, cradle: cradle, S2: S2 };
 })();
