@@ -22,7 +22,8 @@
   /* placements (world units). floor = 1000 in the system scene */
   var LAYOUT = {
     // left to right: computer + controller, full-size PVT Cell (same scale as the procedure pages' cell views), Flash Unit, Gasometer
-    system: { vb: [-6, 372, 1842, 648], floor: 1000, desk: { x: 10, y: 700, s: 0.55, legs: 295 }, cell: { x: 56, y: 433, s: 0.75 }, fu: { x: 840, y: 470, s: 0.68 }, pump: { x: 1392, y: 1000, s: 0.6 }, ga: { x: 1500, y: 467, s: 0.62 } },
+    // compact computer desk; Flash Unit and Gasometer enlarged so the flask stays readable in one full frame
+    system: { vb: [-6, 150, 2012, 864], floor: 1000, desk: { x: 10, y: 771, s: 0.42, legs: 295 }, cell: { x: 7, y: 433, s: 0.75 }, fu: { x: 772, y: 328, s: 0.85 }, pump: { x: 1452, y: 1000, s: 0.6 }, ga: { x: 1600, y: 362, s: 0.74 } },
     density: { vb: [-10, 180, 1700, 840], floor: 1000, fu: { x: 40, y: 298, s: 0.9 }, dm: { x: 790, y: 353, s: 1.4 } },
     fu: { vb: [-300, -190, 1520, 1010], floor: 780, fu: { x: 0, y: 0, s: 1 }, pump: { x: 1110, y: 780, s: 1 } },
     ga: { vb: [-400, -40, 1340, 920], floor: 860, ga: { x: 0, y: 0, s: 1 } },
@@ -106,6 +107,11 @@
       if (Lo.cell) {
         var cr = [[PA.G.x.A, PA.G.bore.top + 4], [PA.G.x.A, PA.G.hy], [PA.G.port.R.x, PA.G.hy]].map(function (p) { return PA.pt({ at: Lo.cell }, p[0], p[1]); });
         var cg = F.geo('', cr); parts.push(cg, ext.sample); pre = cg.L + ext.sample.L;
+      } else if (Lo.cellPort && ext.sample) {
+        // the page draws its own cell: the sample leaves Pump A along the page's lane to Port R
+        var cl = Lo.cellLane ? F.geo('', Lo.cellLane) : null;
+        if (cl) parts.push(cl);
+        parts.push(ext.sample); pre = (cl ? cl.L : 0) + ext.sample.L;
       }
       parts.push(sIn);
       var sg = chain(parts);
@@ -184,7 +190,7 @@
   /* ------------------------------------------------------------ temporary vacuum pump + hose */
   function hoseGeo(Lo) {
     var a = tf(Lo.fu, FU.port.vac), b = tf(Lo.pump, PT.PG.inlet);
-    var k = Lo.fu.s, top = a[1] - 150 * k;
+    var k = Lo.fu.s, top = a[1] - 230 * k;   // arches clear of the Balloon Valve label
     return F.path(a[0], a[1]).C(a[0], top, b[0], top, b[0], b[1]).end();
   }
   function vacMarkup(Lo, V) {
@@ -245,12 +251,12 @@
   function syringeMarkup(Lo, V) {
     if (!V.syr) return '';
     var q = V.syr.q, sp = tf(Lo.fu, FU.port.sample), inl = tf(Lo.dm, [DM.port.luer[0], DM.port.luer[1] - 2]);
-    var x = sp[0], y = sp[1], fill = 0;
-    if (q < 0.10) { var a = F.ease(ramp(0, 0.10, q)); y = sp[1] - 110 * (1 - a); x = sp[0] + 90 * (1 - a); }
+    var x = sp[0], y = sp[1], fill = 0, k = Lo.syrS || 1;          // syrS: syringe scale on a smaller page drawing
+    if (q < 0.10) { var a = F.ease(ramp(0, 0.10, q)); y = sp[1] - 110 * k * (1 - a); x = sp[0] + 90 * k * (1 - a); }
     else if (q < 0.30) fill = ramp(0.14, 0.26, q);
-    else if (q < 0.42) { fill = 1; var b = F.ease(ramp(0.30, 0.42, q)); x = sp[0] + (inl[0] - sp[0]) * b; y = sp[1] + (inl[1] - sp[1]) * b - Math.sin(b * Math.PI) * 120; }
+    else if (q < 0.42) { fill = 1; var b = F.ease(ramp(0.30, 0.42, q)); x = sp[0] + (inl[0] - sp[0]) * b; y = sp[1] + (inl[1] - sp[1]) * b - Math.sin(b * Math.PI) * 120 * k; }
     else { x = inl[0]; y = inl[1]; fill = 1 - ramp(0.42, 0.54, q); }
-    var sc = q >= 0.30 ? 1 + 0.25 * ramp(0.30, 0.42, q) : 1;
+    var sc = k * (q >= 0.30 ? 1 + 0.25 * ramp(0.30, 0.42, q) : 1);
     return '<g transform="translate(' + r1(x) + ' ' + r1(y) + ') scale(' + r1(sc) + ')">' + PT.syringe(fill, 'down', window.FlashSim.ALIQ_ML.toFixed(1) + ' mL') + '</g>';
   }
   // dm-only view: the syringe is shown already connected at the Luer adapter

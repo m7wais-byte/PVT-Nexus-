@@ -62,48 +62,76 @@
   })();
   var ALIQ_G = Math.round(ALIQ_ML * RHO_T * 100) / 100;
 
+  /* ---------------- procedure profile: the sample-dependent numbers of one flash ----------------
+     VAL = the existing Validation values (default everywhere). Another procedure (Differential Liberation final
+     flash) passes its own profile; equipment preparation (vacuum, 3,000 cc helium) and the timing are shared. */
+  var VAL = { key: 'val', pumpA0: 80, flashed: 50, oil: 40, gas: 400, bal: 250, he: 3000, vDec: 0,
+    stable: 'Stable · 80 cc @ 5,000 psi', res: RES, noGas: '' };
+  function prof(P) { return P || VAL; }
+  function vTxt(P, v) { return P.vDec ? v.toFixed(P.vDec) : String(Math.round(v)); }
+  function txt(n, k, P) {
+    P = prof(P);
+    if (n === 4 && k === 3 && !(P.gas > 0)) return 'Oil drops and collects in the flask · ' + P.noGas;
+    if (n === 4 && k === 4) return 'Valves closed · ' + vTxt(P, P.flashed) + ' cc flashed';
+    if (n === 5 && !(P.bal > 0)) return 'No flash gas to transfer · Balloon Valve stays closed';
+    return TXT[n][k];
+  }
+  function doneTxt(n, P) {
+    P = prof(P);
+    if (P === VAL) return DONE[n];
+    if (n === 4) return vTxt(P, P.flashed) + ' cc flashed · ' + P.oil.toFixed(2) + ' g oil · ' + Math.round(P.gas) + ' cc gas';
+    if (n === 5) return P.bal > 0 ? 'Balloon ' + Math.round(P.bal) + ' cc · ' + (14.5 * P.bal / 250).toFixed(1) + ' psi' : 'No flash gas · balloon not used';
+    return DONE[n];
+  }
+
   /* ---------------- pure stage functions over a state object S (field names = Main.js flash state) ----------------
      The app (Main.js) runs the stages on its own state with these functions; create() wraps them for the
      prototype preview and the Details flow demo (separate instances, never the procedure state). */
   var C0 = function () { return CONN / dur(2); };          // connect / disconnect share of the Stage 2 timeline
-  function initial() {
-    return { fQ: 0, fStep: 0, fStage: 0, fBusy: false, fuP: 14.7, fHe: 0, fHeGas: 3000, fPumpA: 80, fFlashed: 0, fOil: 0, fGaso: 0, fGasoProduced: 0,
+  function initial(P) {
+    P = prof(P);
+    return { fQ: 0, fStep: 0, fStage: 0, fBusy: false, fuP: 14.7, fHe: 0, fHeGas: P.he, fPumpA: P.pumpA0, fFlashed: 0, fOil: 0, fGaso: 0, fGasoProduced: 0,
       fBalloon: 0, fVac: false, fMeasured: false, fPath: 'idle', fPr: 0, fClk: 0, fDur: 1, fVer: 0, fStatus: 'Awaiting Stable Sample',
       dmP: 0, dmDone: false };
   }
-  function vals(n, p) {
+  function vals(n, p, P) {
+    P = prof(P);
     if (n === 2) return { fuP: 14.7 * (1 - E(R(0.15, 0.88, p))) };
-    if (n === 3) return { fHeGas: 3000 * (1 - R(0.15, 0.90, p)), fHe: R(0.36, 0.88, p), fuP: 14.7 * E(R(0.36, 0.88, p)) };
-    if (n === 4) { var g = 400 * R(0.47, 0.90, p); return { fPumpA: 80 - 50 * R(0.15, 0.90, p), fFlashed: 50 * R(RECV[4], 0.90, p), fOil: 40 * R(0.42, 0.90, p), fGaso: g, fGasoProduced: g }; }
-    if (n === 5) return { fGaso: 400 - 250 * R(0.15, 0.90, p), fBalloon: 250 * R(0.40, 0.90, p) };
+    if (n === 3) return { fHeGas: P.he * (1 - R(0.15, 0.90, p)), fHe: R(0.36, 0.88, p), fuP: 14.7 * E(R(0.36, 0.88, p)) };
+    if (n === 4) { var g = P.gas * R(0.47, 0.90, p); return { fPumpA: P.pumpA0 - P.flashed * R(0.15, 0.90, p), fFlashed: P.flashed * R(RECV[4], 0.90, p), fOil: P.oil * R(0.42, 0.90, p), fGaso: g, fGasoProduced: g }; }
+    if (n === 5) return { fGaso: P.gas - P.bal * R(0.15, 0.90, p), fBalloon: P.bal * R(0.40, 0.90, p) };
     return {};
   }
-  var DONEVALS = {
-    1: { fVer: 1, fStatus: 'Stable · 80 cc @ 5,000 psi' },
-    2: { fuP: 0, fVac: false, fStatus: 'Vacuumed · 0 psia' },
-    3: { fHe: 1, fHeGas: 0, fuP: 14.7, fStatus: 'Helium Charged · Gasometer Empty' },
-    4: { fPumpA: 30, fFlashed: 50, fOil: 40, fGaso: 400, fGasoProduced: 400, fStatus: 'Flash Complete · 50 cc' },
-    5: { fGaso: 150, fBalloon: 250, fStatus: 'Balloon Filled · 14.5 psi' },
-    6: { fMeasured: true, fStatus: 'Oil in Glass · Gas in Balloon' },
-    7: { dmP: 1, dmDone: true, fStatus: 'Density ' + RES.rho.toFixed(5) + ' g/cm³ @ 25 °C · ' + RES.api.toFixed(1) + ' °API (example)' }
-  };
+  function doneVals(n, P) {
+    P = prof(P);
+    var r = P.res;
+    return ({
+      1: { fVer: 1, fStatus: P.stable },
+      2: { fuP: 0, fVac: false, fStatus: 'Vacuumed · 0 psia' },
+      3: { fHe: 1, fHeGas: 0, fuP: 14.7, fStatus: 'Helium Charged · Gasometer Empty' },
+      4: { fPumpA: P.pumpA0 - P.flashed, fFlashed: P.flashed, fOil: P.oil, fGaso: P.gas, fGasoProduced: P.gas, fStatus: 'Flash Complete · ' + vTxt(P, P.flashed) + ' cc' },
+      5: { fGaso: P.gas - P.bal, fBalloon: P.bal, fStatus: P.bal > 0 ? 'Balloon Filled · ' + (14.5 * P.bal / 250).toFixed(1) + ' psi' : 'No Flash Gas · Balloon Not Used' },
+      6: { fMeasured: true, fStatus: P.bal > 0 ? 'Oil in Glass · Gas in Balloon' : 'Oil in Glass · Recorded' },
+      7: { dmP: 1, dmDone: true, fStatus: 'Density ' + r.rho.toFixed(5) + ' g/cm³ @ 25 °C · ' + r.api.toFixed(1) + ' °API (example)' }
+    })[n] || {};
+  }
   // state patch when stage n starts / at progress q (0..1 of the whole stage) / when it ends
-  function stageStart(n) {
+  function stageStart(n, P) {
     var path = { 2: 'vac', 3: 'he', 4: 'sample', 5: 'balloon' }[n] || 'idle';
     return { fBusy: true, fStage: n, fPr: 0, fQ: 0, fClk: 0, fDur: dur(n), fPath: path, fVac: n === 2,
-      fStatus: n === 1 ? 'Verifying Stable Sample' : n === 2 ? 'Connecting the temporary vacuum pump' : n === 6 ? 'Measuring Oil and Gas' : n === 7 ? 'Sampling flashed oil for density' : TXT[n][0] };
+      fStatus: n === 1 ? 'Verifying Stable Sample' : n === 2 ? 'Connecting the temporary vacuum pump' : n === 6 ? 'Measuring Oil and Gas' : n === 7 ? 'Sampling flashed oil for density' : txt(n, 0, P) };
   }
-  function stageAt(n, q) {
+  function stageAt(n, q, P) {
     var c0 = n === 2 ? C0() : 0, p = n === 2 ? R(c0, 1 - c0, q) : q, o = { fPr: p, fQ: q, fClk: q * dur(n) };
     if (n === 1) o.fVer = p;
     else if (n >= 2 && n <= 5) {
-      Object.assign(o, vals(n, p)); o.fStatus = TXT[n][phaseOf(n, p)];
+      Object.assign(o, vals(n, p, P)); o.fStatus = txt(n, phaseOf(n, p), P);
       if (n === 2 && q < c0) o.fStatus = 'Temporary vacuum pump placed beside the unit · hose connected to the vacuum quick-connect';
       if (n === 2 && q > 1 - c0) o.fStatus = 'Vacuum valve closed · hose disconnected · pump removed';
     } else if (n === 7) { o.dmP = p; o.fStatus = dmPhase(p).msg; }
     return o;
   }
-  function stageDone(n) { return Object.assign({}, DONEVALS[n] || {}, { fBusy: false, fStage: 0, fStep: n, fPath: 'idle', fPr: 1, fQ: 1 }); }
+  function stageDone(n, P) { return Object.assign({}, doneVals(n, P), { fBusy: false, fStage: 0, fStep: n, fPath: 'idle', fPr: 1, fQ: 1 }); }
 
   /* ---------------- stage 7 timeline ---------------- */
   function dmPhase(p) {
@@ -123,17 +151,18 @@
   var DMK = { move: 'SYRINGE TO FLASK', open: 'STOPCOCK OPEN', draw: 'DRAWING ALIQUOT', close: 'STOPCOCK CLOSED', carry: 'CONNECTING SYRINGE', inject: 'FILLING CELL', check: 'FILLING CHECK', temp: 'STABILIZING', meas: 'MEASURING', calc: 'CALCULATING', done: 'FINISHED', flush: 'FINISHED · FLUSH' };
 
   /* ---------------- view model for the drawings (pure: state S + animation clock t in s) ---------------- */
-  function vmOf(S, t) {
+  function vmOf(S, t, P) {
+    P = prof(P);
     var busy = !!S.fBusy, n = busy ? S.fStage : 0, p = S.fPr || 0, act = function (st) { return busy && st.indexOf(n) >= 0 ? fxValve(p) : 0; };
     var fade = busy ? 1 - R(FXP.end, FXP.shut, p) : 0;
     var V = { t: t, busy: busy, stage: n, p: p, step: S.fStep || 0, path: S.fPath, fuP: S.fuP, pumpA: S.fPumpA, flashed: S.fFlashed || 0, oil: S.fOil || 0, oilRec: S.fOil || 0,
       balloon: S.fBalloon || 0, measured: !!S.fMeasured, ver: n === 1 ? S.fVer : 0, status: S.fStatus };
     // Gasometer: the existing total, split 2,000 cc section first, 1,000 cc section for the rest
-    var heGas = S.fHeGas == null ? 3000 : S.fHeGas, usingGas = (S.fGaso || 0) > 0.5, total = usingGas ? S.fGaso : heGas, sp = window.Gasometer ? window.Gasometer.split(total) : { k2: Math.min(total, 2000), k1: Math.max(0, total - 2000) };
+    var heGas = S.fHeGas == null ? P.he : S.fHeGas, usingGas = (S.fGaso || 0) > 0.5, total = usingGas ? S.fGaso : heGas, sp = window.Gasometer ? window.Gasometer.split(total) : { k2: Math.min(total, 2000), k1: Math.max(0, total - 2000) };
     V.gasoVol = total; V.gasoMode = usingGas ? 'gas' : 'he'; V.gaso = S.fGaso || 0; V.heGas = heGas; V.gaso2k = sp.k2; V.gaso1k = sp.k1; V.gasoT = GASO_T;
-    var sec = n === 3 && heGas > 2000 ? '1k' : '2k', g = act([3, 4, 5]);
+    var sec = n === 3 && heGas > 2000 ? '1k' : '2k', g = act(P.bal > 0 ? [3, 4, 5] : [3, 4]);
     V.gasoSec = sec;
-    V.valve = { pumpA: act([4]), inlet: act([2, 4]), flask: act([2, 3, 4]), vac: act([2]), vessel: act([5]),
+    V.valve = { pumpA: act([4]), inlet: act([2, 4]), flask: act([2, 3, 4]), vac: act([2]), vessel: P.bal > 0 ? act([5]) : 0,
       in2k: sec === '2k' ? g : 0, iso2k: sec === '2k' ? g : 0, in1k: sec === '1k' ? g : 0, iso1k: sec === '1k' ? g : 0, gaso: g };
     // temporary vacuum pump (Stage 2 only): wheeled in, hose attached, then detached and removed
     var qq = S.fQ || 0, c0 = n === 2 ? C0() : 0;
@@ -143,19 +172,19 @@
     V.flow = {};
     if (n === 2) V.flow.vac = { p: p, a: fade };
     if (n === 3) { V.flow['he' + sec] = { p: p, a: fade }; }
-    if (n === 4) { V.flow.sample = { p: p, a: fade }; V.flow.gas = { p: p, a: fade }; }
-    if (n === 5) V.flow.vessel = { p: p, a: fade };
+    if (n === 4) { V.flow.sample = { p: p, a: fade }; if (P.gas > 0) V.flow.gas = { p: p, a: fade }; }
+    if (n === 5 && P.bal > 0) V.flow.vessel = { p: p, a: fade };
     V.flowOn = n === 4 && p >= FXP.flow && p < FXP.end;
     // flask contents
-    var gasShare = n === 4 ? R(0.40, 0.90, p) : ((S.fStep || 0) >= 4 ? 1 : 0);
+    var gasShare = !(P.gas > 0) ? 0 : n === 4 ? R(0.40, 0.90, p) : ((S.fStep || 0) >= 4 ? 1 : 0);
     V.heTint = (S.fHe || 0) * (1 - gasShare);
     V.gasTint = gasShare;
     V.vacTint = n === 2 ? R(0.15, 0.88, p) * (1 - R(0.9, 1, p)) : 0;
     V.heIn = n === 3 ? R(0.34, 0.38, p) * (1 - R(0.85, 0.93, p)) : 0;
     V.airOut = n === 2 ? R(0.12, 0.16, p) * (1 - R(0.80, 0.90, p)) : 0;
-    V.drip = n === 4 && p < 0.97 ? { u: (S.fOil || 0) / 40, pre: R(0.36, 0.42, p) } : null;
+    V.drip = n === 4 && p < 0.97 ? { u: (S.fOil || 0) / P.oil, pre: R(0.36, 0.42, p) } : null;
     V.dripOn = n === 4 && p > 0.36 && p < 0.90;
-    V.bubbles = n === 4 ? R(0.37, 0.42, p) * (1 - R(0.86, 0.95, p)) : 0;
+    V.bubbles = n === 4 && P.gas > 0 ? R(0.37, 0.42, p) * (1 - R(0.86, 0.95, p)) : 0;
     // stage 7: aliquot + density meter (illustrative timeline, results from RES)
     var q = S.dmDone ? 1 : (n === 7 ? (S.dmP || 0) : 0), aliq = ALIQ_G * R(0.14, 0.26, q);
     V.oil = (S.fOil || 0) - aliq;
@@ -172,18 +201,18 @@
       V.dm.prog = R(0.42, 0.90, q);
       V.dm.start = R(0.575, 0.585, q) * (1 - R(0.60, 0.61, q));
       V.dm.osc = q >= 0.58 && q < 0.84 ? 1 : 0;
-      if (q >= 0.90) V.dm.res = RES;
+      if (q >= 0.90) V.dm.res = P.res;
       V.syr = { q: q, ph: dmPhase(q).k };
     }
     V.dmQ = q;
     return V;
   }
-  function phaseInfoOf(S) {
+  function phaseInfoOf(S, P) {
     var n = S.fBusy ? S.fStage : S.fStep;
     if (!n) return null;
     var p = S.fBusy ? S.fPr : 1, c0 = C0();
     if (n === 2 && S.fBusy && (S.fQ < c0 || S.fQ > 1 - c0)) return { n: 2, phase: S.fQ < 0.5 ? 'CONNECTING PUMP' : 'DISCONNECTING PUMP', k: S.fQ < 0.5 ? 0 : 4, msg: S.fStatus };
-    if (n >= 2 && n <= 5) { var k = S.fBusy ? phaseOf(n, p) : 4; return { n: n, phase: PHASES[k], k: k, msg: S.fBusy ? TXT[n][k] : DONE[n] }; }
+    if (n >= 2 && n <= 5) { var k = S.fBusy ? phaseOf(n, p) : 4; return { n: n, phase: PHASES[k], k: k, msg: S.fBusy ? txt(n, k, P) : doneTxt(n, P) }; }
     if (n === 7) { var d = dmPhase(p); return { n: n, phase: S.fBusy ? DMK[d.k] : 'COMPLETE', k: S.fBusy ? Math.min(3, Math.floor(p * 4)) : 4, msg: d.msg }; }
     return { n: n, phase: S.fBusy ? 'RUNNING' : 'COMPLETE', k: S.fBusy ? 2 : 4, msg: S.fStatus };
   }
@@ -207,6 +236,6 @@
   window.FlashSim = {
     NAMES: NAMES, ACTIONS: ACTIONS, PHASES: PHASES, RECV: RECV, FXP: FXP, RES: RES, DC: DC, STO60: STO60, T_MEAS: T_MEAS, T_START: T_START,
     ALIQ_ML: ALIQ_ML, ALIQ_G: ALIQ_G, GASO_T: GASO_T, CONN: CONN, BASE: BASE, dur: dur, create: create,
-    initial: initial, stageStart: stageStart, stageAt: stageAt, stageDone: stageDone, vmOf: vmOf, phaseInfoOf: phaseInfoOf, dmPhase: dmPhase, TXT: TXT, DONE: DONE
+    VAL: VAL, initial: initial, stageStart: stageStart, stageAt: stageAt, stageDone: stageDone, vmOf: vmOf, phaseInfoOf: phaseInfoOf, dmPhase: dmPhase, TXT: TXT, DONE: DONE
   };
 })();

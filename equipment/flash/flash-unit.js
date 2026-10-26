@@ -46,7 +46,7 @@
     return tab;
   })();
   function oilTop(g) {
-    var target = VOL[G.oilMaxH] * F.clamp(g / 40, 0, 1.2);
+    var target = VOL[G.oilMaxH] * F.clamp(g / 40, 0, 1.6);
     for (var h = 0; h < VOL.length - 1; h++) if (VOL[h + 1] >= target) return yBotIn - (h + (target - VOL[h]) / (VOL[h + 1] - VOL[h] || 1));
     return yBotIn - 260;
   }
@@ -321,9 +321,18 @@
   function displays(V) {
     var s = '', y = G.box0 + 46;
     var pc = V.fuP < 0.5 ? '#7ff0bf' : V.path === 'vac' ? '#5fd4ff' : '#ffc56b';
-    s += T(160, y, (V.fuP == null ? '—' : V.fuP.toFixed(1)) + '<tspan font-size="10" fill="#8fb3cc"> psia</tspan>', 'text-anchor="end" ' + MONO + ' font-size="17" font-weight="600" fill="' + pc + '"');
+    // no unit pressure in the page's data: the display shows the unit status instead of a number (V.fuPTxt)
+    if (V.fuPTxt) s += T(160, y - 1, V.fuPTxt, 'text-anchor="end" ' + MONO + ' font-size="11" font-weight="700" letter-spacing=".6" fill="#8fb3cc"');
+    else s += T(160, y, (V.fuP == null ? '—' : V.fuP.toFixed(1)) + '<tspan font-size="10" fill="#8fb3cc"> psia</tspan>', 'text-anchor="end" ' + MONO + ' font-size="17" font-weight="600" fill="' + pc + '"');
     s += T(320, y, (V.flowTxt != null ? V.flowTxt : V.flowOn ? '0.3' : '0.0') + '<tspan font-size="10" fill="#8fb3cc"> mL/min</tspan>', 'text-anchor="end" ' + MONO + ' font-size="17" font-weight="600" fill="' + (V.flowOn || V.flowTxt ? '#ffc56b' : '#5fd4ff') + '"');
-    s += T(cx + 48, G.balance.top + 27, (V.bal == null ? 200 : V.bal).toFixed(1) + '<tspan font-size="10" fill="#8fb3cc"> g</tspan>', 'text-anchor="end" ' + MONO + ' font-size="17" font-weight="600" fill="' + ((V.oil || 0) > 0.5 ? '#ffc56b' : '#5fd4ff') + '"');
+    // balance: V.balTxt replaces the reading where weighing is not part of the procedure step; an empty flask
+    // reads the glass tare, captioned as such so 200.0 g is never read as collected oil
+    var b = G.balance;
+    if (V.balTxt) s += T(cx, b.top + 25, V.balTxt, 'text-anchor="middle" ' + MONO + ' font-size="10" font-weight="700" letter-spacing=".5" fill="#8fb3cc"');
+    else s += T(cx + 48, b.top + 27, (V.bal == null ? 200 : V.bal).toFixed(1) + '<tspan font-size="10" fill="#8fb3cc"> g</tspan>', 'text-anchor="end" ' + MONO + ' font-size="17" font-weight="600" fill="' + ((V.oil || 0) > 0.5 ? '#ffc56b' : '#5fd4ff') + '"');
+    var note = V.balNote != null ? V.balNote : !V.balTxt && (V.oil || 0) < 0.05 ? 'EMPTY FLASK · TARE' : '';
+    if (note) s += R(cx - 78, b.bot + 3, 156, 15, 'rx="7.5" fill="#eef2f6" stroke="#9aa6b5" stroke-width=".8"') +
+      T(cx, b.bot + 13.5, note, 'text-anchor="middle" ' + MONO + ' font-size="8.5" font-weight="700" letter-spacing=".5" fill="#3a4759"');
     return s;
   }
 

@@ -1012,8 +1012,9 @@ class Component extends DCLogic {
     if (arg !== 'flash' || s.screen !== 'module03' || (s.chargeStep || 0) < 12) return null;
     const n = s.fBusy ? s.fStage : s.fStep, dens = n === 7;
     const mode = dens ? 'density' : 'system';
-    const focus = !dens && s.fBusy && n >= 2 && n <= 6;
-    const vb = dens ? [-10, 236, 1700, 784] : focus ? [548, 372, 1300, 648] : [-6, 372, 1842, 648];
+    // one full frame for every stage (no automatic zoom): PVT Cell, Flash Unit, balloon and Gasometer stay visible;
+    // the enlarged views remain in the Details windows
+    const vb = dens ? [-10, 236, 1700, 784] : Scene.LAYOUT.system.vb;
     return { mode, key: mode, opt: { labels: true, title: 'Validation Flash Process equipment' }, V: FlashSim.vmOf(s, 0), vb };
   }
   pcChargeNext() { return Math.min(12, (this.state.chargeStep || 0) + 1); }
@@ -1752,7 +1753,7 @@ const hi_d = (on) => on ? 'opacity:1; transition:opacity .5s ease;' : 'opacity:.
       { label: 'Flash Unit', value: fV.fuP.toFixed(1) + ' psia', color: fV.fuP < 0.5 ? 'var(--accg)' : fV.path === 'vac' ? 'var(--accb3)' : 'var(--amb)', sub: fBusy && fStage === 2 ? 'evacuated section' : 'unit pressure' },
       { label: 'Flashed Volume', value: Math.round(fV.flashed) + ' cc', color: fV.flashed > 0.5 ? 'var(--amb)' : 'var(--mut)', sub: 'from Pump A' },
       { label: 'Flow Rate', value: (fV.flowOn ? '0.3' : '0.0') + ' mL/min', color: 'var(--txt2)', sub: 'controlled' },
-      { label: 'Glass Mass', value: fV.bal.toFixed(1) + ' g', color: 'var(--accb3)', sub: fV.bal < 200 + (this.state.fOil || 0) - 0.05 ? 'tare 200 g + oil · after density aliquot' : 'tare 200 g + oil' },
+      { label: 'Glass Mass', value: fV.bal.toFixed(1) + ' g', color: 'var(--accb3)', sub: fV.oil < 0.05 ? 'empty flask / tare' : fV.bal < 200 + (this.state.fOil || 0) - 0.05 ? 'tare 200 g + oil · after density aliquot' : 'tare 200 g + oil' },
       { label: 'Oil Collected', value: Math.round(this.state.fOil || 0) + ' g', color: this.state.fMeasured ? 'var(--accg)' : 'var(--txt2)', sub: this.state.fMeasured ? 'recorded' : 'in flask' },
       { label: 'Gasometer', value: Math.round(fV.gasoVol).toLocaleString('en-US') + ' cc', color: fV.gasoMode === 'he' ? 'var(--accb3)' : fV.gaso > 1 ? '#0e8f7a' : 'var(--dis)', sub: fV.gasoMode === 'he' && fV.gasoVol > 0.5 ? 'helium · of 3,000 cc' : 'flash gas · of 3,000 cc' },
       { label: '2,000 | 1,000 cc', value: Math.round(fV.gaso2k).toLocaleString('en-US') + ' | ' + Math.round(fV.gaso1k).toLocaleString('en-US'), color: 'var(--txt2)', sub: 'section readings, cc' },
