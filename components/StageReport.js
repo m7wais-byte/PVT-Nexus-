@@ -165,7 +165,7 @@ function build() {
       TT + ' °C. Sample validation confirmed a saturation pressure of ' + kp(C.psat) + ' kPa at test temperature, with no free water drained.',
     'The fluid is an undersaturated black oil: reservoir pressure ' + kp(C.res_p) + ' kPa against a saturation pressure of ' +
       kp(C.psat) + ' kPa, an undersaturation of ' + kp(C.res_p - C.psat) + ' kPa. Solution gas oil ratio at the saturation ' +
-      'pressure is ' + C.rs_sat.toFixed(1) + ' sm³/sm³ and the oil formation volume factor is ' + C.bo_sat.toFixed(4) + '.',
+      'pressure is ' + C.rs_sat.toFixed(1) + ' sm³/sm³ (single-stage flash) and the oil formation volume factor is ' + C.bo_sat.toFixed(4) + '.',
     'Stock tank liquid density is ' + F.sto_den.toFixed(1) + ' kg/m³ (' + C.api.toFixed(1) + ' °API) with a calculated ' +
       'molecular weight of ' + F.sto_mw.toFixed(1) + ' g/mol. Evolved gas gravity is ' + F.gas_sg.toFixed(4) + ' (air = 1.000).',
     'Reservoir fluid viscosity is 4.80 cP at the saturation pressure, rising to ' + R.visc[0].mu.toFixed(2) + ' cP at reservoir pressure.',
@@ -270,15 +270,19 @@ function build() {
   t8.appendChild(el('div', 'rp-h2', 'Table 8: Differential Vaporisation at ' + TT + ' °C — Physical Properties'));
   t8.appendChild(el('div', 'rp-sid', sampleLine()));
   var under = R.pv.filter(function (p) { return p.p > C.psat + 1; });
+  // Rs on the differential basis includes the Stage 7 final-flash gas (data/dl-final-flash.js); Rs = 0 only after it
+  var DF = R.dl_final || { known: false };
+  var IRQ = 'input req.';
+  var rsdb = DF.known ? DF.rsdb.toFixed(2) : IRQ;
   var rows8 = [];
   [under[0], under[1], under[3], under[5]].forEach(function (p) {
     if (!p) return;
-    rows8.push([{ t: p.tag, b: 1 }, kp(p.p), (C.bo_sat * p.rv).toFixed(4), C.rs_sat.toFixed(2),
+    rows8.push([{ t: p.tag, b: 1 }, kp(p.p), (C.bo_sat * p.rv).toFixed(4), rsdb,
                 '', '', '', '', num(p.den, 1)]);
   });
-  rows8.push([{ t: 'Sp', b: 1 }, kp(C.psat), C.bo_sat.toFixed(4), C.rs_sat.toFixed(2), '', '', '', '', F.den_sat.toFixed(1)]);
+  rows8.push([{ t: 'Sp', b: 1 }, kp(C.psat), C.bo_sat.toFixed(4), rsdb, '', '', '', '', F.den_sat.toFixed(1)]);
   R.dl.forEach(function (r) {
-    rows8.push(['', kp(r.p), r.bo.toFixed(4), r.rs.toFixed(2), r.z.toFixed(4), r.bg.toFixed(5),
+    rows8.push(['', kp(r.p), r.bo.toFixed(4), r.rs == null ? IRQ : r.rs.toFixed(2), r.z.toFixed(4), r.bg.toFixed(5),
                 r.mug.toFixed(5), r.sg.toFixed(4), r.den.toFixed(1)]);
   });
   rows8.push([{ t: 'At 15 °C', b: 1 }, '101', '1.0000', '0.00', '', '', '', '', F.sto_den.toFixed(1)]);
@@ -289,7 +293,9 @@ function build() {
     'Oil formation volume factor: volume at stage conditions per volume of stock tank oil at STP.',
     'Gas formation volume factor: gas volume at stage conditions per volume at STP.',
     'Calculated gas viscosity: Lee, Gonzalez and Eakin, "The viscosity of natural gases", JPT August 1966.',
-    'Final stage fluid flashed to stock tank conditions.']));
+    'Final stage fluid flashed to stock tank conditions: the last stage (' + kp(R.dl[R.dl.length - 1].p) + ' kPa) is that liquid\'s saturation pressure and its oil still holds dissolved gas; it is recompressed (no oil or gas added) and flashed to 15 °C, 101.325 kPa. Its gas is added once to the cumulative solution GOR; Rs = 0 only after this flash.',
+    DF.known ? 'Final-flash gas: ' + Math.round(DF.gasScc) + ' scc; Rs at the last stage ' + DF.rs6.toFixed(2) + ' sm³/sm³.'
+             : 'Required input missing: final-flash gas volume (standard cc). Solution GOR values marked "' + IRQ + '" depend on it.']));
   page('t8', 'Differential Vaporisation', t8);
 
   // ---- Table 9 : produced gas composition
@@ -324,6 +330,16 @@ function build() {
     [9, 'Fluid Density as a Function of Pressure', 'den', 'Fluid Density / (kg/m³)', 0]
   ];
   FG.forEach(function (f) {
+    if (f[2] === 'rs' && !DF.known) {
+      // cumulative Rs needs the final-flash gas: show the requirement instead of an incomplete curve
+      var fw = el('section', 'rp-page');
+      fw.appendChild(el('div', 'rp-h2', 'Figure ' + f[0] + ': Differential Vaporisation at ' + TT + ' °C'));
+      fw.appendChild(el('div', 'rp-h3', f[1]));
+      fw.appendChild(el('div', 'rp-sid', sampleLine()));
+      fw.appendChild(note(['Not plotted: the cumulative solution GOR at every stage includes the gas released by the final flash of the last-stage oil, and that volume has not been entered (data/dl-final-flash.js).']));
+      page('f' + f[0], null, fw);
+      return;
+    }
     page('f' + f[0], null, figure(f[0], 'Differential Vaporisation at ' + TT + ' °C', f[1],
       R.dl.map(function (r) { return [r.p, r[f[2]]]; }),
       'Pressure / (kPa)', f[3], function (v) { return v.toFixed(f[4]); }));

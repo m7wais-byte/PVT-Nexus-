@@ -127,9 +127,11 @@
     var s = '', he = V.gasoMode === 'he';
     G.sec.forEach(function (sc) {
       var v = V['gaso' + sc.k] || 0;
-      s += T(sc.x1 - 26, 82, Math.round(v).toLocaleString('en-US') + '<tspan font-size="10" fill="#8fb3cc"> cc</tspan>', 'text-anchor="end" ' + MONO + ' font-size="20" font-weight="600" fill="' + (v < 0.5 ? '#5fd4ff' : he ? '#8fdcff' : '#7ff0bf') + '"');
+      // V.gasoTxt: gas received but its volume is a required input (2,000 cc section display)
+      if (V.gasoTxt && sc.k === '2k') s += T(sc.x1 - 26, 80, V.gasoTxt, 'text-anchor="end" ' + MONO + ' font-size="12" font-weight="700" fill="#ffc56b"');
+      else s += T(sc.x1 - 26, 82, Math.round(v).toLocaleString('en-US') + '<tspan font-size="10" fill="#8fb3cc"> cc</tspan>', 'text-anchor="end" ' + MONO + ' font-size="20" font-weight="600" fill="' + (v < 0.5 ? '#5fd4ff' : he ? '#8fdcff' : '#7ff0bf') + '"');
       s += T(sc.x1 - 26, 119, (V.gasoT || 22).toFixed(1) + '<tspan font-size="9" fill="#8fb3cc"> °C</tspan>', 'text-anchor="end" ' + MONO + ' font-size="13" font-weight="600" fill="#ffc56b"');
-      s += T(sc.x0 + 26, 82, he && v > 0.5 ? 'He' : v > 0.5 ? 'GAS' : '', MONO + ' font-size="10" font-weight="700" fill="' + (he ? '#8fdcff' : '#7ff0bf') + '"');
+      s += T(sc.x0 + 26, 82, V.gasoTxt && sc.k === '2k' ? 'GAS' : he && v > 0.5 ? 'He' : v > 0.5 ? 'GAS' : '', MONO + ' font-size="10" font-weight="700" fill="' + (he ? '#8fdcff' : '#7ff0bf') + '"');
       // gauge needle: the meter holds the chamber near atmospheric, so the needle stays near 0 (moves slightly while gas flows)
       var gx = (sc.x0 + sc.x1) / 2, gy = 186, act = (V.valve || {})['iso' + sc.k] || 0, a = (-90 + act * 6 * Math.sin((V.t || 0) * 3)) * Math.PI / 180;
       s += L(gx, gy, gx + Math.cos(a) * 34, gy + Math.sin(a) * 34, 'stroke="#b8434e" stroke-width="1.8" stroke-linecap="round"') + C(gx, gy, 3, 'fill="#1d2836"');

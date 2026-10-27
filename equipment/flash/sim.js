@@ -68,18 +68,23 @@
   var VAL = { key: 'val', pumpA0: 80, flashed: 50, oil: 40, gas: 400, bal: 250, he: 3000, vDec: 0,
     stable: 'Stable · 80 cc @ 5,000 psi', res: RES, noGas: '' };
   function prof(P) { return P || VAL; }
+  // P.gas === null: the sample releases gas but its volume is a required input (not in the data): the gas is
+  // drawn separating and flowing, its readings show "input required". P.oil === null likewise; P.oilVis is then
+  // the upper-bound liquid mass used only for the drawn oil level.
+  function oilQ(P) { return P.oil == null ? (P.oilVis || 0) : P.oil; }
   function vTxt(P, v) { return P.vDec ? v.toFixed(P.vDec) : String(Math.round(v)); }
   function txt(n, k, P) {
     P = prof(P);
+    if (n === 4 && k === 3 && P.gas === null) return 'Oil drops into the flask · the remaining dissolved gas separates and rises up the shared connection to the 2,000 cc section';
     if (n === 4 && k === 3 && !(P.gas > 0)) return 'Oil drops and collects in the flask · ' + P.noGas;
     if (n === 4 && k === 4) return 'Valves closed · ' + vTxt(P, P.flashed) + ' cc flashed';
-    if (n === 5 && !(P.bal > 0)) return 'No flash gas to transfer · Balloon Valve stays closed';
+    if (n === 5 && !(P.bal > 0)) return P.gas === null ? 'Balloon sample waits for the measured gas volume (input required) · Balloon Valve closed' : 'No flash gas to transfer · Balloon Valve stays closed';
     return TXT[n][k];
   }
   function doneTxt(n, P) {
     P = prof(P);
     if (P === VAL) return DONE[n];
-    if (n === 4) return vTxt(P, P.flashed) + ' cc flashed · ' + P.oil.toFixed(2) + ' g oil · ' + Math.round(P.gas) + ' cc gas';
+    if (n === 4) return vTxt(P, P.flashed) + ' cc flashed · ' + (P.oil == null ? 'oil mass: input required' : P.oil.toFixed(2) + ' g oil') + ' · ' + (P.gas == null ? 'gas volume: input required' : Math.round(P.gas) + ' cc gas');
     if (n === 5) return P.bal > 0 ? 'Balloon ' + Math.round(P.bal) + ' cc · ' + (14.5 * P.bal / 250).toFixed(1) + ' psi' : 'No flash gas · balloon not used';
     return DONE[n];
   }
@@ -98,8 +103,8 @@
     P = prof(P);
     if (n === 2) return { fuP: 14.7 * (1 - E(R(0.15, 0.88, p))) };
     if (n === 3) return { fHeGas: P.he * (1 - R(0.15, 0.90, p)), fHe: R(0.36, 0.88, p), fuP: 14.7 * E(R(0.36, 0.88, p)) };
-    if (n === 4) { var g = P.gas * R(0.47, 0.90, p); return { fPumpA: P.pumpA0 - P.flashed * R(0.15, 0.90, p), fFlashed: P.flashed * R(RECV[4], 0.90, p), fOil: P.oil * R(0.42, 0.90, p), fGaso: g, fGasoProduced: g }; }
-    if (n === 5) return { fGaso: P.gas - P.bal * R(0.15, 0.90, p), fBalloon: P.bal * R(0.40, 0.90, p) };
+    if (n === 4) { var g = (P.gas || 0) * R(0.47, 0.90, p); return { fPumpA: P.pumpA0 - P.flashed * R(0.15, 0.90, p), fFlashed: P.flashed * R(RECV[4], 0.90, p), fOil: oilQ(P) * R(0.42, 0.90, p), fGaso: g, fGasoProduced: g }; }
+    if (n === 5) return { fGaso: (P.gas || 0) - P.bal * R(0.15, 0.90, p), fBalloon: P.bal * R(0.40, 0.90, p) };
     return {};
   }
   function doneVals(n, P) {
@@ -109,8 +114,8 @@
       1: { fVer: 1, fStatus: P.stable },
       2: { fuP: 0, fVac: false, fStatus: 'Vacuumed · 0 psia' },
       3: { fHe: 1, fHeGas: 0, fuP: 14.7, fStatus: 'Helium Charged · Gasometer Empty' },
-      4: { fPumpA: P.pumpA0 - P.flashed, fFlashed: P.flashed, fOil: P.oil, fGaso: P.gas, fGasoProduced: P.gas, fStatus: 'Flash Complete · ' + vTxt(P, P.flashed) + ' cc' },
-      5: { fGaso: P.gas - P.bal, fBalloon: P.bal, fStatus: P.bal > 0 ? 'Balloon Filled · ' + (14.5 * P.bal / 250).toFixed(1) + ' psi' : 'No Flash Gas · Balloon Not Used' },
+      4: { fPumpA: P.pumpA0 - P.flashed, fFlashed: P.flashed, fOil: oilQ(P), fGaso: P.gas || 0, fGasoProduced: P.gas, fStatus: 'Flash Complete · ' + vTxt(P, P.flashed) + ' cc' },
+      5: { fGaso: (P.gas || 0) - P.bal, fBalloon: P.bal, fStatus: P.bal > 0 ? 'Balloon Filled · ' + (14.5 * P.bal / 250).toFixed(1) + ' psi' : P.gas === null ? 'Gas in Gasometer · Volume Input Required' : 'No Flash Gas · Balloon Not Used' },
       6: { fMeasured: true, fStatus: P.bal > 0 ? 'Oil in Glass · Gas in Balloon' : 'Oil in Glass · Recorded' },
       7: { dmP: 1, dmDone: true, fStatus: 'Density ' + r.rho.toFixed(5) + ' g/cm³ @ 25 °C · ' + r.api.toFixed(1) + ' °API (example)' }
     })[n] || {};
@@ -172,19 +177,19 @@
     V.flow = {};
     if (n === 2) V.flow.vac = { p: p, a: fade };
     if (n === 3) { V.flow['he' + sec] = { p: p, a: fade }; }
-    if (n === 4) { V.flow.sample = { p: p, a: fade }; if (P.gas > 0) V.flow.gas = { p: p, a: fade }; }
+    if (n === 4) { V.flow.sample = { p: p, a: fade }; if (P.gas !== 0) V.flow.gas = { p: p, a: fade }; }
     if (n === 5 && P.bal > 0) V.flow.vessel = { p: p, a: fade };
     V.flowOn = n === 4 && p >= FXP.flow && p < FXP.end;
     // flask contents
-    var gasShare = !(P.gas > 0) ? 0 : n === 4 ? R(0.40, 0.90, p) : ((S.fStep || 0) >= 4 ? 1 : 0);
+    var gasShare = P.gas === 0 ? 0 : n === 4 ? R(0.40, 0.90, p) : ((S.fStep || 0) >= 4 ? 1 : 0);
     V.heTint = (S.fHe || 0) * (1 - gasShare);
     V.gasTint = gasShare;
     V.vacTint = n === 2 ? R(0.15, 0.88, p) * (1 - R(0.9, 1, p)) : 0;
     V.heIn = n === 3 ? R(0.34, 0.38, p) * (1 - R(0.85, 0.93, p)) : 0;
     V.airOut = n === 2 ? R(0.12, 0.16, p) * (1 - R(0.80, 0.90, p)) : 0;
-    V.drip = n === 4 && p < 0.97 ? { u: (S.fOil || 0) / P.oil, pre: R(0.36, 0.42, p) } : null;
+    V.drip = n === 4 && p < 0.97 ? { u: (S.fOil || 0) / (oilQ(P) || 1), pre: R(0.36, 0.42, p) } : null;
     V.dripOn = n === 4 && p > 0.36 && p < 0.90;
-    V.bubbles = n === 4 && P.gas > 0 ? R(0.37, 0.42, p) * (1 - R(0.86, 0.95, p)) : 0;
+    V.bubbles = n === 4 && P.gas !== 0 ? R(0.37, 0.42, p) * (1 - R(0.86, 0.95, p)) : 0;
     // stage 7: aliquot + density meter (illustrative timeline, results from RES)
     var q = S.dmDone ? 1 : (n === 7 ? (S.dmP || 0) : 0), aliq = ALIQ_G * R(0.14, 0.26, q);
     V.oil = (S.fOil || 0) - aliq;
@@ -205,6 +210,9 @@
       V.syr = { q: q, ph: dmPhase(q).k };
     }
     V.dmQ = q;
+    // unknown gas volume / oil mass: readings say so instead of showing a number
+    if (P.gas === null && ((n === 4 && p >= 0.47) || (S.fStep || 0) >= 4)) { V.gasoTxt = 'INPUT REQ.'; V.gasoMode = 'gas'; }
+    if (P.oil === null && V.oil > 0.05) V.balTxt = 'MASS: INPUT REQ.';
     return V;
   }
   function phaseInfoOf(S, P) {
