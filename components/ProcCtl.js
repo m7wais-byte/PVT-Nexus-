@@ -290,7 +290,7 @@
     if (s === 'running') return { a: 'pause', h: ICON.pause + 'Pause', cls: 'pause', dis: inf.canPause === false };
     if (s === 'paused') return { a: 'resume', h: ICON.play + 'Resume ' + u + ' ' + k1 };
     if (s === 'complete') {
-      if (!inf.allDone && inf.k < inf.N - 1) return { a: 'runNext', h: ICON.arrow + 'Run ' + u + ' ' + (k1 + 1) };
+      if (!inf.allDone && inf.k < inf.N - 1) return { a: 'runNext', h: ICON.arrow + (inf.nextLabel || ('Run ' + u + ' ' + (k1 + 1))) };
       if (inf.again) return { a: 'again', h: ICON.restart + inf.again };
       return { a: '', h: 'Procedure Complete', dis: true };
     }
@@ -307,7 +307,7 @@
     W.root.style.visibility = '';
     W.inf = inf;
     var u = inf.unit || 'Stage';
-    setT(W, 'k', u.toUpperCase() + ' ' + (inf.k + 1) + ' / ' + inf.N);
+    setT(W, 'k', inf.kText || (u.toUpperCase() + ' ' + (inf.k + 1) + ' / ' + inf.N));   // kText: a page's own stage naming
     var st = inf.status;
     if (W.el.st.className !== 'pc-st ' + st) W.el.st.className = 'pc-st ' + st;
     setT(W, 'stt', STT[st] || '');
