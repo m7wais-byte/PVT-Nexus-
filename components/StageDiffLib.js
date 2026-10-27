@@ -141,7 +141,7 @@ function finalProf() {
   const RES = FlashSim.RES, gas = D.known ? D.gasScc : null, oil = D.known ? D.oilMassG : null;
   FINAL_PROF = { key: 'dlFinal', pumpA0: V_FINAL, flashed: V_FINAL, oil, oilVis: D.liqMassG, gas, bal: gas == null ? 0 : Math.min(250, gas), he: 3000, vDec: 4,
     stable: 'Stable · ' + V_FINAL.toFixed(4) + ' cc @ 2,500 psig', res: RES, D,
-    vSto: D.known ? D.vResCc : null,                             // residual stock-tank oil = measured mass / stock-tank density (data/dl-final-flash.js)
+    vSto: D.known ? D.vRes : null,                               // residual oil at 60 °F, calculated (mass / stock-tank density, data/dl-final-flash.js)
     noGas: 'no gas evolves' };
   return FINAL_PROF;
 }
@@ -749,18 +749,19 @@ class Component extends DCLogic {
     const dis = 'var(--dis)';
     const frec = isFinal ? this.finalRecord() : null, fdone = isFinal && step >= total;
     const rec = isFinal ? [
-      kv('Inherited: Stage 6 at its Psat', fmtP(S6.target) + ' · ' + S6.remaining.toFixed(4) + ' cc'),
-      kv('Rs at 203 psig (gas still dissolved)', FP.D.known ? FP.D.rs6.toFixed(2) + ' sm³/sm³' : '> 0 · input required', FP.D.known ? 'var(--txt)' : 'var(--amb)'),
-      kv('Recompression pressure', st.recompressed ? fmtP(P_FINAL) + ' · ' + V_FINAL.toFixed(4) + ' cc' : '—', st.recompressed ? 'var(--grn)' : dis),
-      kv('Volume basis', 'Stage 6 P–V table (illustrative)', 'var(--mut)'),
-      kv('Flashed from Pump A', (st.fFlashed || 0) > 0.0001 ? (st.fFlashed || 0).toFixed(4) + ' cc' : '—', (st.fFlashed || 0) > 0.0001 ? 'var(--amb)' : dis),
-      kv('Final-flash gas (std)', (st.fStep || 0) >= 4 ? gTxt(FP) : '—', (st.fStep || 0) >= 4 ? (FP.gas == null ? 'var(--amb)' : 'var(--txt)') : dis),
-      kv('Stock-tank oil (flask)', (st.fOil || 0) > 0.005 ? (FP.oil == null ? 'input required' : (st.fOil || 0).toFixed(2) + ' g') : '—', (st.fOil || 0) > 0.005 ? (FP.oil == null ? 'var(--amb)' : st.fMeasured ? 'var(--grn)' : 'var(--txt)') : dis),
-      kv('Cumulative gas · Stages 1–6 + final', FP.D.known ? Math.round(FP.D.cumGasScc).toLocaleString('en-US') + ' scc' : Math.round(FP.D.stageGasScc || 0).toLocaleString('en-US') + ' scc + final (input)', FP.D.known ? 'var(--txt)' : 'var(--amb)'),
+      kv('Stage 6 at its Psat · measured', fmtP(S6.target) + ' · ' + S6.remaining.toFixed(4) + ' cc'),
+      kv('Rs at 203 psig · ' + (FP.D.known ? 'calculated' : 'missing input'), FP.D.known ? FP.D.rs6.toFixed(2) + ' sm³/sm³' : '> 0 · input required', FP.D.known ? 'var(--txt)' : 'var(--amb)'),
+      kv('Volume at 2,500 psig · calculated', st.recompressed ? V_FINAL.toFixed(4) + ' cc' : '—', st.recompressed ? 'var(--grn)' : dis),
+      kv('Volume basis · assumed', 'Stage 6 P–V table (illustrative)', 'var(--mut)'),
+      kv('Flashed from Pump A · calculated', (st.fFlashed || 0) > 0.0001 ? (st.fFlashed || 0).toFixed(4) + ' cc' : '—', (st.fFlashed || 0) > 0.0001 ? 'var(--amb)' : dis),
+      kv('Final-flash gas, std 60 °F · ' + (FP.gas == null ? 'missing' : 'measured'), (st.fStep || 0) >= 4 ? gTxt(FP) : '—', (st.fStep || 0) >= 4 ? (FP.gas == null ? 'var(--amb)' : 'var(--txt)') : dis),
+      kv('Stock-tank oil mass · ' + (FP.oil == null ? 'missing' : 'calculated'), (st.fOil || 0) > 0.005 ? (FP.oil == null ? 'input required' : (st.fOil || 0).toFixed(2) + ' g') : '—', (st.fOil || 0) > 0.005 ? (FP.oil == null ? 'var(--amb)' : 'var(--txt)') : dis),
+      kv('Cumulative gas · report + final', FP.D.known ? Math.round(FP.D.cumGasScc).toLocaleString('en-US') + ' scc' : Math.round(FP.D.stageGasScc || 0).toLocaleString('en-US') + ' scc + final (missing)', FP.D.known ? 'var(--txt)' : 'var(--amb)'),
       kv('Rs after final flash', fdone ? '0 sm³/sm³' : '—', fdone ? 'var(--grn)' : dis),
-      kv('Density 25 °C / 60 °F', fdone ? frec.rho.toFixed(5) + ' / ' + frec.rho60.toFixed(5) + ' g/cm³' : '—', fdone ? 'var(--amb)' : dis),
-      kv('SG 60/60 · API (example)', fdone ? frec.sg.toFixed(4) + ' · ' + frec.api.toFixed(1) + ' °API' : '—', fdone ? 'var(--grn)' : dis),
-      kv('Residual oil at 60 °F', fdone ? (frec.vSto == null ? 'input required' : frec.vSto.toFixed(4) + ' cc (mass ÷ ρ60)') : '—', fdone ? (frec.vSto == null ? 'var(--amb)' : 'var(--txt)') : dis)
+      kv('Density 25 °C / 60 °F · example', fdone ? frec.rho.toFixed(5) + ' / ' + frec.rho60.toFixed(5) + ' g/cm³' : '—', fdone ? 'var(--amb)' : dis),
+      kv('SG 60/60 · API · example', fdone ? frec.sg.toFixed(4) + ' · ' + frec.api.toFixed(1) + ' °API' : '—', fdone ? 'var(--grn)' : dis),
+      kv('Residual oil at 60 °F · ' + (FP.D.known ? 'calculated' : 'missing'), fdone ? (frec.vSto == null ? 'input required' : frec.vSto.toFixed(4) + ' cc (mass ÷ ρ60)') : '—', fdone ? (frec.vSto == null ? 'var(--amb)' : 'var(--txt)') : dis),
+      kv('Bo / Rs basis · ' + (FP.D.known ? 'calculated' : 'assumed'), FP.D.vRes.toFixed(4) + ' cc residual oil at 60 °F', 'var(--mut)')
     ] : c ? [
       kv('Inherited (' + (c.n === 1 ? 'Initial PV' : 'Stage ' + (c.n - 1)) + ')', fmtP(c.pStart) + ' · ' + c.vStart.toFixed(4) + ' cc'),
       kv('Stage pressure', step > 0 || (busy && step === 0) ? fmtP(c.target) : '—', step > 0 ? 'var(--grn)' : dis),
@@ -770,7 +771,7 @@ class Component extends DCLogic {
       kv('Balloon pressure', (st.balloon || 0) > 0.004 ? st.balloon.toFixed(2) + ' psig' : '—', (st.balloon || 0) > 0.004 ? 'var(--accb3)' : dis),
       kv('Gasometer', !gasoUsed ? 'isolated · 0 cc' : (st.gaso || 0) > 0.5 ? Math.round(st.gaso) + ' cc' : '—', gasoUsed && (st.gaso || 0) > 0.5 ? '#0e8f7a' : dis),
       kv('Remaining liquid', st.remaining ? c.remaining.toFixed(4) + ' cc @ ' + fmtP(c.target) : '—', st.remaining ? 'var(--txt)' : dis),
-      ...(c.n === 6 ? [kv('Rs at 203 psig (remaining oil)', !st.remaining ? '—' : DLF().known ? DLF().rs6.toFixed(2) + ' sm³/sm³' : '> 0 · from Stage 7 gas (input)', !st.remaining ? dis : 'var(--amb)')] : []),
+      ...(c.n === 6 ? [kv('Rs at 203 psig · ' + (DLF().known ? 'calculated' : 'missing input'), !st.remaining ? '—' : DLF().known ? DLF().rs6.toFixed(2) + ' sm³/sm³' : '> 0 · needs Stage 7 gas', !st.remaining ? dis : 'var(--amb)')] : []),
       kv(lbl + ' Psat', c.pvOK ? (st.pvConfirmed ? c.psatStr : '—') : 'MISSING', c.pvOK ? (st.pvConfirmed ? 'var(--red)' : dis) : 'var(--amb)')
     ] : [];
     const cycRows = st.cyc.map((cy) => ({ n: cy.confirm ? 'CHK' : String(cy.n), v: cy.v.toFixed(4), d: cy.confirm ? '0.0000  stable' : '+' + cy.d.toFixed(4),
@@ -824,8 +825,8 @@ class Component extends DCLogic {
       { k: 'Cell Pressure', v: pTxt, color: 'var(--grn)' },
       { k: 'Cell Volume', v: vTxt, color: 'var(--amb)' },
       { k: 'Flash Unit', v: (st.fuP == null ? 14.7 : st.fuP).toFixed(1) + ' psia', color: st.fBusy && st.fStage === 2 ? 'var(--accb3)' : 'var(--txt2)' },
-      { k: 'Stock-tank Oil', v: FP.oil == null ? ((st.fOil || 0) > 0.005 ? 'input required' : '—') : (st.fOil || 0).toFixed(2) + ' g', color: FP.oil == null && (st.fOil || 0) > 0.005 ? 'var(--amb)' : (st.fOil || 0) > 0.005 ? 'var(--amb)' : 'var(--mut)' },
-      { k: 'Final-flash Gas', v: (st.fStep || 0) >= 4 || (st.fBusy && st.fStage === 4) ? gTxt(FP) : '—', color: FP.gas == null ? 'var(--amb)' : 'var(--txt)' }];
+      { k: 'Stock-tank Oil (calc.)', v: FP.oil == null ? ((st.fOil || 0) > 0.005 ? 'input required' : '—') : (st.fOil || 0).toFixed(2) + ' g', color: FP.oil == null && (st.fOil || 0) > 0.005 ? 'var(--amb)' : (st.fOil || 0) > 0.005 ? 'var(--amb)' : 'var(--mut)' },
+      { k: 'Final-flash Gas (meas.)', v: (st.fStep || 0) >= 4 || (st.fBusy && st.fStage === 4) ? gTxt(FP) : '—', color: FP.gas == null ? 'var(--amb)' : 'var(--txt)' }];
     else if (isInit) strip = [
       { k: 'Stage', v: 'Initial PV', color: 'var(--txt)' },
       { k: 'Cell Pressure', v: pTxt, color: 'var(--grn)' },
