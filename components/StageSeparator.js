@@ -234,8 +234,11 @@ class Component extends DCLogic {
     if (id === 'pv1' || id === 'pv2') {
       const first = id === 'pv1';
       if (first) {
-        this.setState({ busy: true, pvRun: true, runKey: Date.now(), rows: [], pvN: 0, pvCount: 0, pvConfirmed: false, stageTag: 'First PV test',
-          action: 'First PV test — Validation 12-point sequence on the 35 cc charge at 114 °C.' });
+        // First PV: one click shows the completed 12-point test (points, fitted lines, Psat) directly, like the charge
+        this.stop();
+        this.done({ pvRun: false, pvN: 12, pvCount: 12, pvConfirmed: true, rows: PV1_PTS.map(([p, v]) => ({ p, v, psat: p === PSAT1.p })),
+          P: P_WORK, V: V_CHARGE, T: T_RES, stageTag: 'First PV complete',
+          action: 'FIRST PV COMPLETE — Psat 2,500 psig @ 36.35 cc (fitted-line intersection). Sample returned to the working condition: 5,000 psig at 114 °C · 35.0000 cc.' });
         return;
       }
       this.setState({ busy: true, stageTag: 'Disconnecting Flash Unit', xStep: 'disc', flow: 0,
@@ -743,7 +746,7 @@ DC.define('StageSeparator', {
   <!-- Stage 2 · First PV test : the Validation PV Test itself (35 cc charge, 114 °C) -->
   <sc-if value="{{ dlnPv1 }}" hint-placeholder-val="{{ false }}">
   <div style="flex:1 1 auto; min-height:0; display:flex; flex-direction:column; animation:spnFadeIn .45s ease both;">
-    <dc-import name="StagePVTest" hint-size="100%,100%" embedded="{{ true }}" pv-config="{{ dlnPv1Cfg }}" run-key="{{ dlnRunKey }}" show-done="{{ dlnShowDone }}" on-sync="{{ dlnOnSync }}" on-done="{{ dlnOnDone }}"></dc-import>
+    <dc-import name="StagePVTest" hint-size="100%,100%" embedded="{{ true }}" instant="{{ true }}" pv-config="{{ dlnPv1Cfg }}" run-key="{{ dlnRunKey }}" show-done="{{ dlnShowDone }}" on-sync="{{ dlnOnSync }}" on-done="{{ dlnOnDone }}"></dc-import>
   </div>
   </sc-if>
   <!-- Stage 6 · Final PV test : same Validation PV Test on the remaining separator liquid (35 °C) -->

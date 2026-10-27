@@ -98,7 +98,8 @@ class Component extends DCLogic {
     this._gRO.observe(el);
     read();
   }
-  // host control (embedded use only): run-key starts a run, reset-key resets, show-done shows the finished test;
+  // host control (embedded use only): run-key starts a run, reset-key resets, show-done shows the finished test
+  // (instant: without the fit-line draw-on);
   // on-sync mirrors the live P / V / point count to the host, on-done fires once the cell is back at the start condition
   syncHost() {
     const pr = this.props || {};
@@ -588,6 +589,11 @@ class Component extends DCLogic {
       pvPsatRingStyle = { transformBox: 'fill-box', transformOrigin: 'center', animation: 'pvtring calc(1.4s * var(--pm, 1)) ease-out calc(9.8s * var(--pm, 1)) 3 both' };
       pvPsatGuideStyle = { transformBox: 'fill-box', transformOrigin: 'right center', animation: 'pvtgrowx calc(1s * var(--pm, 1)) ease-out calc(10.2s * var(--pm, 1)) both' };
       pvPsatLabelStyle = { animation: 'pvtfade calc(.6s * var(--pm, 1)) ease calc(11.1s * var(--pm, 1)) both' };
+    }
+    // host opt-in (instant): the finished test is shown with its fit lines and Psat already drawn (no draw-on sequence)
+    if ((this.props || {}).instant && pvShowBubbleMark) {
+      pvFitAboveStyle = {}; pvFitBelowStyle = {}; pvPsatMarkStyle = {}; pvPsatRingStyle = {}; pvPsatGuideStyle = {}; pvPsatLabelStyle = {};
+      if (SPLIT != null) { pvFitAboveExtStyle = {}; pvFitBelowExtStyle = {}; }
     }
     const pvPsatAxisTxt = pvShowBubbleMark && SPLIT != null ? (C.psatAxisTxt || '') : '';
     const pvPsatMarkTitle = C.psatMarkTitle || 'Psat \u2014 Bubble Point';
