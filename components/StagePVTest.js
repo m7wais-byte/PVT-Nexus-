@@ -1074,6 +1074,7 @@ DC.define('StagePVTest', {
   <sc-if value="{{ pvEmbedded }}" hint-placeholder-val="{{ false }}">
   <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap; flex:0 0 auto;">
     <div style="font-family:'IBM Plex Mono'; font-size:10px; color:{{ pvHintColor }}; white-space:nowrap;">{{ pvHintText }}</div>
+    <button type="button" onclick="{{ pvSkip }}" style="{{ pvSkipStyle }} margin-left:auto;">{{ pvSkipText }}</button>
   </div>
   </sc-if>
 </div>`,
