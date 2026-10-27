@@ -165,7 +165,7 @@ function build() {
       TT + ' °C. Sample validation confirmed a saturation pressure of ' + kp(C.psat) + ' kPa at test temperature, with no free water drained.',
     'The fluid is an undersaturated black oil: reservoir pressure ' + kp(C.res_p) + ' kPa against a saturation pressure of ' +
       kp(C.psat) + ' kPa, an undersaturation of ' + kp(C.res_p - C.psat) + ' kPa. Solution gas oil ratio at the saturation ' +
-      'pressure is ' + C.rs_sat.toFixed(1) + ' sm³/sm³ (single-stage flash) and the oil formation volume factor is ' + C.bo_sat.toFixed(4) + '.',
+      'pressure is ' + C.rs_sat.toFixed(1) + ' sm³/sm³ (single-stage flash) and the single-stage flash oil formation volume factor is ' + C.bo_sat.toFixed(4) + '.',
     'Stock tank liquid density is ' + F.sto_den.toFixed(1) + ' kg/m³ (' + C.api.toFixed(1) + ' °API) with a calculated ' +
       'molecular weight of ' + F.sto_mw.toFixed(1) + ' g/mol. Evolved gas gravity is ' + F.gas_sg.toFixed(4) + ' (air = 1.000).',
     'Reservoir fluid viscosity is 4.80 cP at the saturation pressure, rising to ' + R.visc[0].mu.toFixed(2) + ' cP at reservoir pressure.',
@@ -274,28 +274,33 @@ function build() {
   var DF = R.dl_final || { known: false };
   var IRQ = 'input req.';
   var rsdb = DF.known ? DF.rsdb.toFixed(2) : IRQ;
+  // one basis for every Bo in this table: volume per volume of DL residual oil at 60 °F (data/dl-final-flash.js)
+  var vRes = DF.vRes || C.v_sto, vSat = DF.vSat || C.bo_sat * C.v_sto;
   var rows8 = [];
   [under[0], under[1], under[3], under[5]].forEach(function (p) {
     if (!p) return;
-    rows8.push([{ t: p.tag, b: 1 }, kp(p.p), (C.bo_sat * p.rv).toFixed(4), rsdb,
+    rows8.push([{ t: p.tag, b: 1 }, kp(p.p), (vSat * p.rv / vRes).toFixed(4), rsdb,
                 '', '', '', '', num(p.den, 1)]);
   });
-  rows8.push([{ t: 'Sp', b: 1 }, kp(C.psat), C.bo_sat.toFixed(4), rsdb, '', '', '', '', F.den_sat.toFixed(1)]);
+  rows8.push([{ t: 'Sp', b: 1 }, kp(C.psat), (vSat / vRes).toFixed(4), rsdb, '', '', '', '', F.den_sat.toFixed(1)]);
   R.dl.forEach(function (r) {
     rows8.push(['', kp(r.p), r.bo.toFixed(4), r.rs == null ? IRQ : r.rs.toFixed(2), r.z.toFixed(4), r.bg.toFixed(5),
                 r.mug.toFixed(5), r.sg.toFixed(4), r.den.toFixed(1)]);
   });
-  rows8.push([{ t: 'At 15 °C', b: 1 }, '101', '1.0000', '0.00', '', '', '', '', F.sto_den.toFixed(1)]);
+  rows8.push([{ t: 'At 60 °F', b: 1 }, '101', '1.0000', '0.00', '', '', '', '', F.sto_den.toFixed(1)]);
   t8.appendChild(tbl(
     [['', 'Pressure', 'Oil FVF', 'Solution GOR', 'Z Factor', 'Gas FVF', 'Gas Viscosity', 'Gas Gravity', 'Fluid Density'],
      ['', 'kPa', 'Bo', 'Rs, sm³/sm³', '', 'Bg', 'cP', '(air = 1.000)', 'kg/m³']], rows8, 'rp-wide'));
   t8.appendChild(note([
-    'Oil formation volume factor: volume at stage conditions per volume of stock tank oil at STP.',
-    'Gas formation volume factor: gas volume at stage conditions per volume at STP.',
+    'Oil formation volume factor (every row): volume at stage conditions per volume of DL residual oil at 60 °F. Residual oil = ' + vRes.toFixed(4) + ' cc, ' +
+      (DF.known ? 'calculated (stock-tank oil mass ÷ stock-tank oil density at 60 °F).' : 'assumed: report shrinkage 0.965 of the last-stage liquid, until the final-flash gas is entered.') +
+      ' Bo at and above Psat = ' + vSat.toFixed(2) + ' cc × V/Vsat ÷ residual oil.',
+    'Gas formation volume factor and Rs: gas volume at standard conditions, 60 °F and 101.325 kPa. Report stage gas volumes are taken at that reference (assumed).',
     'Calculated gas viscosity: Lee, Gonzalez and Eakin, "The viscosity of natural gases", JPT August 1966.',
-    'Final stage fluid flashed to stock tank conditions: the last stage (' + kp(R.dl[R.dl.length - 1].p) + ' kPa) is that liquid\'s saturation pressure and its oil still holds dissolved gas; it is recompressed (no oil or gas added) and flashed to 15 °C, 101.325 kPa. Its gas is added once to the cumulative solution GOR; Rs = 0 only after this flash.',
-    DF.known ? 'Final-flash gas: ' + Math.round(DF.gasScc) + ' scc; Rs at the last stage ' + DF.rs6.toFixed(2) + ' sm³/sm³.'
-             : 'Required input missing: final-flash gas volume (standard cc). Solution GOR values marked "' + IRQ + '" depend on it.']));
+    'Final stage fluid flashed to stock tank conditions: the last stage (' + kp(R.dl[R.dl.length - 1].p) + ' kPa) is that liquid\'s saturation pressure and its oil still holds dissolved gas; it is recompressed (no oil or gas added) and flashed to 60 °F, 101.325 kPa. Its gas is added once to the cumulative solution GOR; Rs = 0 only after this flash.',
+    DF.known ? 'Final-flash gas (measured): ' + Math.round(DF.gasScc) + ' std cc; Rs at the last stage (calculated) ' + DF.rs6.toFixed(2) + ' sm³/sm³.'
+             : 'Required input missing: final-flash gas volume (std cc at 60 °F). Solution GOR values marked "' + IRQ + '" depend on it.',
+    'Single-stage flash values (Bo ' + C.bo_sat.toFixed(4) + ', GOR ' + C.rs_sat.toFixed(2) + ' sm³/sm³) belong to the flash and separator tables, not to this differential basis.']));
   page('t8', 'Differential Vaporisation', t8);
 
   // ---- Table 9 : produced gas composition
