@@ -70,7 +70,7 @@ const SNAME = { charge: 'Charge 35 cc', pv1: 'First PV · 114 °C', cond: 'Separ
 const STEPN = { charge: ['Charge 35 cc'], pv1: ['First PV Test'], cond: ['Cool 114 → 35 °C', 'Reduce 5,000 → 200 psig'],
   agit: ['Agitate A → B → A'], flash: ['Connect Flash Unit', 'Release Gas'], pv2: ['Final PV Test'] };
 // durations (s), all scaled by PT() through tween()/wait()
-const D_CHARGE = 14, D_COOL = 11, D_REDUCE = 13, D_CONN = 5.5, D_DISC = 2.4, TS = 4.2, HOLD = 1.4, SETTLE = 2.8;
+const D_COOL = 11, D_REDUCE = 13, D_CONN = 5.5, D_DISC = 2.4, TS = 4.2, HOLD = 1.4, SETTLE = 2.8;
 const PUMP_CAP = 100;
 const DL_BUBS = Array.from({ length: 16 }, (_, k) => ({ fx: (k * 0.618034 + 0.07) % 1, ph: (k * 0.381966 + 0.13) % 1,
   sp: 0.75 + ((k * 0.7549) % 1) * 0.5, r: 1.0 + ((k * 0.5698) % 1) * 1.1, th: k / 16 }));
@@ -78,16 +78,12 @@ const DL_BUBS = Array.from({ length: 16 }, (_, k) => ({ fx: (k * 0.618034 + 0.07
 // gas lane Pump A -> header -> Port R, outlet line from the Port R fitting, Flash Unit, Gasometer (same placement as DL)
 const SEP_FX = { cellPort: [641.6, 170], cellLane: [[524, 192], [524, 170], [641.6, 170]], lineX: 30, connLine: true, labelSize: 15,
   fu: { x: 700, y: 200, s: 0.46 }, ga: { x: 1075, y: 173, s: 0.46 } };
-// charge route (cell coordinates): inlet port above the manifold -> manifold -> Pump A port
-// sample inlet -> Port L outward fitting -> Port L valve -> header -> Pump A (approved cell)
-const CH_ROUTE = [[730, 120], [730, 190], [1030, 190], [1030, 215]];
-const CH_L = 70 + 300 + 25;
 
 // explain-panel meaning of every non-PV step
 const SEPSTEP = {
   charge0: { t: 'Charge 35 cc at 5,000 psig and 114 °C',
     w: '5,000 psig is the selected working pressure: 2,000 psi above the 3,000 psig reservoir pressure, so the sample stays single-phase liquid while it is transferred and measured. The cell is at reservoir temperature (114 °C). 35 cc is charged (not the 80 cc of the DL test) so the gas liberated later at 200 psig still fits in the 100 cc pump.',
-    e: 'Inlet valve opens, the sample front crosses the manifold, the Pump A piston retracts at a constant 5,000 psig until the cell holds 35.0000 cc, then the inlet valve closes.',
+    e: 'One click sets the charged condition: Pump A holds 35.0000 cc at 5,000 psig and 114 °C, Pump B 0.0000 cc.',
     o: 'Pressure equalising at 5,000 psig, then the volume rising 0 → 35.0000 cc with no gas phase.' },
   cond0: { t: 'Cool 114 → 35 °C at the working pressure',
     w: 'The separator test is run at the field separator temperature. Cooling is done at 5,000 psig, so the liquid only contracts and stays single-phase.',
@@ -229,17 +225,10 @@ class Component extends DCLogic {
     this.startTicker();
     const id = st.stage;
     if (id === 'charge') {
-      this.setState({ busy: true, stageTag: 'Charging', cU: 0,
-        action: 'Charging 35 cc at the 5,000 psig working pressure (reservoir 3,000 psig + 2,000 psi), cell at 114 °C.' });
-      this.tween(D_CHARGE, 0, 1, (u) => {
-        const pF = E(C((u - 0.08) / 0.17)), vF = C((u - 0.25) / 0.65);
-        const act = u < 0.08 ? 'Opening the sample inlet valve.'
-          : u < 0.25 ? 'Sample front crossing the manifold — cell pressure rising to 5,000 psig.'
-          : u < 0.90 ? 'Pump A retracting at constant 5,000 psig — ' + (V_CHARGE * vF).toFixed(4) + ' cc charged.'
-          : 'Closing the sample inlet valve — 35.0000 cc charged.';
-        this.setState({ cU: u, P: P_WORK * pF, V: V_CHARGE * vF, T: T_RES, action: act });
-      }, () => this.done({ cU: 1, P: P_WORK, V: V_CHARGE, stageTag: 'Charge complete', done: { ...this.state.done, charge: true },
-        action: 'CHARGE COMPLETE — Pump A 35.0000 cc, Pump B 0.0000 cc at 5,000 psig and 114 °C · inlet valve closed. Run the first PV test.' }));
+      // Charge 35 cc: one click sets the completed charge condition directly (no intermediate values), as in the DL test
+      this.stop();
+      this.done({ cU: 1, P: P_WORK, V: V_CHARGE, T: T_RES, stageTag: 'Charge complete', done: { ...this.state.done, charge: true },
+        action: 'CHARGE COMPLETE — Pump A 35.0000 cc, Pump B 0.0000 cc at 5,000 psig and 114 °C · sample inlet valve closed. Run the first PV test.' });
       return;
     }
     if (id === 'pv1' || id === 'pv2') {
@@ -529,14 +518,6 @@ class Component extends DCLogic {
     const rgb = mix(224, 74) + ',' + mix(118, 158) + ',' + mix(60, 232);
     const cooling = busy && id === 'cond' && step === 0;
 
-    // ---- charge inlet (charge stage only) ----
-    const chOn = id === 'charge';
-    const cu = chOn ? C(st.cU || 0) : 1, chBusy = chOn && busy;
-    const vIn = chBusy ? E(R(0, 0.08, cu)) * (1 - E(R(0.9, 1, cu))) : 0;
-    const chLit = chBusy ? CH_L * E(R(0.08, 0.25, cu)) : 0;
-    const chFade = chBusy ? 1 - R(0.9, 1, cu) : 0;
-    const chHead = X.routePt(CH_ROUTE, chLit);
-
     // ---- Flash Unit : DL sketch + transfer lanes ----
     const flashOn = id === 'flash' || (id === 'pv2' && !st.pvRun && !stageDn);
     const conn = C(st.conn || 0);
@@ -671,7 +652,7 @@ class Component extends DCLogic {
       dlnCellTr: flashOn ? 'translate(-506,-20)' : 'translate(-446,-20)',
       dlnSideW: 'flex:0 0 ' + (flashOn ? 290 : 304) + 'px;',
       dlnTitleSub: flashOn ? 'PVT Cell → outlet line → Flash Unit → Balloon → Gasometer (excess gas)'
-        : id === 'charge' ? 'Sample inlet → Dual-Cylinder PVT Cell (air bath at 114 °C) · Computer → Control Box'
+        : id === 'charge' ? 'Dual-Cylinder PVT Cell (air bath at 114 °C) · Computer → Control Box'
         : 'Computer → Control Box → Dual-Cylinder PVT Cell in the air bath',
       dlnTag: tag, dlnTagCol: tagCol,
       dlnTagBg: tone === 'good' ? 'rgba(29,138,90,.10)' : 'rgba(47,111,208,.10)',
@@ -696,12 +677,6 @@ class Component extends DCLogic {
       dlnSlugStyle: 'opacity:' + (xferOn && fr > 0.02 && fr < 0.995 ? 1 : 0) + '; transition:opacity .3s ease; filter:drop-shadow(0 0 4px #ffcf3f);',
       dlnNeedleX: (948 + 11 * Math.cos(ang)).toFixed(1), dlnNeedleY: (240 + 11 * Math.sin(ang)).toFixed(1),
       dlnPhaseText: phaseText, dlnPhaseColor: phaseColor,
-
-      dlnChOn: chOn,
-      dlnChD: 'M ' + CH_ROUTE.map((q) => q[0] + ' ' + q[1]).join(' L '),
-      dlnChDash: chLit.toFixed(1) + ' 9999', dlnChStyle: 'opacity:' + chFade.toFixed(2) + ';',
-      dlnChHead: { x: chHead[0].toFixed(1), y: chHead[1].toFixed(1), st: 'opacity:' + (chBusy && chLit > 1 && chLit < CH_L - 1 ? 1 : 0) + '; filter:drop-shadow(0 0 4px #ffcf3f);' },
-      dlnChValve: valve(vIn, 892, 140), dlnChValveText: vIn > 0.5 ? 'INLET OPEN' : 'INLET CLOSED', dlnChValveCol: vIn > 0.5 ? 'var(--grn)' : 'var(--mut)',
 
       dlnFlashOn: flashOn,
       dlnDisc: conn < 0.001,
@@ -816,15 +791,9 @@ DC.define('StageSeparator', {
         <g transform="{{ dlnCellTr }}">
           <!-- approved PVT cell (PVTCellArt). Its thermal enclosure is the air bath: the tint follows the cell temperature.
                Pump A valve open to the sensor, Pump B valve open while the sample is in transit / held in Pump B,
-               Port L valve = the sample inlet valve (charge), Port R valve = the PVT-cell outlet valve (flash stage) -->
+               Port R valve = the PVT-cell outlet valve (flash stage) -->
           <rect x="736" y="104" width="424" height="420" rx="12" fill="none" stroke="{{ dlnBathStroke }}" stroke-width="1.6" stroke-dasharray="6 4" style="{{ dlnBathSt }}"></rect>
           <text x="1156" y="99" text-anchor="end" font-family="IBM Plex Mono" font-size="9" letter-spacing=".4" fill="{{ dlnTCol }}">{{ dlnBathLbl }}</text>
-          <sc-if value="{{ dlnChOn }}" hint-placeholder-val="{{ false }}">
-            <path d="M730 120 V190 H748" fill="none" stroke="#0a0e16" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"></path>
-            <path d="M730 120 V190 H748" fill="none" stroke="#9fb0c8" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"></path>
-            <text x="722" y="124" text-anchor="end" font-family="IBM Plex Mono" font-size="9" letter-spacing=".3" fill="var(--mut)">SAMPLE IN · 5,000 psig</text>
-            <text x="722" y="138" text-anchor="end" font-family="IBM Plex Mono" font-size="9" letter-spacing=".3" fill="{{ dlnChValveCol }}">{{ dlnChValveText }}</text>
-          </sc-if>
           ${PVTCellArt.cell('spc', {
             innerB: `<rect x="848" y="219" width="36" height="{{ dlnBGasH }}" fill="url(#spn-gas)"></rect>
             <rect x="848" y="{{ dlnBLiqY }}" width="36" height="{{ dlnBLiqH }}" fill="url(#spn-sample)"></rect>
@@ -841,14 +810,10 @@ DC.define('StageSeparator', {
               <circle cx="{{ ba.x }}" cy="{{ ba.y }}" r="{{ ba.r }}" fill="#bff3da" opacity="{{ ba.o }}"></circle>
             </sc-for>`,
             pistonB: 'dlnBPistonY', pistonA: 'dlnPistonY',
-            valves: { A: 'dlnValveA', B: 'dlnValveB', L: "dlnChValve.c === '#46d39a'", R: "dlnVC.c === '#46d39a'" },
-            ports: { L: { plug: '!dlnChOn', nut: 'dlnChOn' }, R: { plug: '!(dlnFlashOn && !dlnDisc)', nut: 'dlnFlashOn && !dlnDisc' } },
+            valves: { A: 'dlnValveA', B: 'dlnValveB', R: "dlnVC.c === '#46d39a'" },
+            ports: { R: { plug: '!(dlnFlashOn && !dlnDisc)', nut: 'dlnFlashOn && !dlnDisc' } },
             disp: { P: '{{ dlnPNum }}', B: '{{ dlnPumpB }}', A: '{{ dlnPumpA }}', T: '{{ dlnT }}' } })}
           <rect x="797" y="153" width="302" height="199" fill="{{ dlnBathFill }}" style="{{ dlnBathSt }}; pointer-events:none; mix-blend-mode:multiply;"></rect>
-          <sc-if value="{{ dlnChOn }}" hint-placeholder-val="{{ false }}">
-            <path d="{{ dlnChD }}" fill="none" stroke="#d9ad2f" stroke-width="3.4" stroke-linejoin="round" stroke-dasharray="{{ dlnChDash }}" style="{{ dlnChStyle }}"></path>
-            <circle cx="{{ dlnChHead.x }}" cy="{{ dlnChHead.y }}" r="5" fill="none" stroke="#ffcf3f" stroke-width="1.4" style="{{ dlnChHead.st }}"></circle>
-          </sc-if>
           <g style="{{ dlnXferStyle }}">
             <path d="{{ dlnRouteD }}" fill="none" stroke="#d9ad2f" stroke-width="3.4" stroke-linecap="butt" stroke-linejoin="round" stroke-dasharray="{{ dlnFluidDash }}" style="{{ dlnFluidStyle }}"></path>
             <path d="{{ dlnRouteD }}" fill="none" stroke="#fff0b8" stroke-width="1.1" stroke-linecap="butt" stroke-linejoin="round" stroke-dasharray="{{ dlnFluidDash }}" opacity=".55" style="{{ dlnFluidStyle }}"></path>
