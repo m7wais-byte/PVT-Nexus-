@@ -220,11 +220,11 @@ test('Rs stays at Rsb above pb for every correlation and both characterisations'
 
 test('continuity at pb (Rs, Bo, μo) for every Bo / co combination', () => {
   Object.keys(C.oil.bo).forEach((bo) => Object.keys(C.oil.co).forEach((co) => {
-    const pb = 2200, e = 1e-6 * pb;
+    const pb = 2200, e = 5 * E.P_TOL;   // just outside the shared pressure tolerance
     const r = E.run(oilBase({ m: { rs: 'standing', bo, co }, pList: [pb - e, pb, pb + e].join(' ') }));
     ['rs', 'bo', 'mu'].forEach((k) => {
       const v = r.props[k].values;
-      near(v[0], v[1], 1e-5, `${k} ${bo}/${co} below`);
+      near(v[0], v[1], 1e-4, `${k} ${bo}/${co} below`);
       near(v[2], v[1], 1e-5, `${k} ${bo}/${co} above`);
     });
   }));
@@ -353,4 +353,109 @@ test('error statistics exclude missing, unavailable and zero measured values', (
 test('no user-facing "BVT" wording remains in the calculator', () => {
   ['components/PvtCalc.js', 'components/OilBatch.js', 'components/PvtChart.js', 'screens/showCalc.js', 'calc/pvt-engine.js', 'calc/pvt-correlations.js', 'calc/pvt-measured.js']
     .forEach((f) => assert.ok(!/BVT/.test(fs.readFileSync(path.join(ROOT, f), 'utf8')), f));
+});
+
+/* ------------------------------------------------ unit switching / pressure grid
+   Regression for: Field -> Metric turned the default oil range into 26 points (maximum twice) and
+   labelled the 2200 psia row "saturated". Cause: rounded display values re-parsed as inputs, plus
+   three different tolerances. Pressures are now canonical (psia) and compared with one P_TOL. */
+const DEFAULT_OIL = { fluid: 'oil', units: 'field', calcMode: 'range', pMin: '200', pMax: '5000', pStep: '200', T: '200', oilGravityBasis: 'api', api: '35', gg: '0.65', oilChar: 'pb', pb: '2200' };
+const toMetricText = (v) => String(+v.toPrecision(7));   // what the old UI wrote into the fields
+function assertDefaultGrid(r, label) {
+  assert.equal(r.ok, true, label);
+  assert.equal(r.pressures.length, 25, label + ': 25 points');
+  assert.equal(r.pressures.filter((p) => Math.abs(p - 5000) <= E.P_TOL).length, 1, label + ': one maximum');
+  assert.equal(r.pressures[24], 5000, label + ': exact maximum');
+  const bp = r.phase.map((ph, i) => (ph === 'bubble point' ? i : -1)).filter((i) => i >= 0);
+  assert.deepEqual(bp, [10], label + ': one bubble-point row, at index 10');
+  assert.equal(r.pressures[10], 2200, label + ': bubble-point row is exactly pb');
+  assert.equal(r.phase[9], 'saturated'); assert.equal(r.phase[11], 'undersaturated');
+}
+
+test('default oil example: 25 points, one maximum, one bubble point — Field, Metric (canonical) and Metric (rounded text)', () => {
+  const field = E.run(DEFAULT_OIL);
+  assertDefaultGrid(field, 'field');
+  /* metric with canonical values (what the UI passes after a unit switch) */
+  const canon = { pMin: 200, pMax: 5000, pStep: 200, pb: 2200, T: 200 };
+  const metric = E.run(Object.assign({}, DEFAULT_OIL, { units: 'metric', canon,
+    pMin: toMetricText(200 / U.PSI_PER_BAR), pMax: toMetricText(5000 / U.PSI_PER_BAR), pStep: toMetricText(200 / U.PSI_PER_BAR), pb: toMetricText(2200 / U.PSI_PER_BAR), T: '93.33333' }));
+  assertDefaultGrid(metric, 'metric canonical');
+  assert.deepEqual(metric.pressures, field.pressures, 'identical physical points');
+  ['rs', 'bo', 'mu', 'co'].forEach((k) => assert.deepEqual(metric.props[k].values, field.props[k].values, k));
+  /* even the rounded 7-digit text alone (no canonical values) now gives the same grid */
+  const typed = E.run(Object.assign({}, DEFAULT_OIL, { units: 'metric',
+    pMin: '13.78951', pMax: '344.7379', pStep: '13.78951', pb: '151.6847', T: '93.33333' }));
+  assert.equal(typed.pressures.length, 25);
+  assert.equal(typed.phase.filter((p) => p === 'bubble point').length, 1);
+  assert.equal(typed.phase[10], 'bubble point');
+});
+
+test('pb exactly on a grid point, between grid points, at either endpoint, outside the range', () => {
+  const run = (pb) => E.run(Object.assign({}, DEFAULT_OIL, { pMin: '1000', pMax: '3000', pStep: '500', pb: String(pb) }));
+  let r = run(2000);                                   // on the grid: no extra row
+  assert.deepEqual(r.pressures, [1000, 1500, 2000, 2500, 3000]); assert.equal(r.inserted, -1);
+  assert.deepEqual(r.phase, ['saturated', 'saturated', 'bubble point', 'undersaturated', 'undersaturated']);
+  r = run(2000.004);                                   // within P_TOL of a grid point: that point becomes exactly pb
+  assert.equal(r.pressures.length, 5); assert.equal(r.pressures[2], 2000.004); assert.equal(r.phase[2], 'bubble point');
+  r = run(2200);                                       // between grid points: inserted once
+  assert.deepEqual(r.pressures, [1000, 1500, 2000, 2200, 2500, 3000]); assert.equal(r.inserted, 3);
+  assert.equal(r.phase.filter((p) => p === 'bubble point').length, 1);
+  r = run(1000);                                       // at the minimum
+  assert.equal(r.pressures.length, 5); assert.equal(r.phase[0], 'bubble point'); assert.ok(r.phase.slice(1).every((p) => p === 'undersaturated'));
+  r = run(3000);                                       // at the maximum
+  assert.equal(r.pressures.length, 5); assert.equal(r.phase[4], 'bubble point'); assert.ok(r.phase.slice(0, 4).every((p) => p === 'saturated'));
+  r = run(3500);                                       // above the range: not inserted, all saturated
+  assert.equal(r.pressures.length, 5); assert.ok(r.phase.every((p) => p === 'saturated'));
+  r = E.run(Object.assign({}, DEFAULT_OIL, { calcMode: 'single', p: '2200.005' }));   // single pressure within P_TOL
+  assert.equal(r.phase[0], 'bubble point'); assert.equal(r.pressures[0], 2200);
+});
+
+test('range: index-based grid, exact maximum once, uneven increments', () => {
+  let r = E.run(gasBase({ pMin: '100', pMax: '1050', pStep: '200' }));
+  assert.deepEqual(r.pressures, [100, 300, 500, 700, 900, 1050]);
+  r = E.run(gasBase({ pMin: '100', pMax: '1100.004', pStep: '200' }));   // last grid point within P_TOL of the maximum
+  assert.deepEqual(r.pressures, [100, 300, 500, 700, 900, 1100.004]);
+  r = E.run(gasBase({ pMin: '1000', pMax: '1100', pStep: '0.25' }));
+  assert.equal(r.pressures.length, 401);
+  assert.equal(r.pressures[400], 1100);
+  r.pressures.forEach((p, i) => assert.equal(p, 1000 + i * 0.25, 'p_i = pMin + i·step (no accumulated error)'));
+  r = E.run(gasBase({ pMin: '14.7', pMax: '64.7', pStep: '0.1' }));
+  assert.equal(r.pressures.length, 0, 'over the point limit: nothing generated');
+  assert.match(r.fieldErrors.pStep || '', /Too many points \(501\)/);
+  r = E.run(gasBase({ pMin: '14.7', pMax: '24.7', pStep: '0.1' }));
+  assert.equal(r.pressures.length, 101); assert.equal(r.pressures[100], 24.7);
+});
+
+test('absolute / gauge: offsets apply to pressures, never to the increment', () => {
+  const g = E.run(gasBase({ gauge: true, pMin: '0', pMax: '1000', pStep: '100' }));
+  assert.equal(g.pressures.length, 11);
+  g.pressures.forEach((p, i) => near(p, U.P_ATM_PSIA + 100 * i, 1e-12, 'psig grid'));
+  g.pressures.slice(1).forEach((p, i) => near(p - g.pressures[i], 100, 1e-9, 'step stays 100 psi'));
+  const mg = E.run(gasBase({ units: 'metric', gauge: true, pMin: '0', pMax: '100', pStep: '10', T: '93.33333' }));
+  assert.equal(mg.pressures.length, 11);
+  mg.pressures.slice(1).forEach((p, i) => near(p - mg.pressures[i], 10 * U.PSI_PER_BAR, 1e-9, 'step stays 10 bar'));
+  near(mg.pressures[0], U.P_ATM_PSIA, 1e-12, '0 bar(g) = 1 atm');
+  /* the same physical range entered as absolute or as gauge gives the same points */
+  const a = E.run(gasBase({ pMin: String(U.P_ATM_PSIA), pMax: String(U.P_ATM_PSIA + 1000), pStep: '100' }));
+  a.pressures.forEach((p, i) => near(p, g.pressures[i], 1e-12));
+});
+
+test('gas results are equivalent across unit systems (canonical and typed metric inputs)', () => {
+  const f = E.run(gasBase());
+  const c = E.run(gasBase({ units: 'metric', canon: { pMin: 200, pMax: 6000, pStep: 200, T: 200 }, pMin: 'x', pMax: 'x', pStep: 'x', T: 'x' }));
+  assert.deepEqual(c.pressures, f.pressures);
+  ['z', 'bg', 'rho', 'mu', 'cg'].forEach((k) => assert.deepEqual(c.props[k].values, f.props[k].values, k));
+  const t = E.run(gasBase({ units: 'metric', pMin: toMetricText(200 / U.PSI_PER_BAR), pMax: toMetricText(6000 / U.PSI_PER_BAR), pStep: toMetricText(200 / U.PSI_PER_BAR), T: '93.33333' }));
+  assert.equal(t.pressures.length, f.pressures.length);
+  t.props.z.values.forEach((v, i) => near(v, f.props.z.values[i], 1e-6, 'Z typed metric'));
+});
+
+test('pasted list: values within P_TOL are one point (reported), canonical list used after a switch', () => {
+  const r = E.run(gasBase({ calcMode: 'list', pList: '1000 1000.004 2000 2000' }));
+  assert.deepEqual(r.pressures, [1000, 2000]);
+  assert.ok(r.info.some((t) => /2 pasted pressures within 0.01 psi/.test(t)));
+  const c = E.run(gasBase({ calcMode: 'list', units: 'metric', pList: 'ignored', canon: { pList: [3000, 1000, 2000] } }));
+  assert.deepEqual(c.pressures, [1000, 2000, 3000]);
+  const o = E.run(oilBase({ calcMode: 'list', pList: '1000 2199.995 3000' }));   // list value within P_TOL of pb
+  assert.deepEqual(o.pressures, [1000, 2200, 3000]); assert.equal(o.phase[1], 'bubble point');
 });

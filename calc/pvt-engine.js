@@ -24,6 +24,16 @@
   var RHO_W = 62.4;             // lbm/ft³, water reference used with γo (Ahmed 2019)
   var MAX_POINTS = 500;
   var COMP_TOL = 1e-3;
+  /* One pressure tolerance, in canonical units (psi), used for every pressure comparison:
+     range endpoint, de-duplication of a pasted list, snapping a grid point onto pb and the
+     saturated / bubble point / undersaturated classification. 0.01 psi (0.0007 bar) is far
+     below the displayed resolution (0.1 psi, 0.01 bar) and far above floating-point noise. */
+  var P_TOL = 0.01;
+
+  /* Canonical inputs: the UI may pass full-precision values in internal units (inp.canon:
+     pressures psia, increment psi, T °F, density lbm/ft³, Rsb scf/STB, pList psia[]). They are
+     used instead of re-parsing the displayed text, so rounding a display never moves a point. */
+  function canon(inp, k) { var c = inp.canon && inp.canon[k]; return isNum(c) ? c : undefined; }
 
   /* ------------------------------------------------------------- helpers */
   function isNum(x) { return typeof x === 'number' && isFinite(x); }
@@ -66,6 +76,24 @@
   /* ----------------------------------------------------------- pressures */
   function pressureLabel(inp) { return U.unit('p', inp.units, !!inp.gauge); }
 
+  /* absolute pressure (psia) of a field: canonical value if present, else typed text in display units */
+  function absPressure(bag, inp, field, label) {
+    var c = canon(inp, field);
+    if (c !== undefined) {
+      if (!(c > 0)) { bag.add(field, 'Absolute pressure must be greater than 0'); return NaN; }
+      return c;
+    }
+    var v = need(bag, inp, field, label);
+    return isNum(v) ? absP(bag, inp, field, v) : NaN;
+  }
+  /* pressure increment (psi): a difference, so no gauge / atmospheric offset is ever applied */
+  function increment(bag, inp, field, label) {
+    var c = canon(inp, field);
+    if (c !== undefined) { if (!(c > 0)) { bag.add(field, label + ' must be greater than 0'); return NaN; } return c; }
+    var v = need(bag, inp, field, label, { gt0: true });
+    return isNum(v) ? U.dpToPsi(v, inp.units) : NaN;
+  }
+
   function absP(bag, inp, field, v) {
     var psia = U.pToPsia(v, inp.units, !!inp.gauge);
     if (!(psia > 0)) {
@@ -86,50 +114,67 @@
     }
     var mode = inp.calcMode || 'single';
     if (mode === 'single') {
-      var v = need(bag, inp, 'p', 'Pressure');
-      if (!isNum(v)) return [];
-      var p = absP(bag, inp, 'p', v);
+      var p = absPressure(bag, inp, 'p', 'Pressure');
       return isNum(p) ? [p] : [];
     }
     if (mode === 'range') {
-      var a = need(bag, inp, 'pMin', 'Minimum pressure');
-      var b = need(bag, inp, 'pMax', 'Maximum pressure');
-      var s = need(bag, inp, 'pStep', 'Increment', { gt0: true });
-      var pa = isNum(a) ? absP(bag, inp, 'pMin', a) : NaN;
-      var pb = isNum(b) ? absP(bag, inp, 'pMax', b) : NaN;
-      if (!isNum(pa) || !isNum(pb) || !isNum(s)) return [];
-      if (!(b > a)) { bag.add('pMax', 'Maximum must be greater than minimum'); return []; }
-      var n = Math.floor((b - a) / s + 1e-9) + 1;
-      if (n + 1 > MAX_POINTS) { bag.add('pStep', 'Too many points (' + (n + 1) + '); limit is ' + MAX_POINTS + ' — use a larger increment'); return []; }
+      var pa = absPressure(bag, inp, 'pMin', 'Minimum pressure');
+      var pz = absPressure(bag, inp, 'pMax', 'Maximum pressure');
+      var st = increment(bag, inp, 'pStep', 'Increment');
+      if (!isNum(pa) || !isNum(pz) || !isNum(st)) return [];
+      if (!(pz - pa > P_TOL)) { bag.add('pMax', 'Maximum must be greater than minimum'); return []; }
+      /* index-based grid in canonical psia: p_i = pMin + i·step (no cumulative addition);
+         the exact maximum is the last point, replacing a grid point that lies within P_TOL of it */
+      var n = Math.floor((pz - pa + P_TOL) / st);
+      var endOnGrid = Math.abs(pa + n * st - pz) <= P_TOL;
+      var count = n + 1 + (endOnGrid ? 0 : 1);
+      if (count > MAX_POINTS) { bag.add('pStep', 'Too many points (' + count + '); limit is ' + MAX_POINTS + ' — use a larger increment'); return []; }
       var out = [];
-      for (var i = 0; i < n; i++) out.push(U.pToPsia(a + i * s, inp.units, !!inp.gauge));
-      if (b - (a + (n - 1) * s) > 1e-9 * Math.max(1, Math.abs(b))) out.push(pb);
+      for (var i = 0; i <= n; i++) out.push(pa + i * st);
+      if (endOnGrid) out[n] = pz; else out.push(pz);
       return out;
     }
-    /* pasted list */
-    var raw = String(inp.pList || '').trim();
-    if (!raw) { bag.add('pList', 'Input required'); return []; }
-    var toks = raw.split(/[\s,;\t]+/).filter(Boolean);
+    /* pasted list (canonical psia array after a unit switch, else the typed text) */
     var vals = [];
-    for (var k = 0; k < toks.length; k++) {
-      var r = parse(toks[k]);
-      if (r.state !== 'ok') { bag.add('pList', 'Value ' + (k + 1) + ' ("' + toks[k] + '") is not a number'); return []; }
-      var ps = U.pToPsia(r.v, inp.units, !!inp.gauge);
-      if (!(ps > 0)) { bag.add('pList', 'Value ' + (k + 1) + ' (' + toks[k] + ' ' + pressureLabel(inp) + ') is not a positive absolute pressure'); return []; }
-      vals.push(ps);
+    if (Array.isArray(inp.canon && inp.canon.pList)) {
+      vals = inp.canon.pList.slice();
+      for (var c = 0; c < vals.length; c++) if (!(vals[c] > 0)) { bag.add('pList', 'Value ' + (c + 1) + ' is not a positive absolute pressure'); return []; }
+      if (!vals.length) { bag.add('pList', 'Input required'); return []; }
+    } else {
+      var raw = String(inp.pList || '').trim();
+      if (!raw) { bag.add('pList', 'Input required'); return []; }
+      var toks = raw.split(/[\s,;\t]+/).filter(Boolean);
+      for (var k = 0; k < toks.length; k++) {
+        var r = parse(toks[k]);
+        if (r.state !== 'ok') { bag.add('pList', 'Value ' + (k + 1) + ' ("' + toks[k] + '") is not a number'); return []; }
+        var ps = U.pToPsia(r.v, inp.units, !!inp.gauge);
+        if (!(ps > 0)) { bag.add('pList', 'Value ' + (k + 1) + ' (' + toks[k] + ' ' + pressureLabel(inp) + ') is not a positive absolute pressure'); return []; }
+        vals.push(ps);
+      }
     }
     if (vals.length > MAX_POINTS) { bag.add('pList', 'Too many points (' + vals.length + '); limit is ' + MAX_POINTS); return []; }
+    /* calculated properties are a function of pressure only: values within P_TOL are one point */
     vals.sort(function (x, y) { return x - y; });
-    return vals.filter(function (x, i) { return i === 0 || Math.abs(x - vals[i - 1]) > 1e-9; });
+    var uniq = vals.filter(function (x, i) { return i === 0 || x - vals[i - 1] > P_TOL; });
+    bag.merged = vals.length - uniq.length;
+    return uniq;
   }
 
   function temperatureF(bag, inp, field) {
-    var v = need(bag, inp, field || 'T', 'Temperature');
-    if (!isNum(v)) return NaN;
-    var f = U.tToF(v, inp.units);
-    if (!(U.fToR(f) > 0)) { bag.add(field || 'T', 'Temperature must be above absolute zero'); return NaN; }
+    field = field || 'T';
+    var c = canon(inp, field), f;
+    if (c !== undefined) f = c;
+    else {
+      var v = need(bag, inp, field, 'Temperature');
+      if (!isNum(v)) return NaN;
+      f = U.tToF(v, inp.units);
+    }
+    if (!(U.fToR(f) > 0)) { bag.add(field, 'Temperature must be above absolute zero'); return NaN; }
     return f;
   }
+
+  /* phase of a fixed-composition oil at p, with the shared tolerance */
+  function phaseOf(p, pb) { return p < pb - P_TOL ? 'saturated' : (p <= pb + P_TOL ? 'bubble point' : 'undersaturated'); }
 
   /* ------------------------------------------------------- range warnings */
   function dispP(psia, inp) { return fmt(U.pFromPsia(psia, inp.units, !!inp.gauge), 5) + ' ' + pressureLabel(inp); }
@@ -178,9 +223,10 @@
     ctx.tF = temperatureF(bag, inp, 'T');
     ctx.gg = need(bag, inp, 'gg', 'Gas specific gravity', { gt0: true });
     if (inp.oilGravityBasis === 'density') {
-      var rho = need(bag, inp, 'rhoSto', 'Oil density', { gt0: true });
+      var rhoC = canon(inp, 'rhoSto');
+      var rho = rhoC !== undefined ? (rhoC > 0 ? rhoC : (bag.add('rhoSto', 'Oil density must be greater than 0'), NaN)) : need(bag, inp, 'rhoSto', 'Oil density', { gt0: true });
       if (isNum(rho)) {
-        var rhoLb = inp.units === 'metric' ? rho / U.KGM3_PER_LBFT3 : rho;
+        var rhoLb = rhoC !== undefined ? rho : (inp.units === 'metric' ? rho / U.KGM3_PER_LBFT3 : rho);
         ctx.gammaO = rhoLb / RHO_W;
         ctx.api = 141.5 / ctx.gammaO - 131.5;
         ctx.apiKind = 'derived';
@@ -195,9 +241,8 @@
     /* separator gas gravity for Vasquez-Beggs */
     ctx.ggs = ctx.gg; ctx.ggsKind = 'assumed';
     if (inp.sepUse) {
-      var ps = need(bag, inp, 'psep', 'Separator pressure');
+      var psA = absPressure(bag, inp, 'psep', 'Separator pressure');
       var ts = temperatureF(bag, inp, 'tsep');
-      var psA = isNum(ps) ? absP(bag, inp, 'psep', ps) : NaN;
       if (isNum(psA) && isNum(ts) && isNum(ctx.gg) && isNum(ctx.api)) {
         ctx.psep = psA; ctx.tsep = ts;
         ctx.ggs = C.oil.vbGammaGs(ctx.gg, ctx.api, psA, ts);
@@ -207,11 +252,14 @@
     }
     ctx.char = inp.oilChar === 'rsb' ? 'rsb' : 'pb';
     if (ctx.char === 'pb') {
-      var pbv = need(bag, inp, 'pb', 'Bubble-point pressure');
-      if (isNum(pbv)) ctx.pb = absP(bag, inp, 'pb', pbv);
+      ctx.pb = absPressure(bag, inp, 'pb', 'Bubble-point pressure');
     } else {
-      var rsbv = need(bag, inp, 'rsb', 'Solution GOR at bubble point', { gt0: true });
-      if (isNum(rsbv)) ctx.rsb = U.fromDisplay('Rs', rsbv, inp.units);
+      var rsbC = canon(inp, 'rsb');
+      if (rsbC !== undefined) { if (rsbC > 0) ctx.rsb = rsbC; else bag.add('rsb', 'Solution GOR at bubble point must be greater than 0'); }
+      else {
+        var rsbv = need(bag, inp, 'rsb', 'Solution GOR at bubble point', { gt0: true });
+        if (isNum(rsbv)) ctx.rsb = U.fromDisplay('Rs', rsbv, inp.units);
+      }
     }
     return ctx;
   }
@@ -249,10 +297,17 @@
     res.pb = pb; res.rsb = rsb;
 
     /* insert pb into the evaluation set when it falls inside the requested pressures */
+    /* pb in the evaluation set: a point within P_TOL of pb (grid point, endpoint, list value or the
+       single pressure) becomes exactly pb; otherwise pb is inserted when it lies inside the range.
+       Never for noInsert runs (measured data is evaluated at the measured pressures). */
     var list = ps.slice(), inserted = -1;
-    if (!inp.noInsert && (inp.calcMode || 'single') !== 'single' && list.length > 1 && pb > list[0] && pb < list[list.length - 1]) {
-      var has = list.some(function (x) { return Math.abs(x - pb) < 1e-6 * pb; });
-      if (!has) { list.push(pb); list.sort(function (a, b) { return a - b; }); inserted = list.indexOf(pb); }
+    if (!inp.noInsert) {
+      var near = -1;
+      list.forEach(function (x, i) { if (Math.abs(x - pb) <= P_TOL && (near < 0 || Math.abs(x - pb) < Math.abs(list[near] - pb))) near = i; });
+      if (near >= 0) list[near] = pb;
+      else if ((inp.calcMode || 'single') !== 'single' && list.length > 1 && pb > list[0] && pb < list[list.length - 1]) {
+        list.push(pb); list.sort(function (a, b) { return a - b; }); inserted = list.indexOf(pb);
+      }
     }
 
     var bob = boF(rsb, tF, api, gBo);
@@ -283,8 +338,8 @@
     res.phase = []; res.inserted = inserted;
 
     list.forEach(function (p) {
-      var sat = p < pb * (1 - 1e-12);
-      res.phase.push(sat ? 'saturated' : (Math.abs(p - pb) <= pb * 1e-9 ? 'bubble point' : 'undersaturated'));
+      var ph = phaseOf(p, pb), sat = ph === 'saturated';
+      res.phase.push(ph);
       var rs, bo, mu, co, why = {};
       if (sat) {
         rs = scale * rsF(p, tF, api, gRs);
@@ -537,6 +592,7 @@
       warnings: [], info: [], scalars: [], props: {}, pressures: [], ctx: ctx, input: inp, std: U.STD };
     Object.keys(PROPS[fluid]).forEach(function (k) { res.props[k] = Object.assign({ key: k, values: [], reasons: [] }, PROPS[fluid][k]); });
     if (!res.ok) return res;
+    if (bag.merged) res.info.push(bag.merged + ' pasted pressure' + (bag.merged > 1 ? 's' : '') + ' within ' + P_TOL + ' psi of another were merged (one calculated point per pressure).');
     if (fluid === 'oil') oilEvaluate(inp, ctx, ps, res); else gasEvaluate(inp, ctx, ps, res);
     res.methods = methodSummary(fluid, ctx);
     return res;
@@ -560,7 +616,7 @@
     var out = { p: p, key: key, lines: L, method: '', eq: '' };
     var f = function (x, s) { return fmt(x, s || 5); };
     if (res.fluid === 'oil') {
-      var tF = ctx.tF, api = ctx.api, pb = res.pb, rsb = res.rsb, sat = p < pb * (1 - 1e-12);
+      var tF = ctx.tF, api = ctx.api, pb = res.pb, rsb = res.rsb, sat = phaseOf(p, pb) === 'saturated';
       var gRs = ggFor(m.rs, ctx), gBo = ggFor(m.bo, ctx);
       L.push('Inputs: p = ' + f(p) + ' psia,  T = ' + f(tF, 4) + ' °F,  API = ' + f(api, 4) + ',  γg = ' + f(ctx.gg, 4) + (m.rs === 'vasquez_beggs' || m.bo === 'vasquez_beggs' ? ',  γgs = ' + f(ctx.ggs, 4) : '') + ',  pb = ' + f(pb) + ' psia,  Rsb = ' + f(rsb) + ' scf/STB');
       L.push('State: ' + (sat ? 'p < pb → saturated oil' : 'p ≥ pb → undersaturated oil (composition fixed, Rs = Rsb)'));
@@ -647,7 +703,7 @@
       p: P(3000), pMin: P(200), pMax: P(5000), pStep: met ? 10 : 200, pList: [1000, 2000, 3000, 4000].map(P).join(', ') };
   }
 
-  var PVTEngine = { run: run, detail: detail, example: example, parse: parse, fmt: fmt, PROPS: PROPS,
+  var PVTEngine = { run: run, P_TOL: P_TOL, phaseOf: phaseOf, detail: detail, example: example, parse: parse, fmt: fmt, PROPS: PROPS,
     OIL_DEFAULT_M: OIL_DEFAULT_M, GAS_DEFAULT_M: GAS_DEFAULT_M, MAX_POINTS: MAX_POINTS, MW_AIR: MW_AIR, resolveComponent: resolveComponent,
     setComponentDb: function (db) { COMP_DB = db; } };
   root.PVTEngine = PVTEngine;

@@ -187,6 +187,65 @@ let BASE = '';
     check('no script errors (1366 light)', p.__errs.length === 0, p.__errs.join(' | '));
     await p.context().close();
 
+    /* ---------------- unit switching keeps the same physical points (regression) ----------------
+       Default oil example 200–5000 psia step 200, pb 2200: Field -> Metric used to give 26 rows,
+       344.74 bar(a) twice and the 151.68 bar(a) row labelled "saturated". */
+    p = await openApp(browser, 1366, 768, 'light');
+    await clickText(p, 'Oil Calculator'); await settle(p);
+    const tableRows = async () => {
+      await clickText(p, 'Results Table', '.pv-tab'); await settle(p, 300);
+      const r = await p.$$eval('.pv-res tbody tr', (trs) => trs.map((tr) => ({ p: tr.cells[1].innerText.trim(), st: tr.cells[2].innerText.trim(), sel: tr.classList.contains('is-sel') })));
+      await clickText(p, 'Inputs', '.pv-tab'); await settle(p, 200);
+      return r;
+    };
+    const unitsTo = async (u) => { await clickText(p, u, '.pv-seg button'); await settle(p, 300); };
+    const shape = (rows, max, pbTxt, label) => {
+      check(label + ': 25 rows', rows.length === 25, rows.length);
+      check(label + ': one maximum row', rows.filter((r) => r.p === max).length === 1, rows.slice(-3).map((r) => r.p).join(','));
+      const bp = rows.filter((r) => r.st === 'bubble point');
+      check(label + ': exactly one bubble-point row at pb', bp.length === 1 && bp[0].p === pbTxt, JSON.stringify(bp));
+      check(label + ': phases around pb', rows[9].st === 'saturated' && rows[11].st === 'undersaturated');
+    };
+    shape(await tableRows(), '5000.0', '2200.0', 'field');
+    /* select the bubble-point row, then switch units */
+    await clickText(p, 'Results Table', '.pv-tab'); await settle(p, 300);
+    await p.click('.pv-res tr[data-row="10"]'); await settle(p, 200);
+    await clickText(p, 'Inputs', '.pv-tab'); await settle(p, 200);
+    await unitsTo('Metric');
+    const met = await tableRows();
+    shape(met, '344.74', '151.68', 'metric');
+    check('selection follows the same physical pressure (151.68 bar(a))', met.findIndex((r) => r.sel) === 10 && met[10].p === '151.68');
+    for (let k = 0; k < 6; k++) { await unitsTo(k % 2 ? 'Metric' : 'Field'); }
+    await unitsTo('Field');
+    const back = await tableRows();
+    shape(back, '5000.0', '2200.0', 'after 7 switches');
+    check('inputs return exactly to the typed values (no drift)', JSON.stringify(await p.evaluate(() => ['pMin', 'pMax', 'pStep', 'pb', 'T'].map((k) => document.querySelector('[data-k="' + k + '"]').value))) === '["200","5000","200","2200","200"]');
+    check('selection kept through repeated switching', back.findIndex((r) => r.sel) === 10);
+    await clickText(p, 'Charts', '.pv-tab'); await settle(p, 400);
+    check('chart point detail shows the same pressure', /Selected point 11 \/ 25/i.test(await p.$eval('#pv-point', (e) => e.innerText)) && /p = 2200\.0/.test(await p.$eval('#pv-point', (e) => e.innerText)));
+    await clickText(p, 'Inputs', '.pv-tab'); await settle(p, 200);
+    /* gauge: pressures shift by 1 atm, the increment does not */
+    await unitsTo('Gauge psig');
+    check('gauge: increment unchanged, pressures offset', (await p.$eval('[data-k="pStep"]', (e) => e.value)) === '200' && (await p.$eval('[data-k="pMin"]', (e) => e.value)) === '185.3041');
+    shape((await tableRows()).map((r) => r), '4985.3', '2185.3', 'gauge');
+    await unitsTo('Absolute psia');
+    check('absolute again: exact inputs', (await p.$eval('[data-k="pMin"]', (e) => e.value)) === '200' && (await p.$eval('[data-k="pb"]', (e) => e.value)) === '2200');
+    /* CSV after a switch: same rows, one bubble point */
+    await unitsTo('Metric');
+    await clickText(p, 'Results Table', '.pv-tab'); await settle(p, 300);
+    const [dlm] = await Promise.all([p.waitForEvent('download'), clickText(p, 'Export CSV')]);
+    const rowsCsv = fs.readFileSync(await dlm.path(), 'utf8').split(/\r?\n/).filter((l) => /^\d/.test(l));
+    check('metric CSV: 25 rows, one bubble point, one maximum', rowsCsv.length === 25 && rowsCsv.filter((l) => /,bubble point,/.test(l)).length === 1 && rowsCsv.filter((l) => /^344\.74,/.test(l)).length === 1, rowsCsv.length);
+    /* gas: equivalent results across units */
+    await clickText(p, 'Gas', '.pv-fluid button'); await settle(p, 300);
+    const gasZ = async () => { await clickText(p, 'Results Table', '.pv-tab'); await settle(p, 300); return p.$$eval('.pv-res tbody tr', (trs) => trs.map((tr) => tr.cells[3].innerText.trim())); };
+    const zm = await gasZ();
+    await clickText(p, 'Inputs', '.pv-tab'); await settle(p, 200); await unitsTo('Field');
+    const zf = await gasZ();
+    check('gas: same rows and Z in both unit systems', zm.length === 30 && JSON.stringify(zm) === JSON.stringify(zf), zm.length + ' / ' + zf.length);
+    check('no script errors (unit switching)', p.__errs.length === 0, p.__errs.join(' | '));
+    await p.context().close();
+
     /* ---------------- layout: sizes and themes ---------------- */
     for (const [w, h, theme] of [[1366, 768, 'dark'], [1920, 1080, 'light'], [1920, 1080, 'dark'], [390, 844, 'light']]) {
       p = await openApp(browser, w, h, theme);

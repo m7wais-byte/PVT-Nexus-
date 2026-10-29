@@ -25,6 +25,16 @@ Tests: `node --test tests/*.test.js` (engine) and `node tests/ui.e2e.js` (browse
 * **Metric display:** 1 bar = 14.50377 psi; 1 scf/STB = 0.178108 sm³/sm³; 1 lbm/ft³ = 16.01846 kg/m³;
   cP = mPa·s; Bo and Bg are ratios (rb/STB = rm³/sm³, ft³/scf = rm³/sm³). Standard conditions stay
   60 °F / 1 atm in both systems: metric results are unit conversions, not a 15 °C re-basing.
+* **Pressure tolerance:** `P_TOL = 0.01 psi` (0.0007 bar), in canonical psia, is the only pressure
+  tolerance. It is used for the range endpoint, merging pasted pressures, snapping a point onto pb and
+  the saturated / bubble point / undersaturated test (`phaseOf`). It sits far below the displayed
+  resolution (0.1 psi, 0.01 bar) and far above floating-point noise.
+* **Pressure grid:** p_i = pMin + i·step, computed by index in psia, never by cumulative addition. The
+  exact maximum is always the last point, exactly once: it replaces a grid point within P_TOL of it,
+  otherwise it is appended. A point within P_TOL of pb becomes exactly pb; otherwise pb is inserted when
+  it lies inside the range. Increments are pressure differences, so no gauge offset is ever applied to them.
+* **Canonical inputs:** the UI passes full-precision values in internal units (`inp.canon`). Unit and gauge
+  switches only re-render the displayed text; a rounded display is never parsed back into an input.
 * **Gas constants:** Ma(air) = 28.96 lb/lbmol, R = 10.7316 psia·ft³/(lbmol·°R); oil γo = ρo/62.4 lbm/ft³.
 
 ## Oil workflow

@@ -34,17 +34,65 @@
       .forEach(function (x, i) { c[i] = { name: x[0], formula: x[1], y: x[2] }; });
     return c;
   }
-  function fluidDefaults(fluid, units) {
-    var ex = E.example(fluid, units);
-    if (fluid === 'oil') return Object.assign({ calcMode: 'range', oilGravityBasis: 'api', oilChar: 'pb', sepUse: false, psep: '', tsep: '', m: Object.assign({}, E.OIL_DEFAULT_M) }, ex);
-    return Object.assign({ calcMode: 'range', gasBasis: 'gravity', comp: exampleComp(), compBasis: 'fraction', normalize: false, behavior: 'real',
-      sourBasis: 'fraction', yCO2: '0', yH2S: '0', yN2: '0', zManual: '', m: Object.assign({}, E.GAS_DEFAULT_M) }, ex);
+  /* ---- canonical inputs
+     Unit-bearing fields keep a full-precision value in internal units in f.canon (pressures psia,
+     increment psi, T °F, density lbm/ft³, Rsb scf/STB, pressure list psia[]). The text in the field
+     is only its rendering in the current units. A unit or gauge switch re-renders the text from
+     f.canon and never re-parses a rounded display, so the physical inputs cannot drift. Typing in a
+     field drops its canonical value: from then on exactly what was typed is used. */
+  var KIND = { p: 'p', pMin: 'p', pMax: 'p', pb: 'p', psep: 'p', pStep: 'dp', T: 'T', tsep: 'T', rhoSto: 'density', rsb: 'Rs', pList: 'plist' };
+  function toCanon(kind, text, units, gauge) {
+    if (kind === 'plist') {
+      var toks = String(text || '').split(/[\s,;]+/).filter(Boolean), out = [];
+      for (var i = 0; i < toks.length; i++) { var r = E.parse(toks[i]); if (r.state !== 'ok') return undefined; out.push(U.pToPsia(r.v, units, gauge)); }
+      return out.length ? out : undefined;
+    }
+    var v = E.parse(text);
+    if (v.state !== 'ok') return undefined;
+    if (kind === 'p') return U.pToPsia(v.v, units, gauge);
+    if (kind === 'dp') return U.dpToPsi(v.v, units);          // an increment: never offset by 1 atm
+    if (kind === 'T') return U.tToF(v.v, units);
+    return U.fromDisplay(kind, v.v, units);
+  }
+  function displayText(kind, c, units, gauge) {
+    var r7 = function (x) { return String(+x.toPrecision(7)); };    // rounding for display only
+    if (kind === 'plist') return c.map(function (x) { return r7(U.pFromPsia(x, units, gauge)); }).join(', ');
+    if (kind === 'p') return r7(U.pFromPsia(c, units, gauge));
+    if (kind === 'dp') return r7(units === 'metric' ? c / U.PSI_PER_BAR : c);
+    if (kind === 'T') return r7(U.tFromF(c, units));
+    return r7(U.toDisplay(kind, c, units));
+  }
+  /* make sure every valid unit-bearing field has a canonical value (parsed in the units it was typed in) */
+  function captureCanon(f, units, gauge) {
+    f.canon = f.canon || {};
+    Object.keys(KIND).forEach(function (k) {
+      if (!(k in f) || f.canon[k] !== undefined) return;
+      var c = toCanon(KIND[k], f[k], units, gauge);
+      if (c !== undefined) f.canon[k] = c;
+    });
+  }
+  function renderCanon(f, units, gauge) {
+    Object.keys(f.canon || {}).forEach(function (k) { f[k] = displayText(KIND[k], f.canon[k], units, gauge); });
+  }
+  /* example inputs: defined in field units (exact), shown in the current units */
+  function fluidDefaults(fluid, units, gauge) {
+    var ex = E.example(fluid, 'field');
+    var f = fluid === 'oil'
+      ? Object.assign({ calcMode: 'range', oilGravityBasis: 'api', oilChar: 'pb', sepUse: false, psep: '', tsep: '', m: Object.assign({}, E.OIL_DEFAULT_M) }, ex)
+      : Object.assign({ calcMode: 'range', gasBasis: 'gravity', comp: exampleComp(), compBasis: 'fraction', normalize: false, behavior: 'real',
+        sourBasis: 'fraction', yCO2: '0', yH2S: '0', yN2: '0', zManual: '', m: Object.assign({}, E.GAS_DEFAULT_M) }, ex);
+    Object.keys(ex).forEach(function (k) { f[k] = String(ex[k]); });
+    f.canon = {};
+    captureCanon(f, 'field', false);
+    renderCanon(f, units || 'field', !!gauge);
+    return f;
   }
   var S = {
     fluid: 'oil', view: 'inputs', units: 'field', gauge: false,
-    oil: fluidDefaults('oil', 'field'), gas: fluidDefaults('gas', 'field'),
+    oil: fluidDefaults('oil', 'field', false), gas: fluidDefaults('gas', 'field', false),
     chartProp: { oil: 'rs', gas: 'z' }, compare: { oil: {}, gas: {} }, yLog: {},
-    sel: { oil: -1, gas: -1 }, measured: { oil: { text: '' }, gas: { text: '' } },
+    /* selection: the row index for drawing, and the physical pressure (psia) it belongs to */
+    sel: { oil: -1, gas: -1 }, selP: { oil: null, gas: null }, measured: { oil: { text: '' }, gas: { text: '' } },
     explain: false, zImg: null, example: { oil: true, gas: true }
   };
 
@@ -91,7 +139,7 @@
   /* -------------------------------------------------------- engine input */
   function engineInput(extra) {
     var f = F();
-    var inp = Object.assign({}, f, { fluid: S.fluid, units: S.units, gauge: S.gauge, m: Object.assign({}, f.m) });
+    var inp = Object.assign({}, f, { fluid: S.fluid, units: S.units, gauge: S.gauge, m: Object.assign({}, f.m), canon: Object.assign({}, f.canon) });
     return Object.assign(inp, extra || {});
   }
 
@@ -110,8 +158,16 @@
       });
     }
     computeMeasured();
-    if (S.sel[S.fluid] >= (res.pressures || []).length) S.sel[S.fluid] = -1;
+    /* keep the selection on the same physical pressure (same tolerance as the engine) */
+    var sp = S.selP[S.fluid], ps = res.pressures || [];
+    S.sel[S.fluid] = -1;
+    if (sp !== null) for (var i = 0; i < ps.length; i++) if (Math.abs(ps[i] - sp) <= E.P_TOL) { S.sel[S.fluid] = i; break; }
   }
+  function setSel(i) {
+    S.sel[S.fluid] = i;
+    S.selP[S.fluid] = res && res.pressures && i >= 0 ? res.pressures[i] : null;
+  }
+  function clearSel() { S.sel[S.fluid] = -1; S.selP[S.fluid] = null; }
 
   function computeMeasured() {
     meas = null;
@@ -347,7 +403,7 @@
     var hostEl = q('#pv-chart-host'), msg = q('#pv-chart-msg');
     if (!hostEl) return;
     var k = S.chartProp[S.fluid], P = E.PROPS[S.fluid][k];
-    if (!chart || !hostEl.firstChild) { if (chart) chart.destroy(); chart = PvtChart.create(hostEl, { onSelect: function (i) { S.sel[S.fluid] = i; renderPoint(); syncTableSel(); if (S.explain) renderExplain(); } }); }
+    if (!chart || !hostEl.firstChild) { if (chart) chart.destroy(); chart = PvtChart.create(hostEl, { onSelect: function (i) { setSel(i); renderPoint(); syncTableSel(); if (S.explain) renderExplain(); } }); }
     if (!res || !res.ok) {
       chart.render(null); msg.hidden = false;
       msg.innerHTML = '<b>No results.</b> ' + (res && res.errors.length ? 'Fix the highlighted inputs: ' + res.errors.map(function (e) { return esc(e.msg); }).join(' · ') : '') + ' <button type="button" class="ui-btn ui-btn-sub" data-goto="inputs">Go to Inputs</button>';
@@ -391,10 +447,10 @@
   }
   function alignTo(ps, r, k) {
     return ps.map(function (p) {
-      var j = -1; for (var t = 0; t < r.pressures.length; t++) if (Math.abs(r.pressures[t] - p) <= 1e-9 * p) { j = t; break; }
+      var j = -1; for (var t = 0; t < r.pressures.length; t++) if (Math.abs(r.pressures[t] - p) <= E.P_TOL) { j = t; break; }
       var v = j >= 0 ? r.props[k].values[j] : null;
       return [disp('p', p), v === null ? null : disp(E.PROPS[S.fluid][k].q, v)];
-    }).concat(r.pressures.filter(function (p) { return !ps.some(function (x) { return Math.abs(x - p) <= 1e-9 * p; }); }).map(function (p) {
+    }).concat(r.pressures.filter(function (p) { return !ps.some(function (x) { return Math.abs(x - p) <= E.P_TOL; }); }).map(function (p) {
       var j = r.pressures.indexOf(p), v = r.props[k].values[j]; return [disp('p', p), v === null ? null : disp(E.PROPS[S.fluid][k].q, v), 'extra'];
     })).sort(function (a, b) { return a[0] - b[0]; }).filter(function (pt, idx, arr) { return true; });
   }
@@ -786,6 +842,7 @@
       var ev = inp.type === 'checkbox' ? 'change' : 'input';
       inp.addEventListener(ev, function () {
         f[k] = inp.type === 'checkbox' ? inp.checked : inp.value;
+        if (KIND[k] && f.canon) delete f.canon[k];   // typed value replaces the canonical one
         S.example[S.fluid] = false;
         if (inp.type === 'checkbox' && (k === 'sepUse' || k === 'normalize')) { recompute(); if (k === 'sepUse') renderView(); else refresh(); return; }
         markStale(); schedule();
@@ -818,7 +875,7 @@
     on('#pv-csv', 'click', exportCsv);
     var tw = q('#pv-tbl-wrap');
     if (tw) {
-      var pick = function (tr) { S.sel[S.fluid] = +tr.getAttribute('data-row'); syncTableSel(); if (S.explain) renderExplain(); };
+      var pick = function (tr) { setSel(+tr.getAttribute('data-row')); syncTableSel(); if (S.explain) renderExplain(); };
       tw.addEventListener('click', function (e) { var tr = e.target.closest('tr[data-row]'); if (tr) pick(tr); });
       tw.addEventListener('keydown', function (e) { var tr = e.target.closest('tr[data-row]'); if (tr && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); pick(tr); } });
     }
@@ -852,20 +909,11 @@
     recompute(); renderView();
   }
 
-  /* switching unit system or pressure convention converts the values already typed */
-  var P_KEYS = ['p', 'pMin', 'pMax', 'pb', 'psep'];
+  /* switching unit system or pressure convention: same physical inputs, new rendering */
   function convertUnits(units, gauge) {
     ['oil', 'gas'].forEach(function (fl) {
-      var f = S[fl];
-      var cv = function (k, fn) { var r = E.parse(f[k]); if (r.state === 'ok') f[k] = String(+fn(r.v).toPrecision(7)); };
-      P_KEYS.forEach(function (k) { cv(k, function (v) { return U.pFromPsia(U.pToPsia(v, S.units, S.gauge), units, gauge); }); });
-      cv('pStep', function (v) { return units === S.units ? v : (units === 'metric' ? v / U.PSI_PER_BAR : v * U.PSI_PER_BAR); });
-      if (f.pList) f.pList = String(f.pList).split(/[\s,;]+/).filter(Boolean).map(function (t) { var r = E.parse(t); return r.state === 'ok' ? String(+U.pFromPsia(U.pToPsia(r.v, S.units, S.gauge), units, gauge).toPrecision(7)) : t; }).join(', ');
-      if (units !== S.units) {
-        ['T', 'tsep'].forEach(function (k) { cv(k, function (v) { return U.tFromF(U.tToF(v, S.units), units); }); });
-        cv('rhoSto', function (v) { return units === 'metric' ? v * U.KGM3_PER_LBFT3 : v / U.KGM3_PER_LBFT3; });
-        cv('rsb', function (v) { return units === 'metric' ? v * U.SM3SM3_PER_SCFSTB : v / U.SM3SM3_PER_SCFSTB; });
-      }
+      captureCanon(S[fl], S.units, S.gauge);
+      renderCanon(S[fl], units, gauge);
     });
     S.units = units; S.gauge = gauge;
   }
@@ -878,30 +926,24 @@
   }
   function loadExample() {
     var keep = { calcMode: F().calcMode };
-    S[S.fluid] = Object.assign(fluidDefaults(S.fluid, S.units), keep);
-    if (S.gauge) convertGaugeFresh();
+    S[S.fluid] = Object.assign(fluidDefaults(S.fluid, S.units, S.gauge), keep);
     S.example[S.fluid] = true;
     recompute(); renderView();
-  }
-  function convertGaugeFresh() {
-    var f = F();
-    P_KEYS.forEach(function (k) { var r = E.parse(f[k]); if (r.state === 'ok') f[k] = String(+U.pFromPsia(U.pToPsia(r.v, S.units, false), S.units, true).toPrecision(7)); });
-    if (f.pList) f.pList = String(f.pList).split(/[\s,;]+/).map(function (t) { return String(+U.pFromPsia(U.pToPsia(+t, S.units, false), S.units, true).toPrecision(7)); }).join(', ');
   }
   function clearInputs() {
     var f = F();
     ['p', 'pMin', 'pMax', 'pStep', 'pList', 'T', 'api', 'rhoSto', 'gg', 'pb', 'rsb', 'psep', 'tsep', 'yCO2', 'yH2S', 'yN2', 'zManual'].forEach(function (k) { if (k in f) f[k] = ''; });
     if (f.comp) f.comp = blankComp();
+    f.canon = {};
     S.example[S.fluid] = false;
-    S.sel[S.fluid] = -1;
+    clearSel();
     recompute(); renderView();
   }
   function resetAll() {
-    S[S.fluid] = fluidDefaults(S.fluid, S.units);
-    if (S.gauge) convertGaugeFresh();
+    S[S.fluid] = fluidDefaults(S.fluid, S.units, S.gauge);
     S.example[S.fluid] = true;
     S.measured[S.fluid] = { text: '' };
-    S.compare[S.fluid] = {}; S.sel[S.fluid] = -1;
+    S.compare[S.fluid] = {}; clearSel();
     recompute(); renderView();
   }
   function applyCompPaste() {
