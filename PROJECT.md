@@ -113,8 +113,9 @@ components/
   RecombSim.js          Validation > Recombination (screen 'recomb', after Direct Density) - native DOM/SVG
                         module mounted by Main.syncRecomb() into rcHost (screens/showRecomb.js). See section below.
   StageReport.js        report stage (placeholder)
-  OilCalc.js            native Oil Properties Calculator (correlations + UI)
-  GasCalc.js            native Gas Properties Calculator (correlations + UI)
+  PvtCalc.js            PVT Calculator page (Module 05): Oil / Gas, five views, Explain drawer - see "Calculators"
+  PvtChart.js           interactive SVG property chart used by PvtCalc
+  OilBatch.js           multi-sample oil batch evaluation (Measured Data view)
 
 screens/                one file per screen, each registers a named slot
   showSplash.js         splash
@@ -127,7 +128,7 @@ screens/                one file per screen, each registers a named slot
   showAnalysis.js       analysis menu
   showSeparator.js      separator test
   showVisc.js           viscosity stage
-  showCalc.js           calculators
+  showCalc.js           PVT Calculator host (PvtCalc mounts into it)
   showReport.js         report
   showAbout.js          about
   showSettings.js       settings
@@ -281,30 +282,37 @@ keep working across state changes.
 
 ## Calculators (module05)
 
-**Oil** — fully native. `components/OilCalc.js` builds the whole Oil Properties
-Calculator in plain DOM and mounts into the host `<div ref="{{ oilCalcHost }}">`
-rendered by `screens/showCalc.js`; `Main.js` mounts/unmounts it from
-`componentDidUpdate()`. Styling is the `.oc-*` block at the bottom of
-`theme.css` — theme variables only, so it follows light/dark with the app.
-All correlations come across unchanged from the standalone build
-(Standing, Vasquez-Beggs, Glaso, Marhoun, Petrosky-Farshad, material balance,
-Beal / Beggs-Robinson / Glaso dead-oil viscosity, Beggs-Robinson saturated,
-Vazquez-Beggs undersaturated), including the batch AAE evaluation tables.
-Two tabs: *Calculator* (inputs + property selection + live results) and
-*Batch evaluation* (Rs / pb / Bo / μo paste-and-compare tables).
+One full-page **PVT Calculator** (rebuilt 2026-10-29). `screens/showCalc.js` renders only a host
+`<div ref="{{ pvCalcHost }}">`; `Main.syncPvtCalc()` mounts `components/PvtCalc.js` into it and keeps
+`state.calcMode` ('oil' | 'gas') in step with the page's Oil / Gas selector. Dashboard: *Oil Calculator* /
+*Gas Calculator* open that mode, *PVT Calculator* reopens the last one (default oil). Back = top-bar Back.
 
-**Gas** — fully native as well. `components/GasCalc.js`, same mount pattern via
-`{{ gasCalcHost }}`, same `.oc-*` styling with a blue accent (`.oc.is-gas`).
-Carries over Ma / γg selection, pseudo-criticals (gas-gravity correlation,
-Kay mixing, Brown 1948 natural/wet with its limit check), Wichert-Aziz and
-Carr-Kobayashi-Burrows sour-gas corrections, Papay and Beggs-Brill Z,
-density, specific volume, cg, Bg, Eg and Lee-Gonzalez-Eakin viscosity,
-plus the lecture method notes. Three tabs: *Calculator*, *Composition*
-(20-row table with automatic Mi / Tci / Pci lookup and the Σyi check) and
-*Standing chart* (image upload, highlighted Ppr / Tpr, manual Z entry).
-Component reference data: `data/pure-components.js`.
+Layers (each testable on its own; equations and sources in `calc/README.md`):
 
-No iframes remain — `pvtcalc/` is no longer referenced anywhere.
+| File | Role |
+|---|---|
+| `calc/pvt-units.js` | Field / Metric units, absolute / gauge pressure (+1 atm = 14.6959 psi), standard conditions 60 °F / 14.696 psia |
+| `calc/pvt-correlations.js` | published equations (pure, NaN outside their mathematical domain, never clamped) + META: labels, equation text, published data ranges, references |
+| `calc/pvt-engine.js` | validation (per-field errors) + evaluation over a pressure set; point detail with substituted values |
+| `calc/pvt-measured.js` | measured-data template / parser (row + column errors) and ARE / AARE statistics |
+| `components/PvtChart.js` | SVG chart: hover tooltip, click / arrow-key selection, gaps for invalid values, pb marker, measured markers, PNG export |
+| `components/PvtCalc.js` | page: views Inputs · Charts · Results Table · Measured Data · Methods & References, Explain drawer, CSV export |
+| `components/OilBatch.js` | the former oil calculator's multi-sample batch tables (renamed from OilCalc.js; correlations now from PVTCorr) |
+
+Rules kept by the engine:
+* blank required field -> "Input required"; nothing is defaulted behind the scenes (example values are written into the visible fields);
+* invalid input blocks the calculation and clears the results (status chip shows "Invalid input");
+* outside an equation's domain -> value null + reason (chart gap, table "—" with a numbered note);
+* outside a published data range -> value kept + warning naming the correlation, variable, range and affected properties;
+* oil: one measured input (pb or Rsb), the other derived once; p < pb saturated, p >= pb Rs = Rsb, Bo = Bob·exp(-∫co dp);
+* gas: ideal mode sets Z = 1 for every dependent property; a manual chart Z is single-pressure only (no curve, no cg).
+
+Styling: the `.pv-*` block at the end of `theme.css` (theme variables only; oil amber / gas blue accent).
+The `.oc-*` block is still used by the batch tables. Tests: `node --test tests/*.test.js` (engine, no browser) and
+`node tests/ui.e2e.js` (Playwright, starts its own server; screenshots in `tests/out/`, git-ignored).
+`components/GasCalc.js` was removed: every working gas feature moved into the new page (composition table,
+Standing-chart reading, sour corrections); the "Matthews", "Whitson-Brulé" and "Brown 1948" Z options had no
+implementation of their own (they returned Papay) and the Carr-Kobayashi-Burrows viscosity option returned no value.
 
 ## Rebuilding from the original export
 

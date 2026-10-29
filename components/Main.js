@@ -14,11 +14,10 @@ window.PVT_FX = { FXP, FX_PHASES, fxR, fxE };
 class Component extends DCLogic {
   state = { bhMode: 'open', bhDepth: 0, bhP: 0, bhT: 78, screen: 'splash', m01View: 'overview', m01Method: null, m01Phase: 'idle', m01Pressure: 0, activePoint: 'bottomhole', phase: 'idle', mechPressure: 0, restorePhase: 'idle', curP: 1500, qcStep: 1, qcPhase: 'idle', xfer: 0, resP: 0, resT: 75, water: 0, qcSettle: 0, qcDk: 0, agitate: false, qcDone: { 1:false, 2:false, 3:false, 4:false }, curT: 80, calcMode: '', test03: 'cce', repSec: 'cover', aboutTab: 'modules', chargeStep: 0, chargeStage: 0, chargeBusy: false, chargeFront: 0, chargeValveOpen: false, drainBack: false, cellVac: 0, cellP: 0, cellStatus: 'Cell Ready', tpVol: 100, pumpA: 0, pumpB: 0, deadVol: 0, initRead: 0, vBottle: false, vCell: false, vPumpA: false, vPumpB: false, bottleOn: false, agCycle: 0, agHalf: 0, agDir: 'idle', agStable: false, agResult: '', baro: [], fStep: 0, fStage: 0, fBusy: false, fuP: 14.7, fHe: 0, fHeGas: 3000, fPumpA: 80, fFlashed: 0, fOil: 0, fGaso: 0, fBalloon: 0, fVac: false, fMeasured: false, fPath: 'idle', fPr: 0, fQ: 0, dmP: 0, dmDone: false, fStatus: 'Awaiting Stable Sample', theme: 'dark', viscState: (window.VISC_MODULE ? window.VISC_MODULE.initialState() : {}) };
 
-  oilCalcHost = { current: null };
+  pvCalcHost = { current: null };   // Module 05: the PVT Calculator (components/PvtCalc.js) mounts here
   bhHost = { current: null };   // Bottom Hole page: native BottomHoleSim module mounts here
   rcHost = { current: null };   // Validation > Recombination: native RecombSim module mounts here
   qcAgHost = { current: null }; // Validation > Step 4 Sample Homogenization: QcAgitSim scene (svg <g>)
-  gasCalcHost = { current: null };
 
   componentDidMount() {
     let saved = 'light';
@@ -39,8 +38,7 @@ class Component extends DCLogic {
     const pcKey = this.state.screen + '|' + this.state.activePoint + '|' + this.state.bhMode;
     if (this._pcKey !== pcKey) { this._pcKey = pcKey; this._pcReady = false; if (PCLK.paused()) PCLK.resume(); }
     this.viscSyncHash();
-    this.syncCalcMount(window.OilCalc, this.oilCalcHost, this.state.screen === 'module05' && this.state.calcMode === 'oil');
-    this.syncCalcMount(window.GasCalc, this.gasCalcHost, this.state.screen === 'module05' && this.state.calcMode === 'gas');
+    this.syncPvtCalc();
     this.syncBhSim();
     this.syncRecomb();
     this.syncQcAgit();
@@ -96,15 +94,19 @@ class Component extends DCLogic {
       if (!on) this.bhHost.current = null;
     }
   }
-  /* mount / unmount a native calculator module against its host <div> */
-  syncCalcMount(mod, ref, on) {
+  /* Module 05: mount / unmount the PVT Calculator; its Oil / Gas selector reports back into calcMode */
+  syncPvtCalc() {
+    const mod = window.PvtCalc;
     if (!mod) return;
-    const host = ref.current;
+    const on = this.state.screen === 'module05';
+    const host = this.pvCalcHost.current;
+    const fluid = this.state.calcMode === 'gas' ? 'gas' : 'oil';
     if (on && host && host.isConnected) {
-      if (!mod.isMounted(host)) mod.mount(host);
+      if (!mod.isMounted(host)) mod.mount(host, { fluid, onFluid: (f) => { if (this.state.calcMode !== f) this.setState({ calcMode: f }); } });
+      else if (mod.fluid() !== fluid) mod.setFluid(fluid);
     } else {
       mod.unmount();
-      if (!on) ref.current = null;
+      if (!on) this.pvCalcHost.current = null;
     }
   }
 
@@ -2623,18 +2625,11 @@ const hi_d = (on) => on ? 'opacity:1; transition:opacity .5s ease;' : 'opacity:.
       rsGraphs: this.state.repSec === 'graphs', rsEos: this.state.repSec === 'eos', rsQc: this.state.repSec === 'qc',
       rsConclusions: this.state.repSec === 'conclusions', rsExport: this.state.repSec === 'export',
       showCalc: scr === 'module05',
-      goCalc: () => this.setState({ screen: 'module05', calcMode: '' }),
+      goCalc: () => this.setState({ screen: 'module05', calcMode: this.state.calcMode || 'oil' }),
       goOilCalc: () => this.setState({ screen: 'module05', calcMode: 'oil' }),
       goGasCalc: () => this.setState({ screen: 'module05', calcMode: 'gas' }),
-      calcChoose: scr === 'module05' && !this.state.calcMode,
-      calcGas: scr === 'module05' && this.state.calcMode === 'gas',
-      calcOil: scr === 'module05' && this.state.calcMode === 'oil',
-      pickGas: () => this.setState({ calcMode: 'gas' }),
-      oilCalcHost: this.oilCalcHost,
+      pvCalcHost: this.pvCalcHost,
       bhHost: this.bhHost,
-      gasCalcHost: this.gasCalcHost,
-      pickOil: () => this.setState({ calcMode: 'oil' }),
-      calcReset: () => this.setState({ calcMode: '' }),
       startRestore: () => this.startRestore(),
       sendNext: () => { if (this.state.restorePhase === 'complete') this.setState({ screen: 'module03' }); },
       qcStepTitle, qcStepDesc, qcS1, qcS2, qcS3, qcS4, qcTabs, qcRig,

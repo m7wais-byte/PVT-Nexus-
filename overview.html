@@ -460,15 +460,15 @@
         <tbody>
           <tr>
             <td>Oil</td>
-            <td>Rs, Pb, Bo, API gravity, oil viscosity, compressibility</td>
-            <td>Standing, Vasquez-Beggs, Glasø, Al-Marhoun, Petrosky-Farshad, material balance. Dead-oil viscosity: Beal, Beggs-Robinson, Glasø. Beggs-Robinson saturated and Vasquez-Beggs undersaturated viscosity.</td>
-            <td>Calculator tab; batch evaluation with AAE tables (Rs, Pb, Bo, μo)</td>
+            <td>Rs, Bo, μo, co versus pressure; API, pb / Rsb, Bob</td>
+            <td>Standing, Vasquez-Beggs, Glasø, Al-Marhoun, Petrosky-Farshad (Rs, pb, Bo). Vasquez-Beggs and Petrosky-Farshad co / Bo above pb. Dead-oil viscosity: Beal, Beggs-Robinson, Glasø; Beggs-Robinson saturated and Vasquez-Beggs undersaturated viscosity.</td>
+            <td>Charts and tables versus pressure; bubble-point marker; measured-data overlay and errors; batch evaluation with AAE tables (Rs, pb, Bo, μo); CSV / PNG export</td>
           </tr>
           <tr>
             <td>Gas</td>
-            <td>Z-factor, Bg, Eg, density, specific volume, cg, viscosity, pseudo-criticals</td>
-            <td>Gas-gravity and Kay mixing pseudo-criticals, Brown (1948). Wichert-Aziz and Carr-Kobayashi-Burrows sour-gas corrections. Papay and Beggs-Brill Z-factor. Lee-Gonzalez-Eakin viscosity.</td>
-            <td>Calculator, composition table (20 rows, automatic component lookup), Standing chart</td>
+            <td>Z, Bg, ρg, μg, cg versus pressure; Ma, γg, pseudo-critical and pseudo-reduced properties, v, Eg</td>
+            <td>Standing (natural / condensate), Sutton and Kay pseudo-criticals. Wichert-Aziz and Carr-Kobayashi-Burrows sour-gas corrections. Dranchuk-Abou-Kassem, Papay and Beggs-Brill Z-factor; manual Standing-Katz reading. Lee-Gonzalez-Eakin viscosity.</td>
+            <td>Composition table (20 rows, automatic component lookup, explicit normalisation), correlation comparison, measured-data overlay, CSV / PNG export</td>
           </tr>
         </tbody>
       </table>
@@ -518,7 +518,8 @@
 │   ├── StageSeparator.js · StageGC.js
 │   ├── StageVisc*.js · StageDensity.js
 │   ├── StageReport.js
-│   └── OilCalc.js · GasCalc.js
+│   └── PvtCalc.js · PvtChart.js · OilBatch.js
+├── calc/             <em>calculator core (units, correlations, engine)</em>
 ├── screens/          <em>one file per screen</em>
 └── PROJECT.md        <em>developer notes</em></div>
       <div class="stack">

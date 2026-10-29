@@ -4,3 +4,4 @@ _tmp/
 .openai/
 .DS_Store
 Thumbs.db
+tests/out/
