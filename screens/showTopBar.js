@@ -1,12 +1,12 @@
 /* screen: showTopBar  (3.6 KB) */
 DC.slot('showTopBar', `<sc-if value="{{ showTopBar }}" hint-placeholder-val="{{ false }}">
-  <header style="height:52px; flex:0 0 52px; background:var(--sidebar); border-bottom:1px solid var(--line); display:flex; align-items:center; gap:10px; padding:0 20px; position:sticky; top:0; z-index:50;">
+  <header class="tb" style="height:52px; flex:0 0 52px; background:var(--sidebar); border-bottom:1px solid var(--line); display:flex; align-items:center; gap:10px; padding:0 20px; position:sticky; top:0; z-index:50;">
     <div style="display:flex; align-items:center; flex:0 0 auto;">
-      <img src="assets/logo.png" alt="VAPS" style="height:34px; width:auto; display:block;">
+      <img class="tb-logo" src="assets/logo.png" alt="VAPS" style="height:34px; width:auto; display:block;">
     </div>
 
     <sc-if value="{{ showNav }}" hint-placeholder-val="{{ false }}">
-    <nav style="display:flex; align-items:center; gap:4px; flex:0 0 auto; margin-left:8px;">
+    <nav class="tb-nav" style="display:flex; align-items:center; gap:4px; flex:0 0 auto; margin-left:8px;">
       <button onclick="{{ goDashboard }}" style="{{ navDashStyle }}">
         <svg width="16" height="16" sc-camel-view-box="0 0 24 24" fill="none"><rect x="3" y="3" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.7"></rect><rect x="14" y="3" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.7"></rect><rect x="3" y="14" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.7"></rect><rect x="14" y="14" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.7"></rect></svg>
         Dashboard

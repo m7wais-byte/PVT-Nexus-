@@ -77,7 +77,7 @@ let BASE = '';
     await clickText(p, 'Clear inputs'); await settle(p);
     const reqd = await p.$$eval('[data-err]', (els) => els.filter((e) => e.innerText === 'Input required').map((e) => e.dataset.err));
     check('blank gas: Input required beside p, T, γg', ['p', 'T', 'gg'].every((k) => reqd.includes(k)), reqd.join(','));
-    check('blank gas: status "Input needed" names the fields', /Input needed/.test(await status(p)) && /Pressure, Temperature, Gas specific gravity/.test(await status(p)), await status(p));
+    check('blank gas: short status badge "Input needed · 3 fields"', /^\s*Input needed\s*3 fields\s*$/.test(await status(p)), await status(p));
     const sumG = await p.$eval('#pv-errsum', (e) => e.innerText);
     check('blank gas: error summary names the missing fields', /Missing: Pressure, Temperature, Gas specific gravity/.test(sumG) && !/Input required/.test(sumG), sumG);
     check('blank gas: example marker removed', !(await p.$('.pv-chip.is-example')));
@@ -368,6 +368,83 @@ let BASE = '';
       check(`workflow "${card}": no script errors`, p.__errs.length === 0, p.__errs.join(' | '));
       await p.context().close();
     }
+
+    /* ---------------- responsive layer (components/Responsive.js + theme.css) ---------------- */
+    const go = async (pg, steps) => {
+      for (const a of steps) {
+        const ok = await pg.evaluate((a) => { const t = (b) => b.innerText.replace(/\s+/g, ' ').trim(); const x = [...document.querySelectorAll('button,[onclick]')].find((b) => b.getClientRects().length && (t(b).startsWith(a) || t(b).includes(' ' + a + ' '))); if (x) x.click(); return !!x; }, a);
+        if (!ok) throw new Error('no element: ' + a);
+        await settle(pg, 650);
+      }
+    };
+    const RPAGES = [['dashboard', []], ['about', ['About']], ['sampling bottom hole', ['PVT Sampling', 'Bottom Hole']], ['sampling wellhead', ['PVT Sampling', 'Wellhead']],
+      ['validation menu', ['Validation']], ['restoration', ['Validation', 'Restoration']], ['flash', ['Validation', 'Flash']], ['separator test', ['Detailed PVT Analysis', 'Separator Test']],
+      ['two-phase viscosity', ['Detailed PVT Analysis', 'Viscosity', 'Two-Phase Viscosity']], ['report', ['Report']], ['calculator', ['PVT Calculator']]];
+    const PROC = /restoration|flash|separator|viscosity|sampling/;
+    for (const [w, h] of [[390, 844], [768, 1024], [1024, 768], [844, 390]]) {
+      const stacked = w <= 760 || h >= w;
+      for (const [name, steps] of RPAGES) {
+        p = await openApp(browser, w, h, 'light');
+        await go(p, steps); await settle(p, 300);
+        const tag = `[${w}×${h}] ${name}`;
+        const m = await p.evaluate(() => {
+          const clip = [...document.querySelectorAll('.rz-on')].map((f) => { const s = f.querySelector('[data-rz-svg]'); if (!s) return null; const a = f.getBoundingClientRect(), b = s.getBoundingClientRect(); return (b.left < a.left - 1 || b.right > a.right + 1) ? Math.round(b.left) + '..' + Math.round(b.right) + ' in ' + Math.round(a.left) + '..' + Math.round(a.right) : null; }).filter(Boolean);
+          const side = document.querySelector('.lab-side'), schem = document.querySelector('.lab-schem');
+          return { hs: document.documentElement.scrollWidth - window.innerWidth, clip, bars: document.querySelectorAll('.rz-bar').length, marked: document.querySelectorAll('[data-rz-svg]').length,
+            sideBySide: side && schem ? side.getBoundingClientRect().left >= schem.getBoundingClientRect().right - 1 : null };
+        });
+        check(`${tag}: no horizontal page scroll`, m.hs <= 1, 'overflow ' + m.hs + 'px');
+        check(`${tag}: drawings not clipped`, m.clip.length === 0, m.clip.join('; '));
+        if (PROC.test(name)) {
+          if (stacked) check(`${tag}: equipment full width with zoom`, m.bars >= 1 && m.marked >= 1, m.bars + ' bars, ' + m.marked + ' drawings');
+          else check(`${tag}: landscape tablet keeps the side-by-side layout`, m.bars === 0 && (m.sideBySide === null || m.sideBySide === true), JSON.stringify(m));
+        }
+        if (w === 390 || w === 768) await p.screenshot({ path: path.join(OUT, `responsive-${w}-${name.replace(/\s+/g, '-')}.png`) });
+        check(`${tag}: no script errors`, p.__errs.length === 0, p.__errs.join(' | '));
+        await p.context().close();
+      }
+    }
+    /* zoom, rotation, browser height, tap targets — phone with touch */
+    {
+      const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true });
+      await ctx.addInitScript(() => { try { localStorage.setItem('pvtTheme', 'light'); localStorage.setItem('sgOpen', '0'); } catch (e) {} });
+      p = await ctx.newPage(); p.__errs = []; p.on('pageerror', (e) => p.__errs.push(e.message));
+      await p.goto(BASE + '/index.html'); await settle(p, 700);
+      await go(p, ['Enter Dashboard', 'Validation', 'Restoration']);
+      const before = await p.evaluate(() => { const f = document.querySelector('.rz-on'); return { fw: f.clientWidth, sw: f.querySelector('[data-rz-svg]').getBoundingClientRect().width }; });
+      await p.click('.rz-bar [data-rz="+"]'); await settle(p, 200);
+      const z = await p.evaluate(() => { const f = document.querySelector('.rz-on'); return { z: f.getAttribute('data-rz-z'), sw: f.querySelector('[data-rz-svg]').getBoundingClientRect().width, pan: f.scrollWidth > f.clientWidth, hs: document.documentElement.scrollWidth - window.innerWidth, label: f.querySelector('.rz-val').textContent }; });
+      check('zoom +: drawing 1.5× and pans inside its frame, page does not scroll sideways', z.z === '1.5' && Math.abs(z.sw / before.sw - 1.5) < 0.03 && z.pan && z.hs <= 1 && z.label === '150%', JSON.stringify(z));
+      await p.click('.rz-bar [data-rz="fit"]'); await settle(p, 200);
+      check('zoom fit restores the full drawing', (await p.evaluate(() => document.querySelector('.rz-on').getAttribute('data-rz-z'))) === '1');
+      const tap = await p.$$eval('.pc-b', (bs) => bs.filter((b) => b.getClientRects().length).map((b) => Math.round(b.getBoundingClientRect().height)));
+      check('touch: procedure buttons at least 44 px tall', tap.length > 0 && tap.every((x) => x >= 44), tap.join(','));
+      const zb = await p.$$eval('.rz-bar button', (bs) => bs.map((b) => Math.round(b.getBoundingClientRect().height)));
+      check('touch: zoom buttons at least 38 px', zb.every((x) => x >= 38), zb.join(','));
+      await p.setViewportSize({ width: 844, height: 390 }); await settle(p, 400);
+      const land = await p.evaluate(() => ({ cls: document.documentElement.className, hs: document.documentElement.scrollWidth - window.innerWidth, appH: getComputedStyle(document.documentElement).getPropertyValue('--app-h').trim() }));
+      /* 844 px landscape is wider than the phone breakpoint: by design it gets the side-by-side layout */
+      check('rotate to landscape: side-by-side layout, no sideways scroll, height tracked', /vp-landscape/.test(land.cls) && !/vp-stack/.test(land.cls) && land.hs <= 1 && land.appH === '390px', JSON.stringify(land));
+      await p.setViewportSize({ width: 390, height: 844 }); await settle(p, 400);
+      check('rotate back to portrait: stacked again with the zoom bar', await p.evaluate(() => document.documentElement.classList.contains('vp-stack') && !!document.querySelector('.rz-bar')));
+      await p.setViewportSize({ width: 390, height: 700 }); await settle(p, 400);
+      check('browser height change updates --app-h', (await p.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--app-h').trim())) === '700px');
+      await go(p, ['Explain This Stage']);
+      const sheet = await p.evaluate(() => { const w = document.getElementById('sgWrap'), r = w && w.getBoundingClientRect(); return w ? { open: w.classList.contains('open'), bottom: Math.round(r.bottom), left: Math.round(r.left), width: Math.round(r.width) } : null; });
+      check('phone: explanation opens as a bottom drawer', sheet && sheet.open && sheet.bottom >= 699 && sheet.left === 0 && sheet.width === 390, JSON.stringify(sheet));
+      check('no script errors (phone interactions)', p.__errs.length === 0, p.__errs.join(' | '));
+      await ctx.close();
+    }
+    /* calculator: theme toggle inside the page */
+    p = await openApp(browser, 1366, 768, 'light');
+    await clickText(p, 'PVT Calculator'); await settle(p);
+    await p.click('#pv-theme'); await settle(p, 200);
+    const th = await p.evaluate(() => ({ attr: document.documentElement.getAttribute('data-theme'), saved: localStorage.getItem('pvtTheme'), label: document.querySelector('#pv-theme').innerText.trim() }));
+    check('calculator theme toggle switches to dark and remembers it', th.attr === null && th.saved === 'dark' && th.label === 'Light', JSON.stringify(th));
+    await p.click('#pv-theme'); await settle(p, 200);
+    check('calculator theme toggle switches back to light', (await p.evaluate(() => document.documentElement.getAttribute('data-theme'))) === 'light');
+    check('no script errors (theme toggle)', p.__errs.length === 0, p.__errs.join(' | '));
+    await p.context().close();
   } finally {
     await browser.close();
     server.close();

@@ -503,12 +503,14 @@ scaled by the oil left after each transfer, so everything fits in Pump A (Pump B
 One layout frame for every module (defined at the end of `theme.css`):
 
 - `--page-h` = working height under the 52 px top bar, never below `--page-min-h` (600 px);
-  shorter windows / high zoom scroll the page instead of clipping. `#app` min-width 768 px.
+  shorter windows / high zoom scroll the page instead of clipping. `--page-h` follows the real visible
+  height (`--app-h`, set by `components/Responsive.js`), so a mobile browser bar resizes the page.
+  `#app` no longer has a 768 px minimum (see "Responsive layer").
 - `.pg` page frame, `.pg-head` one compact header row (`.pg-eyebrow` · `.pg-title` 18 px ·
   status · `.pg-desc` one line, ellipsis · `.pg-end` page actions on the right).
 - `.lab-body` / `.lab-schem` / `.lab-side`: schematic | side-panel grid (Transfer, Opening
-  pressure, Restoration, Water check, Agitation). Below 1100 px wide (`.pg-stack`) the side
-  panel drops under the schematic and the page scrolls.
+  pressure, Restoration, Water check, Agitation). On phones and portrait tablets (`.pg-stack`) the side
+  panel drops under the schematic and the page scrolls; a landscape tablet keeps the side-by-side layout.
 - `.act`: one size for every page action button (34 px, 12.5 px text); colours stay with
   each page's state logic.
 - Explain Current Step: button lives in the top bar (`#sgSlot`, same place on every page).
@@ -521,6 +523,35 @@ One layout frame for every module (defined at the end of `theme.css`):
   Two-phase viscosity (graph + table, `v2ResOn`), Single-phase viscosity (already `resOn`).
 - Bottom Hole panel: step list scrolls, play / Explain / Move-to-Lab controls stay pinned.
 - Tightened viewBoxes: validation bottle scenes `0 22 900 492`, two-phase `24 22 992 616`.
+
+## Responsive layer (2026-10-30)
+
+Desktop (> 1100 px) is unchanged (1366 px screenshots of every page compared pixel by pixel before and after).
+Everything else is additive: class hooks in the screens plus the "RESPONSIVE LAYER" block at the end of
+`theme.css`, all inside phone / tablet media queries or `html.vp-stack`.
+
+- Breakpoints: phone ≤ 760 px; tablet 761–1100 px. Stacked layout (`html.vp-stack`): phone, and tablet in
+  portrait. Landscape tablets and landscape phones wider than 760 px keep equipment and panel side by side.
+- `components/Responsive.js` (layout only, loaded right after timing.js): sets `vp-phone / vp-tablet / vp-desk /
+  vp-stack / vp-portrait / vp-landscape` and `--app-h` on `<html>`; re-checks on resize, rotation and DOM changes
+  (child lists only).
+- Equipment frames: `.lab-schem`, `[data-rz-frame]` (Module 01 board) and `.bhs-scene` (Bottom Hole). In stacked
+  layouts the largest top-level SVG of a frame is marked `[data-rz-svg]` and drawn at full width with its own
+  aspect ratio (no clipping), and the frame gets a zoom bar (fit · − · + : 100 / 150 / 200 / 300 %). A zoomed
+  drawing pans inside its frame; the page never scrolls sideways. A frame that contains another frame is
+  skipped, so only the inner drawing zooms. Add `data-rz-off` to a frame to opt out.
+- The runtime only rewrites bound attributes, so the `data-rz-*` attributes and the zoom bar survive re-renders.
+- Hooks added to the screens: top bar `.tb .tb-nav .tb-logo`, dashboard `.dash .dash-grid .dash-strip`,
+  Module 01 `.m01 .m01-head .m01-btns .m01-grid .m01-board .m01-bh .m01-bhpanel`, menu pages `.menu-page
+  .menu-hero .menu-grid (.val-grid)`, About `.about`, stage tabs `.stage-strip` (DL, Separator, viscosity).
+- Phone: top-bar labels hidden (icons and accessible names stay); page headers wrap; card grids one column;
+  stage tabs scroll as one row; Report sections become a horizontal strip above the document (the document
+  keeps its own scroller, so section highlighting still works); the Explain drawer is the existing bottom sheet.
+- Touch (`pointer:coarse`): procedure buttons 44 px (`--pc-h`), other buttons 40 px, zoom buttons 38 px,
+  overview sample-point tags tappable over their whole box.
+- Tests: `tests/ui.e2e.js` "responsive layer" — 11 pages × 390×844, 768×1024, 1024×768, 844×390 (no sideways
+  scroll, no clipped drawing, zoom bar in stacked layouts, side-by-side on landscape tablets), zoom panning,
+  rotation, browser-height change, touch target sizes, phone Explain drawer.
 
 ## Validation layout (2026-10-21)
 

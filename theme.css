@@ -384,9 +384,9 @@ html {
    .lab-body  : schematic | side-panel grid used by the laboratory stages.
    ========================================================================== */
 html { --topbar-h:52px; --page-min-h:600px;
-       --page-h:max(var(--page-min-h), calc(100vh - var(--topbar-h)));
+       --page-h:max(var(--page-min-h), calc(var(--app-h, 100vh) - var(--topbar-h)));   /* --app-h: real visible height (Responsive.js) */
        --page-pad-x:clamp(12px,1.25vw,22px); --page-pad-y:10px; --page-gap:10px; }
-#app { min-width:768px; }
+#app { min-width:0; }   /* responsive since 2026-10-30: pages adapt instead of forcing a 768 px canvas */
 main { min-width:0; }
 
 .pg { height:var(--page-h); width:100%; min-width:0; box-sizing:border-box; overflow:hidden;
@@ -411,8 +411,10 @@ main { min-width:0; }
 /* stable numeric readouts: digits never change width, so values don't make the layout jump */
 .num, [style*="IBM Plex Mono"] { font-variant-numeric:tabular-nums; }
 
-/* narrow windows / high zoom: stack schematic above the side panel and let the page scroll */
-@media (max-width:1100px) {
+/* narrow windows / high zoom: stack schematic above the side panel and let the page scroll.
+   Phones and portrait tablets stack; a landscape tablet keeps the desktop side-by-side layout.
+   components/Responsive.js uses the same rule (html.vp-stack). */
+@media (max-width:760px), (max-width:1100px) and (orientation:portrait) {
   .pg.pg-stack { height:auto; min-height:var(--page-h); overflow:visible; }
   .pg-stack .lab-body { grid-template-columns:minmax(0,1fr); grid-template-rows:auto; }
   .pg-stack .lab-schem { height:max(380px, calc(var(--page-h) - 150px)); flex:0 0 auto; }
@@ -533,7 +535,7 @@ html[data-theme="light"] .fz-dim{opacity:.36;}
   .vl-cards { gap:6px; }
 }
 /* stacked (narrow) layout: the dock follows the sections */
-@media (max-width:1100px) { .pg-stack .vl-fill { display:none; } .pg-stack .vl-scroll { overflow:visible; } }
+@media (max-width:760px), (max-width:1100px) and (orientation:portrait) { .pg-stack .vl-fill { display:none; } .pg-stack .vl-scroll { overflow:visible; } }
 
 /* ===========================================================================
    PVT Calculator (Module 05) — components/PvtCalc.js, PvtChart.js
@@ -549,6 +551,10 @@ html[data-theme="light"] .fz-dim{opacity:.36;}
   gap:10px; padding:16px clamp(16px,2.2vw,34px) 14px; max-width:1680px; width:100%; margin:0 auto; position:relative;
   font-family:var(--font-main); color:var(--txt); background:var(--bg); }
 .pv[data-fluid="gas"] { --pv-acc:var(--blue); --pv-rgb:77,157,255; }
+/* dark theme: the calculator's 9.5–11.5 px captions, units and labels need more contrast than the global
+   muted tones give (--mut2 #5c6b82 is 3.4:1 on the panel). Scoped here so the procedure pages keep their look.
+   Ratios on --panel #0c1424: mut 7.9:1, mut2 6.6:1, lbl2 7.3:1. */
+:root:not([data-theme="light"]) .pv { --mut:#9aabc3; --mut2:#8a9cb6; --lbl2:#93a5bf; }
 .pv svg { flex:0 0 auto; }
 .pv-top { flex:0 0 auto; display:flex; flex-direction:column; gap:12px; }
 .pv-sr { position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; }
@@ -610,7 +616,6 @@ html[data-theme="light"] .fz-dim{opacity:.36;}
 /* main area: one view at full width; long content scrolls here, not the page */
 .pv-work { flex:1 1 auto; min-height:0; position:relative; display:flex; flex-direction:column; overflow:hidden; }
 .pv-main { flex:1 1 auto; min-height:0; overflow:auto; position:relative; scrollbar-gutter:stable; padding:2px 2px 4px; }
-#app:has(.pv-page) { min-width:0; }   /* the app keeps min-width 768px elsewhere; the calculator has its own phone layout */
 .pv-view { min-height:100%; display:flex; flex-direction:column; gap:12px; }
 
 /* cards — .val-card treatment (radius 14, 2.5 px accent foot, soft shadow) */
@@ -938,4 +943,145 @@ html[data-theme="light"] .fz-dim{opacity:.36;}
   .pv-chart-host { min-height:280px; }
   .pv-eqbtn { margin-left:0; }
   .pv-next .ui-btn { flex:1 1 auto; }
+}
+
+/* ===========================================================================
+   RESPONSIVE LAYER (2026-10-30) — desktop (> 1100 px) is unchanged.
+   Tablet (761–1100 px): panels rearrange; portrait stacks equipment above the
+   controls, landscape keeps the side-by-side desktop layout.
+   Phone (≤ 760 px): equipment full width, controls below, Explain drawer as a
+   bottom sheet (StepGuide), the page scrolls vertically, never sideways.
+   Pages are built with inline styles, so overrides here use !important and
+   only ever apply inside a phone / tablet query or html.vp-stack.
+   components/Responsive.js sets html.vp-* and adds the equipment zoom bar.
+   =========================================================================== */
+html, body { max-width:100%; }
+body { overflow-x:hidden; }
+
+/* ---- equipment frames in stacked layouts: full width, own aspect ratio, nothing clipped ---- */
+html.vp-stack .pg-stack .lab-schem { height:auto !important; flex:0 0 auto !important; }
+html.vp-stack .rz-on { position:relative; overflow:auto !important; overscroll-behavior:contain; -webkit-overflow-scrolling:touch; }
+html.vp-stack .rz-on [data-rz-svg] { width:calc(var(--rz, 1) * 100%) !important; height:auto !important; max-width:none !important; max-height:none !important; flex:0 0 auto !important; }
+html.vp-stack .rz-on :has(> [data-rz-svg]) { flex:0 0 auto !important; min-height:0 !important; height:auto !important; justify-content:flex-start !important; align-items:flex-start !important; overflow:visible !important; }
+/* the drawing's container is held to the frame width (a wide caption row above the drawing must wrap, not widen it) */
+html.vp-stack .rz-on :has(> [data-rz-svg]) { width:auto; min-width:0 !important; max-width:100%; }
+html.vp-stack .rz-on :has(> [data-rz-svg]) > :not([data-rz-svg]) { flex-wrap:wrap; min-width:0; max-width:100%; }
+html.vp-stack .rz-on.rz-zoomed { max-height:min(72vh, 620px); }
+.rz-bar { position:sticky; z-index:6; top:8px; left:calc(100% - 132px); align-self:flex-end; float:right; margin:8px 8px 4px 0; width:124px; height:38px; box-sizing:border-box; flex:0 0 auto;
+  display:flex; align-items:center; gap:2px; padding:3px; border-radius:10px; background:var(--panel); border:1px solid var(--line2); box-shadow:0 4px 14px rgba(10,20,40,.16); }
+.rz-bar button { width:30px; height:30px; flex:0 0 auto; display:inline-flex; align-items:center; justify-content:center; padding:0; border:none; border-radius:7px; background:none; color:var(--txt2); cursor:pointer; }
+.rz-bar button:hover { background:var(--chipbg); color:var(--txt); }
+.rz-bar button:focus-visible { outline:2px solid var(--blue); outline-offset:1px; }
+.rz-bar svg { width:17px !important; height:17px !important; position:static !important; inset:auto !important; }
+.rz-val { flex:1 1 auto; text-align:center; font-family:var(--font-mono); font-size:11px; color:var(--mut); }
+@media (pointer:coarse) { .rz-bar { width:156px; height:46px; left:calc(100% - 164px); } .rz-bar button { width:38px; height:38px; } }
+
+/* ---- shared page header wraps instead of clipping ---- */
+@media (max-width:1100px) {
+  .pg-head { flex-wrap:wrap; row-gap:8px; }
+  .pg-end { flex-wrap:wrap; row-gap:6px; }
+}
+@media (max-width:760px) {
+  .pg { padding:10px 12px 14px; }
+  .pg-titles { flex-wrap:wrap; overflow:visible; row-gap:2px; flex:1 1 100%; }
+  .pg-title { white-space:normal; font-size:17px; }
+  .pg-end { margin-left:0; flex:1 1 100%; justify-content:flex-start; }
+  .lab-side { gap:10px; }
+}
+
+/* ---- top bar ---- */
+@media (max-width:760px) {
+  .tb { padding:0 10px !important; gap:6px !important; }
+  .tb-logo { height:28px !important; }
+  .tb-nav { margin-left:0 !important; gap:2px !important; }
+  .tb-nav button { font-size:0 !important; gap:0 !important; padding:0 10px !important; min-width:40px; height:40px; justify-content:center; }
+  .tb .ui-btn > span { display:none; }
+  .tb .ui-btn { padding:0 11px; min-width:40px; height:40px; }
+}
+
+/* ---- dashboard ---- */
+@media (max-width:1100px) {
+  .dash { height:auto !important; min-height:var(--page-h); padding:32px clamp(16px,4vw,40px) !important; justify-content:flex-start !important; overflow:visible !important; overflow-x:clip !important; }
+  .dash-grid { grid-template-columns:repeat(2,minmax(0,1fr)) !important; }
+}
+@media (max-width:760px) {
+  .dash { padding:22px 16px 28px !important; gap:20px !important; }
+  .dash-logo { height:46px !important; }
+  .dash-grid { grid-template-columns:minmax(0,1fr) !important; gap:12px !important; }
+  .dash-grid > button { padding:18px 18px 16px !important; min-height:0 !important; }
+  .dash-strip { grid-template-columns:minmax(0,1fr) !important; }
+  .dash-strip > button { border-right:none !important; border-bottom:1px solid var(--line) !important; padding:18px !important; }
+  .dash-strip > button:last-child { border-bottom:none !important; }
+}
+
+/* ---- comfortable tap targets on touch screens ---- */
+@media (pointer:coarse) {
+  html .pc { --pc-h:44px; }                /* procedure controls (ProcCtl's own .pc rule loads later, so html raises specificity) (ProcCtl): Previous / Next / Run / Reset */
+  html .vl-fwd { height:44px; }
+  .ovs { pointer-events:bounding-box; }    /* overview sample-point tags: the whole tag is the tap target */
+  .ui-btn, .act, .pv-pills button, .pv-tab, .bd-btn { min-height:40px; }
+  .pv-help { width:32px; height:32px; }
+  .pv-check input { width:20px; height:20px; }
+}
+
+/* ---- Module 01 Sampling: board above the panel in stacked layouts ---- */
+html.vp-stack .m01 { height:auto !important; min-height:var(--page-h); overflow:visible !important; }
+html.vp-stack .m01-head { height:auto !important; flex:0 0 auto !important; flex-wrap:wrap; padding:10px 14px !important; gap:8px 12px !important; }
+html.vp-stack .m01-btns { flex-wrap:wrap !important; justify-content:flex-start !important; flex:1 1 100% !important; }
+html.vp-stack .m01-grid { display:flex !important; flex-direction:column; overflow:visible !important; flex:0 0 auto !important; }
+html.vp-stack .m01-board { flex:0 0 auto; }
+html.vp-stack .m01-bh { position:relative !important; inset:auto !important; width:100%; flex:1 1 auto; }
+html.vp-stack .bhs-root { position:relative; grid-template-columns:minmax(0,1fr); }
+html.vp-stack .bhs-scene { display:flex; flex-direction:column; }
+html.vp-stack .bhs-scene svg { position:relative; inset:auto; }
+html.vp-stack .bhs-panel, html.vp-stack .m01-panel, html.vp-stack .m01-bhpanel { border-left:none !important; border-top:1px solid var(--line); overflow:visible !important; max-height:none !important; }
+html.vp-stack .bhs-fig, html.vp-stack .bhs-proc, html.vp-stack .m01-fig { flex:0 0 auto !important; min-height:260px; }
+html.vp-stack .bhs-steps { overflow:visible; }
+@media (pointer:coarse) { .bhs-act { flex-basis:44px; height:44px; } .bhs-nb { width:36px; height:34px; } .bhs-st { padding:8px 6px; } }
+
+/* ---- menu pages (Validation · Detailed PVT Analysis · Viscosity): cards reflow ---- */
+@media (max-width:1100px) {
+  .menu-page { height:auto !important; min-height:var(--page-h); overflow:visible !important; }
+  .menu-grid { max-height:none !important; grid-auto-rows:minmax(190px,auto) !important; }
+  .menu-grid:not(.val-grid) { grid-template-columns:repeat(2,minmax(0,1fr)) !important; }
+}
+@media (max-width:760px) {
+  .menu-page { padding:16px 14px 24px !important; gap:14px !important; }
+  .menu-hero { flex-wrap:wrap; gap:12px !important; }
+  .menu-hero > * { flex:1 1 100% !important; flex-wrap:wrap; }
+  .menu-grid, .menu-grid:not(.val-grid) { grid-template-columns:minmax(0,1fr) !important; grid-auto-rows:auto !important; gap:12px !important; }
+  .menu-grid > * { grid-column:auto !important; grid-row:auto !important; height:auto !important; min-height:0 !important; }
+  .menu-grid .val-card, .menu-grid > button { padding:16px 18px 14px !important; }
+  .menu-grid .vc-desc { -webkit-line-clamp:unset !important; display:block !important; overflow:visible !important; }
+}
+
+/* ---- About: inline grids reflow ---- */
+@media (max-width:1100px) {
+  .about { height:auto !important; min-height:var(--page-h); overflow:visible !important; }
+  .about [style*="repeat(5,"] { grid-template-columns:repeat(3,minmax(0,1fr)) !important; }
+  .about [style*="flex:1; min-height:0; display:grid"] { flex:0 0 auto !important; }
+}
+@media (max-width:760px) {
+  .about { padding:14px 14px 22px !important; }
+  .about [style*="grid-template-columns"] { grid-template-columns:minmax(0,1fr) !important; }
+  .about [style*="repeat(5,"], .about [style*="repeat(4,"] { grid-template-columns:repeat(2,minmax(0,1fr)) !important; }
+}
+
+/* ---- Report: sections become a horizontal strip, the document keeps its own scroller ---- */
+@media (max-width:760px) {
+  .rp-bar { margin:10px 12px 8px !important; padding:12px 14px !important; }
+  .rp-bar .rp-btn { min-height:40px; }
+  .rp-wrap { flex-direction:column; padding:0 12px 12px !important; gap:8px !important; }
+  .rp-nav { flex:0 0 auto !important; display:flex; gap:6px; overflow-x:auto; overflow-y:hidden; padding:6px !important; scrollbar-width:thin; }
+  .rp-nav-h { display:none; }
+  .rp-nav-b { width:auto !important; flex:0 0 auto; white-space:nowrap; margin:0 !important; min-height:38px; }
+  .rp-pane { flex:1 1 auto; min-height:0; padding:10px !important; }
+  .rp-page { padding:18px 14px !important; overflow-x:auto; }
+  .rp-cover { padding:30px 14px !important; }
+}
+
+/* ---- stage navigation (Differential Liberation, Separator Test): one scrolling row on phones ---- */
+@media (max-width:760px) {
+  .stage-strip { flex-wrap:nowrap !important; overflow-x:auto; padding-bottom:4px; scroll-snap-type:x proximity; }
+  .stage-strip > button { flex:0 0 auto !important; min-width:96px; min-height:44px; scroll-snap-align:start; }
 }

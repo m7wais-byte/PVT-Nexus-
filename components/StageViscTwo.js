@@ -977,7 +977,7 @@ DC.define('StageViscTwo', {
   template: `<div class="v2-root {{ v2Anim }} {{ v2ResCls }}" data-screen-label="Two-Phase Viscosity Test" style="flex:1 1 auto; min-height:0; width:100%; display:flex; flex-direction:column; gap:6px; text-align:left;">
 
   <!-- point chips (6 pressures + results) -->
-  <div style="flex:0 0 auto; display:flex; gap:5px;">
+  <div class="stage-strip" style="flex:0 0 auto; display:flex; gap:5px;">
     <sc-for list="{{ v2Stages }}" as="s" hint-placeholder-count="7">
       <button onclick="{{ s.onClick }}" style="{{ s.style }}">
         <span style="font-size:11px; font-weight:600; color:var(--txt); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:100%;"><span style="color:var(--mut2); font-family:'IBM Plex Mono',monospace; font-size:10px; margin-right:4px;">{{ s.n }}</span>{{ s.name }}</span>
@@ -986,7 +986,7 @@ DC.define('StageViscTwo', {
     </sc-for>
   </div>
   <!-- sub-steps of the current point -->
-  <div style="flex:0 0 auto; display:flex; gap:4px;">
+  <div class="stage-strip" style="flex:0 0 auto; display:flex; gap:4px;">
     <sc-for list="{{ v2Subs }}" as="u" hint-placeholder-count="6">
       <button onclick="{{ u.onClick }}" style="{{ u.style }}"><span style="{{ u.dot }}"></span><span style="font-family:'IBM Plex Mono',monospace; opacity:.7;">{{ u.n }}</span><span style="overflow:hidden; text-overflow:ellipsis;">{{ u.name }}</span></button>
     </sc-for>

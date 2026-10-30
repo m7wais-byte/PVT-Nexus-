@@ -1,15 +1,15 @@
 /* screen: showModule01  (119.6 KB) */
 DC.slot('showModule01', `<sc-if value="{{ showModule01 }}" hint-placeholder-val="{{ false }}">
-    <div data-screen-label="Module 01 — PVT Sampling" style="display:flex; flex-direction:column; height:var(--page-h); overflow:hidden;">
+    <div data-screen-label="Module 01 — PVT Sampling" class="m01" style="display:flex; flex-direction:column; height:var(--page-h); overflow:hidden;">
       
 
       <!-- page header: full width, same on overview + the four sampling pages -->
-      <div style="{{ m01HeadStyle }}">
+      <div class="m01-head" style="{{ m01HeadStyle }}">
         <div style="border-left:3px solid var(--blue); padding-left:14px; flex:1 1 auto; min-width:0;">
           <div class="pg-title" style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" title="{{ m01Title }}">{{ m01Title }}</div>
           <div style="font-size:11.5px; color:var(--mut); font-weight:300; margin-top:3px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ m01Subtitle }}</div>
         </div>
-        <div style="{{ m01BtnColStyle }}">
+        <div class="m01-btns" style="{{ m01BtnColStyle }}">
           <sc-if value="{{ actBh }}" hint-placeholder-val="{{ false }}">
           <div style="display:flex; gap:6px; background:var(--track); border:1px solid var(--line2); border-radius:9px; padding:4px;">
             <button onclick="{{ selOpenHole }}" style="{{ mbOpenHole }}" class="nav-btn" style-hover="border-color:var(--blue);">Open Hole · MRMS</button>
@@ -27,16 +27,16 @@ DC.slot('showModule01', `<sc-if value="{{ showModule01 }}" hint-placeholder-val=
       </div>
 
       <!-- body: schematic | side panel (336 px) on the four sampling pages; schematic only on the overview -->
-      <div style="{{ m01GridStyle }}">
+      <div class="m01-grid" style="{{ m01GridStyle }}">
 
         <!-- LEFT: schematic board -->
-        <div style="background:radial-gradient(120% 90% at 50% 0%,#0c1526,#070c16); border:none; border-radius:0; padding:0; display:flex; flex-direction:column; min-width:0; align-self:stretch; position:relative; overflow:hidden; background-image:linear-gradient(rgba(150,175,210,.035) 1px,transparent 1px),linear-gradient(90deg,rgba(150,175,210,.035) 1px,transparent 1px); background-size:34px 34px;">
+        <div class="m01-board" data-rz-frame style="background:radial-gradient(120% 90% at 50% 0%,#0c1526,#070c16); border:none; border-radius:0; padding:0; display:flex; flex-direction:column; min-width:0; align-self:stretch; position:relative; overflow:hidden; background-image:linear-gradient(rgba(150,175,210,.035) 1px,transparent 1px),linear-gradient(90deg,rgba(150,175,210,.035) 1px,transparent 1px); background-size:34px 34px;">
 
 
           <div style="position:relative; flex:1; min-height:0; min-width:0; display:flex; justify-content:center; overflow:hidden;">
 
           <sc-if value="{{ actBh }}" hint-placeholder-val="{{ false }}">
-          <div ref="{{ bhHost }}" style="position:absolute; inset:0;"></div>
+          <div ref="{{ bhHost }}" class="m01-bh" style="position:absolute; inset:0;"></div>
           </sc-if>
 
           <!-- ===== FIELD SYSTEM: ONE drawing (components/FieldSketch.js) for Overview, Wellhead and Separator.
@@ -135,7 +135,7 @@ DC.slot('showModule01', `<sc-if value="{{ showModule01 }}" hint-placeholder-val=
 
         <!-- RIGHT: bottom-hole process status (BH page only) -->
         <sc-if value="{{ showBhPanel }}" hint-placeholder-val="{{ false }}">
-        <div style="display:flex; flex-direction:column; gap:9px; min-width:0; max-height:100%; overflow:auto; padding:12px 12px; background:var(--rail); border-left:1px solid var(--line);">
+        <div class="m01-bhpanel" style="display:flex; flex-direction:column; gap:9px; min-width:0; max-height:100%; overflow:auto; padding:12px 12px; background:var(--rail); border-left:1px solid var(--line);">
 
           <div style="display:flex; align-items:center; gap:8px;">
             <span style="width:22px; height:22px; border-radius:7px; background:rgba(77,157,255,.14); color:var(--blue); display:flex; align-items:center; justify-content:center; flex:0 0 auto;"><svg width="13" height="13" sc-camel-view-box="0 0 24 24" fill="none"><path d="M12 3v13" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"></path><path d="M8 12l4 5 4-5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></path><path d="M4 21h16" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"></path></svg></span>

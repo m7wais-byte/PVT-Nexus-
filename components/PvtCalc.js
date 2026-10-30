@@ -258,10 +258,22 @@
     warn: '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 4 2.8 19.5h18.4L12 4Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M12 10v4.2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="12" cy="17" r="1.1" fill="currentColor"/></svg>',
     err: '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.8"/><path d="M9 9l6 6M15 9l-6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>',
     arrow: '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+    moon: '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg>',
+    sun: '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="4.2" stroke="currentColor" stroke-width="1.7"/><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M19.1 4.9l-1.8 1.8M6.7 17.3l-1.8 1.8" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>',
     help: '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.7"/><path d="M9.6 9.4a2.5 2.5 0 1 1 3.5 2.3c-.7.3-1.1.9-1.1 1.6v.5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><circle cx="12" cy="16.9" r="1" fill="currentColor"/></svg>'
   };
   var VIEWS = [['inputs', 'Inputs'], ['charts', 'Charts'], ['table', 'Results Table'], ['measured', 'Measured Data'], ['methods', 'Methods & References']];
 
+  /* light / dark: the same switch as the top bar (Main keeps state.theme and localStorage in step) */
+  function isLight() { return document.documentElement.getAttribute('data-theme') === 'light'; }
+  function themeBtnInner() { return isLight() ? ICON.moon + '<span>Dark</span>' : ICON.sun + '<span>Light</span>'; }
+  function toggleTheme() {
+    var next = isLight() ? 'dark' : 'light';
+    if (opts.onTheme) opts.onTheme(next);
+    else { if (next === 'light') document.documentElement.setAttribute('data-theme', 'light'); else document.documentElement.removeAttribute('data-theme'); try { localStorage.setItem('pvtTheme', next); } catch (e) {} }
+    var b = q('#pv-theme'); if (b) { b.innerHTML = themeBtnInner(); b.setAttribute('aria-label', 'Switch to ' + (isLight() ? 'dark' : 'light') + ' theme'); }
+    if (S.view === 'charts') renderChart();   // chart colours are read from the theme variables
+  }
   function shell() {
     var oil = S.fluid === 'oil';
     return '<div class="pv" data-fluid="' + S.fluid + '">'
@@ -277,7 +289,8 @@
       + '<div class="pv-bar"><div class="pv-tabs" role="tablist" aria-label="Calculator views">'
       + VIEWS.map(function (v) { return '<button type="button" role="tab" data-view="' + v[0] + '" class="pv-tab' + (S.view === v[0] ? ' is-on' : '') + '" aria-selected="' + (S.view === v[0]) + '">' + v[1] + '</button>'; }).join('')
       + '</div><div class="pv-ctx" id="pv-ctx"></div><div class="pv-status" id="pv-status" role="status" aria-live="polite"></div>'
-      + '<div class="pv-bar-end"><button type="button" class="ui-btn ui-btn-sub" id="pv-reset" title="Restore the example inputs for this fluid and clear its measured data">Reset</button>'
+      + '<div class="pv-bar-end"><button type="button" class="ui-btn ui-btn-ghost pv-theme" id="pv-theme">' + themeBtnInner() + '</button>'
+      + '<button type="button" class="ui-btn ui-btn-sub" id="pv-reset" title="Restore the example inputs for this fluid and clear its measured data">Reset</button>'
       + '<button type="button" class="ui-btn ui-btn-ghost pv-explain-btn" id="pv-explain-btn" aria-expanded="' + S.explain + '" aria-controls="pv-explain">' + ICON.info + '<span>Explain This Stage</span></button></div></div>'
       + '</div>'
       + '<div class="pv-work"><div class="pv-main" id="pv-main"></div>'
@@ -926,7 +939,10 @@
       var g = errorGroups();
       var kind = g.failure.length ? 'failure' : g.invalid.length ? 'invalid' : 'missing';
       st.className = 'pv-status is-err';
-      st.innerHTML = ICON.err + '<b>' + { missing: 'Input needed', invalid: 'Invalid input', failure: 'Calculation failed' }[kind] + '</b><span>' + esc((g.missing.concat(g.invalid).map(function (e) { return e.label; }).join(', ')) || (g.failure[0] && g.failure[0].label) || '') + '</span>';
+      /* short badge; the field names are listed in the error summary on the Inputs view */
+      var n = kind === 'failure' ? 0 : g.missing.length + g.invalid.length;
+      st.innerHTML = ICON.err + '<b>' + { missing: 'Input needed', invalid: 'Invalid input', failure: 'Calculation failed' }[kind] + '</b>' + (n ? '<span>' + n + ' field' + (n > 1 ? 's' : '') + '</span>' : '');
+      st.title = errorSummaryText();
       return;
     }
     var unav = 0;
@@ -935,7 +951,7 @@
     var rng = res.warnings.filter(function (w) { return w.kind !== 'accuracy'; }).length, acc = res.warnings.length - rng;
     var asm = res.scalars.filter(function (s) { return s.kind === 'assumed'; }).length;
     var issues = unav || rng || acc;
-    st.className = 'pv-status ' + (issues ? 'is-warn' : 'is-ok');
+    st.className = 'pv-status ' + (issues ? 'is-warn' : 'is-ok'); st.title = '';
     st.innerHTML = (issues ? ICON.warn : ICON.ok) + '<b>Valid</b><span>' + res.pressures.length + ' point' + (res.pressures.length > 1 ? 's' : '')
       + (unav ? ' · ' + unav + ' unavailable' : '') + (rng ? ' · ' + rng + ' outside range' : '') + (acc ? ' · ' + acc + ' accuracy note' + (acc > 1 ? 's' : '') : '')
       + (asm ? ' · ' + asm + ' assumption' + (asm > 1 ? 's' : '') : '') + '</span>';
@@ -1006,6 +1022,7 @@
     q('#pv-explain-btn').addEventListener('click', function () { setExplain(!S.explain); });
     q('#pv-ex-close').addEventListener('click', function () { setExplain(false); });
     q('#pv-reset').addEventListener('click', resetAll);
+    q('#pv-theme').addEventListener('click', toggleTheme);
     root.addEventListener('click', function (e) {
       var g = e.target.closest('[data-goto]'); if (g) { S.view = g.getAttribute('data-goto'); renderView(); return; }
       var h = e.target.closest('[data-help]'); if (h) { e.preventDefault(); setExplain(true, h.getAttribute('data-help')); return; }

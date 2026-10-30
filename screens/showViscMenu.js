@@ -1,8 +1,8 @@
 /* screen: showViscMenu  (Viscosity Analysis selection — same layout as showAnalysis) */
 DC.slot('showViscMenu', `<sc-if value="{{ showViscMenu }}" hint-placeholder-val="{{ false }}">
-    <div data-screen-label="Viscosity Analysis" style="position:relative; min-height:var(--page-h); overflow-y:auto; overflow-x:hidden; box-sizing:border-box; padding:20px clamp(20px,2.2vw,36px); max-width:1680px; width:100%; margin:0 auto; display:flex; flex-direction:column; gap:16px; background:var(--bg);">
+    <div data-screen-label="Viscosity Analysis" class="menu-page" style="position:relative; min-height:var(--page-h); overflow-y:auto; overflow-x:hidden; box-sizing:border-box; padding:20px clamp(20px,2.2vw,36px); max-width:1680px; width:100%; margin:0 auto; display:flex; flex-direction:column; gap:16px; background:var(--bg);">
 
-      <div style="display:flex; align-items:center; gap:20px; flex:0 0 auto;">
+      <div class="menu-hero" style="display:flex; align-items:center; gap:20px; flex:0 0 auto;">
         <div style="flex:1; min-width:0;">
           <div style="display:flex; align-items:center; gap:10px;">
             <span style="width:24px; height:3px; border-radius:2px; background:var(--amb);"></span>
@@ -19,7 +19,7 @@ DC.slot('showViscMenu', `<sc-if value="{{ showViscMenu }}" hint-placeholder-val=
         <div style="display:flex; align-items:baseline; gap:10px;">
           <span style="font-size:14px; font-weight:600; color:var(--txt);">Viscosity Tests</span>
         </div>
-        <div style="display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:20px; grid-auto-rows:minmax(210px,auto);">
+        <div class="menu-grid" style="display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:20px; grid-auto-rows:minmax(210px,auto);">
           <sc-for list="{{ viscCards }}" as="a" hint-placeholder-count="3">
             <button onclick="{{ a.onClick }}" style="{{ a.style }}" style-hover="transform:translateY(-3px); box-shadow:0 2px 4px rgba(10,20,40,.05), 0 14px 28px rgba(10,20,40,.08);">
               <span style="display:flex; align-items:center; gap:12px; min-width:0;">

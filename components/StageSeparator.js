@@ -732,7 +732,7 @@ DC.define('StageSeparator', {
   </div>
 
   <!-- stage navigation : every stage is always reachable, regardless of completion -->
-  <div style="display:flex; align-items:stretch; gap:6px; flex-wrap:wrap; flex:0 0 auto;">
+  <div class="stage-strip" style="display:flex; align-items:stretch; gap:6px; flex-wrap:wrap; flex:0 0 auto;">
     <sc-for list="{{ dlStages }}" as="s" hint-placeholder-count="6">
       <button onclick="{{ s.onClick }}" style="{{ s.style }}">
         <span style="font-size:11.5px; font-weight:600; color:{{ s.color }};">{{ s.name }}</span>

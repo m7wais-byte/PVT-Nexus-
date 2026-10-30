@@ -102,7 +102,8 @@ class Component extends DCLogic {
     const host = this.pvCalcHost.current;
     const fluid = this.state.calcMode === 'gas' ? 'gas' : 'oil';
     if (on && host && host.isConnected) {
-      if (!mod.isMounted(host)) mod.mount(host, { fluid, onFluid: (f) => { if (this.state.calcMode !== f) this.setState({ calcMode: f }); } });
+      if (!mod.isMounted(host)) mod.mount(host, { fluid, onFluid: (f) => { if (this.state.calcMode !== f) this.setState({ calcMode: f }); },
+        onTheme: (t) => { this.applyTheme(t); try { localStorage.setItem('pvtTheme', t); } catch (e) {} this.setState({ theme: t }); } });
       else if (mod.fluid() !== fluid) mod.setFluid(fluid);
     } else {
       mod.unmount();
