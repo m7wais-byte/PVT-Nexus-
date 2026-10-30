@@ -20,12 +20,25 @@
      the gauge reference and the standard-condition pressure; psig and bar(g) use the same value */
   var P_ATM_BAR = 1.01325;
   var P_ATM_PSIA = P_ATM_BAR * PSI_PER_BAR;
-  var STD = {
-    pPsia: P_ATM_PSIA,
-    tF: 60,                 // 60 °F = 519.67 °R = 15.56 °C
-    tR: 519.67,
-    label: '60 °F and 14.696 psia (15.56 °C, 1.01325 bar)'
+  /* Standard-condition bases. Both are at 101.325 kPa, so only the temperature differs.
+     'corr' — the basis the correlations were developed on (US practice: 60 °F). Every correlation
+              result (Rs, Rsb, Bo, Bob, and Bg unless stated) is on this basis.
+     'lab'  — the PVT-laboratory basis used in our reports: 15 °C (= 59 °F exactly).
+     Conversion that can be justified with the information available: gas standard volumes only,
+     treating gas at standard conditions as ideal (Zsc = 1 at both bases):
+         V_lab / V_corr = Tsc,lab / Tsc,corr = 518.67 / 519.67 = 0.998076
+     so Bg and Eg follow exactly from Bg = (psc/Tsc)·Z·T/p with the chosen Tsc.
+     NOT converted: Rs, Rsb, Bo, Bob. Their stock-tank oil volume (and the gas liberated in the flash
+     to standard conditions) depend on the oil's thermal expansion and phase behaviour between 15 °C
+     and 60 °F, which these inputs do not define. They always stay on the correlation basis. */
+  var STD_BASES = {
+    corr: { key: 'corr', pPsia: P_ATM_PSIA, tF: 60, tR: 519.67, short: '60 °F, 101.325 kPa', label: 'Correlation basis: 60 °F, 101.325 kPa (14.696 psia)' },
+    lab: { key: 'lab', pPsia: P_ATM_PSIA, tF: 59, tR: 518.67, short: '15 °C, 101.325 kPa', label: 'Laboratory basis: 15 °C, 101.325 kPa (14.696 psia)' }
   };
+  var STD = Object.assign({}, STD_BASES.corr, { label: '60 °F and 14.696 psia (15.56 °C, 1.01325 bar)' });
+  function stdBasis(key) { return STD_BASES[key] || STD_BASES.corr; }
+  /* factor applied to a gas standard volume (scf or sm³) to move it from basis `from` to basis `to` */
+  function gasVolumeFactor(from, to) { return stdBasis(to).tR / stdBasis(from).tR; }
   var KGM3_PER_LBFT3 = 16.01846337;
   var M3_PER_FT3 = 0.028316846592;
   var M3_PER_BBL = 0.158987294928;
@@ -90,7 +103,7 @@
   }
 
   var PVTUnits = {
-    STD: STD, P_ATM_PSIA: P_ATM_PSIA, P_ATM_BAR: P_ATM_BAR, PSI_PER_BAR: PSI_PER_BAR,
+    STD: STD, STD_BASES: STD_BASES, stdBasis: stdBasis, gasVolumeFactor: gasVolumeFactor, P_ATM_PSIA: P_ATM_PSIA, P_ATM_BAR: P_ATM_BAR, PSI_PER_BAR: PSI_PER_BAR,
     KGM3_PER_LBFT3: KGM3_PER_LBFT3, FT3_PER_BBL: FT3_PER_BBL, SM3SM3_PER_SCFSTB: SM3SM3_PER_SCFSTB,
     SYSTEMS: SYSTEMS,
     pToPsia: pToPsia, pFromPsia: pFromPsia, dpToPsi: dpToPsi,

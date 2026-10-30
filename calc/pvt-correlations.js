@@ -339,7 +339,7 @@
       carr_kobayashi_burrows: { label: 'Carr-Kobayashi-Burrows (1954)', ref: ['ckb54', 'ahmed'], eq: 'Tpc\' = Tpc − 80·yCO2 + 130·yH2S − 250·yN2;  Ppc\' = Ppc + 440·yCO2 + 600·yH2S − 170·yN2' }
     },
     z: {
-      dak: { label: 'Dranchuk-Abou-Kassem (1975)', ref: ['dak75', 'ahmed'], eq: 'Z = 1 + (A1 + A2/Tpr + A3/Tpr³ + A4/Tpr⁴ + A5/Tpr⁵)·ρr + (A6 + A7/Tpr + A8/Tpr²)·ρr² − A9·(A7/Tpr + A8/Tpr²)·ρr⁵ + A10·(1 + A11·ρr²)·(ρr²/Tpr³)·exp(−A11·ρr²),  ρr = 0.27·Ppr/(Z·Tpr); solved by Newton-Raphson', range: { ppr: [0.2, 30], tpr: [1.0, 3.0] } },
+      dak: { label: 'Dranchuk-Abou-Kassem (1975)', ref: ['dak75', 'ahmed'], eq: 'Z = 1 + (A1 + A2/Tpr + A3/Tpr³ + A4/Tpr⁴ + A5/Tpr⁵)·ρr + (A6 + A7/Tpr + A8/Tpr²)·ρr² − A9·(A7/Tpr + A8/Tpr²)·ρr⁵ + A10·(1 + A11·ρr²)·(ρr²/Tpr³)·exp(−A11·ρr²),  ρr = 0.27·Ppr/(Z·Tpr); solved by Newton-Raphson', range: { ppr: [0.2, 30], tpr: [1.05, 3.0] } },
       papay: { label: 'Papay (1968)', ref: ['papay', 'ahmed'], eq: 'Z = 1 − 3.53·Ppr/10^(0.9813·Tpr) + 0.274·Ppr²/10^(0.8157·Tpr)', note: 'Explicit approximation. No validity range is given in the references available here; compare it with Dranchuk-Abou-Kassem at high Ppr.' },
       beggs_brill: { label: 'Beggs-Brill (1973)', ref: ['bb73', 'ahmed'], eq: 'Z = A + (1 − A)/e^B + C·Ppr^D  (A, B, C, D functions of Tpr and Ppr)', note: 'Explicit approximation; mathematically defined only for Tpr > 0.92. No validity range is given in the references available here.' },
       manual: { label: 'Manual chart value (single pressure)', eq: 'Z read by the user from the Standing-Katz chart at the displayed Ppr and Tpr.' }
@@ -348,6 +348,73 @@
       lee_gonzalez_eakin: { label: 'Lee-Gonzalez-Eakin (1966)', ref: ['lge66', 'wb00'], eq: 'μg = 10⁻⁴·K·exp(X·ρg^Y),  K = (9.379 + 0.01607·Ma)·T^1.5/(209.2 + 19.26·Ma + T),  X = 3.448 + 986.4/T + 0.01009·Ma,  Y = 2.447 − 0.2224·X;  T in °R, ρg in g/cm³', range: { p: [100, 8000], T: [100, 340] }, note: 'Developed on sweet natural gases; not intended for sour gas.' }
     }
   };
+
+  /* ============================================================ verification record
+     What this implementation was checked against (2026-10-30). The original publications could not be
+     accessed in that session (network policy allowed only GitHub / PyPI), so NO equation is marked as
+     verified against its primary source. Status values:
+       eq:     'cross-checked' — every coefficient matches an independent open-source transcription
+               'discrepancy'   — an independent transcription differs; difference stated
+               'unverified'    — no independent transcription available
+       ranges: per variable 'corroborated' (same values in an independent source), 'unverified'
+               (reported in textbook tabulations, not re-checked), 'discrepancy'
+     Numerical evidence ('data') comes from reference data, not from another correlation:
+       SK   = Standing-Katz chart, 649 digitized points (zFactor R package 0.1.9, A. R. Reyes, git 2226d31)
+       GERG = CoolProp 8.0.0 HEOS (reference EOS + GERG-2008 mixing), tests/reference/gas-reference.json
+     Sources of transcriptions:
+       Rpvt   = Rpvt 0.1.1 (F. Tabasinejad, CRAN 2020), src/pvtoil.cpp, src/pvtgas.cpp
+       PRT    = pyResToolbox (M. Burgoyne), git b6d1845, pyrestoolbox/oil/_correlations.py and src/<module>/mod.rs
+       zF     = zFactor 0.1.9 R/Beggs-Brill.R, R/Dranchuk-AbouKassem.R */
+  var VERIFY = {
+    rsFamily: {
+      standing: { eq: 'cross-checked', src: 'Rpvt PB_STANDING / RSi_STANDING; PRT pbub_standing', ranges: { T: 'corroborated', api: 'corroborated' }, limit: 'Primary paper not accessed. Only the API and T ranges are corroborated (PRT).' },
+      vasquez_beggs: { eq: 'cross-checked', src: 'Rpvt PB_ / RSi_VASQUEZ_BEGGS (Rpvt uses T + 459.67, this code T + 460 as printed in the correlation)', limit: 'Primary paper not accessed; data ranges unverified.' },
+      glaso: { eq: 'cross-checked', src: 'Rpvt PB_GLASO / RSi_GLASO (Rpvt solves the same quadratic in log pb*; identical result)', limit: 'Primary paper not accessed; data ranges unverified.' },
+      marhoun: { eq: 'cross-checked', src: 'Rpvt PB_ / RSi_AL_MARHOUN (explicit form 1490.28·γg^2.62605·p^1.398441·γo^−4.396279·T^−1.85513 equals this form)', limit: 'Primary paper not accessed; data ranges unverified.' },
+      petrosky_farshad: { eq: 'cross-checked', src: 'Rpvt PB_ / RSi_FARSHAD_PETROSKY', limit: 'Primary paper not accessed; data ranges unverified.' }
+    },
+    bo: {
+      standing: { eq: 'cross-checked', src: 'Rpvt BOB_STANDING; PRT Bo_standing', ranges: { T: 'corroborated', api: 'corroborated' }, limit: 'Primary paper not accessed.' },
+      vasquez_beggs: { eq: 'discrepancy', src: 'Rpvt BOB_VASQUEZ_BEGGS', limit: 'For API > 30, C3 = 1.337×10⁻⁹ here, 1.377×10⁻⁹ in Rpvt. Unresolved without the paper. The difference in Bo is 4×10⁻¹¹·Rs·(API/γgs)·(T − 60): 1.5×10⁻⁴ rb/STB at Rs 500, API/γgs 54, 200 °F; up to 1.5×10⁻³ at Rs 2000, API/γgs 80, 300 °F.' },
+      glaso: { eq: 'cross-checked', src: 'Rpvt BOB_GLASO', limit: 'Primary paper not accessed; data ranges unverified.' },
+      marhoun: { eq: 'cross-checked', src: 'Rpvt BOB_AL_MARHOUN', limit: 'Primary paper not accessed; data ranges unverified.' },
+      petrosky_farshad: { eq: 'cross-checked', src: 'Rpvt BOB_FARSHAD_PETROSKY', limit: 'Primary paper not accessed; data ranges unverified.' }
+    },
+    co: {
+      vasquez_beggs: { eq: 'cross-checked', src: 'Rpvt CO_UNDERSAT_VASQUEZ_BEGGS; Bo above pb is its exact integral (tested)', limit: 'Primary paper not accessed; the range came from a search snippet and is unverified.' },
+      petrosky_farshad: { eq: 'cross-checked', src: 'Rpvt CO_UNDERSAT_FARSHAD_PETROSKY; Bo above pb is its exact integral (tested)', limit: 'Primary paper not accessed; data ranges unverified.' }
+    },
+    muDead: {
+      beal: { eq: 'unverified', src: 'No independent transcription available', limit: 'Equation (Standing’s fit of the Beal chart) not cross-checked; data ranges unverified.' },
+      beggs_robinson: { eq: 'cross-checked', src: 'Rpvt MUO_BEGGS_ROBINSON; PRT uo_br', ranges: { T: 'corroborated', api: 'corroborated' }, limit: 'Primary paper not accessed.' },
+      glaso: { eq: 'unverified', src: 'No independent transcription available', limit: 'Equation not cross-checked; data ranges unverified.' }
+    },
+    muSat: { beggs_robinson: { eq: 'cross-checked', src: 'Rpvt MUO_BEGGS_ROBINSON; PRT uo_br', ranges: { T: 'corroborated', api: 'corroborated' }, limit: 'Primary paper not accessed.' } },
+    muUnder: { vasquez_beggs: { eq: 'cross-checked', src: 'Rpvt MUO_BEGGS_ROBINSON (undersaturated branch: m = 2.6·p^1.187·exp(−11.513 − 8.98×10⁻⁵·p), identical)', limit: 'Primary paper not accessed; data ranges unverified.' } },
+    pc: {
+      standing_natural: { eq: 'unverified', src: 'No independent transcription available', data: 'GERG, sweet gas (γg 0.626), with DAK: Z AARE 1.10 %, max 1.73 %', limit: 'Coefficients not cross-checked; physically consistent for the sweet reference gas.' },
+      standing_condensate: { eq: 'unverified', src: 'No independent transcription available', data: 'GERG, sweet gas, with DAK: Z AARE 0.97 %, max 1.61 %', limit: 'Coefficients not cross-checked; the reference gas is lean, not a condensate.' },
+      sutton: { eq: 'cross-checked', src: 'PRT src/critical_properties/mod.rs (Sutton 1985 hydrocarbon form)', data: 'GERG, sweet gas, with DAK: Z AARE 0.46 %, max 1.12 %', limit: 'Primary paper not accessed; γg range unverified.' },
+      kay: { eq: 'cross-checked', src: 'Definition (molar average); component Tc / Pc from data/pure-components.js', data: 'GERG, sweet gas, with DAK: Z AARE 0.93 %, max 1.57 %', limit: '—' }
+    },
+    sour: {
+      none: { eq: 'cross-checked', src: '—', data: 'GERG, sour gas (10 % CO₂, 13 % H₂S), Kay + DAK uncorrected: Z AARE 4.01 %, max 7.59 %', limit: '—' },
+      wichert_aziz: { eq: 'cross-checked', src: 'PRT wichert_aziz_correction; Rpvt TPC_ / PPC_SUTTON (ε term)', data: 'GERG, sour gas, Kay + Wichert-Aziz + DAK: Z AARE 0.66 %, max 1.50 % (uncorrected 4.01 %)', limit: 'Primary paper not accessed; concentration range unverified.' },
+      carr_kobayashi_burrows: { eq: 'unverified', src: 'No independent transcription available', data: 'GERG, sour gas, gas-gravity pseudo-criticals: Z AARE 3.71 %, max 6.92 %. Applied to Kay pseudo-criticals it double-counts the non-hydrocarbons (AARE 5.95 %) and is therefore not allowed.', limit: 'Coefficients not cross-checked.' }
+    },
+    z: {
+      dak: { eq: 'cross-checked', src: 'Rpvt Z_FACTOR_DAK; PRT dak_core; zFactor', ranges: { ppr: 'corroborated', tpr: 'discrepancy' },
+        data: 'SK chart: AARE 0.30 % (max 1.17 %) for Tpr ≥ 1.2; 3.2 % (max 18.5 %) for Tpr 1.05–1.1. GERG sweet gas: Z AARE 0.93 %, cg 1.40 %.',
+        limit: 'Lower Tpr bound reported as 1.0 or 1.05 depending on the source (the chart data start at 1.05). Near-critical (Tpr < 1.2) results can be far off the chart and are flagged.' },
+      papay: { eq: 'unverified', src: 'No independent transcription available (zFactor’s “Papp” is a different correlation)',
+        data: 'SK chart, Tpr ≥ 1.2: AARE 2.3 % (Ppr ≤ 3), 3.8 % (3–6), 4.7 % (6–10), 54 % (Ppr > 10); Tpr < 1.2: 40 %. GERG sweet gas cg AARE 11 %, max 74 %.',
+        limit: 'Coefficients not cross-checked; no published range. Use only at low Ppr; not suitable for cg.' },
+      beggs_brill: { eq: 'cross-checked', src: 'zFactor R/Beggs-Brill.R', data: 'SK chart: Z ≤ 0 (no result) at 15 of 649 points; AARE 1.3 % for Ppr ≤ 3 and Tpr ≥ 1.2, max deviation 87–97 % at Ppr 3–10.', limit: 'No published range in the sources available.' },
+      manual: { eq: 'cross-checked', src: '—', limit: 'A chart reading by the user.' }
+    },
+    muGas: { lee_gonzalez_eakin: { eq: 'cross-checked', src: 'PRT src/gas_viscosity/mod.rs (same Whitson-Brulé coefficients)', data: 'CoolProp methane reference viscosity, 100–300 °F, 500–5000 psia: error 1.3–5.1 % (12 points).', limit: 'Primary paper not accessed; p / T ranges unverified.' } }
+  };
+  Object.keys(VERIFY).forEach(function (g) { Object.keys(VERIFY[g]).forEach(function (k) { if (META[g] && META[g][k]) META[g][k].verify = VERIFY[g][k]; }); });
 
   var PVTCorr = {
     gammaO: gammaO,
@@ -372,7 +439,7 @@
       z: { dak: zDAK, papay: zPapay, beggs_brill: zBeggsBrill },
       muLGE: muLGE
     },
-    META: META, REF: REF
+    META: META, REF: REF, VERIFY: VERIFY
   };
 
   root.PVTCorr = PVTCorr;

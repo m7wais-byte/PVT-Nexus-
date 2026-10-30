@@ -17,14 +17,27 @@ Tests: `node --test tests/*.test.js` (engine) and `node tests/ui.e2e.js` (browse
 * **Internal units** (all correlations): p psia, T °F (°R = °F + 460 where the
   original correlation uses it, as stated per method), Rs scf/STB, Bo rb/STB,
   Bg ft³/scf, ρ lbm/ft³, μ cP, c 1/psi.
-* **Standard conditions:** 60 °F (519.67 °R) and 1 atm = 14.6959 psia (shown as 14.696).
-  `Bg = (psc/Tsc)·Z·T/p`. The previous calculator used the rounded 0.02827 constant (14.7/520);
-  the difference is 0.03 %.
+* **Standard conditions — two bases, both at 101.325 kPa (14.6959 psia):**
+  * *Correlation basis* 60 °F (Tsc = 519.67 °R). Every correlation was fitted on it, so every oil
+    result (Rs, Rsb, Bo, Bob) is on it, always.
+  * *Laboratory basis* 15 °C (Tsc = 518.67 °R; 15 °C = 59 °F). Offered for gas only (Bg, Eg). With the gas
+    ideal at standard conditions, `Bg = psc·Z·T/(Tsc·p)` so Bg(15 °C) = Bg(60 °F)·519.67/518.67
+    (× 1.001928) and Eg the inverse. Z, ρg, μg and cg do not depend on the basis.
+  * Oil volumes are **not** converted to 15 °C: that needs the stock-tank oil's thermal expansion and its
+    flash at 15 °C, which these inputs do not define. No liquid volume is ever scaled by a gas
+    temperature ratio. The calculator states this instead of offering the conversion.
+  * The basis is shown in the context strip, chart header, table headers (`· 60 °F`), point details,
+    CSV header (`Bg (ft³/scf @ 15 °C)` and a `# Standard basis:` line) and the PNG footer.
+  * Measured data: the basis of measured Rs, Bo or Bg must be declared before they are compared
+    (`PVTMeasured.checkBasis`). Same basis → compared; gas Bg on the other basis → converted by the
+    Tsc ratio and reported; oil Rs/Bo on 15 °C → not compared, with the reason. Z, ρ, μ, co and cg are
+    compared without a basis.
+  * The previous calculator used the rounded 0.02827 constant (14.7/520); the difference is 0.03 %.
 * **Gauge pressure:** p(abs) = p(gauge) + 1 atm (14.6959 psi = 1.01325 bar). Correlations
   always receive absolute pressure.
 * **Metric display:** 1 bar = 14.50377 psi; 1 scf/STB = 0.178108 sm³/sm³; 1 lbm/ft³ = 16.01846 kg/m³;
-  cP = mPa·s; Bo and Bg are ratios (rb/STB = rm³/sm³, ft³/scf = rm³/sm³). Standard conditions stay
-  60 °F / 1 atm in both systems: metric results are unit conversions, not a 15 °C re-basing.
+  cP = mPa·s; Bo and Bg are ratios (rb/STB = rm³/sm³, ft³/scf = rm³/sm³). Switching Field / Metric
+  changes units only, never the standard basis (sm³ in metric output is on the selected basis).
 * **Pressure tolerance:** `P_TOL = 0.01 psi` (0.0007 bar), in canonical psia, is the only pressure
   tolerance. It is used for the range endpoint, merging pasted pressures, snapping a point onto pb and
   the saturated / bubble point / undersaturated test (`phaseOf`). It sits far below the displayed
@@ -84,7 +97,7 @@ the value is kept and a warning names the affected properties.
 | Kay | Ppc, Tpc | — | Kay (1936) |
 | Wichert-Aziz | sour correction | CO2 ≤ 54.46 %, H2S ≤ 73.85 % | Wichert & Aziz (1972) |
 | Carr-Kobayashi-Burrows | sour correction | not given in the references available | Carr, Kobayashi & Burrows (1954) |
-| Dranchuk-Abou-Kassem | Z | 0.2 ≤ Ppr ≤ 30, 1.0 < Tpr ≤ 3.0 | Dranchuk & Abou-Kassem (1975) |
+| Dranchuk-Abou-Kassem | Z | 0.2 ≤ Ppr ≤ 30, 1.05 ≤ Tpr ≤ 3.0 (lower Tpr bound: sources give 1.0 or 1.05) | Dranchuk & Abou-Kassem (1975) |
 | Papay | Z | not given in the references available | Papay (1968) |
 | Beggs-Brill | Z | mathematically defined only for Tpr > 0.92 | Beggs & Brill (1973) |
 | Lee-Gonzalez-Eakin | μg | p 100–8000 psia, T 100–340 °F; sweet gas | Lee, Gonzalez & Eakin (1966); coefficients per Whitson & Brulé (2000) |
@@ -99,21 +112,61 @@ Closed forms of the undersaturated Bo (both the exact integral of the matching c
 
 ### How the equations were checked
 
-* **Against worked examples:** Standing Rs for Ahmed's Oil 1 (T = 250 °F, pb = 2377 psig, API 47.1,
-  γg 0.851) gives 838 scf/STB and +11.6 % against the measured 751, matching the textbook example.
-  Standing Bo at the same conditions matches an independent hand calculation (1.50616).
-* **Internal consistency:** every Rs/pb pair round-trips (pb(Rs(p)) = p within 0.05 %); undersaturated
-  Bo equals the closed-form integral of co; Rs, Bo and μo are continuous at pb for every Bo/co pair;
-  real-gas cg matches the analytic Papay derivative; ideal-gas identities (ρ = pM/RT, Bg·Eg = 1,
-  v·ρ = 1, cg = 1/p) hold.
-* **Independent fit cross-check:** the Dranchuk-Abou-Kassem solver agrees with Hall-Yarborough (1973),
-  an independent fit of the same Standing-Katz chart implemented only in the test, within 2 % for
-  Tpr 1.2–3.0 and Ppr 0.5–12 (largest difference 1.6 %, at the near-critical Tpr 1.2). It agrees within
-  0.6 % at Tpr ≥ 1.5.
-* **Not done:** this session had no network access to the primary papers or SPE/PetroWiki pages.
-  Coefficients were checked against the forms reproduced in Ahmed (2019), McCain (1990) and Whitson &
-  Brulé (2000) and against the previous calculator's implementation, not re-read from the original
-  papers. The data ranges come from the same textbook tabulations.
+The original papers and SPE/PetroWiki pages could not be reached from the development environment (the
+network policy allows GitHub, PyPI and npm only). Nothing is therefore described as verified against
+the primary paper. Each method carries a `verify` record (`VERIFY` in `pvt-correlations.js`) that the
+*Methods & References* view shows: equation status, range status, cross-check source, numerical check and
+limitation. Tests: `tests/pvt-verification.test.js`.
+
+**Evidence used** (agreement between two correlations is never used as validation):
+
+* *Independent transcriptions* of the equations — Rpvt 0.1.1 (F. Tabasinejad, CRAN mirror on GitHub,
+  `src/pvtoil.cpp`, git 85101b6) and pyResToolbox / PRT (git b6d1845, source read only; it could not be
+  executed here). The Rpvt forms are re-typed in the test with Rpvt's own constants. Agreement checks this
+  code for transcription slips, not the papers.
+* *Reference data* — the Standing-Katz chart digitization from the zFactor R package 0.1.9
+  (A. R. Reyes, git 2226d31; 163-point subset in `tests/reference/standing-katz-subset.json`, full
+  statistics by `standing-katz-stats.js`), and CoolProp 8.0.0 HEOS with GERG-2008 mixing (git ae81610)
+  for a sweet and a sour gas and methane viscosity (`gas-reference.json`, generated by
+  `generate_gas_reference.py`).
+* *Exact relations* — analytic DAK derivative for cg, closed-form integral of co for Bo above pb, ideal-gas
+  identities, Rs/pb round trips.
+
+| Method | Equation status | Cross-check source | Numerical check | Limitation |
+|---|---|---|---|---|
+| Standing Rs/pb, Bo | cross-checked | Rpvt PB/RSi/BOB_STANDING; PRT | Rs, pb, Bob = Rpvt within 2×10⁻³ (rel.) | T, API ranges corroborated (PRT); others unverified |
+| Vasquez-Beggs Rs/pb | cross-checked | Rpvt (T + 459.67 vs + 460 here) | as above | ranges unverified |
+| Vasquez-Beggs Bo | **discrepancy** | Rpvt BOB_VASQUEZ_BEGGS | C3 (API > 30) 1.337×10⁻⁹ here, 1.377×10⁻⁹ in Rpvt; offset pinned in the test | ΔBo = 4×10⁻¹¹·Rs·(API/γgs)·(T − 60): 1.5×10⁻⁴ at Rs 500, 200 °F; up to 1.5×10⁻³ at Rs 2000, 300 °F |
+| Glasø Rs/pb, Bo | cross-checked | Rpvt | within 2×10⁻³ | ranges unverified |
+| Al-Marhoun Rs/pb, Bo | cross-checked | Rpvt | Bo offset from T + 460 vs 459.67 pinned (8.6×10⁻⁴ × 0.33) | ranges unverified |
+| Petrosky-Farshad Rs/pb, Bo, co | cross-checked | Rpvt | co = Rpvt; Bo above pb = Simpson integral of co | ranges unverified |
+| Vasquez-Beggs co | cross-checked | Rpvt | co = Rpvt; Bo = exact integral | range from a search snippet, unverified |
+| Beggs-Robinson μod, μo | cross-checked | Rpvt; PRT | chain within 3×10⁻⁵ | T, API corroborated (PRT) |
+| Vasquez-Beggs μo (p > pb) | cross-checked | Rpvt | identical form | ranges unverified |
+| Beal μod | **unverified** | none available | — | equation not cross-checked |
+| Glasø μod | **unverified** | none available | — | equation not cross-checked |
+| Standing pseudo-criticals | **unverified** | none available | GERG sweet gas + DAK: Z AARE 1.10 % (natural), 0.97 % (condensate) | coefficients not cross-checked |
+| Sutton | cross-checked | PRT | GERG sweet + DAK: Z AARE 0.46 % | γg range unverified |
+| Kay | cross-checked | definition | GERG sweet + DAK: Z AARE 0.93 % | — |
+| Wichert-Aziz | cross-checked | PRT; Rpvt | GERG sour (10 % CO₂, 13 % H₂S): Z AARE 0.66 % (uncorrected 4.01 %) | concentration range unverified |
+| Carr-Kobayashi-Burrows | **unverified** | none available | GERG sour, gravity pseudo-criticals: Z AARE 3.71 % | blocked with Kay (double counts acid gas: 5.95 %) |
+| Dranchuk-Abou-Kassem | cross-checked | Rpvt; PRT; zFactor | SK chart AARE 0.30 % (Tpr ≥ 1.2), 3.2 % (Tpr 1.05–1.1); GERG cg 1.40 %; cg = analytic derivative within 2×10⁻⁵ | Tpr lower bound 1.0 vs 1.05 between sources; Tpr < 1.2 flagged |
+| Papay | **unverified** | none (zFactor "Papp" differs) | SK chart AARE 2.3 % (Ppr ≤ 3) → 54 % (Ppr > 10); GERG cg AARE 11 % | warned at Ppr > 3 or Tpr < 1.2 |
+| Beggs-Brill | cross-checked | zFactor Beggs-Brill.R | SK chart: Z ≤ 0 at 15 of 649 points; AARE 1.3 % (Ppr ≤ 3) | warned at Ppr > 3 or Tpr < 1.2 |
+| Lee-Gonzalez-Eakin | cross-checked | PRT | CoolProp methane, 100–300 °F, 500–5000 psia: 1.3–5.1 % | sweet gas; sour-gas accuracy not established |
+
+**Solver and failure handling (tested):** DAK converges on the whole Ppr 0.2–30 × Tpr 1.05–3 grid with
+residual < 10⁻⁹; outside that grid it returns either a true root or no value, never a substitute (at Ppr 0.919,
+Tpr 1.0 it gives 0.4926). A Z failure becomes a gap with its reason in every dependent property. cg uses
+the same Z method and the same (sour-corrected) pseudo-criticals as Z. Characterisation failures
+(e.g. pb ≤ 0 from a correlation) stop the calculation with a "Calculation failed" message.
+
+**Range status:** *corroborated* (same limit in an independent source), *unverified* (textbook
+tabulation only), *sources disagree*. A mathematical domain limit (Z ≤ 0, Tpr ≤ 0.92 for Beggs-Brill) is
+not a range; the value is shown as unavailable with the reason.
+
+**Earlier checks kept:** Standing Rs for Ahmed's Oil 1 = 838 scf/STB (value recalled from the textbook
+example; the book was not re-checked here); Rs/pb round trips within 0.05 %; Rs, Bo, μo continuous at pb.
 
 ### References
 

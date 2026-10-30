@@ -60,8 +60,9 @@ test('equivalent Field and Metric inputs give identical internal results', () =>
 });
 
 /* ------------------------------------------------- verified numerical examples */
-test('Standing Rs reproduces the Ahmed worked example (Oil 1: 838 scf/STB, +11.6 %)', () => {
-  // Ahmed, Reservoir Engineering Handbook, Ch. 2 Standing example: T = 250 °F, pb = 2377 psig, API 47.1, γg 0.851, measured Rs 751
+test('Standing Rs, oil 1 (T 250 °F, pb 2377 psig, API 47.1, γg 0.851): 838 scf/STB', () => {
+  // 838 scf/STB (+11.6 % vs the measured 751) is the value recalled from Ahmed's worked example; the book was not
+  // re-checked in this session. The equation itself is cross-checked against Rpvt in pvt-verification.test.js.
   const rs = C.oil.standingRs(2377 + 14.7, 250, 47.1, 0.851);
   near(rs, 838, 0.001, 'Standing Rs');
   near(100 * (rs - 751) / 751, 11.6, 0.01, 'error %');
@@ -84,8 +85,9 @@ test('every Rs/pb family is self-consistent: pb(Rs(p)) = p', () => {
   });
 });
 
-/* Hall-Yarborough (1973), implemented here only as an independent check of the DAK solver:
-   both are separate fits of the Standing-Katz chart. */
+/* Hall-Yarborough (1973), implemented here only as a consistency check of the DAK solver (two separate fits
+   of the Standing-Katz chart). This is NOT validation: DAK is validated against the digitized chart itself
+   in pvt-verification.test.js. */
 function zHallYarborough(ppr, tpr) {
   const t = 1 / tpr, A = 0.06125 * t * Math.exp(-1.2 * (1 - t) ** 2);
   const f = (y) => -A * ppr + (y + y * y + y ** 3 - y ** 4) / (1 - y) ** 3 - (14.76 * t - 9.76 * t * t + 4.58 * t ** 3) * y * y + (90.7 * t - 242.2 * t * t + 42.4 * t ** 3) * y ** (2.18 + 2.82 * t);
@@ -94,7 +96,7 @@ function zHallYarborough(ppr, tpr) {
   return A * ppr / ((lo + hi) / 2);
 }
 
-test('DAK Z agrees with Hall-Yarborough within 2 % where both are published (Tpr 1.2–3.0)', (t) => {
+test('DAK solver consistency: agrees with Hall-Yarborough within 2 % (Tpr 1.2–3.0)', (t) => {
   let worst = 0;
   for (const tpr of [1.2, 1.3, 1.5, 2.0, 2.5, 3.0]) {
     for (const ppr of [0.5, 1, 2, 4, 6, 8, 12]) {
@@ -330,11 +332,11 @@ test('measured-data import: template, row/column errors, units', () => {
   assert.equal(ok.rows[2].vals.rs, null, '"-" is missing');
   assert.equal(ok.rows[1].vals.bo, null, 'empty cell is missing');
   const unk = MD.parse('p,Rs,foo\n1,2,3', 'oil', 'field', false);
-  assert.match(unk.errors[0].msg, /Unknown column "foo"/);
+  assert.match(unk.errors[0].msg, /unknown column "foo"/);
   const bad = MD.parse('p,Rs\n1000,12x\n-20,5', 'oil', 'field', false);
   assert.equal(bad.errors.length, 2);
-  assert.match(bad.errors[0].msg, /Row 2, column "Rs": "12x" is not a number/);
-  assert.match(bad.errors[1].msg, /Row 3, column "p".*not a positive absolute pressure/);
+  assert.match(bad.errors[0].msg, /Line 2, column "Rs": "12x" is not a number/);
+  assert.match(bad.errors[1].msg, /Line 3, column "p".*not a positive absolute pressure/);
   const met = MD.parse('p,Rs\n100,50', 'oil', 'metric', true);
   near(met.rows[0].p, (100 + 1.01325) * U.PSI_PER_BAR, 1e-12, 'bar(g) -> psia');
   near(met.rows[0].vals.rs, 50 / U.SM3SM3_PER_SCFSTB, 1e-12, 'sm3/sm3 -> scf/STB');

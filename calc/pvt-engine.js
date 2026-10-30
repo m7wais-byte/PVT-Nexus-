@@ -55,11 +55,21 @@
     return x.toFixed(Math.min(d, 8));
   }
 
-  /* collects errors per field */
+  /* plain-English names of the input fields, used to name them in the error summary */
+  var FIELD_LABEL = {
+    p: 'Pressure', pMin: 'Minimum pressure', pMax: 'Maximum pressure', pStep: 'Pressure increment', pList: 'Pressure list',
+    T: 'Temperature', api: 'Oil gravity (API)', rhoSto: 'Stock-tank oil density', gg: 'Gas specific gravity',
+    pb: 'Bubble-point pressure', rsb: 'Solution GOR at pb (Rsb)', psep: 'Separator pressure', tsep: 'Separator temperature',
+    comp: 'Gas composition', yCO2: 'yCO2', yH2S: 'yH2S', yN2: 'yN2', zManual: 'Z read from chart',
+    pcMethod: 'Pseudo-critical method', sourMethod: 'Sour-gas correction', zMethod: 'Z-factor method'
+  };
+  /* collects errors per field. kind: 'missing' (empty required field), 'invalid' (value or combination
+     not allowed), 'failure' (inputs valid, but the selected method cannot produce a result) */
   function Bag() { this.list = []; this.byField = {}; }
-  Bag.prototype.add = function (field, msg) {
+  Bag.prototype.add = function (field, msg, kind) {
     if (this.byField[field]) return;
-    this.byField[field] = msg; this.list.push({ field: field, msg: msg });
+    kind = kind || (/^Input required/.test(msg) ? 'missing' : 'invalid');
+    this.byField[field] = msg; this.list.push({ field: field, label: FIELD_LABEL[field] || field, msg: msg, kind: kind });
   };
 
   /* required positive-ish number */
@@ -194,23 +204,30 @@
     return fmt(v, 4);
   }
   /* scalar checks: vars {T: 200, api: 35, ...}; pKey tells which variable the method's p range applies to */
+  /* how far a range can be trusted (see VERIFY in pvt-correlations.js) */
+  function rangeStatus(meta, k) { var v = meta && meta.verify; return (v && v.ranges && v.ranges[k]) || 'unverified'; }
+  var RANGE_TAG = {
+    corroborated: 'range corroborated by an independent source',
+    unverified: 'reported range, not verified against the original publication',
+    discrepancy: 'sources disagree on this limit'
+  };
   function checkRange(warns, meta, label, vars, affects, inp) {
     if (!meta || !meta.range) return;
     Object.keys(meta.range).forEach(function (k) {
       var v = vars[k];
       if (!isNum(v)) return;
-      var r = meta.range[k];
+      var r = meta.range[k], st = rangeStatus(meta, k);
       if (v < r[0] || v > r[1]) {
-        warns.push({ method: label, msg: label + ': ' + (VAR_NAME[k] || k) + ' = ' + valText(k, v, inp) + ' is outside the published data range (' + rangeText(k, r[0], r[1], inp) + ').', affects: affects });
+        warns.push({ kind: 'range', status: st, method: label, msg: label + ': ' + (VAR_NAME[k] || k) + ' = ' + valText(k, v, inp) + ' is outside the data range ' + rangeText(k, r[0], r[1], inp) + ' (' + RANGE_TAG[st] + ').', affects: affects });
       }
     });
   }
   /* pressure-point checks: counts how many points fall outside */
   function checkPoints(warns, meta, label, key, values, affects, inp) {
     if (!meta || !meta.range || !meta.range[key]) return;
-    var r = meta.range[key], out = values.filter(function (v) { return isNum(v) && (v < r[0] || v > r[1]); });
+    var r = meta.range[key], st = rangeStatus(meta, key), out = values.filter(function (v) { return isNum(v) && (v < r[0] || v > r[1]); });
     if (out.length) {
-      warns.push({ method: label, msg: label + ': ' + out.length + ' point' + (out.length > 1 ? 's' : '') + ' with ' + (VAR_NAME[key] || key) + ' outside the published data range (' + rangeText(key, r[0], r[1], inp) + ').', affects: affects });
+      warns.push({ kind: 'range', status: st, method: label, msg: label + ': ' + out.length + ' point' + (out.length > 1 ? 's' : '') + ' with ' + (VAR_NAME[key] || key) + ' outside the data range ' + rangeText(key, r[0], r[1], inp) + ' (' + RANGE_TAG[st] + ').', affects: affects });
     }
   }
 
@@ -288,7 +305,7 @@
     }
     if (!(pb > 0) || !(rsb > 0)) {
       res.ok = false;
-      res.errors.push({ field: ctx.char === 'pb' ? 'pb' : 'rsb', msg: rsLabel + ' gives ' + (ctx.char === 'pb' ? 'Rsb' : 'pb') + ' ≤ 0 for these inputs — the fluid cannot be characterised with this correlation.' });
+      res.errors.push({ field: ctx.char === 'pb' ? 'pb' : 'rsb', label: FIELD_LABEL[ctx.char === 'pb' ? 'pb' : 'rsb'], kind: 'failure', msg: rsLabel + ' gives ' + (ctx.char === 'pb' ? 'Rsb' : 'pb') + ' ≤ 0 for these inputs — the fluid cannot be characterised with this correlation.' });
       return;
     }
     /* saturated Rs is scaled so Rs(pb) = Rsb exactly (published inverses are rounded) */
@@ -464,6 +481,10 @@
         if (isNum(ctx.yCO2) && isNum(ctx.yH2S) && isNum(ctx.yN2) && ctx.yCO2 + ctx.yH2S + ctx.yN2 > 1) bag.add('yCO2', 'yCO2 + yH2S + yN2 cannot exceed 1');
       }
     }
+    /* Carr-Kobayashi-Burrows adjusts gas-gravity pseudo-criticals for non-hydrocarbons; Kay mixing already
+       includes their Tc / Pc, so applying it there double-counts them (5.95 % vs 4.01 % uncorrected
+       against GERG-2008 for the sour reference gas — see VERIFY.sour) */
+    if (m.sour === 'carr_kobayashi_burrows' && m.pc === 'kay') bag.add('sourMethod', 'Carr-Kobayashi-Burrows corrects gas-gravity pseudo-criticals. Kay mixing already includes CO2, H2S and N2 — use Wichert-Aziz or no correction with Kay.');
     if (!ctx.ideal && m.z === 'manual') {
       if ((inp.calcMode || 'single') !== 'single') bag.add('zMethod', 'A manual chart Z is one value at one pressure: it cannot define a Z-versus-pressure curve or its derivative. Use single-pressure mode or choose a Z correlation.');
       ctx.zManual = need(bag, inp, 'zManual', 'Z', { gt0: true });
@@ -497,11 +518,11 @@
     var pc = gasPseudoCriticals(ctx);
     if (!(pc.ppc > 0) || !(pc.tpc > 0)) {
       res.ok = false;
-      res.errors.push({ field: 'pcMethod', msg: 'Pseudo-critical properties are not positive (Ppc = ' + fmt(pc.ppc) + ' psia, Tpc = ' + fmt(pc.tpc) + ' °R). Check gas gravity and the sour-gas correction inputs.' });
+      res.errors.push({ field: 'pcMethod', label: FIELD_LABEL.pcMethod, kind: 'failure', msg: 'Pseudo-critical properties are not positive (Ppc = ' + fmt(pc.ppc) + ' psia, Tpc = ' + fmt(pc.tpc) + ' °R). Check gas gravity and the sour-gas correction inputs.' });
       return;
     }
     res.pc = pc;
-    var std = U.STD;
+    var std = res.std;   // Bg / Eg on the selected standard basis (gas at standard conditions taken as ideal)
     var zLabel = ctx.ideal ? 'Ideal gas (Z = 1)' : M.z[m.z].label;
     res.scalars.push(
       { key: 'ma', label: 'Apparent molecular weight, Ma', q: 'none', v: ctx.ma, kind: ctx.ggKind === 'input' ? 'derived' : 'derived', method: ctx.ggKind === 'input' ? 'Ma = 28.96·γg' : 'Ma = Σ yi·Mi', unitText: 'lb/lbmol' },
@@ -549,14 +570,19 @@
     /* --- applicability --- */
     if (m.pc === 'sutton') checkRange(warns, M.pc.sutton, 'Sutton (1985) pseudo-criticals', { gg: ctx.gg }, ['all gas properties'], inp);
     if (m.sour === 'wichert_aziz') checkRange(warns, M.sour.wichert_aziz, 'Wichert-Aziz (1972)', { yCO2: ctx.yCO2, yH2S: ctx.yH2S }, ['all gas properties'], inp);
-    if (m.sour === 'none' && ((ctx.yCO2 || 0) + (ctx.yH2S || 0)) > 0) warns.push({ method: 'Sour gas', msg: 'The gas contains CO2/H2S but no sour-gas correction is selected; pseudo-critical properties are uncorrected.', affects: ['all gas properties'] });
+    if (m.sour === 'none' && ((ctx.yCO2 || 0) + (ctx.yH2S || 0)) > 0) warns.push({ kind: 'accuracy', method: 'Sour gas', msg: 'The gas contains CO2 / H2S but no sour-gas correction is selected. For the 23 % acid-gas reference gas the uncorrected Z was 4 % (max 7.6 %) off GERG-2008; Wichert-Aziz brought it within 1.5 %.', affects: ['all gas properties'] });
+    var tpr = ctx.tR / pc.tpc, pprMax = Math.max.apply(null, res.props.ppr.values), ZA = ['Z and dependent properties'];
     if (!ctx.ideal && m.z === 'dak') {
-      checkRange(warns, { range: { tpr: M.z.dak.range.tpr } }, 'Dranchuk-Abou-Kassem', { tpr: ctx.tR / pc.tpc }, ['Z and dependent properties'], inp);
-      checkPoints(warns, M.z.dak, 'Dranchuk-Abou-Kassem', 'ppr', res.props.ppr.values, ['Z and dependent properties'], inp);
+      checkRange(warns, { range: { tpr: M.z.dak.range.tpr }, verify: M.z.dak.verify }, 'Dranchuk-Abou-Kassem', { tpr: tpr }, ZA, inp);
+      checkPoints(warns, M.z.dak, 'Dranchuk-Abou-Kassem', 'ppr', res.props.ppr.values, ZA, inp);
+      if (tpr < 1.2) warns.push({ kind: 'accuracy', method: 'Dranchuk-Abou-Kassem', msg: 'Near-critical conditions (Tpr = ' + fmt(tpr, 3) + ' < 1.2): DAK differs from the Standing-Katz chart by 3.2 % on average and up to 18 % here (Ppr 1.3–3). Treat Z and cg as approximate.', affects: ZA });
     }
+    if (!ctx.ideal && m.z === 'papay' && (tpr < 1.2 || pprMax > 3)) warns.push({ kind: 'accuracy', method: 'Papay', msg: 'Papay against the Standing-Katz chart: average error 3.8–4.7 % for Ppr 3–10 and 54 % above Ppr 10 (40 % for Tpr < 1.2); its cg can be far off. Here Tpr = ' + fmt(tpr, 3) + ', max Ppr = ' + fmt(pprMax, 3) + '. Prefer Dranchuk-Abou-Kassem.', affects: ZA });
+    if (!ctx.ideal && m.z === 'beggs_brill' && (tpr < 1.2 || pprMax > 3)) warns.push({ kind: 'accuracy', method: 'Beggs-Brill', msg: 'Beggs-Brill against the Standing-Katz chart: deviations up to 87–97 % and Z ≤ 0 at some points for Ppr 3–10. Here Tpr = ' + fmt(tpr, 3) + ', max Ppr = ' + fmt(pprMax, 3) + '. Prefer Dranchuk-Abou-Kassem.', affects: ZA });
+    if (m.pc !== 'kay' && m.sour !== 'none' && ((ctx.yCO2 || 0) + (ctx.yH2S || 0)) > 0.05) warns.push({ kind: 'accuracy', method: 'Sour gas', msg: 'Gas-gravity pseudo-criticals with a sour correction were 3.7–5.3 % off in Z against GERG-2008 for a gas with 23 % CO2 + H2S; composition + Kay + Wichert-Aziz was within 1.5 %. Enter the composition for strongly sour gas.', affects: ['all gas properties'] });
     checkRange(warns, { range: { T: M.muGas.lee_gonzalez_eakin.range.T } }, 'Lee-Gonzalez-Eakin (μg)', { T: ctx.tF }, ['μg'], inp);
     checkPoints(warns, M.muGas.lee_gonzalez_eakin, 'Lee-Gonzalez-Eakin (μg)', 'p', ps, ['μg'], inp);
-    if ((ctx.yH2S || 0) > 0) warns.push({ method: 'Lee-Gonzalez-Eakin (μg)', msg: 'Lee-Gonzalez-Eakin was developed on sweet natural gases; μg for a gas containing H2S is outside its basis.', affects: ['μg'] });
+    if ((ctx.yH2S || 0) > 0) warns.push({ kind: 'accuracy', method: 'Lee-Gonzalez-Eakin (μg)', msg: 'μg for a gas containing H2S: Lee-Gonzalez-Eakin was checked here only against methane; its accuracy for sour gas is not established.', affects: ['μg'] });
   }
 
   /* ============================================================ property tables */
@@ -589,7 +615,9 @@
     var ctx = fluid === 'oil' ? oilContext(inp, bag) : gasContext(inp, bag);
     var res = { ok: bag.list.length === 0, fluid: fluid, units: inp.units === 'metric' ? 'metric' : 'field', gauge: !!inp.gauge,
       calcMode: inp.calcMode || 'single', errors: bag.list.slice(), fieldErrors: bag.byField,
-      warnings: [], info: [], scalars: [], props: {}, pressures: [], ctx: ctx, input: inp, std: U.STD };
+      warnings: [], info: [], scalars: [], props: {}, pressures: [], ctx: ctx, input: inp,
+      /* oil results are always on the correlation basis; gas Bg / Eg follow the selected basis */
+      std: fluid === 'gas' ? U.stdBasis(inp.stdBasis) : U.STD_BASES.corr };
     Object.keys(PROPS[fluid]).forEach(function (k) { res.props[k] = Object.assign({ key: k, values: [], reasons: [] }, PROPS[fluid][k]); });
     if (!res.ok) return res;
     if (bag.merged) res.info.push(bag.merged + ' pasted pressure' + (bag.merged > 1 ? 's' : '') + ' within ' + P_TOL + ' psi of another were merged (one calculated point per pressure).');
@@ -669,8 +697,8 @@
         else if (!ctx.ideal && m.z === 'dak' && isNum(z)) L.push('ρr = 0.27·Ppr/(Z·Tpr) = ' + f(0.27 * ppr / (z * tpr)) + ' (converged)');
         L.push(zTxt);
       } else if (key === 'bg') {
-        out.method = 'Real-gas law at standard conditions ' + U.STD.label; out.eq = 'Bg = (psc/Tsc)·Z·T/p';
-        L.push(zTxt); L.push('Bg = (' + U.STD.pPsia + '/' + U.STD.tR + ')·' + f(z) + '·' + f(tR) + '/' + f(p) + ' = ' + f(res.props.bg.values[i]) + ' ft³/scf');
+        out.method = 'Real-gas law, standard volume on the ' + res.std.label; out.eq = 'Bg = (psc/Tsc)·Z·T/p   (gas at standard conditions taken as ideal)';
+        L.push(zTxt); L.push('Bg = (' + f(res.std.pPsia, 6) + '/' + res.std.tR + ')·' + f(z) + '·' + f(tR) + '/' + f(p) + ' = ' + f(res.props.bg.values[i]) + ' ft³/scf');
       } else if (key === 'rho') {
         out.method = 'Real-gas law'; out.eq = 'ρg = p·Ma/(Z·R·T),  R = 10.7316 psia·ft³/(lbmol·°R)';
         L.push(zTxt); L.push('ρg = ' + f(p) + '·' + f(ctx.ma) + '/(' + f(z) + '·10.7316·' + f(tR) + ') = ' + f(res.props.rho.values[i]) + ' lbm/ft³');
@@ -703,7 +731,7 @@
       p: P(3000), pMin: P(200), pMax: P(5000), pStep: met ? 10 : 200, pList: [1000, 2000, 3000, 4000].map(P).join(', ') };
   }
 
-  var PVTEngine = { run: run, P_TOL: P_TOL, phaseOf: phaseOf, detail: detail, example: example, parse: parse, fmt: fmt, PROPS: PROPS,
+  var PVTEngine = { FIELD_LABEL: FIELD_LABEL, run: run, P_TOL: P_TOL, phaseOf: phaseOf, detail: detail, example: example, parse: parse, fmt: fmt, PROPS: PROPS,
     OIL_DEFAULT_M: OIL_DEFAULT_M, GAS_DEFAULT_M: GAS_DEFAULT_M, MAX_POINTS: MAX_POINTS, MW_AIR: MW_AIR, resolveComponent: resolveComponent,
     setComponentDb: function (db) { COMP_DB = db; } };
   root.PVTEngine = PVTEngine;
