@@ -459,7 +459,7 @@
     return '<div class="pv-view pv-workspace">'
       + '<section class="pv-entry" aria-label="Fluid inputs"><div class="pv-entry-head"><div><h3>Enter your fluid data</h3><p>The chart updates as you type.</p></div>'
       + pills('units', S.units, [['field', 'Field'], ['metric', 'Metric']], 'Unit system') + '</div>'
-      + '<div class="pv-example-row"><span id="pv-example-label">' + (S.example[S.fluid] ? 'Example data · replace with your values' : 'Your inputs') + '</span>'
+      + '<div class="pv-example-row"><span id="pv-example-label" class="' + (S.example[S.fluid] ? 'pv-chip is-example' : '') + '">' + (S.example[S.fluid] ? 'Example data · replace with your values' : 'Your inputs') + '</span>'
       + '<button type="button" class="pv-text-btn" id="pv-example">Use example</button><button type="button" class="pv-text-btn" id="pv-clear">Clear</button></div>'
       + '<div class="pv-errsum" id="pv-errsum" role="alert" hidden></div>'
       + workspaceConditions() + workspaceFluid() + workspaceOptions()
@@ -1085,7 +1085,7 @@
         f[k] = inp.type === 'checkbox' ? inp.checked : inp.value;
         if (KIND[k] && f.canon) delete f.canon[k];   // typed value replaces the canonical one
         S.example[S.fluid] = false;
-        var chip = q('.pv-chip.is-example'); if (chip) chip.remove(); var exLabel = q('#pv-example-label'); if (exLabel) exLabel.textContent = 'Your inputs';
+        var chip = q('.pv-chip.is-example'); if (chip) chip.classList.remove('pv-chip', 'is-example'); var exLabel = q('#pv-example-label'); if (exLabel) exLabel.textContent = 'Your inputs';
         if (inp.type === 'checkbox' && (k === 'sepUse' || k === 'normalize')) { recompute(); if (k === 'sepUse') { S.advanced.oil = true; renderView(); } else refresh(); return; }
         markStale(); schedule();
       });

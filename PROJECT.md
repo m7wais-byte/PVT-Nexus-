@@ -993,3 +993,11 @@ clear the chart, and errors inside nested options open their containing disclosu
 The `.pv-workspace` CSS is scoped to this screen: compact inputs beside the chart on
 desktop, stacked inputs then chart on phones. Full-precision canonical inputs and all
 existing scientific limitations remain in force.
+
+Verification for this UI change: `node --test tests/*.test.js` — 55 passed; syntax
+checks for PvtCalc and the updated browser suite passed. Browser smoke test on the
+branch preview covered simultaneous inputs/chart, live temperature changes, invalid
+pressure clearing, Field/Metric retention (25 oil points), property selection, Gas
+mode, keyboard point selection, equation drawer and reference navigation. The full
+browser suite was adapted to the new navigation and compact chart dimensions but
+was not rerun in this session; phone/device layout and exports need that broader run.

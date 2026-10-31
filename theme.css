@@ -1167,3 +1167,5 @@ html.vp-stack .bhs-steps { overflow:visible; }
   .pv-example-row > span { flex:1 1 150px; }
   .pv-text-btn { min-height:40px; }
 }
+.pv-theme svg { width:16px; height:16px; }
+.pv-example-row .pv-chip { font-size:11px; padding:3px 8px; border-radius:6px; cursor:default; }
