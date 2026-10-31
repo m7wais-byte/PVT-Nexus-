@@ -1,6 +1,6 @@
 /* ============================================================================
    VAPS PVT Nexus — PvtCalc
-   Full-page PVT Calculator (Module 05): one screen, Oil / Gas, five views
+   PVT Calculator (Module 05): live inputs and chart in one workspace
        Inputs · Charts · Results Table · Measured Data · Methods & References
    and the right-side "Explain This Stage" drawer (same look as the procedure
    pages: it reuses StepGuide's .sgSec / .sgLbl / .sgTxt / .sgVal classes).
@@ -262,7 +262,7 @@
     sun: '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="4.2" stroke="currentColor" stroke-width="1.7"/><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M19.1 4.9l-1.8 1.8M6.7 17.3l-1.8 1.8" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>',
     help: '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.7"/><path d="M9.6 9.4a2.5 2.5 0 1 1 3.5 2.3c-.7.3-1.1.9-1.1 1.6v.5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><circle cx="12" cy="16.9" r="1" fill="currentColor"/></svg>'
   };
-  var VIEWS = [['inputs', 'Inputs'], ['charts', 'Charts'], ['table', 'Results Table'], ['measured', 'Measured Data'], ['methods', 'Methods & References']];
+  var VIEWS = [['inputs', 'Calculator'], ['table', 'Results Table'], ['measured', 'Measured Data'], ['methods', 'Methods & References']];
 
   /* light / dark: the same switch as the top bar (Main keeps state.theme and localStorage in step) */
   function isLight() { return document.documentElement.getAttribute('data-theme') === 'light'; }
@@ -272,7 +272,7 @@
     if (opts.onTheme) opts.onTheme(next);
     else { if (next === 'light') document.documentElement.setAttribute('data-theme', 'light'); else document.documentElement.removeAttribute('data-theme'); try { localStorage.setItem('pvtTheme', next); } catch (e) {} }
     var b = q('#pv-theme'); if (b) { b.innerHTML = themeBtnInner(); b.setAttribute('aria-label', 'Switch to ' + (isLight() ? 'dark' : 'light') + ' theme'); }
-    if (S.view === 'charts') renderChart();   // chart colours are read from the theme variables
+    if (S.view === 'inputs' || S.view === 'charts') renderChart();   // chart colours are read from the theme variables
   }
   function shell() {
     var oil = S.fluid === 'oil';
@@ -287,8 +287,10 @@
       + '<button type="button" data-fluid="gas" class="' + (!oil ? 'is-on' : '') + '" aria-pressed="' + !oil + '">' + ICON.gas + 'Gas</button>'
       + '</div></div></div>'
       + '<div class="pv-bar"><div class="pv-tabs" role="tablist" aria-label="Calculator views">'
-      + VIEWS.map(function (v) { return '<button type="button" role="tab" data-view="' + v[0] + '" class="pv-tab' + (S.view === v[0] ? ' is-on' : '') + '" aria-selected="' + (S.view === v[0]) + '">' + v[1] + '</button>'; }).join('')
-      + '</div><div class="pv-ctx" id="pv-ctx"></div><div class="pv-status" id="pv-status" role="status" aria-live="polite"></div>'
+      + VIEWS.slice(0, 2).map(function (v) { return '<button type="button" role="tab" data-view="' + v[0] + '" class="pv-tab' + (S.view === v[0] ? ' is-on' : '') + '" aria-selected="' + (S.view === v[0]) + '">' + v[1] + '</button>'; }).join('')
+      + '</div><details class="pv-more-tools"><summary>More tools</summary><div class="pv-more-menu">'
+      + VIEWS.slice(2).map(function (v) { return '<button type="button" class="ui-btn ui-btn-ghost" data-goto="' + v[0] + '">' + v[1] + '</button>'; }).join('')
+      + '</div></details><div class="pv-ctx" id="pv-ctx"></div><div class="pv-status" id="pv-status" role="status" aria-live="polite"></div>'
       + '<div class="pv-bar-end"><button type="button" class="ui-btn ui-btn-ghost pv-theme" id="pv-theme">' + themeBtnInner() + '</button>'
       + '<button type="button" class="ui-btn ui-btn-sub" id="pv-reset" title="Restore the example inputs for this fluid and clear its measured data">Reset</button>'
       + '<button type="button" class="ui-btn ui-btn-ghost pv-explain-btn" id="pv-explain-btn" aria-expanded="' + S.explain + '" aria-controls="pv-explain">' + ICON.info + '<span>Explain This Stage</span></button></div></div>'
@@ -416,18 +418,53 @@
       + (S.zImg ? '<img class="pv-zimg" src="' + S.zImg + '" alt="Standing-Katz chart supplied by the user">' : '') + '</div>';
   }
 
+  /* Everyday workflow: edit essentials beside the live chart. All specialist controls
+     still use the existing state and engine; opening a tool never resets a fluid. */
+  function workspaceConditions() {
+    var f = F(), pu = unitOf('p'), tu = unitOf('T');
+    var mode = pills('calcMode', f.calcMode, [['range', 'Pressure curve'], ['single', 'One pressure'], ['list', 'Pressure list']], 'Calculation type');
+    var body = mode;
+    if (f.calcMode === 'single') body += field('p', 'Pressure', pu);
+    else if (f.calcMode === 'range') body += '<div class="pv-grid2">' + field('pMin', 'From pressure', pu) + field('pMax', 'To pressure', pu) + '</div>';
+    else body += '<div class="pv-f" data-f="pList"><label class="pv-l" for="pv-in-pList">Pressure list (' + esc(pu) + ')</label><textarea id="pv-in-pList" data-k="pList" rows="2" aria-describedby="pv-err-pList">' + esc(val('pList')) + '</textarea><span class="pv-err" id="pv-err-pList" data-err="pList"></span><span class="pv-hint">Separate pressures with commas or spaces.</span></div>';
+    body += field('T', 'Reservoir temperature', tu);
+    return card('Pressure and temperature', body, { n: 1 });
+  }
+  function workspaceFluid() {
+    var f = F(), oil = S.fluid === 'oil', body = '';
+    if (oil) {
+      body = '<div class="pv-grid2">'
+        + (f.oilGravityBasis === 'api' ? field('api', 'Oil gravity', '°API', { help: 'api' }) : field('rhoSto', 'Stock-tank density at 60 °F', unitOf('density'), { help: 'api' }))
+        + field('gg', 'Gas gravity', 'air = 1', { help: 'gg' }) + '</div>'
+        + '<span class="pv-l">I know the oil’s</span>'
+        + pills('oilChar', f.oilChar, [['pb', 'Bubble-point pressure'], ['rsb', 'Solution GOR at bubble point']], 'Known oil property')
+        + (f.oilChar === 'pb' ? field('pb', 'Bubble-point pressure', unitOf('p'), { help: 'pb' }) : field('rsb', 'Solution GOR at bubble point', unitOf('Rs') + ' · 60 °F', { help: 'pb' }))
+        + '<div class="pv-derived" id="pv-derived" aria-live="polite"></div>';
+    } else {
+      body = f.gasBasis === 'composition' ? compTable() : field('gg', 'Gas gravity', 'air = 1', { help: 'gg', hint: 'Gas density relative to air. Use Options for composition or sour gas.' });
+    }
+    return card(oil ? 'Your oil' : 'Your gas', body, { n: 2 });
+  }
+  function workspaceOptions() {
+    var f = F(), oil = S.fluid === 'oil';
+    var extra = (f.calcMode === 'range' ? field('pStep', 'Pressure increment', unitOf('dp'), { hint: 'Controls how many points are calculated.' }) : '')
+      + (oil ? optRow('Oil gravity input', pills('oilGravityBasis', f.oilGravityBasis, [['api', 'API gravity'], ['density', 'Stock-tank density']], 'Oil gravity as'))
+        : optRow('Gas input', pills('gasBasis', f.gasBasis, [['gravity', 'Gas gravity'], ['composition', 'Composition']], 'Gas description')));
+    return '<details class="pv-work-options" id="pv-work-options"' + (S.optionsOpen ? ' open' : '') + '><summary>Options <span>Methods, units and additional data</span></summary><div class="pv-options-body">'
+      + extra + (oil ? oilMethodsCard() : gasMethodsCard()) + basisCard()
+      + '<button type="button" class="ui-btn ui-btn-ghost" id="pv-default-methods">Restore default methods</button>'
+      + '<p class="pv-note">Defaults are estimates, not measured PVT data. Method verification and limits remain available in More tools.</p></div></details>';
+  }
   function inputsView() {
-    var oil = S.fluid === 'oil';
-    var head = '<div class="pv-ihead"><div class="pv-ihead-l">'
-      + (S.example[S.fluid] ? '<span class="pv-chip is-example" title="The fields hold example values. Replace them with your fluid data.">' + ICON.info + 'Example data</span>' : '')
-      + '<span class="pv-ihead-t">Required inputs are numbered 1–2; correlations have defaults.</span></div>'
-      + '<div class="pv-ihead-r"><button type="button" class="ui-btn ui-btn-ghost" id="pv-example">Load example</button>'
-      + '<button type="button" class="ui-btn ui-btn-sub pv-btn-clear" id="pv-clear">Clear inputs</button></div></div>';
-    return '<div class="pv-view pv-inputs">' + head + '<div class="pv-errsum" id="pv-errsum" role="alert" hidden></div>'
-      + '<div class="pv-icols"><div class="pv-icol">' + conditionsCard() + (oil ? oilFluidCard() : gasFluidCard()) + '</div>'
-      + '<div class="pv-icol">' + (oil ? oilMethodsCard() : gasMethodsCard()) + basisCard() + '</div></div>'
-      + '<div class="pv-actions pv-next"><span class="pv-next-t" id="pv-next-t"></span><button type="button" class="ui-btn ui-btn-ghost" data-goto="table">View results</button>'
-      + '<button type="button" class="ui-btn ui-btn-primary" data-goto="charts">View charts ' + ICON.arrow + '</button></div></div>';
+    return '<div class="pv-view pv-workspace">'
+      + '<section class="pv-entry" aria-label="Fluid inputs"><div class="pv-entry-head"><div><h3>Enter your fluid data</h3><p>The chart updates as you type.</p></div>'
+      + pills('units', S.units, [['field', 'Field'], ['metric', 'Metric']], 'Unit system') + '</div>'
+      + '<div class="pv-example-row"><span id="pv-example-label">' + (S.example[S.fluid] ? 'Example data · replace with your values' : 'Your inputs') + '</span>'
+      + '<button type="button" class="pv-text-btn" id="pv-example">Use example</button><button type="button" class="pv-text-btn" id="pv-clear">Clear</button></div>'
+      + '<div class="pv-errsum" id="pv-errsum" role="alert" hidden></div>'
+      + workspaceConditions() + workspaceFluid() + workspaceOptions()
+      + '<p class="pv-input-basis" id="pv-input-basis"></p></section>'
+      + '<section class="pv-output" aria-label="Live results">' + chartsView() + '</section></div>';
   }
 
   /* --------------------------------------------------------------- charts */
@@ -445,11 +482,10 @@
       return '<label class="pv-chip pv-chip-cmp"><input type="checkbox" data-cmp="' + k + '"' + (S.compare[S.fluid][k] ? ' checked' : '') + '>' + esc(grp.meta[k].label) + '</label>';
     }).join('');
     return '<div class="pv-view pv-charts">'
-      + '<div class="pv-tools"><div class="pv-pills pv-props" role="group" aria-label="Property to plot">' + props.map(function (k) {
-        var p = E.PROPS[S.fluid][k];
-        return '<button type="button" data-prop="' + k + '" class="' + (k === cur ? 'is-on' : '') + '" aria-pressed="' + (k === cur) + '" title="' + esc(p.label) + '">' + p.sym + '</button>';
-      }).join('') + '</div>'
-      + '<div class="pv-cmp" role="group" aria-label="Compare with"><span class="pv-mono">Compare</span>' + cmp + '</div>'
+      + '<div class="pv-chart-question"><div><h3>Your result</h3><p>Choose what you want to see.</p></div><label for="pv-property" class="pv-sr">Property to plot</label><select id="pv-property" aria-label="Property to plot">' + props.map(function (k) { var p = E.PROPS[S.fluid][k]; return '<option value="' + k + '"' + (k === cur ? ' selected' : '') + '>' + esc(p.label) + ' (' + esc(p.sym) + ')</option>'; }).join('') + '</select></div>'
+      + '<div class="pv-property-intro" id="pv-property-intro"></div>'
+      + '<div class="pv-tools">'
+      + '<details class="pv-compare-options"' + (Object.keys(S.compare[S.fluid]).some(function (k) { return S.compare[S.fluid][k]; }) ? ' open' : '') + '><summary>Compare methods</summary><div class="pv-cmp" role="group" aria-label="Compare with">' + cmp + '</div></details>'
       + '<div class="pv-tools-end"><label class="pv-check"><input type="checkbox" id="pv-ylog"' + (S.yLog[S.fluid + cur] ? ' checked' : '') + '> Log scale</label>'
       + '<button type="button" class="ui-btn ui-btn-ghost" id="pv-png">Export PNG</button></div></div>'
       + '<div class="pv-chart-card"><div class="pv-chart-head"><div class="pv-chart-title" id="pv-chart-title"></div><div class="pv-chart-meta" id="pv-chart-meta"></div></div>'
@@ -457,7 +493,7 @@
       + '<div class="pv-chart-host" id="pv-chart-host"></div><div class="pv-single" id="pv-single" hidden></div><div class="pv-chart-msg" id="pv-chart-msg" hidden></div>'
       + '<div class="pv-pointbar" id="pv-pointbar" aria-live="polite"></div></div>'
       + '<div class="pv-notes-row" id="pv-chart-notes"></div>'
-      + '</div>';
+      + '<div class="pv-result-actions"><button type="button" class="ui-btn ui-btn-ghost" data-goto="table">Results Table</button><button type="button" class="ui-btn ui-btn-ghost" data-help="chart">Help reading this chart</button></div></div>';
   }
 
   function seriesFor(r, k) {
@@ -469,11 +505,13 @@
     var hostEl = q('#pv-chart-host'), msg = q('#pv-chart-msg'), single = q('#pv-single');
     if (!hostEl) return;
     var k = S.chartProp[S.fluid], P = E.PROPS[S.fluid][k];
+    var intro = q('#pv-property-intro'); if (intro) intro.textContent = PROP_HELP[S.fluid === 'gas' && k === 'mu' ? 'mu_gas' : k] || '';
+    var ib = q('#pv-input-basis'); if (ib) ib.textContent = 'Pressure: ' + unitOf('p') + '. Standard volumes: ' + basis().short + '.';
     if (!chart || !hostEl.firstChild) { if (chart) chart.destroy(); chart = PvtChart.create(hostEl, { onSelect: function (i) { setSel(i); renderPointBar(); syncTableSel(); if (S.explain) renderExplain(); } }); }
     var title = q('#pv-chart-title'), meta = q('#pv-chart-meta'), legend = q('#pv-legend'), notes = q('#pv-chart-notes');
     if (!res || !res.ok) {
       chart.render(null); msg.hidden = false; single.hidden = true; hostEl.hidden = false;
-      msg.innerHTML = '<b>No chart yet.</b> ' + esc(errorSummaryText()) + ' <button type="button" class="ui-btn ui-btn-sub" data-goto="inputs">Go to Inputs</button>';
+      msg.innerHTML = '<b>Complete your fluid inputs</b><p>' + esc(errorSummaryText()) + '</p><span>The chart will appear here automatically.</span>'; 
       title.textContent = P.label + ', ' + P.sym; meta.textContent = ''; legend.innerHTML = ''; notes.innerHTML = ''; q('#pv-pointbar').innerHTML = '';
       return;
     }
@@ -843,11 +881,17 @@
     } else if (S.help && HELP[S.help]) {
       ti.textContent = HELP[S.help][0];
       html = sec('What it means', esc(HELP[S.help][1]));
+    } else if (S.help === 'chart') {
+      var prop = S.chartProp[S.fluid], pp = E.PROPS[S.fluid][prop];
+      ti.textContent = 'Reading your chart';
+      html = sec(esc(pp.label), esc(PROP_HELP[S.fluid === 'gas' && prop === 'mu' ? 'mu_gas' : prop] || ''))
+        + sec('How to use it', 'Pressure is on the horizontal axis. Select a point for its values, then choose Show equation for the calculation. A solid line is the active method; dashed lines are optional comparisons. Missing values are gaps, never zero.')
+        + sec('Methods', 'Default methods are already selected. Open Options only if you need to change them. Their verification status is in More tools → Methods & References.');
     } else if (v === 'inputs') {
-      ti.textContent = 'Entering the inputs';
+      ti.textContent = 'Using the calculator';
       html = sec('1 · Pressure and temperature', 'One pressure gives one result; a range or a list gives curves. Absolute pressure (psia, bar(a)) is what the correlations use — gauge values are converted by adding 1 atm.')
         + sec('2 · ' + (S.fluid === 'oil' ? 'Oil and gas' : 'Gas'), S.fluid === 'oil' ? esc(HELP.api[1]) + ' ' + esc(HELP.pb[1]) : 'Gas gravity, or a composition (mole fractions or percent; the total must be 1 or 100 unless you tick normalisation, which is reported).')
-        + sec('3 · Correlations', 'Defaults are set. Change them under Correlations; more options are under the expandable section.')
+        + sec('3 · Correlations', 'Default methods are already selected. Enter the essential inputs and read the live chart beside them. Methods, pressure increments, composition and sour-gas options are in Options. Detailed data and references are in More tools.')
         + sec('Standard conditions', esc(HELP.basis[1]))
         + sec('Status', 'The status next to the tabs tells you whether results are valid: <b>Input needed</b> (a required field is empty), <b>Invalid input</b>, <b>Calculation failed</b> (the method cannot give a result for these inputs), or <b>Valid</b> — with any range warnings, accuracy notes and assumptions counted.');
     } else if (v === 'charts') {
@@ -897,9 +941,10 @@
   }
   function renderView() {
     var main = q('#pv-main');
+    if (S.view === 'charts') S.view = 'inputs';
     if (chart) { chart.destroy(); chart = null; }
     if (global.OilBatch && S.view !== 'measured') global.OilBatch.unmount();
-    var html = { inputs: inputsView, charts: chartsView, table: tableView, measured: measuredView, methods: methodsView }[S.view]();
+    var html = { inputs: inputsView, charts: inputsView, table: tableView, measured: measuredView, methods: methodsView }[S.view]();
     main.innerHTML = html;
     main.scrollTop = 0;
     qa('.pv-tab').forEach(function (b) { var on = b.getAttribute('data-view') === S.view; b.classList.toggle('is-on', on); b.setAttribute('aria-selected', on); });
@@ -911,8 +956,8 @@
   /* repaint everything that depends on the result (never the input fields themselves) */
   function refresh() {
     renderStatus();
-    if (S.view === 'inputs') renderFieldErrors();
-    if (S.view === 'charts') renderChart();
+    if (S.view === 'inputs' || S.view === 'charts') renderFieldErrors();
+    if (S.view === 'inputs' || S.view === 'charts') renderChart();
     if (S.view === 'table') renderTable();
     if (S.view === 'measured') renderMeasured();
     if (S.explain) renderExplain();
@@ -965,7 +1010,7 @@
     res.errors.forEach(function (er) {
       var box = q('[data-err="' + er.field + '"]');
       if (box && er.field !== 'comp') { box.textContent = er.msg; var f = box.closest('.pv-f'); if (f) { f.classList.add('is-err'); var i = f.querySelector('input,select,textarea'); if (i) i.setAttribute('aria-invalid', 'true'); } }
-      if (box && box.closest('details') && !box.closest('details').open) box.closest('details').open = true;
+      if (box) { var parent = box.parentElement; while (parent && parent !== root) { if (parent.tagName === 'DETAILS') parent.open = true; parent = parent.parentElement; } }
     });
     var cb = q('[data-err="comp"]');
     if (cb) cb.innerHTML = res.errors.filter(function (e) { return e.field === 'comp'; }).map(function (e) { return esc(e.msg); }).join('<br>');
@@ -1024,9 +1069,9 @@
     q('#pv-reset').addEventListener('click', resetAll);
     q('#pv-theme').addEventListener('click', toggleTheme);
     root.addEventListener('click', function (e) {
-      var g = e.target.closest('[data-goto]'); if (g) { S.view = g.getAttribute('data-goto'); renderView(); return; }
+      var g = e.target.closest('[data-goto]'); if (g) { var menu = q('.pv-more-tools'); if (menu) menu.open = false; S.view = g.getAttribute('data-goto'); renderView(); return; }
       var h = e.target.closest('[data-help]'); if (h) { e.preventDefault(); setExplain(true, h.getAttribute('data-help')); return; }
-      var fo = e.target.closest('[data-focus]'); if (fo) { var el = q('#pv-in-' + fo.getAttribute('data-focus')) || q('#pv-m-' + fo.getAttribute('data-focus').replace(/Method$/, '')) || q('[data-err="' + fo.getAttribute('data-focus') + '"]'); if (el) { var d = el.closest('details'); if (d) d.open = true; el.focus && el.focus(); } }
+      var fo = e.target.closest('[data-focus]'); if (fo) { var el = q('#pv-in-' + fo.getAttribute('data-focus')) || q('#pv-m-' + fo.getAttribute('data-focus').replace(/Method$/, '')) || q('[data-err="' + fo.getAttribute('data-focus') + '"]'); if (el) { var d = el.parentElement; while (d && d !== root) { if (d.tagName === 'DETAILS') d.open = true; d = d.parentElement; } el.focus && el.focus(); } }
     });
   }
   function onKey(e) { if (e.key === 'Escape' && S.explain && host && host.isConnected && !document.querySelector('.bd-ov, .cd-ov, .sd-ov')) setExplain(false); }
@@ -1040,7 +1085,7 @@
         f[k] = inp.type === 'checkbox' ? inp.checked : inp.value;
         if (KIND[k] && f.canon) delete f.canon[k];   // typed value replaces the canonical one
         S.example[S.fluid] = false;
-        var chip = q('.pv-chip.is-example'); if (chip) chip.remove();
+        var chip = q('.pv-chip.is-example'); if (chip) chip.remove(); var exLabel = q('#pv-example-label'); if (exLabel) exLabel.textContent = 'Your inputs';
         if (inp.type === 'checkbox' && (k === 'sepUse' || k === 'normalize')) { recompute(); if (k === 'sepUse') { S.advanced.oil = true; renderView(); } else refresh(); return; }
         markStale(); schedule();
       });
@@ -1054,12 +1099,15 @@
         b.addEventListener('click', function () { setSeg(key, b.getAttribute('data-v')); });
       });
     });
+    var wo = q('#pv-work-options'); if (wo) wo.addEventListener('toggle', function () { S.optionsOpen = wo.open; });
     var adv = q('#pv-adv'); if (adv) adv.addEventListener('toggle', function () { S.advanced[S.fluid] = adv.open; });
     qa('[data-c]').forEach(function (inp) {
       inp.addEventListener('input', function () { f.comp[+inp.getAttribute('data-c')][inp.getAttribute('data-cf')] = inp.value; S.example.gas = false; markStale(); schedule(); });
     });
     var on = function (id, ev, fn) { var el = q(id); if (el) el.addEventListener(ev, fn); };
     on('#pv-example', 'click', function () { loadExample(); });
+    on('#pv-default-methods', 'click', function () { f.m = Object.assign({}, S.fluid === 'oil' ? E.OIL_DEFAULT_M : E.GAS_DEFAULT_M); if (S.fluid === 'gas' && f.gasBasis === 'composition') f.m.pc = 'kay'; S.compare[S.fluid] = {}; recompute(); renderView(); });
+    on('#pv-property', 'change', function (e) { S.chartProp[S.fluid] = e.target.value; S.compare[S.fluid] = {}; recompute(); renderView(); q('#pv-property').focus(); });
     on('#pv-clear', 'click', clearInputs);
     on('#pv-comp-apply', 'click', applyCompPaste);
     on('#pv-zimg', 'change', function (e) { var file = e.target.files && e.target.files[0]; if (file) { if (S.zImg) URL.revokeObjectURL(S.zImg); S.zImg = URL.createObjectURL(file); renderView(); } });
