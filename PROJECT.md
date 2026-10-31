@@ -979,3 +979,25 @@ Playback: `GC.gas.runMs` 60 s (x PROCESS_SPEED_MULTIPLIER).
   separator gas 0.36 -> 0.52, oil 0.33 -> 0.48. Recombination (0.67) unchanged.
 - Step 3 drain: reverse-L outlet (horizontal run, one 90° elbow, open end down at 372, 418), air gap above the
   receiver; drops form at the opening and fall only while `qc3Flow` (waterDropStyle). Volumes / timing unchanged.
+
+
+## Calculator live workspace (2026-10-31)
+
+`components/PvtCalc.js` now opens essential inputs and the live property chart together.
+Calculator and Results Table are the only primary views; Measured Data and Methods &
+References remain in More tools. Property names use full labels. Options contains
+correlation selection, pressure increment, composition, sour gas and standard-basis
+settings; existing defaults and all `calc/` equations are unchanged. Comparison curves
+are optional behind Compare methods. Example data is visibly marked; invalid inputs
+clear the chart, and errors inside nested options open their containing disclosures.
+The `.pv-workspace` CSS is scoped to this screen: compact inputs beside the chart on
+desktop, stacked inputs then chart on phones. Full-precision canonical inputs and all
+existing scientific limitations remain in force.
+
+Verification for this UI change: `node --test tests/*.test.js` — 55 passed; syntax
+checks for PvtCalc and the updated browser suite passed. Browser smoke test on the
+branch preview covered simultaneous inputs/chart, live temperature changes, invalid
+pressure clearing, Field/Metric retention (25 oil points), property selection, Gas
+mode, keyboard point selection, equation drawer and reference navigation. The full
+browser suite was adapted to the new navigation and compact chart dimensions but
+was not rerun in this session; phone/device layout and exports need that broader run.
