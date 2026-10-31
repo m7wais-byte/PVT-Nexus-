@@ -2,7 +2,7 @@
    BottomHoleSim — Module 01 · Bottom-hole sampling (Open Hole / Cased Hole)
 
    Native DOM + SVG module, mounted by Main.js into the host <div> of the
-   Bottom Hole page (same pattern as OilCalc / GasCalc).
+   Bottom Hole page (same mount pattern as the PVT Calculator, PvtCalc).
 
    ONE timeline drives everything. Every drawn state (tool position, probe,
    valves, pump, chamber levels, flows, readings) is a pure function of the

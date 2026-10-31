@@ -1,6 +1,6 @@
 /* screen: showAbout */
 DC.slot('showAbout', `<sc-if value="{{ showAbout }}" hint-placeholder-val="{{ false }}">
-    <div style="height:var(--page-h); box-sizing:border-box; padding:14px 22px 16px; max-width:1500px; width:100%; margin:0 auto; display:flex; flex-direction:column; gap:11px; overflow:hidden;">
+    <div class="about" style="height:var(--page-h); box-sizing:border-box; padding:14px 22px 16px; max-width:1500px; width:100%; margin:0 auto; display:flex; flex-direction:column; gap:11px; overflow:hidden;">
 
       <!-- top: brief + project information -->
       <div style="flex:0 0 auto; display:grid; grid-template-columns:minmax(0,1.42fr) minmax(0,1fr); gap:11px; align-items:stretch;">

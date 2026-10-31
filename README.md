@@ -92,12 +92,14 @@ A full **Final Report** assembled from the simulator's own stage values: cover, 
 Every sample bottle in the procedures uses the approved **Oil Sample Bottle** (floating-piston cylinder with valve protectors, seals, guide ring and a loose mixing ring) and **Gas Sample Bottle** (seamless double-ended cylinder) designs — the same two drawings on every page and in Bottle Details, with the page tubing connected to their valve outlets. Each page has a **Bottle Details** button (and the bottle itself is clickable) that opens the bottle in a 2D technical view or an interactive 3D model, exterior or cutaway, with part explanations and the operating principle. Opening it pauses the running stage; **Back to Procedure** returns to the same stage and values, and the procedure resumes when you press Resume.
 
 ### 05 · PVT Calculator
-Live oil and gas property calculators that run beside the workflow.
+A full-page engineering calculator with an Oil / Gas selector and five views — **Inputs · Charts · Results Table · Measured Data · Methods & References** — plus the right-side *Explain This Stage* drawer.
 
-| Calculator | Correlations and features |
+| | Properties and methods |
 |---|---|
-| **Oil** | Rs, Pb, Bo, API, oil viscosity and compressibility — Standing, Vasquez-Beggs, Glasø, Al-Marhoun, Petrosky-Farshad, material balance; Beal / Beggs-Robinson / Glasø dead-oil viscosity; Beggs-Robinson saturated and Vasquez-Beggs undersaturated viscosity; batch AAE evaluation tables |
-| **Gas** | Z-factor, Bg, Eg, density, specific volume, cg, viscosity — gas-gravity and Kay pseudo-criticals, Brown (1948), Wichert-Aziz and Carr-Kobayashi-Burrows sour-gas corrections, Papay and Beggs-Brill Z, Lee-Gonzalez-Eakin viscosity; 20-row composition table with automatic component lookup |
+| **Oil** | Rs, Bo, μo and undersaturated co versus pressure; API, pb / Rsb, Bob, μod, μob. Rs/pb: Standing, Vasquez-Beggs, Glasø, Al-Marhoun, Petrosky-Farshad. Bo (p ≤ pb): the same five. co and Bo (p > pb): Vasquez-Beggs, Petrosky-Farshad. μ: Beal / Beggs-Robinson / Glasø dead oil → Beggs-Robinson saturated → Vasquez-Beggs undersaturated. One measured input (pb **or** Rsb) controls the saturated / undersaturated split at every pressure. |
+| **Gas** | Z, Bg, ρg, μg and cg versus pressure; Ma, γg, Ppc/Tpc, Ppr/Tpr, v, Eg. Pseudo-criticals: Standing natural / condensate, Sutton, Kay (composition). Sour gas: Wichert-Aziz, Carr-Kobayashi-Burrows. Z: Dranchuk-Abou-Kassem, Papay, Beggs-Brill, or a manual Standing-Katz chart reading (single pressure). μg: Lee-Gonzalez-Eakin. Ideal-gas mode sets Z = 1 for every dependent property. |
+
+Single pressure, pressure range or a pasted pressure list; Field or Metric units with absolute or gauge pressure; interactive charts (hover, click-to-select with the equation and substituted values, correlation comparison, measured-data overlay, gaps for invalid values); CSV and PNG export; measured-data error statistics and the multi-sample oil batch evaluation. Equations, units, data ranges and sources: [calc/README.md](calc/README.md).
 
 ---
 
@@ -158,11 +160,13 @@ PVT-Nexus-/
 │   ├── StageVisc*.js        Viscosity methods
 │   ├── StageDensity.js      Direct density
 │   ├── StageReport.js       Final Report
-│   ├── OilCalc.js / GasCalc.js   Property calculators
+│   ├── PvtCalc.js / PvtChart.js / OilBatch.js   PVT Calculator (page, chart, batch tool)
 │   ├── BottleArt.js         Shared sample-bottle drawings for the procedures
 │   ├── BottleDetails.js     Bottle Details overlay
 │   ├── SpmcDetails.js       SPMC Details overlay (MRMS assembly, SPMC chamber)
 │   └── StepGuide.js         Explain panel content
+├── calc/               PVT Calculator core: units, correlations, engine, measured data (pure, tested)
+├── tests/              node --test tests/*.test.js  ·  node tests/ui.e2e.js
 ├── screens/            One file per screen
 └── PROJECT.md          Detailed developer notes
 ```

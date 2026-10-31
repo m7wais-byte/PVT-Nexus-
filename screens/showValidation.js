@@ -1,9 +1,9 @@
 /* screen: showValidation  (6.1 KB) */
 DC.slot('showValidation', `<sc-if value="{{ showValidation }}" hint-placeholder-val="{{ false }}">
-    <div data-screen-label="Validation" style="position:relative; height:var(--page-h); overflow:hidden; box-sizing:border-box; padding:18px clamp(20px,2.4vw,36px) 18px; max-width:1680px; width:100%; margin:0 auto; display:flex; flex-direction:column; gap:16px; background:var(--bg);">
+    <div data-screen-label="Validation" class="menu-page" style="position:relative; height:var(--page-h); overflow:hidden; box-sizing:border-box; padding:18px clamp(20px,2.4vw,36px) 18px; max-width:1680px; width:100%; margin:0 auto; display:flex; flex-direction:column; gap:16px; background:var(--bg);">
 
       <!-- hero -->
-      <div style="display:flex; align-items:center; gap:20px; flex:0 0 auto;">
+      <div class="menu-hero" style="display:flex; align-items:center; gap:20px; flex:0 0 auto;">
         <div style="flex:1; min-width:0;">
           <div style="display:flex; align-items:center; gap:10px;">
             <span style="width:24px; height:3px; border-radius:2px; background:var(--grn);"></span>
@@ -26,7 +26,7 @@ DC.slot('showValidation', `<sc-if value="{{ showValidation }}" hint-placeholder-
 
       <!-- procedure tiles: 4 + 3, one 8-column grid so both rows share card width -->
       <div style="flex:0 1 auto; min-height:0; display:flex; flex-direction:column; gap:9px;">
-        <div style="{{ valGridStyle }}">
+        <div class="menu-grid val-grid" style="{{ valGridStyle }}">
           <sc-for list="{{ valCards }}" as="p" hint-placeholder-count="8">
             <button onclick="{{ p.onClick }}" class="{{ p.cls }}" style="{{ p.style }}">
               <span class="vc-head">

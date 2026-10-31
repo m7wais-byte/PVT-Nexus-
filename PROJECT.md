@@ -113,8 +113,9 @@ components/
   RecombSim.js          Validation > Recombination (screen 'recomb', after Direct Density) - native DOM/SVG
                         module mounted by Main.syncRecomb() into rcHost (screens/showRecomb.js). See section below.
   StageReport.js        report stage (placeholder)
-  OilCalc.js            native Oil Properties Calculator (correlations + UI)
-  GasCalc.js            native Gas Properties Calculator (correlations + UI)
+  PvtCalc.js            PVT Calculator page (Module 05): Oil / Gas, five views, Explain drawer - see "Calculators"
+  PvtChart.js           interactive SVG property chart used by PvtCalc
+  OilBatch.js           multi-sample oil batch evaluation (Measured Data view)
 
 screens/                one file per screen, each registers a named slot
   showSplash.js         splash
@@ -127,7 +128,7 @@ screens/                one file per screen, each registers a named slot
   showAnalysis.js       analysis menu
   showSeparator.js      separator test
   showVisc.js           viscosity stage
-  showCalc.js           calculators
+  showCalc.js           PVT Calculator host (PvtCalc mounts into it)
   showReport.js         report
   showAbout.js          about
   showSettings.js       settings
@@ -281,30 +282,53 @@ keep working across state changes.
 
 ## Calculators (module05)
 
-**Oil** — fully native. `components/OilCalc.js` builds the whole Oil Properties
-Calculator in plain DOM and mounts into the host `<div ref="{{ oilCalcHost }}">`
-rendered by `screens/showCalc.js`; `Main.js` mounts/unmounts it from
-`componentDidUpdate()`. Styling is the `.oc-*` block at the bottom of
-`theme.css` — theme variables only, so it follows light/dark with the app.
-All correlations come across unchanged from the standalone build
-(Standing, Vasquez-Beggs, Glaso, Marhoun, Petrosky-Farshad, material balance,
-Beal / Beggs-Robinson / Glaso dead-oil viscosity, Beggs-Robinson saturated,
-Vazquez-Beggs undersaturated), including the batch AAE evaluation tables.
-Two tabs: *Calculator* (inputs + property selection + live results) and
-*Batch evaluation* (Rs / pb / Bo / μo paste-and-compare tables).
+One full-page **PVT Calculator** (rebuilt 2026-10-29). `screens/showCalc.js` renders only a host
+`<div ref="{{ pvCalcHost }}">`; `Main.syncPvtCalc()` mounts `components/PvtCalc.js` into it and keeps
+`state.calcMode` ('oil' | 'gas') in step with the page's Oil / Gas selector. Dashboard: *Oil Calculator* /
+*Gas Calculator* open that mode, *PVT Calculator* reopens the last one (default oil). Back = top-bar Back.
 
-**Gas** — fully native as well. `components/GasCalc.js`, same mount pattern via
-`{{ gasCalcHost }}`, same `.oc-*` styling with a blue accent (`.oc.is-gas`).
-Carries over Ma / γg selection, pseudo-criticals (gas-gravity correlation,
-Kay mixing, Brown 1948 natural/wet with its limit check), Wichert-Aziz and
-Carr-Kobayashi-Burrows sour-gas corrections, Papay and Beggs-Brill Z,
-density, specific volume, cg, Bg, Eg and Lee-Gonzalez-Eakin viscosity,
-plus the lecture method notes. Three tabs: *Calculator*, *Composition*
-(20-row table with automatic Mi / Tci / Pci lookup and the Σyi check) and
-*Standing chart* (image upload, highlighted Ppr / Tpr, manual Z entry).
-Component reference data: `data/pure-components.js`.
+Layers (each testable on its own; equations and sources in `calc/README.md`):
 
-No iframes remain — `pvtcalc/` is no longer referenced anywhere.
+| File | Role |
+|---|---|
+| `calc/pvt-units.js` | Field / Metric units, absolute / gauge pressure (+1 atm = 14.6959 psi), standard bases `STD_BASES`: correlation 60 °F and laboratory 15 °C, both 101.325 kPa |
+| `calc/pvt-correlations.js` | published equations (pure, NaN outside their mathematical domain, never clamped) + META: labels, equation text, published data ranges, references + `VERIFY`: per-method cross-check source, numerical check, range status, limitation |
+| `calc/pvt-engine.js` | validation (per-field errors) + evaluation over a pressure set; point detail with substituted values |
+| `calc/pvt-measured.js` | measured-data template / parser (line + column errors, `#` comment lines), `checkBasis` (declared standard basis of measured Rs / Bo / Bg) and ARE / AARE statistics |
+| `components/PvtChart.js` | SVG chart: hover tooltip, click / arrow-key selection, gaps for invalid values, pb marker, measured markers, PNG export |
+| `components/PvtCalc.js` | page: views Inputs · Charts · Results Table · Measured Data · Methods & References, Explain drawer, CSV export |
+| `components/OilBatch.js` | the former oil calculator's multi-sample batch tables (renamed from OilCalc.js; correlations now from PVTCorr) |
+
+Rules kept by the engine:
+* blank required field -> "Input required"; nothing is defaulted behind the scenes (example values are written into the visible fields);
+* invalid input blocks the calculation and clears the results (status chip shows "Invalid input");
+* outside an equation's domain -> value null + reason (chart gap, table "—" with a numbered note);
+* outside a published data range -> value kept + warning naming the correlation, variable, range and affected properties;
+* oil: one measured input (pb or Rsb), the other derived once; p < pb saturated, p >= pb Rs = Rsb, Bo = Bob·exp(-∫co dp);
+* gas: ideal mode sets Z = 1 for every dependent property; a manual chart Z is single-pressure only (no curve, no cg);
+* unit switching (2026-10-30 fix): unit-bearing fields keep a full-precision canonical value (`f.canon` in
+  PvtCalc: psia, psi for the increment, °F, lbm/ft³, scf/STB). Switching units or gauge only re-renders the
+  text; the engine receives the canonical values. All pressure comparisons use `PVTEngine.P_TOL` (0.01 psi);
+  ranges are generated by index; the selected point is tracked by its pressure, not its row number;
+* errors carry a kind — missing / invalid / failure — and a field label; the status chip reads "Input needed",
+  "Invalid input", "Calculation failed" or "Valid" (with range warnings, accuracy notes and assumptions counted),
+  and the summary above the inputs names the fields;
+* standard basis (2026-10-30): oil always 60 °F; gas Bg / Eg on 60 °F or 15 °C (Tsc ratio). Measured Rs / Bo / Bg
+  need a declared basis; oil on 15 °C is not compared. See `calc/README.md`.
+
+Page layout follows the Validation page: eyebrow + title + Fluid pills, tab bar with context and status, cards
+with a 2.5 px accent foot. Inputs: numbered required cards, correlations with an expandable advanced section,
+"Load example" / "Clear inputs", "View results" / "View charts". Charts: full-width plot, a compact point strip
+(details in the drawer via "Show equation"), a summary instead of a plot for one pressure. Field help (?) and the
+point equation open in the Explain drawer (StepGuide's .sgSec classes).
+
+Styling: the `.pv-*` block at the end of `theme.css` (theme variables only; oil amber / gas blue accent; focus rings,
+icons with every warning so nothing relies on colour). Verification references: `tests/pvt-verification.test.js`, `tests/reference/`.
+The `.oc-*` block is still used by the batch tables. Tests: `node --test tests/*.test.js` (engine, no browser) and
+`node tests/ui.e2e.js` (Playwright, starts its own server; screenshots in `tests/out/`, git-ignored).
+`components/GasCalc.js` was removed: every working gas feature moved into the new page (composition table,
+Standing-chart reading, sour corrections); the "Matthews", "Whitson-Brulé" and "Brown 1948" Z options had no
+implementation of their own (they returned Papay) and the Carr-Kobayashi-Burrows viscosity option returned no value.
 
 ## Rebuilding from the original export
 
@@ -479,12 +503,14 @@ scaled by the oil left after each transfer, so everything fits in Pump A (Pump B
 One layout frame for every module (defined at the end of `theme.css`):
 
 - `--page-h` = working height under the 52 px top bar, never below `--page-min-h` (600 px);
-  shorter windows / high zoom scroll the page instead of clipping. `#app` min-width 768 px.
+  shorter windows / high zoom scroll the page instead of clipping. `--page-h` follows the real visible
+  height (`--app-h`, set by `components/Responsive.js`), so a mobile browser bar resizes the page.
+  `#app` no longer has a 768 px minimum (see "Responsive layer").
 - `.pg` page frame, `.pg-head` one compact header row (`.pg-eyebrow` · `.pg-title` 18 px ·
   status · `.pg-desc` one line, ellipsis · `.pg-end` page actions on the right).
 - `.lab-body` / `.lab-schem` / `.lab-side`: schematic | side-panel grid (Transfer, Opening
-  pressure, Restoration, Water check, Agitation). Below 1100 px wide (`.pg-stack`) the side
-  panel drops under the schematic and the page scrolls.
+  pressure, Restoration, Water check, Agitation). On phones and portrait tablets (`.pg-stack`) the side
+  panel drops under the schematic and the page scrolls; a landscape tablet keeps the side-by-side layout.
 - `.act`: one size for every page action button (34 px, 12.5 px text); colours stay with
   each page's state logic.
 - Explain Current Step: button lives in the top bar (`#sgSlot`, same place on every page).
@@ -497,6 +523,35 @@ One layout frame for every module (defined at the end of `theme.css`):
   Two-phase viscosity (graph + table, `v2ResOn`), Single-phase viscosity (already `resOn`).
 - Bottom Hole panel: step list scrolls, play / Explain / Move-to-Lab controls stay pinned.
 - Tightened viewBoxes: validation bottle scenes `0 22 900 492`, two-phase `24 22 992 616`.
+
+## Responsive layer (2026-10-30)
+
+Desktop (> 1100 px) is unchanged (1366 px screenshots of every page compared pixel by pixel before and after).
+Everything else is additive: class hooks in the screens plus the "RESPONSIVE LAYER" block at the end of
+`theme.css`, all inside phone / tablet media queries or `html.vp-stack`.
+
+- Breakpoints: phone ≤ 760 px; tablet 761–1100 px. Stacked layout (`html.vp-stack`): phone, and tablet in
+  portrait. Landscape tablets and landscape phones wider than 760 px keep equipment and panel side by side.
+- `components/Responsive.js` (layout only, loaded right after timing.js): sets `vp-phone / vp-tablet / vp-desk /
+  vp-stack / vp-portrait / vp-landscape` and `--app-h` on `<html>`; re-checks on resize, rotation and DOM changes
+  (child lists only).
+- Equipment frames: `.lab-schem`, `[data-rz-frame]` (Module 01 board) and `.bhs-scene` (Bottom Hole). In stacked
+  layouts the largest top-level SVG of a frame is marked `[data-rz-svg]` and drawn at full width with its own
+  aspect ratio (no clipping), and the frame gets a zoom bar (fit · − · + : 100 / 150 / 200 / 300 %). A zoomed
+  drawing pans inside its frame; the page never scrolls sideways. A frame that contains another frame is
+  skipped, so only the inner drawing zooms. Add `data-rz-off` to a frame to opt out.
+- The runtime only rewrites bound attributes, so the `data-rz-*` attributes and the zoom bar survive re-renders.
+- Hooks added to the screens: top bar `.tb .tb-nav .tb-logo`, dashboard `.dash .dash-grid .dash-strip`,
+  Module 01 `.m01 .m01-head .m01-btns .m01-grid .m01-board .m01-bh .m01-bhpanel`, menu pages `.menu-page
+  .menu-hero .menu-grid (.val-grid)`, About `.about`, stage tabs `.stage-strip` (DL, Separator, viscosity).
+- Phone: top-bar labels hidden (icons and accessible names stay); page headers wrap; card grids one column;
+  stage tabs scroll as one row; Report sections become a horizontal strip above the document (the document
+  keeps its own scroller, so section highlighting still works); the Explain drawer is the existing bottom sheet.
+- Touch (`pointer:coarse`): procedure buttons 44 px (`--pc-h`), other buttons 40 px, zoom buttons 38 px,
+  overview sample-point tags tappable over their whole box.
+- Tests: `tests/ui.e2e.js` "responsive layer" — 11 pages × 390×844, 768×1024, 1024×768, 844×390 (no sideways
+  scroll, no clipped drawing, zoom bar in stacked layouts, side-by-side on landscape tablets), zoom panning,
+  rotation, browser-height change, touch target sizes, phone Explain drawer.
 
 ## Validation layout (2026-10-21)
 

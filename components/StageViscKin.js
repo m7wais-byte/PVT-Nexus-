@@ -649,7 +649,7 @@ DC.define('StageViscKin', {
   template: `<div class="kv-root" data-screen-label="Kinematic Viscosity Test" style="flex:1 1 auto; min-height:0; width:100%; display:flex; flex-direction:column; gap:8px; text-align:left;">
 
   <!-- stage chips -->
-  <div style="flex:0 0 auto; display:flex; gap:6px;">
+  <div class="stage-strip" style="flex:0 0 auto; display:flex; gap:6px;">
     <sc-for list="{{ kvStages }}" as="s" hint-placeholder-count="7">
       <button onclick="{{ s.onClick }}" style="{{ s.style }}">
         <span style="font-size:11.5px; font-weight:600; color:var(--txt); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:100%;"><span style="color:var(--mut2); font-family:'IBM Plex Mono',monospace; font-size:10px; margin-right:5px;">{{ s.n }}</span>{{ s.name }}</span>
