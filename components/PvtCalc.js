@@ -1,6 +1,6 @@
 /* ============================================================================
    VAPS PVT Nexus — PvtCalc
-   Full-page PVT Calculator (Module 05): one screen, Oil / Gas, five views
+   PVT Calculator (Module 05): live inputs and chart in one workspace
        Inputs · Charts · Results Table · Measured Data · Methods & References
    and the right-side "Explain This Stage" drawer (same look as the procedure
    pages: it reuses StepGuide's .sgSec / .sgLbl / .sgTxt / .sgVal classes).
@@ -88,23 +88,33 @@
     renderCanon(f, units || 'field', !!gauge);
     return f;
   }
+  function freshFluid(fluid) {
+    var f = fluidDefaults(fluid, 'field', false);
+    ['p', 'pMin', 'pMax', 'pList', 'T', 'api', 'rhoSto', 'gg', 'pb', 'rsb'].forEach(function (k) { f[k] = ''; });
+    f.canon = { pStep: 200 }; f.calcMode = 'single';
+    if (f.comp) f.comp = blankComp();
+    return f;
+  }
+  function newGuide() { return { stage: 'choose', attempted: false, ready: false }; }
   var S = {
     fluid: 'oil', view: 'inputs', units: 'field', gauge: false,
     /* standard-condition basis for gas standard volumes (Bg, Eg); oil results always stay on 'corr' */
     stdBasis: 'corr',
-    oil: fluidDefaults('oil', 'field', false), gas: fluidDefaults('gas', 'field', false),
+    oil: freshFluid('oil'), gas: freshFluid('gas'),
+    guide: { oil: newGuide(), gas: newGuide() },
     chartProp: { oil: 'rs', gas: 'z' }, compare: { oil: {}, gas: {} }, yLog: {},
     /* selection: the row index for drawing, and the physical pressure (psia) it belongs to */
     sel: { oil: -1, gas: -1 }, selP: { oil: null, gas: null },
     /* measured data: text as pasted, and the declared standard basis ('' = not declared) */
     measured: { oil: { text: '', basis: '' }, gas: { text: '', basis: '' } },
-    explain: false, help: null, zImg: null, example: { oil: true, gas: true }, advanced: { oil: false, gas: false }
+    explain: false, help: null, zImg: null, example: { oil: false, gas: false }, advanced: { oil: false, gas: false }
   };
 
   var host = null, opts = {}, res = null, cmpRes = [], meas = null, chart = null, timer = null, root = null;
 
   /* ------------------------------------------------------------ helpers */
   function F() { return S[S.fluid]; }
+  function G() { return S.guide[S.fluid]; }
   function esc(t) { return String(t === undefined || t === null ? '' : t).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
   function q(sel) { return root ? root.querySelector(sel) : null; }
   function qa(sel) { return root ? Array.prototype.slice.call(root.querySelectorAll(sel)) : []; }
@@ -262,7 +272,7 @@
     sun: '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="4.2" stroke="currentColor" stroke-width="1.7"/><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M19.1 4.9l-1.8 1.8M6.7 17.3l-1.8 1.8" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>',
     help: '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.7"/><path d="M9.6 9.4a2.5 2.5 0 1 1 3.5 2.3c-.7.3-1.1.9-1.1 1.6v.5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><circle cx="12" cy="16.9" r="1" fill="currentColor"/></svg>'
   };
-  var VIEWS = [['inputs', 'Inputs'], ['charts', 'Charts'], ['table', 'Results Table'], ['measured', 'Measured Data'], ['methods', 'Methods & References']];
+  var VIEWS = [['inputs', 'Calculator'], ['table', 'Results Table'], ['measured', 'Measured Data'], ['methods', 'Methods & References']];
 
   /* light / dark: the same switch as the top bar (Main keeps state.theme and localStorage in step) */
   function isLight() { return document.documentElement.getAttribute('data-theme') === 'light'; }
@@ -272,7 +282,7 @@
     if (opts.onTheme) opts.onTheme(next);
     else { if (next === 'light') document.documentElement.setAttribute('data-theme', 'light'); else document.documentElement.removeAttribute('data-theme'); try { localStorage.setItem('pvtTheme', next); } catch (e) {} }
     var b = q('#pv-theme'); if (b) { b.innerHTML = themeBtnInner(); b.setAttribute('aria-label', 'Switch to ' + (isLight() ? 'dark' : 'light') + ' theme'); }
-    if (S.view === 'charts') renderChart();   // chart colours are read from the theme variables
+    if ((S.view === 'inputs' || S.view === 'charts') && G().ready) renderChart();   // chart colours are read from the theme variables
   }
   function shell() {
     var oil = S.fluid === 'oil';
@@ -287,10 +297,12 @@
       + '<button type="button" data-fluid="gas" class="' + (!oil ? 'is-on' : '') + '" aria-pressed="' + !oil + '">' + ICON.gas + 'Gas</button>'
       + '</div></div></div>'
       + '<div class="pv-bar"><div class="pv-tabs" role="tablist" aria-label="Calculator views">'
-      + VIEWS.map(function (v) { return '<button type="button" role="tab" data-view="' + v[0] + '" class="pv-tab' + (S.view === v[0] ? ' is-on' : '') + '" aria-selected="' + (S.view === v[0]) + '">' + v[1] + '</button>'; }).join('')
-      + '</div><div class="pv-ctx" id="pv-ctx"></div><div class="pv-status" id="pv-status" role="status" aria-live="polite"></div>'
-      + '<div class="pv-bar-end"><button type="button" class="ui-btn ui-btn-ghost pv-theme" id="pv-theme">' + themeBtnInner() + '</button>'
-      + '<button type="button" class="ui-btn ui-btn-sub" id="pv-reset" title="Restore the example inputs for this fluid and clear its measured data">Reset</button>'
+      + VIEWS.slice(0, 2).map(function (v) { return '<button type="button" role="tab" data-view="' + v[0] + '" class="pv-tab' + (S.view === v[0] ? ' is-on' : '') + '" aria-selected="' + (S.view === v[0]) + '">' + v[1] + '</button>'; }).join('')
+      + '</div><details class="pv-more-tools"><summary>More tools</summary><div class="pv-more-menu">'
+      + VIEWS.slice(2).map(function (v) { return '<button type="button" class="ui-btn ui-btn-ghost" data-goto="' + v[0] + '">' + v[1] + '</button>'; }).join('')
+      + '</div></details><div class="pv-ctx" id="pv-ctx"></div><div class="pv-status" id="pv-status" role="status" aria-live="polite"></div>'
+      + '<div class="pv-bar-end">'
+      + '<button type="button" class="ui-btn ui-btn-sub" id="pv-reset" title="Start a new calculation for this fluid and clear its measured data">Start over</button>'
       + '<button type="button" class="ui-btn ui-btn-ghost pv-explain-btn" id="pv-explain-btn" aria-expanded="' + S.explain + '" aria-controls="pv-explain">' + ICON.info + '<span>Explain This Stage</span></button></div></div>'
       + '</div>'
       + '<div class="pv-work"><div class="pv-main" id="pv-main"></div>'
@@ -416,18 +428,98 @@
       + (S.zImg ? '<img class="pv-zimg" src="' + S.zImg + '" alt="Standing-Katz chart supplied by the user">' : '') + '</div>';
   }
 
+  /* Everyday workflow: edit essentials beside the live chart. All specialist controls
+     still use the existing state and engine; opening a tool never resets a fluid. */
+  function workspaceConditions() {
+    var f = F(), pu = unitOf('p'), tu = unitOf('T'), body = '';
+    if (f.calcMode === 'single') body += field('p', 'Pressure', pu, { hint: S.gauge ? 'Gauge pressure. The calculator converts it to absolute pressure.' : 'Absolute pressure. Gauge pressure can be selected in Advanced.' });
+    else if (f.calcMode === 'range') body += '<div class="pv-grid2">' + field('pMin', 'From pressure', pu) + field('pMax', 'To pressure', pu) + '</div><p class="pv-note">Pressure curve · increment ' + esc(val('pStep')) + ' ' + esc(unitOf('dp')) + '. Change the increment in Advanced.</p>';
+    else body += '<div class="pv-f" data-f="pList"><label class="pv-l" for="pv-in-pList">Pressure list (' + esc(pu) + ')</label><textarea id="pv-in-pList" data-k="pList" rows="2" aria-describedby="pv-err-pList">' + esc(val('pList')) + '</textarea><span class="pv-err" id="pv-err-pList" data-err="pList"></span><span class="pv-hint">Separate pressures with commas or spaces.</span></div>';
+    body += field('T', 'Temperature', tu);
+    return card('Conditions', body);
+  }
+  function workspaceFluid() {
+    var f = F(), oil = S.fluid === 'oil', body = '';
+    if (oil) {
+      body = '<div class="pv-grid2">'
+        + (f.oilGravityBasis === 'api' ? field('api', 'Oil gravity', '°API', { help: 'api' }) : field('rhoSto', 'Stock-tank density at 60 °F', unitOf('density'), { help: 'api' }))
+        + field('gg', 'Gas gravity', 'air = 1', { help: 'gg' }) + '</div>'
+        + '<span class="pv-l">I know the oil’s</span>'
+        + pills('oilChar', f.oilChar, [['pb', 'Bubble-point pressure'], ['rsb', 'Solution GOR at bubble point']], 'Known oil property')
+        + (f.oilChar === 'pb' ? field('pb', 'Bubble-point pressure', unitOf('p'), { help: 'pb' }) : field('rsb', 'Solution GOR at bubble point', unitOf('Rs') + ' · 60 °F', { help: 'pb' }))
+        ;
+    } else {
+      body = f.gasBasis === 'composition' ? compTable() : field('gg', 'Gas gravity', 'air = 1', { help: 'gg', hint: 'Gas density relative to air. For composition or sour gas, open Advanced.' });
+    }
+    return card(oil ? 'Fluid description' : 'Gas description', body);
+  }
+  function workspaceOptions() {
+    var f = F(), oil = S.fluid === 'oil';
+    var extra = optRow('Calculate at', pills('calcMode', f.calcMode, [['single', 'One pressure'], ['range', 'Pressure range'], ['list', 'Pressure list']], 'Calculation type'))
+      + (f.calcMode === 'range' ? field('pStep', 'Pressure increment', unitOf('dp'), { hint: 'Controls how many points are calculated.' }) : '')
+      + (oil ? optRow('Oil gravity input', pills('oilGravityBasis', f.oilGravityBasis, [['api', 'API gravity'], ['density', 'Stock-tank density']], 'Oil gravity as'))
+        : optRow('Gas input', pills('gasBasis', f.gasBasis, [['gravity', 'Gas gravity'], ['composition', 'Composition']], 'Gas description')));
+    return '<details class="pv-work-options" id="pv-work-options"' + (S.optionsOpen ? ' open' : '') + '><summary>Advanced <span>Change method or add more fluid data</span></summary><div class="pv-options-body">'
+      + extra + (oil ? oilMethodsCard() : gasMethodsCard()) + basisCard()
+      + '<button type="button" class="ui-btn ui-btn-ghost" id="pv-default-methods">Restore default methods</button>'
+      + '<button type="button" class="pv-text-btn" data-goto="methods">Methods and limits</button><p class="pv-note">Defaults are estimates, not measured PVT data. Method verification and limits remain available in More tools.</p></div></details>';
+  }
+  var GUIDE_COPY = {
+    oil: {
+      rs: ['Solution gas–oil ratio', 'How much gas is dissolved in the oil?', 'Rs'],
+      bo: ['Oil formation volume factor', 'How does oil volume in the reservoir compare with stock-tank volume?', 'Bo'],
+      mu: ['Oil viscosity', 'How easily does the live oil flow?', 'μo'],
+      co: ['Oil compressibility', 'How much does oil above bubble point compress?', 'co']
+    },
+    gas: {
+      z: ['Z-factor', 'How much does the gas depart from ideal-gas behavior?', 'Z'],
+      bg: ['Gas formation volume factor', 'Compare gas volume in the reservoir with its standard volume.', 'Bg'],
+      rho: ['Gas density', 'Find the mass of gas per unit volume.', 'ρg'],
+      mu: ['Gas viscosity', 'How easily does the gas flow?', 'μg'],
+      cg: ['Gas compressibility', 'How does gas volume respond to a pressure change?', 'cg']
+    }
+  };
+  function guideCopy() { return GUIDE_COPY[S.fluid][S.chartProp[S.fluid]]; }
+  function progressHtml() {
+    return '<ol class="pv-guide-progress" aria-label="Calculation steps">'
+      + ['Choose property', 'Enter values', 'See result'].map(function (t, i) {
+        var active = G().stage === 'choose' ? 0 : (G().ready ? 2 : 1);
+        return '<li' + (active === i ? ' aria-current="step"' : '') + '><span>' + (i + 1) + '</span>' + t + '</li>';
+      }).join('') + '</ol>';
+  }
+  function propertyPicker() {
+    return '<div class="pv-view pv-guide-start">' + progressHtml()
+      + '<div class="pv-guide-intro"><h2>What would you like to calculate?</h2><p>Choose one property. We’ll guide you through the inputs.</p></div>'
+      + '<div class="pv-choice-grid">' + Object.keys(GUIDE_COPY[S.fluid]).map(function (k) {
+        var c = GUIDE_COPY[S.fluid][k];
+        return '<button type="button" class="pv-choice" data-choose-property="' + k + '"><span class="pv-choice-symbol">' + esc(c[2]) + '</span><strong>' + esc(c[0]) + '</strong><span>' + esc(c[1]) + '</span><em>Calculate ' + esc(c[2]) + ' →</em></button>';
+      }).join('') + '</div><p class="pv-guide-foot">Methods are already selected. You can change them later in Advanced.</p></div>';
+  }
+  function pendingAnswer() {
+    return '<div class="pv-pending" id="pv-pending" role="status"><span class="pv-pending-symbol">' + esc(guideCopy()[2]) + '</span><h3>' + (G().attempted ? 'Check your inputs' : 'Your answer will appear here') + '</h3><p>'
+      + (G().attempted ? 'Correct the highlighted fields, then calculate again.' : 'Enter your values, then choose Calculate. No method selection is needed.')
+      + '</p></div>';
+  }
+  function answerHtml() {
+    if (!G().ready || !res || !res.ok) return pendingAnswer();
+    return '<div class="pv-answer" id="pv-answer" tabindex="-1"><div class="pv-answer-top"><span class="pv-mono">3 · Your result</span><h3>' + esc(guideCopy()[0]) + '</h3></div>'
+      + chartsView() + '</div>';
+  }
   function inputsView() {
-    var oil = S.fluid === 'oil';
-    var head = '<div class="pv-ihead"><div class="pv-ihead-l">'
-      + (S.example[S.fluid] ? '<span class="pv-chip is-example" title="The fields hold example values. Replace them with your fluid data.">' + ICON.info + 'Example data</span>' : '')
-      + '<span class="pv-ihead-t">Required inputs are numbered 1–2; correlations have defaults.</span></div>'
-      + '<div class="pv-ihead-r"><button type="button" class="ui-btn ui-btn-ghost" id="pv-example">Load example</button>'
-      + '<button type="button" class="ui-btn ui-btn-sub pv-btn-clear" id="pv-clear">Clear inputs</button></div></div>';
-    return '<div class="pv-view pv-inputs">' + head + '<div class="pv-errsum" id="pv-errsum" role="alert" hidden></div>'
-      + '<div class="pv-icols"><div class="pv-icol">' + conditionsCard() + (oil ? oilFluidCard() : gasFluidCard()) + '</div>'
-      + '<div class="pv-icol">' + (oil ? oilMethodsCard() : gasMethodsCard()) + basisCard() + '</div></div>'
-      + '<div class="pv-actions pv-next"><span class="pv-next-t" id="pv-next-t"></span><button type="button" class="ui-btn ui-btn-ghost" data-goto="table">View results</button>'
-      + '<button type="button" class="ui-btn ui-btn-primary" data-goto="charts">View charts ' + ICON.arrow + '</button></div></div>';
+    if (G().stage === 'choose') return propertyPicker();
+    var copy = guideCopy();
+    return '<div class="pv-view pv-guided">' + progressHtml()
+      + '<div class="pv-guide-selection"><div><span class="pv-mono">' + esc(S.fluid) + ' calculator</span><h2>' + esc(copy[0]) + ' <small>(' + esc(copy[2]) + ')</small></h2><p>' + esc(copy[1]) + '</p></div><button type="button" class="ui-btn ui-btn-ghost" id="pv-change-property">Change property</button></div>'
+      + '<div class="pv-workspace"><section class="pv-entry" aria-label="Required inputs"><div class="pv-entry-head"><h3>2 · Enter values</h3>'
+      + pills('units', S.units, [['field', 'Field'], ['metric', 'Metric']], 'Unit system') + '</div>'
+      + '<div class="pv-example-row"><span id="pv-example-label"' + (S.example[S.fluid] ? ' class="pv-chip is-example"' : '') + '>' + (S.example[S.fluid] ? 'Example data · replace with your values' : 'Use your fluid data, or try an example.') + '</span>'
+      + '<button type="button" class="pv-text-btn" id="pv-example">Try example</button><button type="button" class="pv-text-btn" id="pv-clear">Clear</button></div>'
+      + '<div class="pv-errsum" id="pv-errsum" role="alert" hidden></div>' + workspaceConditions() + workspaceFluid()
+      + (S.fluid === 'oil' && S.chartProp.oil === 'co' ? '<p class="pv-note">This correlation calculates oil compressibility at and above bubble point. Below it, the result is unavailable.</p>' : '')
+      + '<button type="button" class="ui-btn ui-btn-primary pv-calculate" id="pv-calculate">Calculate ' + esc(copy[2]) + '</button>'
+      + '<div class="pv-guide-method">Using ' + esc(methodLabelFor(S.chartProp[S.fluid])) + '. <span>Change this in Advanced.</span></div>'
+      + workspaceOptions() + '<p class="pv-input-basis">Pressure: ' + esc(unitOf('p')) + '. Standard volumes: ' + esc(basis().short) + '.</p></section>'
+      + '<section class="pv-output" id="pv-guided-output" aria-label="Calculation result">' + answerHtml() + '</section></div></div>';
   }
 
   /* --------------------------------------------------------------- charts */
@@ -445,19 +537,17 @@
       return '<label class="pv-chip pv-chip-cmp"><input type="checkbox" data-cmp="' + k + '"' + (S.compare[S.fluid][k] ? ' checked' : '') + '>' + esc(grp.meta[k].label) + '</label>';
     }).join('');
     return '<div class="pv-view pv-charts">'
-      + '<div class="pv-tools"><div class="pv-pills pv-props" role="group" aria-label="Property to plot">' + props.map(function (k) {
-        var p = E.PROPS[S.fluid][k];
-        return '<button type="button" data-prop="' + k + '" class="' + (k === cur ? 'is-on' : '') + '" aria-pressed="' + (k === cur) + '" title="' + esc(p.label) + '">' + p.sym + '</button>';
-      }).join('') + '</div>'
-      + '<div class="pv-cmp" role="group" aria-label="Compare with"><span class="pv-mono">Compare</span>' + cmp + '</div>'
+      + '<div class="pv-property-intro" id="pv-property-intro"></div>'
+      + (F().calcMode !== 'single' ? '<div class="pv-tools">'
+      + '<details class="pv-compare-options"' + (Object.keys(S.compare[S.fluid]).some(function (k) { return S.compare[S.fluid][k]; }) ? ' open' : '') + '><summary>Compare methods</summary><div class="pv-cmp" role="group" aria-label="Compare with">' + cmp + '</div></details>'
       + '<div class="pv-tools-end"><label class="pv-check"><input type="checkbox" id="pv-ylog"' + (S.yLog[S.fluid + cur] ? ' checked' : '') + '> Log scale</label>'
-      + '<button type="button" class="ui-btn ui-btn-ghost" id="pv-png">Export PNG</button></div></div>'
-      + '<div class="pv-chart-card"><div class="pv-chart-head"><div class="pv-chart-title" id="pv-chart-title"></div><div class="pv-chart-meta" id="pv-chart-meta"></div></div>'
+      + '<button type="button" class="ui-btn ui-btn-ghost" id="pv-png">Export PNG</button></div></div>' : '')
+      + '<div class="pv-chart-card' + (F().calcMode === 'single' ? ' is-single' : '') + '"><div class="pv-chart-head"><div class="pv-chart-title" id="pv-chart-title"></div><div class="pv-chart-meta" id="pv-chart-meta"></div></div>'
       + '<div class="pv-legend" id="pv-legend"></div>'
       + '<div class="pv-chart-host" id="pv-chart-host"></div><div class="pv-single" id="pv-single" hidden></div><div class="pv-chart-msg" id="pv-chart-msg" hidden></div>'
       + '<div class="pv-pointbar" id="pv-pointbar" aria-live="polite"></div></div>'
       + '<div class="pv-notes-row" id="pv-chart-notes"></div>'
-      + '</div>';
+      + '<div class="pv-result-actions"><button type="button" class="ui-btn ui-btn-primary" id="pv-show-trend">' + (F().calcMode === 'single' ? 'Show how it changes with pressure' : 'Edit pressure range') + '</button><button type="button" class="ui-btn ui-btn-ghost" data-goto="table">Results Table</button><button type="button" class="ui-btn ui-btn-ghost" data-help="chart">Help reading this chart</button></div></div>';
   }
 
   function seriesFor(r, k) {
@@ -469,11 +559,13 @@
     var hostEl = q('#pv-chart-host'), msg = q('#pv-chart-msg'), single = q('#pv-single');
     if (!hostEl) return;
     var k = S.chartProp[S.fluid], P = E.PROPS[S.fluid][k];
+    var intro = q('#pv-property-intro'); if (intro) intro.textContent = PROP_HELP[S.fluid === 'gas' && k === 'mu' ? 'mu_gas' : k] || '';
+    var ib = q('#pv-input-basis'); if (ib) ib.textContent = 'Pressure: ' + unitOf('p') + '. Standard volumes: ' + basis().short + '.';
     if (!chart || !hostEl.firstChild) { if (chart) chart.destroy(); chart = PvtChart.create(hostEl, { onSelect: function (i) { setSel(i); renderPointBar(); syncTableSel(); if (S.explain) renderExplain(); } }); }
     var title = q('#pv-chart-title'), meta = q('#pv-chart-meta'), legend = q('#pv-legend'), notes = q('#pv-chart-notes');
     if (!res || !res.ok) {
       chart.render(null); msg.hidden = false; single.hidden = true; hostEl.hidden = false;
-      msg.innerHTML = '<b>No chart yet.</b> ' + esc(errorSummaryText()) + ' <button type="button" class="ui-btn ui-btn-sub" data-goto="inputs">Go to Inputs</button>';
+      msg.innerHTML = '<b>Complete your fluid inputs</b><p>' + esc(errorSummaryText()) + '</p><span>The chart will appear here automatically.</span>'; 
       title.textContent = P.label + ', ' + P.sym; meta.textContent = ''; legend.innerHTML = ''; notes.innerHTML = ''; q('#pv-pointbar').innerHTML = '';
       return;
     }
@@ -537,7 +629,7 @@
   }
   function pointValues(i, compact) {
     var P = E.PROPS[S.fluid], cur = S.chartProp[S.fluid];
-    return Object.keys(P).filter(function (x) { return !P[x].table || (!compact && (x === 'ppr' || x === 'eg')); }).map(function (x) {
+    return Object.keys(P).filter(function (x) { return x === S.chartProp[S.fluid]; }).map(function (x) {
       var v = res.props[x].values[i];
       return '<span class="pv-pv' + (x === cur ? ' is-cur' : '') + '"><b>' + P[x].sym + '</b>' + (v === null ? '<i title="' + esc(res.props[x].reasons[i]) + '">n/a</i>' : fmtProp(x, v)) + '<em>' + esc(propUnitB(x)) + '</em></span>';
     }).join('');
@@ -559,12 +651,13 @@
       + '<button type="button" class="ui-btn ui-btn-ghost pv-eqbtn" data-help="point">Show equation</button>';
   }
   function singleSummary() {
-    var i = 0;
-    return '<div class="pv-single-h"><span class="pv-mono">Result at one pressure</span><b>p = ' + fmtQ('p', res.pressures[0]) + ' ' + esc(U.unit('p', S.units, S.gauge)) + '</b>'
-      + (res.phase ? '<span class="pv-phase is-' + res.phase[0].replace(' ', '-') + '">' + res.phase[0] + '</span>' : '') + '</div>'
-      + '<div class="pv-pvals pv-pvals-lg">' + pointValues(i, false) + '</div>'
-      + '<p class="pv-note">One pressure gives one point, not a curve. Choose <b>Pressure range</b> or <b>Pressure list</b> under Inputs to plot properties against pressure.</p>'
-      + '<button type="button" class="ui-btn ui-btn-ghost" data-help="point">Show equation and substituted values</button>';
+    var k = S.chartProp[S.fluid], value = res.props[k].values[0], reason = res.props[k].reasons[0];
+    return '<div class="pv-answer-value">' + (isNum(value) ? '<strong>' + esc(fmtProp(k, value)) + '</strong><span>' + esc(propUnitB(k)) + '</span>' : '<strong class="pv-unavailable">Not available</strong>') + '</div>'
+      + '<p class="pv-answer-context">At ' + fmtQ('p', res.pressures[0]) + ' ' + esc(unitOf('p')) + ' and ' + esc(fmtT(res.ctx.tF)) + '.</p>'
+      + (res.phase ? '<span class="pv-phase is-' + res.phase[0].replace(' ', '-') + '">' + esc(res.phase[0]) + '</span>' : '')
+      + (reason ? '<p class="pv-note">' + esc(reason) + '</p>' : '')
+      + '<p class="pv-note">Correlation estimate · ' + esc(methodLabelFor(k)) + '.</p>'
+      + '<button type="button" class="ui-btn ui-btn-ghost" data-help="point">Explain this result</button>';
   }
   var PROP_AFFECT = { rs: ['Rs', 'pb'], bo: ['Bo', 'Bo above pb'], mu: ['μo', 'μo above pb', 'μo below pb'], co: ['co'], z: ['Z and dependent properties', 'all gas properties'], bg: ['Z and dependent properties', 'all gas properties'], rho: ['Z and dependent properties', 'all gas properties'], cg: ['Z and dependent properties', 'all gas properties'] };
   function warningsFor(k) {
@@ -843,11 +936,17 @@
     } else if (S.help && HELP[S.help]) {
       ti.textContent = HELP[S.help][0];
       html = sec('What it means', esc(HELP[S.help][1]));
+    } else if (S.help === 'chart') {
+      var prop = S.chartProp[S.fluid], pp = E.PROPS[S.fluid][prop];
+      ti.textContent = 'Reading your chart';
+      html = sec(esc(pp.label), esc(PROP_HELP[S.fluid === 'gas' && prop === 'mu' ? 'mu_gas' : prop] || ''))
+        + sec('How to use it', 'Pressure is on the horizontal axis. Select a point for its values, then choose Show equation for the calculation. A solid line is the active method; dashed lines are optional comparisons. Missing values are gaps, never zero.')
+        + sec('Methods', 'Default methods are already selected. Open Advanced only if you need to change them. Their verification status is in More tools → Methods & References.');
     } else if (v === 'inputs') {
-      ti.textContent = 'Entering the inputs';
-      html = sec('1 · Pressure and temperature', 'One pressure gives one result; a range or a list gives curves. Absolute pressure (psia, bar(a)) is what the correlations use — gauge values are converted by adding 1 atm.')
+      ti.textContent = 'Using the calculator';
+      html = sec('Start here', 'Choose a property, enter your conditions and fluid description, then choose Calculate. The answer appears on the same page. Start with one pressure; choose Show how it changes with pressure to make a curve.')
         + sec('2 · ' + (S.fluid === 'oil' ? 'Oil and gas' : 'Gas'), S.fluid === 'oil' ? esc(HELP.api[1]) + ' ' + esc(HELP.pb[1]) : 'Gas gravity, or a composition (mole fractions or percent; the total must be 1 or 100 unless you tick normalisation, which is reported).')
-        + sec('3 · Correlations', 'Defaults are set. Change them under Correlations; more options are under the expandable section.')
+        + sec('3 · Correlations', 'Methods are selected for you. Open Advanced only to change a method, add composition or sour-gas data, or change the pressure convention. Measured data and references remain in More tools after calculation.')
         + sec('Standard conditions', esc(HELP.basis[1]))
         + sec('Status', 'The status next to the tabs tells you whether results are valid: <b>Input needed</b> (a required field is empty), <b>Invalid input</b>, <b>Calculation failed</b> (the method cannot give a result for these inputs), or <b>Valid</b> — with any range warnings, accuracy notes and assumptions counted.');
     } else if (v === 'charts') {
@@ -897,10 +996,12 @@
   }
   function renderView() {
     var main = q('#pv-main');
+    if (S.view === 'charts') S.view = 'inputs';
     if (chart) { chart.destroy(); chart = null; }
     if (global.OilBatch && S.view !== 'measured') global.OilBatch.unmount();
-    var html = { inputs: inputsView, charts: chartsView, table: tableView, measured: measuredView, methods: methodsView }[S.view]();
+    var html = { inputs: inputsView, charts: inputsView, table: tableView, measured: measuredView, methods: methodsView }[S.view]();
     main.innerHTML = html;
+    root.setAttribute('data-guide', S.view === 'inputs' ? (G().stage === 'choose' ? 'choose' : (G().ready ? 'result' : 'input')) : 'tools');
     main.scrollTop = 0;
     qa('.pv-tab').forEach(function (b) { var on = b.getAttribute('data-view') === S.view; b.classList.toggle('is-on', on); b.setAttribute('aria-selected', on); });
     bindView();
@@ -911,8 +1012,8 @@
   /* repaint everything that depends on the result (never the input fields themselves) */
   function refresh() {
     renderStatus();
-    if (S.view === 'inputs') renderFieldErrors();
-    if (S.view === 'charts') renderChart();
+    if ((S.view === 'inputs' || S.view === 'charts') && G().attempted) renderFieldErrors();
+    if ((S.view === 'inputs' || S.view === 'charts') && G().ready) renderChart();
     if (S.view === 'table') renderTable();
     if (S.view === 'measured') renderMeasured();
     if (S.explain) renderExplain();
@@ -965,7 +1066,7 @@
     res.errors.forEach(function (er) {
       var box = q('[data-err="' + er.field + '"]');
       if (box && er.field !== 'comp') { box.textContent = er.msg; var f = box.closest('.pv-f'); if (f) { f.classList.add('is-err'); var i = f.querySelector('input,select,textarea'); if (i) i.setAttribute('aria-invalid', 'true'); } }
-      if (box && box.closest('details') && !box.closest('details').open) box.closest('details').open = true;
+      if (box) { var parent = box.parentElement; while (parent && parent !== root) { if (parent.tagName === 'DETAILS') parent.open = true; parent = parent.parentElement; } }
     });
     var cb = q('[data-err="comp"]');
     if (cb) cb.innerHTML = res.errors.filter(function (e) { return e.field === 'comp'; }).map(function (e) { return esc(e.msg); }).join('<br>');
@@ -1022,17 +1123,18 @@
     q('#pv-explain-btn').addEventListener('click', function () { setExplain(!S.explain); });
     q('#pv-ex-close').addEventListener('click', function () { setExplain(false); });
     q('#pv-reset').addEventListener('click', resetAll);
-    q('#pv-theme').addEventListener('click', toggleTheme);
+
     root.addEventListener('click', function (e) {
-      var g = e.target.closest('[data-goto]'); if (g) { S.view = g.getAttribute('data-goto'); renderView(); return; }
+      var g = e.target.closest('[data-goto]'); if (g) { var menu = q('.pv-more-tools'); if (menu) menu.open = false; S.view = g.getAttribute('data-goto'); renderView(); return; }
       var h = e.target.closest('[data-help]'); if (h) { e.preventDefault(); setExplain(true, h.getAttribute('data-help')); return; }
-      var fo = e.target.closest('[data-focus]'); if (fo) { var el = q('#pv-in-' + fo.getAttribute('data-focus')) || q('#pv-m-' + fo.getAttribute('data-focus').replace(/Method$/, '')) || q('[data-err="' + fo.getAttribute('data-focus') + '"]'); if (el) { var d = el.closest('details'); if (d) d.open = true; el.focus && el.focus(); } }
+      var fo = e.target.closest('[data-focus]'); if (fo) { var el = q('#pv-in-' + fo.getAttribute('data-focus')) || q('#pv-m-' + fo.getAttribute('data-focus').replace(/Method$/, '')) || q('[data-err="' + fo.getAttribute('data-focus') + '"]'); if (el) { var d = el.parentElement; while (d && d !== root) { if (d.tagName === 'DETAILS') d.open = true; d = d.parentElement; } el.focus && el.focus(); } }
     });
   }
   function onKey(e) { if (e.key === 'Escape' && S.explain && host && host.isConnected && !document.querySelector('.bd-ov, .cd-ov, .sd-ov')) setExplain(false); }
 
   function bindView() {
     var f = F();
+    qa('[data-choose-property]').forEach(function (b) { b.addEventListener('click', function () { chooseProperty(b.getAttribute('data-choose-property')); }); });
     qa('[data-k]').forEach(function (inp) {
       var k = inp.getAttribute('data-k');
       var ev = inp.type === 'checkbox' ? 'change' : 'input';
@@ -1040,13 +1142,13 @@
         f[k] = inp.type === 'checkbox' ? inp.checked : inp.value;
         if (KIND[k] && f.canon) delete f.canon[k];   // typed value replaces the canonical one
         S.example[S.fluid] = false;
-        var chip = q('.pv-chip.is-example'); if (chip) chip.remove();
-        if (inp.type === 'checkbox' && (k === 'sepUse' || k === 'normalize')) { recompute(); if (k === 'sepUse') { S.advanced.oil = true; renderView(); } else refresh(); return; }
+        var chip = q('.pv-chip.is-example'); if (chip) chip.classList.remove('pv-chip', 'is-example'); var exLabel = q('#pv-example-label'); if (exLabel) exLabel.textContent = 'Your inputs';
+        if (inp.type === 'checkbox' && (k === 'sepUse' || k === 'normalize')) { invalidateAnswer(); recompute(); if (k === 'sepUse') { S.advanced.oil = true; renderView(); } else refresh(); return; }
         markStale(); schedule();
       });
     });
     qa('[data-m]').forEach(function (sel) {
-      sel.addEventListener('change', function () { f.m[sel.getAttribute('data-m')] = sel.value; S.compare[S.fluid] = {}; if (sel.closest('details')) S.advanced[S.fluid] = true; recompute(); renderView(); });
+      sel.addEventListener('change', function () { invalidateAnswer(); f.m[sel.getAttribute('data-m')] = sel.value; S.compare[S.fluid] = {}; if (sel.closest('details')) S.advanced[S.fluid] = true; recompute(); renderView(); });
     });
     qa('[data-seg]').forEach(function (g) {
       var key = g.getAttribute('data-seg');
@@ -1054,12 +1156,18 @@
         b.addEventListener('click', function () { setSeg(key, b.getAttribute('data-v')); });
       });
     });
+    var wo = q('#pv-work-options'); if (wo) wo.addEventListener('toggle', function () { S.optionsOpen = wo.open; });
     var adv = q('#pv-adv'); if (adv) adv.addEventListener('toggle', function () { S.advanced[S.fluid] = adv.open; });
     qa('[data-c]').forEach(function (inp) {
       inp.addEventListener('input', function () { f.comp[+inp.getAttribute('data-c')][inp.getAttribute('data-cf')] = inp.value; S.example.gas = false; markStale(); schedule(); });
     });
     var on = function (id, ev, fn) { var el = q(id); if (el) el.addEventListener(ev, fn); };
     on('#pv-example', 'click', function () { loadExample(); });
+    on('#pv-calculate', 'click', calculateSelected);
+    on('#pv-change-property', 'click', function () { G().stage = 'choose'; setExplain(false); renderView(); });
+    on('#pv-show-trend', 'click', function () { invalidateAnswer(); F().calcMode = 'range'; renderView(); var first = q('#pv-in-pMin'); if (first) first.focus(); });
+    on('#pv-default-methods', 'click', function () { invalidateAnswer(); f.m = Object.assign({}, S.fluid === 'oil' ? E.OIL_DEFAULT_M : E.GAS_DEFAULT_M); if (S.fluid === 'gas' && f.gasBasis === 'composition') f.m.pc = 'kay'; S.compare[S.fluid] = {}; recompute(); renderView(); });
+    on('#pv-property', 'change', function (e) { S.chartProp[S.fluid] = e.target.value; S.compare[S.fluid] = {}; recompute(); renderView(); q('#pv-property').focus(); });
     on('#pv-clear', 'click', clearInputs);
     on('#pv-comp-apply', 'click', applyCompPaste);
     on('#pv-zimg', 'change', function (e) { var file = e.target.files && e.target.files[0]; if (file) { if (S.zImg) URL.revokeObjectURL(S.zImg); S.zImg = URL.createObjectURL(file); renderView(); } });
@@ -1101,13 +1209,40 @@
   function insertTemplate() { var t = q('#pv-meas-text'); if (t) { t.value = templateText() + t.value; S.measured[S.fluid].text = t.value; t.focus(); } }
 
   /* inputs changed: until the debounced recalculation lands, results are marked as updating */
+  function invalidateAnswer() {
+    G().ready = false; G().attempted = false;
+    qa('.pv-f.is-err').forEach(function (box) { box.classList.remove('is-err'); var input = box.querySelector('input,select,textarea'); if (input) input.removeAttribute('aria-invalid'); });
+    qa('[data-err]').forEach(function (box) { box.textContent = ''; });
+    var summary = q('#pv-errsum'); if (summary) summary.hidden = true;
+    if (chart) { chart.destroy(); chart = null; }
+    var output = q('#pv-guided-output');
+    if (output) output.innerHTML = pendingAnswer();
+    if (root && S.view === 'inputs') root.setAttribute('data-guide', 'input');
+  }
+  function calculateSelected() {
+    clearTimeout(timer); timer = null;
+    G().attempted = true; recompute(); G().ready = !!res.ok;
+    renderView();
+    var target = q(res.ok ? '#pv-answer' : '#pv-errsum');
+    if (target) { if (!res.ok) target.setAttribute('tabindex', '-1'); target.focus(); }
+  }
+  function chooseProperty(key) {
+    if (!GUIDE_COPY[S.fluid][key]) return;
+    S.chartProp[S.fluid] = key; S.compare[S.fluid] = {};
+    G().stage = 'input'; G().attempted = false; G().ready = false;
+    S.view = 'inputs'; S.optionsOpen = false; setExplain(false);
+    recompute(); renderView();
+    var first = q('[data-k]'); if (first) first.focus();
+  }
   function markStale() {
+    invalidateAnswer();
     var st = q('#pv-status');
     if (st) { st.className = 'pv-status is-stale'; st.innerHTML = '<b>Updating…</b>'; }
   }
 
   function setSeg(key, v) {
     var f = F();
+    if (['units', 'gauge', 'stdBasis', 'measBasis'].indexOf(key) === -1) invalidateAnswer();
     if (key === 'units') convertUnits(v, S.gauge);
     else if (key === 'gauge') convertUnits(S.units, v === '1');
     else if (key === 'stdBasis') S.stdBasis = v;
@@ -1133,28 +1268,32 @@
 
   function switchFluid(fl) {
     if (fl === S.fluid) return;
-    S.fluid = fl;
+    S.fluid = fl; S.view = 'inputs';
     if (opts.onFluid) opts.onFluid(fl);
     recompute(); renderShell();
   }
   function loadExample() {
+    invalidateAnswer();
     var keep = { calcMode: F().calcMode };
     S[S.fluid] = Object.assign(fluidDefaults(S.fluid, S.units, S.gauge), keep);
     S.example[S.fluid] = true;
     recompute(); renderView();
   }
   function clearInputs() {
+    invalidateAnswer();
     var f = F();
-    ['p', 'pMin', 'pMax', 'pStep', 'pList', 'T', 'api', 'rhoSto', 'gg', 'pb', 'rsb', 'psep', 'tsep', 'yCO2', 'yH2S', 'yN2', 'zManual'].forEach(function (k) { if (k in f) f[k] = ''; });
+    ['p', 'pMin', 'pMax', 'pList', 'T', 'api', 'rhoSto', 'gg', 'pb', 'rsb', 'psep', 'tsep', 'yCO2', 'yH2S', 'yN2', 'zManual'].forEach(function (k) { if (k in f) f[k] = ''; });
     if (f.comp) f.comp = blankComp();
-    f.canon = {};
+    var step = toCanon('dp', f.pStep, S.units, false);
+    f.canon = isNum(step) ? { pStep: step } : {};
     S.example[S.fluid] = false;
     clearSel();
     recompute(); renderView();
   }
   function resetAll() {
-    S[S.fluid] = fluidDefaults(S.fluid, S.units, S.gauge);
-    S.example[S.fluid] = true;
+    S[S.fluid] = freshFluid(S.fluid); renderCanon(F(), S.units, S.gauge);
+    S.guide[S.fluid] = newGuide(); S.view = 'inputs'; S.optionsOpen = false;
+    S.example[S.fluid] = false;
     S.measured[S.fluid] = { text: '', basis: '' };
     S.compare[S.fluid] = {}; clearSel();
     recompute(); renderView();
@@ -1250,7 +1389,7 @@
       renderShell();
       document.addEventListener('keydown', onKey);
     },
-    setFluid: function (fl) { if (fl && fl !== S.fluid && host) { S.fluid = fl; recompute(); renderShell(); } },
+    setFluid: function (fl) { if (fl && fl !== S.fluid && host) { S.fluid = fl; S.view = 'inputs'; recompute(); renderShell(); } },
     unmount: function () {
       clearTimeout(timer);
       if (chart) { chart.destroy(); chart = null; }

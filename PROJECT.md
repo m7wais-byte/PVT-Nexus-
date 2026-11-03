@@ -979,3 +979,45 @@ Playback: `GC.gas.runMs` 60 s (x PROCESS_SPEED_MULTIPLIER).
   separator gas 0.36 -> 0.52, oil 0.33 -> 0.48. Recombination (0.67) unchanged.
 - Step 3 drain: reverse-L outlet (horizontal run, one 90° elbow, open end down at 372, 418), air gap above the
   receiver; drops form at the opening and fall only while `qc3Flow` (waterDropStyle). Volumes / timing unchanged.
+
+
+## Calculator live workspace (2026-10-31)
+
+`components/PvtCalc.js` now opens essential inputs and the live property chart together.
+Calculator and Results Table are the only primary views; Measured Data and Methods &
+References remain in More tools. Property names use full labels. Options contains
+correlation selection, pressure increment, composition, sour gas and standard-basis
+settings; existing defaults and all `calc/` equations are unchanged. Comparison curves
+are optional behind Compare methods. Example data is visibly marked; invalid inputs
+clear the chart, and errors inside nested options open their containing disclosures.
+The `.pv-workspace` CSS is scoped to this screen: compact inputs beside the chart on
+desktop, stacked inputs then chart on phones. Full-precision canonical inputs and all
+existing scientific limitations remain in force.
+
+Verification for this UI change: `node --test tests/*.test.js` — 55 passed; syntax
+checks for PvtCalc and the updated browser suite passed. Browser smoke test on the
+branch preview covered simultaneous inputs/chart, live temperature changes, invalid
+pressure clearing, Field/Metric retention (25 oil points), property selection, Gas
+mode, keyboard point selection, equation drawer and reference navigation. The full
+browser suite was adapted to the new navigation and compact chart dimensions but
+was not rerun in this session; phone/device layout and exports need that broader run.
+
+
+## Property-first guided calculator (2026-11-03)
+
+The calculator opens with a property picker for Oil or Gas. A selected property
+opens a blank single-pressure form. Calculate explicitly validates the inputs and
+shows one prominent selected value on the same page. Editing physical inputs or
+methods clears the previous answer; units/gauge conversions retain canonical values.
+A pressure curve is optional, via Show how it changes with pressure or Advanced.
+Methods, composition, sour-gas data and alternate inputs remain in Advanced. Sources,
+measured-data tools, full tables and all engineering limitations are retained.
+
+All real-gas targets share p, T and gravity/composition requirements. The live-oil
+targets use p, T, API/density, gas gravity and Pb/Rsb for phase-dependent properties.
+No calculation equation, correlation default, or published-range metadata was changed.
+
+Validation in this session: 18 in-memory checks of the existing engine and initial
+guided state passed, plus compilation of the UI script. This does not replace the
+full Node/browser regression suites; the earlier UI suite targets the previous
+workspace navigation and needs migration to this guided interaction.
