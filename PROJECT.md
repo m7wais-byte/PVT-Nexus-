@@ -1001,3 +1001,23 @@ pressure clearing, Field/Metric retention (25 oil points), property selection, G
 mode, keyboard point selection, equation drawer and reference navigation. The full
 browser suite was adapted to the new navigation and compact chart dimensions but
 was not rerun in this session; phone/device layout and exports need that broader run.
+
+
+## Property-first guided calculator (2026-11-03)
+
+The calculator opens with a property picker for Oil or Gas. A selected property
+opens a blank single-pressure form. Calculate explicitly validates the inputs and
+shows one prominent selected value on the same page. Editing physical inputs or
+methods clears the previous answer; units/gauge conversions retain canonical values.
+A pressure curve is optional, via Show how it changes with pressure or Advanced.
+Methods, composition, sour-gas data and alternate inputs remain in Advanced. Sources,
+measured-data tools, full tables and all engineering limitations are retained.
+
+All real-gas targets share p, T and gravity/composition requirements. The live-oil
+targets use p, T, API/density, gas gravity and Pb/Rsb for phase-dependent properties.
+No calculation equation, correlation default, or published-range metadata was changed.
+
+Validation in this session: 18 in-memory checks of the existing engine and initial
+guided state passed, plus compilation of the UI script. This does not replace the
+full Node/browser regression suites; the earlier UI suite targets the previous
+workspace navigation and needs migration to this guided interaction.
