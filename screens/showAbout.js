@@ -1,6 +1,6 @@
 /* screen: showAbout — concise project introduction */
 DC.slot('showAbout', `<sc-if value="{{ showAbout }}" hint-placeholder-val="{{ false }}">
-<main class="about" style="height:var(--page-h); overflow:auto; box-sizing:border-box; width:100%; max-width:1400px; margin:0 auto; padding:clamp(18px,3vw,44px); display:flex; flex-direction:column; gap:28px;">
+<main class="about" style="height:var(--page-h); overflow:auto; scrollbar-width:none; box-sizing:border-box; width:100%; max-width:1400px; margin:0 auto; padding:clamp(18px,3vw,44px); display:flex; flex-direction:column; gap:28px;">
   <header style="background:var(--panel); border:1px solid var(--line); border-radius:18px; padding:clamp(22px,3vw,40px);">
     <p style="margin:0 0 8px; font-size:12px; color:var(--accb3); letter-spacing:1px; text-transform:uppercase;">Developed by</p>
     <p style="margin:0 0 28px; font-size:clamp(20px,2.3vw,28px); font-weight:600; color:var(--txt); line-height:1.4;">Mohammed Hilal Al Awaisi</p>
