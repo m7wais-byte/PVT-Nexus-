@@ -54,6 +54,7 @@ function muVB(psig) {                     // Vasquez-Beggs undersaturated oil vi
 }
 /* fall time the device would record, and the viscosity reported from it (mu = K x t) */
 const RES = PTS.map(p => { const t = Math.round(muVB(p) / K_CAL * 100) / 100; return { p, t, mu: K_CAL * t }; });
+window.PVT_VISC_SINGLE = { temperature: TEST_T, points: RES.map(r => Object.assign({}, r)) };
 const BOTTLE_P = PTS[0];                           // SPS/PDS is held at 5,500 psig before injection
 
 /* ---------------- geometry (svg units) ---------------- */
