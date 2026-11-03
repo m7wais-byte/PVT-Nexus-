@@ -42,38 +42,41 @@
      f.canon and never re-parses a rounded display, so the physical inputs cannot drift. Typing in a
      field drops its canonical value: from then on exactly what was typed is used. */
   var KIND = { p: 'p', pMin: 'p', pMax: 'p', pb: 'p', psep: 'p', pStep: 'dp', T: 'T', tsep: 'T', rhoSto: 'density', rsb: 'Rs', pList: 'plist' };
-  function toCanon(kind, text, units, gauge) {
+  function inputUnit(f, k, units, gauge) {
+    return (f.inputUnits || {})[k] || U.inputDefault(KIND[k], units || S.units, gauge === undefined ? S.gauge : gauge);
+  }
+  function toCanon(kind, text, units, gauge, selected) {
+    selected = selected || U.inputDefault(kind, units, gauge);
     if (kind === 'plist') {
       var toks = String(text || '').split(/[\s,;]+/).filter(Boolean), out = [];
-      for (var i = 0; i < toks.length; i++) { var r = E.parse(toks[i]); if (r.state !== 'ok') return undefined; out.push(U.pToPsia(r.v, units, gauge)); }
+      for (var i=0;i<toks.length;i++) { var r=E.parse(toks[i]); if(r.state!=='ok') return undefined; out.push(U.inputToCanon('p',r.v,selected)); }
       return out.length ? out : undefined;
     }
-    var v = E.parse(text);
-    if (v.state !== 'ok') return undefined;
-    if (kind === 'p') return U.pToPsia(v.v, units, gauge);
-    if (kind === 'dp') return U.dpToPsi(v.v, units);          // an increment: never offset by 1 atm
-    if (kind === 'T') return U.tToF(v.v, units);
-    return U.fromDisplay(kind, v.v, units);
+    var v=E.parse(text); return v.state==='ok' ? U.inputToCanon(kind,v.v,selected) : undefined;
   }
-  function displayText(kind, c, units, gauge) {
-    var r7 = function (x) { return String(+x.toPrecision(7)); };    // rounding for display only
-    if (kind === 'plist') return c.map(function (x) { return r7(U.pFromPsia(x, units, gauge)); }).join(', ');
-    if (kind === 'p') return r7(U.pFromPsia(c, units, gauge));
-    if (kind === 'dp') return r7(units === 'metric' ? c / U.PSI_PER_BAR : c);
-    if (kind === 'T') return r7(U.tFromF(c, units));
-    return r7(U.toDisplay(kind, c, units));
+  function displayText(kind,c,units,gauge,selected) {
+    selected=selected || U.inputDefault(kind,units,gauge);
+    var r7=function(x){return String(+x.toPrecision(7));};
+    return kind==='plist' ? c.map(function(x){return r7(U.inputFromCanon('p',x,selected));}).join(', ') : r7(U.inputFromCanon(kind,c,selected));
   }
-  /* make sure every valid unit-bearing field has a canonical value (parsed in the units it was typed in) */
-  function captureCanon(f, units, gauge) {
-    f.canon = f.canon || {};
-    Object.keys(KIND).forEach(function (k) {
-      if (!(k in f) || f.canon[k] !== undefined) return;
-      var c = toCanon(KIND[k], f[k], units, gauge);
-      if (c !== undefined) f.canon[k] = c;
+  function captureCanon(f,units,gauge) {
+    f.canon=f.canon || {};
+    Object.keys(KIND).forEach(function(k){
+      if(!(k in f) || f.canon[k]!==undefined) return;
+      var c=toCanon(KIND[k],f[k],units,gauge,inputUnit(f,k,units,gauge));
+      if(c!==undefined) f.canon[k]=c;
     });
   }
-  function renderCanon(f, units, gauge) {
-    Object.keys(f.canon || {}).forEach(function (k) { f[k] = displayText(KIND[k], f.canon[k], units, gauge); });
+  function renderCanon(f,units,gauge) {
+    Object.keys(f.canon || {}).forEach(function(k){
+      f[k]=displayText(KIND[k],f.canon[k],units,gauge,inputUnit(f,k,units,gauge));
+    });
+  }
+  function inputUnitSelect(k,label) {
+    var kind=KIND[k]; if(!kind) return '';
+    var choices=U.INPUT_UNITS[kind==='plist'?'p':kind], current=inputUnit(F(),k);
+    return '<select class="pv-input-unit" data-input-unit="'+k+'" aria-label="Unit for '+esc(label.replace(/<[^>]*>/g,''))+'">'
+      +choices.map(function(v){return '<option value="'+esc(v)+'"'+(v===current?' selected':'')+'>'+esc(v)+'</option>';}).join('')+'</select>';
   }
   /* example inputs: defined in field units (exact), shown in the current units */
   function fluidDefaults(fluid, units, gauge) {
@@ -176,6 +179,7 @@
   /* -------------------------------------------------------- engine input */
   function engineInput(extra) {
     var f = F();
+    captureCanon(f, S.units, S.gauge);
     var inp = Object.assign({}, f, { fluid: S.fluid, units: S.units, gauge: S.gauge, stdBasis: S.stdBasis, m: Object.assign({}, f.m), canon: Object.assign({}, f.canon) });
     return Object.assign(inp, extra || {});
   }
@@ -320,7 +324,7 @@
     o = o || {};
     return '<div class="pv-f' + (o.wide ? ' is-wide' : '') + '" data-f="' + k + '"><label class="pv-l" for="pv-in-' + k + '">' + label + '</label>' + (o.help ? helpBtn(o.help, label) : '')
       + '<span class="pv-in"><input id="pv-in-' + k + '" data-k="' + k + '" type="text" inputmode="decimal" autocomplete="off" spellcheck="false" value="' + esc(val(k)) + '" aria-describedby="pv-err-' + k + (o.hint ? ' pv-hint-' + k : '') + '">'
-      + (unit ? '<span class="pv-u" aria-hidden="true">' + unit + '</span>' : '') + '</span>'
+      + (KIND[k] ? inputUnitSelect(k, label) : (unit ? '<span class="pv-u" aria-hidden="true">' + unit + '</span>' : '')) + '</span>'
       + '<span class="pv-err" id="pv-err-' + k + '" data-err="' + k + '"></span>'
       + (o.hint ? '<span class="pv-hint" id="pv-hint-' + k + '">' + o.hint + '</span>' : '') + '</div>';
   }
@@ -349,7 +353,7 @@
     var body = optRow('Calculate at', pills('calcMode', f.calcMode, [['single', 'One pressure'], ['range', 'Pressure range'], ['list', 'Pressure list']], 'Calculate at'));
     if (f.calcMode === 'single') body += '<div class="pv-grid2">' + field('p', 'Pressure, p', pu) + field('T', 'Temperature, T', tu) + '</div>';
     else if (f.calcMode === 'range') body += '<div class="pv-grid4">' + field('pMin', 'From, p<sub>min</sub>', pu) + field('pMax', 'To, p<sub>max</sub>', pu) + field('pStep', 'Step, Δp', dpu) + field('T', 'Temperature, T', tu) + '</div>';
-    else body += '<div class="pv-grid2"><div class="pv-f is-wide" data-f="pList"><label class="pv-l" for="pv-in-pList">Pressures (' + pu + ')</label><textarea id="pv-in-pList" data-k="pList" rows="2" spellcheck="false" aria-describedby="pv-err-pList pv-hint-pList">' + esc(val('pList')) + '</textarea><span class="pv-err" id="pv-err-pList" data-err="pList"></span><span class="pv-hint" id="pv-hint-pList">Commas, spaces or new lines.</span></div>' + field('T', 'Temperature, T', tu) + '</div>';
+    else body += '<div class="pv-grid2"><div class="pv-f is-wide" data-f="pList"><label class="pv-l" for="pv-in-pList">Pressure list</label><textarea id="pv-in-pList" data-k="pList" rows="2" spellcheck="false" aria-describedby="pv-err-pList pv-hint-pList">' + esc(val('pList')) + '</textarea>' + inputUnitSelect('pList', 'Pressure list') + '<span class="pv-err" id="pv-err-pList" data-err="pList"></span><span class="pv-hint" id="pv-hint-pList">Commas, spaces or new lines.</span></div>' + field('T', 'Temperature, T', tu) + '</div>';
     return card('Pressure and temperature', body, { n: 1 });
   }
   function oilFluidCard() {
@@ -374,13 +378,13 @@
   }
   function basisCard() {
     var gas = S.fluid === 'gas';
-    var body = optRow('Units', pills('units', S.units, [['field', 'Field'], ['metric', 'Metric']], 'Unit system'))
+    var body = optRow('Input preset / results', pills('units', S.units, [['field', 'Field'], ['metric', 'Metric']], 'Unit system'))
       + optRow('Pressure', pills('gauge', S.gauge ? '1' : '0', [['0', S.units === 'metric' ? 'Absolute, bar(a)' : 'Absolute, psia'], ['1', S.units === 'metric' ? 'Gauge, bar(g)' : 'Gauge, psig']], 'Pressure convention'))
       + (gas ? optRow('Standard volumes' + helpBtn('basis', 'standard conditions'), pills('stdBasis', S.stdBasis, [['corr', '60 °F, 101.325 kPa'], ['lab', '15 °C, 101.325 kPa']], 'Standard-condition basis'))
         + '<p class="pv-note">Applies to Bg and Eg (gas taken as ideal at standard conditions). Changing units does not change this basis.</p>'
         : '<div class="pv-opt"><span class="pv-opt-l">Standard volumes' + helpBtn('basis', 'standard conditions') + '</span><span class="pv-fixed">60 °F, 101.325 kPa (correlation basis)</span></div>'
         + '<p class="pv-note">Rs, Rsb and Bo stay on the correlation basis; a 15 °C laboratory conversion would need the oil’s thermal expansion and is not offered.</p>');
-    return card('Units and standard conditions', body, { cls: 'pv-card-quiet' });
+    return card('Results and standard conditions', body, { cls: 'pv-card-quiet' });
   }
 
   function compTable() {
@@ -432,9 +436,9 @@
      still use the existing state and engine; opening a tool never resets a fluid. */
   function workspaceConditions() {
     var f = F(), pu = unitOf('p'), tu = unitOf('T'), body = '';
-    if (f.calcMode === 'single') body += field('p', 'Pressure', pu, { hint: S.gauge ? 'Gauge pressure. The calculator converts it to absolute pressure.' : 'Absolute pressure. Gauge pressure can be selected in Advanced.' });
-    else if (f.calcMode === 'range') body += '<div class="pv-grid2">' + field('pMin', 'From pressure', pu) + field('pMax', 'To pressure', pu) + '</div><p class="pv-note">Pressure curve · increment ' + esc(val('pStep')) + ' ' + esc(unitOf('dp')) + '. Change the increment in Advanced.</p>';
-    else body += '<div class="pv-f" data-f="pList"><label class="pv-l" for="pv-in-pList">Pressure list (' + esc(pu) + ')</label><textarea id="pv-in-pList" data-k="pList" rows="2" aria-describedby="pv-err-pList">' + esc(val('pList')) + '</textarea><span class="pv-err" id="pv-err-pList" data-err="pList"></span><span class="pv-hint">Separate pressures with commas or spaces.</span></div>';
+    if (f.calcMode === 'single') body += field('p', 'Pressure', pu, { hint: 'Select absolute (a) or gauge (g) pressure beside the value. Gauge uses a 1 atm reference.' });
+    else if (f.calcMode === 'range') body += '<div class="pv-grid2">' + field('pMin', 'From pressure', pu) + field('pMax', 'To pressure', pu) + '</div><p class="pv-note">Pressure curve · increment ' + esc(val('pStep')) + ' ' + esc(inputUnit(f, 'pStep')) + '. Change the increment in Advanced.</p>';
+    else body += '<div class="pv-f" data-f="pList"><label class="pv-l" for="pv-in-pList">Pressure list</label><textarea id="pv-in-pList" data-k="pList" rows="2" aria-describedby="pv-err-pList">' + esc(val('pList')) + '</textarea>' + inputUnitSelect('pList', 'Pressure list') + '<span class="pv-err" id="pv-err-pList" data-err="pList"></span><span class="pv-hint">Separate pressures with commas or spaces.</span></div>';
     body += field('T', 'Temperature', tu);
     return card('Conditions', body);
   }
@@ -518,7 +522,7 @@
       + (S.fluid === 'oil' && S.chartProp.oil === 'co' ? '<p class="pv-note">This correlation calculates oil compressibility at and above bubble point. Below it, the result is unavailable.</p>' : '')
       + '<button type="button" class="ui-btn ui-btn-primary pv-calculate" id="pv-calculate">Calculate ' + esc(copy[2]) + '</button>'
       + '<div class="pv-guide-method">Using ' + esc(methodLabelFor(S.chartProp[S.fluid])) + '. <span>Change this in Advanced.</span></div>'
-      + workspaceOptions() + '<p class="pv-input-basis">Pressure: ' + esc(unitOf('p')) + '. Standard volumes: ' + esc(basis().short) + '.</p></section>'
+      + workspaceOptions() + '<p class="pv-input-basis">Select units beside each input. Results: ' + esc(S.units === 'metric' ? 'Metric' : 'Field') + '. Standard volumes: ' + esc(basis().short) + '.</p></section>'
       + '<section class="pv-output" id="pv-guided-output" aria-label="Calculation result">' + answerHtml() + '</section></div></div>';
   }
 
@@ -1135,6 +1139,16 @@
   function bindView() {
     var f = F();
     qa('[data-choose-property]').forEach(function (b) { b.addEventListener('click', function () { chooseProperty(b.getAttribute('data-choose-property')); }); });
+    qa('[data-input-unit]').forEach(function(sel){
+      sel.addEventListener('change',function(){
+        var k=sel.getAttribute('data-input-unit');
+        captureCanon(f,S.units,S.gauge);
+        f.inputUnits=f.inputUnits || {}; f.inputUnits[k]=sel.value;
+        renderCanon(f,S.units,S.gauge);
+        recompute(); renderView();
+        var next=q('[data-input-unit="'+k+'"]'); if(next) next.focus();
+      });
+    });
     qa('[data-k]').forEach(function (inp) {
       var k = inp.getAttribute('data-k');
       var ev = inp.type === 'checkbox' ? 'change' : 'input';
@@ -1261,6 +1275,7 @@
   function convertUnits(units, gauge) {
     ['oil', 'gas'].forEach(function (fl) {
       captureCanon(S[fl], S.units, S.gauge);
+      S[fl].inputUnits = {};
       renderCanon(S[fl], units, gauge);
     });
     S.units = units; S.gauge = gauge;
@@ -1274,8 +1289,9 @@
   }
   function loadExample() {
     invalidateAnswer();
-    var keep = { calcMode: F().calcMode };
+    var keep = { calcMode: F().calcMode, inputUnits: Object.assign({}, F().inputUnits) };
     S[S.fluid] = Object.assign(fluidDefaults(S.fluid, S.units, S.gauge), keep);
+    renderCanon(F(), S.units, S.gauge);
     S.example[S.fluid] = true;
     recompute(); renderView();
   }
@@ -1284,7 +1300,7 @@
     var f = F();
     ['p', 'pMin', 'pMax', 'pList', 'T', 'api', 'rhoSto', 'gg', 'pb', 'rsb', 'psep', 'tsep', 'yCO2', 'yH2S', 'yN2', 'zManual'].forEach(function (k) { if (k in f) f[k] = ''; });
     if (f.comp) f.comp = blankComp();
-    var step = toCanon('dp', f.pStep, S.units, false);
+    var step = f.canon && f.canon.pStep !== undefined ? f.canon.pStep : toCanon('dp', f.pStep, S.units, false, inputUnit(f, 'pStep'));
     f.canon = isNum(step) ? { pStep: step } : {};
     S.example[S.fluid] = false;
     clearSel();
@@ -1314,7 +1330,7 @@
   /* ---------------------------------------------------------------- exports */
   function inputLines() {
     var f = F(), L = [], pu = U.unit('p', S.units, S.gauge), tu = U.unit('T', S.units);
-    var add = function (lbl, k, u) { if (f[k] !== undefined && String(f[k]).trim() !== '') L.push(lbl + ' = ' + f[k] + (u ? ' ' + u : '')); };
+    var add = function (lbl, k, u) { if (KIND[k]) u = inputUnit(f, k) + (k === 'rsb' ? ' at 60 °F' : ''); if (f[k] !== undefined && String(f[k]).trim() !== '') L.push(lbl + ' = ' + f[k] + (u ? ' ' + u : '')); };
     if (f.calcMode === 'single') add('Pressure', 'p', pu);
     else if (f.calcMode === 'range') { add('Pressure from', 'pMin', pu); add('Pressure to', 'pMax', pu); add('Pressure step', 'pStep', U.unit('dp', S.units)); }
     else add('Pressure list', 'pList', pu);

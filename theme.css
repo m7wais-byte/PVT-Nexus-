@@ -1240,3 +1240,9 @@ html.vp-stack .bhs-steps { overflow:visible; }
   .pv-output .pv-chart-card.is-single { min-height:0; height:auto; padding:20px; }
   .pv-guided .pv-workspace { display:flex; }
 }
+
+/* Per-input unit selectors: keep the value and its unit together. */
+.pv-in .pv-input-unit { width:auto; max-width:132px; flex:0 0 auto; font-family:inherit; font-size:12px; padding:8px 22px 8px 8px; border:0; border-left:1px solid var(--line2); border-radius:0; background:var(--chipbg); color:var(--txt); cursor:pointer; min-height:40px; }
+.pv-in input { min-width:0; }
+.pv-in .pv-input-unit:focus-visible { outline:2px solid var(--pv-acc); outline-offset:-2px; }
+.pv-f > .pv-input-unit { justify-self:end; max-width:150px; min-height:40px; padding:7px 10px; border:1px solid var(--line2); border-radius:7px; background:var(--panel); color:var(--txt); }
