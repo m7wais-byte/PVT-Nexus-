@@ -96,7 +96,7 @@ function chart(pts, xlab, ylab, yfmt) {
   add('rect', { x: mL, y: mT, width: W - mL - mR, height: H - mT - mB, class: 'rp-frame' });
   var d = pts.map(function (p, k) { return (k ? 'L' : 'M') + X(p[0]).toFixed(1) + ' ' + Y(p[1]).toFixed(1); }).join(' ');
   add('path', { d: d, class: 'rp-line' });
-  pts.forEach(function (p) { add('circle', { cx: X(p[0]), cy: Y(p[1]), r: 3.4, class: 'rp-dot' }); });
+  pts.forEach(function (p) { if (p[2] === false) return; add('circle', { cx: X(p[0]), cy: Y(p[1]), r: 3.4, class: 'rp-dot' }); });
   txt((mL + W - mR) / 2, H - 8, xlab, 'middle', 11);
   var yl = txt(0, 0, ylab, 'middle', 11);
   yl.setAttribute('transform', 'translate(15,' + ((mT + H - mB) / 2) + ') rotate(-90)');
@@ -153,7 +153,7 @@ function build() {
     var ribbon=el('div','rp-result-line','Psat ' + kp(pv.psat[0]) + ' psig at ' + pv.psat[1].toFixed(1) + ' cc');p.appendChild(ribbon);
     table(p,['Pressure (psig)','Cell volume (cc)'],pv.points.map(function(r){return [kp(r[0]),r[1].toFixed(3)];}));
     // Include the intersection when joining the two illustrative linear trends.
-    plot(p,pv.points.concat([pv.psat]),'Pressure (psig)','Cell volume (cc)',2);
+    plot(p,pv.points.concat([[pv.psat[0],pv.psat[1],false]]),'Pressure (psig)','Cell volume (cc)',2);
   } else p.appendChild(el('p','rp-p','PV results unavailable.'));
   var d = section('dl','Differential liberation','80 cc initial charge at 5,000 psig · Six pressure stages.');
   if (dl) {
