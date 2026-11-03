@@ -21,7 +21,13 @@
   var MW_AIR = 28.96;
   var R_GAS = 10.7316;          // psia·ft³/(lbmol·°R)
   var LBFT3_TO_GCC = 0.01601846337;
-  var RHO_W = 62.4;             // lbm/ft³, water reference used with γo (Ahmed 2019)
+  /* Water reference for γo = SG(60/60 °F): the density of water at 60 °F, 999.016 kg/m³ (ASTM D1250-08 /
+     API MPMS Ch. 11.1; IAPWS-95 gives 999.017 kg/m³ at 101.325 kPa). Until 2026-11-03 this was the rounded
+     62.4 lbm/ft³ (= 999.55 kg/m³, 0.054 % high, about +0.09 °API at 35 °API). Water at 15 °C is 999.103 kg/m³ —
+     a different reference, so a 15 °C density is first brought to 60 °F (see oilContext). */
+  var RHO_W_KGM3_60F = 999.016;
+  var RHO_W = RHO_W_KGM3_60F / U.KGM3_PER_LBFT3;   // 62.3664 lbm/ft³
+  var DT_15C_TO_60F = (60 - 32) * 5 / 9 - 15;       // 0.5556 °C
   var MAX_POINTS = 500;
   var COMP_TOL = 1e-3;
   /* One pressure tolerance, in canonical units (psi), used for every pressure comparison:
@@ -60,7 +66,7 @@
     p: 'Pressure', pMin: 'Minimum pressure', pMax: 'Maximum pressure', pStep: 'Pressure increment', pList: 'Pressure list',
     T: 'Temperature', api: 'Oil gravity (API)', rhoSto: 'Stock-tank oil density', gg: 'Gas specific gravity',
     pb: 'Bubble-point pressure', rsb: 'Solution GOR at pb (Rsb)', psep: 'Separator pressure', tsep: 'Separator temperature',
-    comp: 'Gas composition', yCO2: 'yCO2', yH2S: 'yH2S', yN2: 'yN2', zManual: 'Z read from chart',
+    comp: 'Gas composition', alpha: 'Oil thermal expansion coefficient', yCO2: 'yCO2', yH2S: 'yH2S', yN2: 'yN2', zManual: 'Z read from chart',
     pcMethod: 'Pseudo-critical method', sourMethod: 'Sour-gas correction', zMethod: 'Z-factor method'
   };
   /* collects errors per field. kind: 'missing' (empty required field), 'invalid' (value or combination
@@ -244,9 +250,23 @@
       var rho = rhoC !== undefined ? (rhoC > 0 ? rhoC : (bag.add('rhoSto', 'Oil density must be greater than 0'), NaN)) : need(bag, inp, 'rhoSto', 'Oil density', { gt0: true });
       if (isNum(rho)) {
         var rhoLb = rhoC !== undefined ? rho : (inp.units === 'metric' ? rho / U.KGM3_PER_LBFT3 : rho);
-        ctx.gammaO = rhoLb / RHO_W;
-        ctx.api = 141.5 / ctx.gammaO - 131.5;
-        ctx.apiKind = 'derived';
+        /* density measured at 15 °C: V(T) = V15·[1 + α(T − 15 °C)], so ρ(60 °F) = ρ15 / (1 + α·0.5556 °C).
+           α is the oil's own volumetric thermal expansion coefficient, entered by the user — no generic
+           petroleum-table constants are assumed. */
+        ctx.rhoBasis = inp.rhoBasis === '15C' ? '15C' : '60F';
+        if (ctx.rhoBasis === '15C') {
+          var al = parse(inp.alpha);
+          if (al.state === 'empty') { bag.add('alpha', 'Input required — a 15 °C density needs the oil’s thermal expansion to convert it to 60 °F'); rhoLb = NaN; }
+          else if (al.state === 'bad') { bag.add('alpha', 'Enter a number'); rhoLb = NaN; }
+          else if (!(al.v > 0) || al.v > 0.005) { bag.add('alpha', 'Expansion coefficient must be between 0 and 0.005 1/°C'); rhoLb = NaN; }
+          else { ctx.alpha = al.v; ctx.rho15 = rhoLb; rhoLb = rhoLb / (1 + al.v * DT_15C_TO_60F); }
+        }
+        if (isNum(rhoLb)) {
+          ctx.rho60 = rhoLb;
+          ctx.gammaO = rhoLb / RHO_W;
+          ctx.api = 141.5 / ctx.gammaO - 131.5;
+          ctx.apiKind = 'derived';
+        }
       }
     } else {
       var api = need(bag, inp, 'api', 'API gravity');
@@ -335,7 +355,7 @@
     var gCo = m.co === 'vasquez_beggs' ? ctx.ggs : ctx.gg;
 
     res.scalars.unshift(
-      { key: 'api', label: 'API gravity', q: 'none', v: api, kind: ctx.apiKind, method: ctx.apiKind === 'derived' ? 'From stock-tank oil density: γo = ρo/62.4, API = 141.5/γo − 131.5' : 'Entered value', unitText: '°API' },
+      { key: 'api', label: 'API gravity', q: 'none', v: api, kind: ctx.apiKind, method: ctx.apiKind === 'derived' ? (ctx.rhoBasis === '15C' ? 'ρo(60 °F) = ρo(15 °C)/(1 + α·0.5556 °C), α = ' + fmt(ctx.alpha, 4) + ' 1/°C; ' : '') + 'γo = ρo(60 °F)/ρw(60 °F), ρw = 999.016 kg/m³ (62.366 lbm/ft³); API = 141.5/γo − 131.5' : 'Entered value', unitText: '°API' },
       { key: 'gammaO', label: 'Oil specific gravity, γo', q: 'none', v: ctx.gammaO, kind: 'derived', method: 'γo = 141.5/(API + 131.5)', unitText: 'water = 1' },
       { key: 'gg', label: 'Gas specific gravity, γg', q: 'none', v: ctx.gg, kind: 'input', method: 'Entered value', unitText: 'air = 1' }
     );
@@ -351,13 +371,13 @@
     );
 
     var keys = ['rs', 'bo', 'mu', 'co'];
-    keys.forEach(function (k) { res.props[k].values = []; res.props[k].reasons = []; });
+    keys.forEach(function (k) { res.props[k].values = []; res.props[k].reasons = []; res.props[k].raw = []; });
     res.phase = []; res.inserted = inserted;
 
     list.forEach(function (p) {
       var ph = phaseOf(p, pb), sat = ph === 'saturated';
       res.phase.push(ph);
-      var rs, bo, mu, co, why = {};
+      var rs, bo, mu, co, why = {}, raw = {};
       if (sat) {
         rs = scale * rsF(p, tF, api, gRs);
         bo = boF(rs, tF, api, gBo);
@@ -368,12 +388,20 @@
         bo = C.oil.boAbove[m.co](p, pb, bob, rsb, tF, api, gCo);
         mu = C.oil.underVB(muob, p, pb);
         co = C.oil.co[m.co](p, rsb, tF, api, gCo);
-        if (!(co > 0)) { why.co = coLabel + ' gives co ≤ 0 for these inputs (outside its usable domain).'; co = NaN; why.bo = 'Bo above pb needs a positive co.'; bo = NaN; }
+        raw.co = co;
+        if (!(co > 0)) {
+          var aTxt = m.co === 'vasquez_beggs' ? ' (A = ' + fmt(C.oil.vbCoA(rsb, tF, api, gCo), 5) + ')' : '';
+          why.co = coLabel + ' returns co = ' + fmt(co, 4) + ' 1/psi' + aTxt + ' for these inputs. A compressibility ≤ 0 is not physical, so no value is reported.';
+          raw.bo = bo;
+          why.bo = 'Bo above pb is Bob·exp(−∫co dp) with the same ' + coLabel + ' co. Here co ≤ 0' + aTxt + ', so Bo would rise with pressure above pb (' + fmt(bo, 6) + ' rb/STB), which is not physical — no value is reported.';
+          co = NaN; bo = NaN;
+        }
       }
       if (!isNum(rs) || rs < 0) { why.rs = rsLabel + ' cannot be evaluated here (outside its mathematical domain).'; rs = NaN; }
       if (!isNum(bo)) { why.bo = why.bo || boLabel + ' cannot be evaluated here.'; bo = NaN; }
       if (!isNum(mu)) { why.mu = 'Viscosity chain cannot be evaluated (dead-oil correlation outside its mathematical domain).'; mu = NaN; }
       push(res, 'rs', rs, why.rs); push(res, 'bo', bo, why.bo); push(res, 'mu', mu, why.mu); push(res, 'co', co, why.co);
+      res.props.co.raw.push(isNum(raw.co) ? raw.co : null); res.props.bo.raw.push(isNum(raw.bo) ? raw.bo : null);
     });
     res.pressures = list;
 
@@ -643,6 +671,8 @@
     var p = res.pressures[i], ctx = res.ctx, m = ctx.m, M = C.META, L = [];
     var out = { p: p, key: key, lines: L, method: '', eq: '' };
     var f = function (x, s) { return fmt(x, s || 5); };
+    /* the reported value, or the correlation's own output when it was rejected as not physical */
+    var vr = function (k) { var v = res.props[k].values[i]; if (v !== null) return f(v); var rw = res.props[k].raw && res.props[k].raw[i]; return isNum(rw) ? f(rw) + ' (correlation output, rejected: not physical)' : 'not available'; };
     if (res.fluid === 'oil') {
       var tF = ctx.tF, api = ctx.api, pb = res.pb, rsb = res.rsb, sat = phaseOf(p, pb) === 'saturated';
       var gRs = ggFor(m.rs, ctx), gBo = ggFor(m.bo, ctx);
@@ -669,9 +699,9 @@
         } else {
           var bob = scalar(res, 'bob'), gCo = m.co === 'vasquez_beggs' ? ctx.ggs : ctx.gg;
           out.method = M.co[m.co].label + ' (above pb)'; out.eq = M.co[m.co].eq;
-          L.push('Bob = ' + M.bo[m.bo].label + '(Rsb) = ' + f(bob));
-          if (m.co === 'vasquez_beggs') { var A = C.oil.vbCoA(rsb, tF, api, gCo); L.push('A = (−1433 + 5·' + f(rsb) + ' + 17.2·' + f(tF, 4) + ' − 1180·' + f(gCo, 4) + ' + 12.61·' + f(api, 4) + ')/10⁵ = ' + f(A)); L.push('Bo = ' + f(bob) + '·(' + f(pb) + '/' + f(p) + ')^' + f(A) + ' = ' + f(res.props.bo.values[i])); }
-          else { var Ap = 1.705e-7 / 0.4094 * C.oil.pfCoK(rsb, tF, api, gCo); L.push('A = 4.1646×10⁻⁷·Rsb^0.69357·γg^0.1885·API^0.3272·T^0.6729 = ' + f(Ap)); L.push('Bo = ' + f(bob) + '·exp[−' + f(Ap) + '·(' + f(p) + '^0.4094 − ' + f(pb) + '^0.4094)] = ' + f(res.props.bo.values[i])); }
+          L.push('Bob from ' + M.bo[m.bo].label + ' at Rs = Rsb:'); boLines(L, m.bo, rsb, tF, api, gBo, ctx.gammaO, bob, f, 'Bob');
+          if (m.co === 'vasquez_beggs') { var A = C.oil.vbCoA(rsb, tF, api, gCo); L.push('A = (−1433 + 5·' + f(rsb) + ' + 17.2·' + f(tF, 4) + ' − 1180·' + f(gCo, 4) + ' + 12.61·' + f(api, 4) + ')/10⁵ = ' + f(A)); L.push('Bo = ' + f(bob) + '·(' + f(pb) + '/' + f(p) + ')^' + f(A) + ' = ' + vr('bo')); }
+          else if (m.co === 'petrosky_farshad') { var Ap = 1.705e-7 / 0.4094 * C.oil.pfCoK(rsb, tF, api, gCo); L.push('A = 4.1646×10⁻⁷·Rsb^0.69357·γg^0.1885·API^0.3272·T^0.6729 = ' + f(Ap)); L.push('Bo = ' + f(bob) + '·exp[−' + f(Ap) + '·(' + f(p) + '^0.4094 − ' + f(pb) + '^0.4094)] = ' + vr('bo')); }
         }
       } else if (key === 'mu') {
         var muod = scalar(res, 'muod');
@@ -684,8 +714,8 @@
         out.method = M.co[m.co].label; out.eq = M.co[m.co].eq;
         var gC = m.co === 'vasquez_beggs' ? ctx.ggs : ctx.gg;
         if (sat) L.push(res.props.co.reasons[i]);
-        else if (m.co === 'vasquez_beggs') { var Av = C.oil.vbCoA(rsb, tF, api, gC); L.push('A = (−1433 + 5·' + f(rsb) + ' + 17.2·' + f(tF, 4) + ' − 1180·' + f(gC, 4) + ' + 12.61·' + f(api, 4) + ')/10⁵ = ' + f(Av)); L.push('co = A/p = ' + f(Av) + '/' + f(p) + ' = ' + f(res.props.co.values[i]) + ' 1/psi'); }
-        else { var Kp = C.oil.pfCoK(rsb, tF, api, gC); L.push('K = Rsb^0.69357·γg^0.1885·API^0.3272·T^0.6729 = ' + f(rsb) + '^0.69357·' + f(gC, 4) + '^0.1885·' + f(api, 4) + '^0.3272·' + f(tF, 4) + '^0.6729 = ' + f(Kp)); L.push('co = 1.705×10⁻⁷·K·p^−0.5906 = 1.705×10⁻⁷·' + f(Kp) + '·' + f(p) + '^−0.5906 = ' + f(res.props.co.values[i]) + ' 1/psi'); }
+        else if (m.co === 'vasquez_beggs') { var Av = C.oil.vbCoA(rsb, tF, api, gC); L.push('A = (−1433 + 5·' + f(rsb) + ' + 17.2·' + f(tF, 4) + ' − 1180·' + f(gC, 4) + ' + 12.61·' + f(api, 4) + ')/10⁵ = ' + f(Av)); L.push('co = A/p = ' + f(Av) + '/' + f(p) + ' = ' + vr('co') + ' 1/psi'); }
+        else { var Kp = C.oil.pfCoK(rsb, tF, api, gC); L.push('K = Rsb^0.69357·γg^0.1885·API^0.3272·T^0.6729 = ' + f(rsb) + '^0.69357·' + f(gC, 4) + '^0.1885·' + f(api, 4) + '^0.3272·' + f(tF, 4) + '^0.6729 = ' + f(Kp)); L.push('co = 1.705×10⁻⁷·K·p^−0.5906 = 1.705×10⁻⁷·' + f(Kp) + '·' + f(p) + '^−0.5906 = ' + vr('co') + ' 1/psi'); }
       }
     } else {
       var pc = res.pc, tR = ctx.tR, ppr = p / pc.ppc, tpr = tR / pc.tpc, z = res.props.z.values[i];
@@ -722,24 +752,29 @@
     return out;
   }
   /* substituted-value lines for the saturated Bo correlations other than Standing (same expressions as PVTCorr) */
-  function boLines(L, mk, rs, tF, api, g, gO, bo, f) {
-    if (mk === 'vasquez_beggs') {
+  function boLines(L, mk, rs, tF, api, g, gO, bo, f, sym) {
+    sym = sym || 'Bo';
+    if (mk === 'standing') {
+      var ts = rs * Math.sqrt(g / gO) + 1.25 * tF;
+      L.push('F = ' + f(rs) + '·(' + f(g, 4) + '/' + f(gO) + ')^0.5 + 1.25·' + f(tF, 4) + ' = ' + f(ts));
+      L.push(sym + ' = 0.9759 + 0.00012·' + f(ts) + '^1.2 = ' + f(bo));
+    } else if (mk === 'vasquez_beggs') {
       var c = api <= 30 ? [4.677e-4, 1.751e-5, -1.811e-8] : [4.670e-4, 1.100e-5, 1.337e-9];
       L.push('API ' + (api <= 30 ? '≤' : '>') + ' 30 → C1 = ' + c[0] + ', C2 = ' + c[1] + ', C3 = ' + c[2]);
-      L.push('Bo = 1 + ' + c[0] + '·' + f(rs) + ' + (' + f(tF, 4) + ' − 60)·(' + f(api, 4) + '/' + f(g, 4) + ')·(' + c[1] + ' + ' + c[2] + '·' + f(rs) + ') = ' + f(bo));
+      L.push(sym + ' = 1 + ' + c[0] + '·' + f(rs) + ' + (' + f(tF, 4) + ' − 60)·(' + f(api, 4) + '/' + f(g, 4) + ')·(' + c[1] + ' + ' + c[2] + '·' + f(rs) + ') = ' + f(bo));
     } else if (mk === 'glaso') {
       var st = rs * Math.pow(g / gO, 0.526) + 0.968 * tF, Lg = Math.log10(st), A = -6.58511 + 2.91329 * Lg - 0.27683 * Lg * Lg;
       L.push('Bo* = ' + f(rs) + '·(' + f(g, 4) + '/' + f(gO) + ')^0.526 + 0.968·' + f(tF, 4) + ' = ' + f(st));
       L.push('A = −6.58511 + 2.91329·log ' + f(st) + ' − 0.27683·(log ' + f(st) + ')² = ' + f(A));
-      L.push('Bo = 1 + 10^' + f(A) + ' = ' + f(bo));
+      L.push(sym + ' = 1 + 10^' + f(A) + ' = ' + f(bo));
     } else if (mk === 'marhoun') {
       var F = Math.pow(rs, 0.74239) * Math.pow(g, 0.323294) * Math.pow(gO, -1.20204);
       L.push('F = ' + f(rs) + '^0.74239·' + f(g, 4) + '^0.323294·' + f(gO) + '^−1.20204 = ' + f(F));
-      L.push('Bo = 0.497069 + 8.62963×10⁻⁴·' + f(tF + 460) + ' + 1.82594×10⁻³·' + f(F) + ' + 3.18099×10⁻⁶·' + f(F) + '² = ' + f(bo));
+      L.push(sym + ' = 0.497069 + 8.62963×10⁻⁴·' + f(tF + 460) + ' + 1.82594×10⁻³·' + f(F) + ' + 3.18099×10⁻⁶·' + f(F) + '² = ' + f(bo));
     } else {
       var t = Math.pow(rs, 0.3738) * (Math.pow(g, 0.2914) / Math.pow(gO, 0.6265)) + 0.24626 * Math.pow(tF, 0.5371);
       L.push('X = ' + f(rs) + '^0.3738·(' + f(g, 4) + '^0.2914/' + f(gO) + '^0.6265) + 0.24626·' + f(tF, 4) + '^0.5371 = ' + f(t));
-      L.push('Bo = 1.0113 + 7.2046×10⁻⁵·' + f(t) + '^3.0936 = ' + f(bo));
+      L.push(sym + ' = 1.0113 + 7.2046×10⁻⁵·' + f(t) + '^3.0936 = ' + f(bo));
     }
   }
   /* substituted-value lines for the dead-oil viscosity correlations */

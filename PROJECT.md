@@ -1050,3 +1050,26 @@ The Gas calculator keeps its property-first flow unchanged.
 * Tests: `node tests/oil-workflow.e2e.js` (browser, 54 checks incl. phone overflow and a Gas smoke check);
   `tests/pvt-consistency.test.js` (physical trends and continuity at pb for every oil method combination,
   gas derived-property consistency). `tests/ui.e2e.js` targets an older layout and already failed on main.
+
+
+## Shared calculator workflow, audit fixes (2026-11-04, same branch)
+
+* **Gas uses the same workflow as Oil**: inputs once (p, T, γg) → Z, Bg, ρg, μg, cg together → full-page
+  "Explain this property" with graph, table and Z-method comparison. Composition, sour-gas corrections,
+  pseudo-critical / Z / viscosity methods, ideal-gas model, manual chart Z and the Bg standard basis are under
+  Advanced. The property picker is gone for both fluids; the old guided-UI functions in `PvtCalc.js` are no
+  longer reached (`inputsView` returns `wfView`) and can be deleted in a clean-up.
+* **PR #13 integrated** (merged into this branch, not into main): `PVTUnits.INPUT_UNITS / inputToCanon /
+  inputFromCanon` drive every per-input unit selector of both calculators (p: psia, psig, kPa(a/g), MPa(a/g),
+  bar(a/g); T: °F, °C, K, °R; density; Rsb). Result units (Field / Metric) are display only and keep the
+  per-input units.
+* **Status is truthful**: "All n calculated" only when every property has a value; otherwise "k of n calculated
+  — X unavailable", a banner naming the properties, and the reason on each card. Errors: "Input needed",
+  "Invalid input" or "Calculation failed".
+* **Engine**: a correlation co ≤ 0 is reported with its raw value and A (Vasquez-Beggs) and stays unavailable;
+  Bo above pb gives the same explicit reason; `props.co.raw / props.bo.raw` keep the rejected outputs.
+  Density → API uses water at 60 °F = 999.016 kg/m³ (was 62.4 lbm/ft³); a 15 °C density needs the oil's thermal
+  expansion α and is moved to 60 °F before γo (no generic petroleum-table constants assumed).
+* **Verification**: `calc/VERIFICATION.md` (method-by-method matrix, Vasquez-Beggs C3 investigation, the reported
+  case worked step by step). Tests: `tests/pvt-regression-cases.test.js`, `tests/pvt-consistency.test.js`,
+  `tests/pvt-input-units.test.js` (PR #13), and the rewritten `tests/ui.e2e.js` (both calculators).
