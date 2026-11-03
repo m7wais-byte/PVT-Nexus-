@@ -52,6 +52,7 @@ const SKIP_PHASES = ['set', 'a2b', 'hold', 'b2a', 'stab', 'read', 'rec', 'next']
 // shared, read-only: the proven Validation PV cycle (timing, agitation route, bubble seeds) is
 // reused by Differential Liberation (StageDiffLib) so both tests follow the same sequence.
 window.PVT_PV = {
+  report: { psat: PSAT_PV.slice(), points: DATA.map(p => p.slice()) },
   T: { SET: T_SET, SET_PAUSE: T_SET_PAUSE, A2B: T_A2B, HOLD: T_HOLD, B2A: T_B2A, STAB: T_STAB, READ: T_READ,
        REC: T_REC, COUNT: T_COUNT, NEXT: T_NEXT, FIT: T_FIT, SHOW: T_SHOW, RETURN: T_RETURN },
   ROUTE_AB: ROUTE_AB, ROUTE_BA: ROUTE_BA, LINE_L: LINE_L, BUB_SEEDS: BUB_SEEDS, SKIP_PHASES: SKIP_PHASES,
