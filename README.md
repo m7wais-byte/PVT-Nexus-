@@ -92,7 +92,7 @@ A full **Final Report** assembled from the simulator's own stage values: cover, 
 Every sample bottle in the procedures uses the approved **Oil Sample Bottle** (floating-piston cylinder with valve protectors, seals, guide ring and a loose mixing ring) and **Gas Sample Bottle** (seamless double-ended cylinder) designs — the same two drawings on every page and in Bottle Details, with the page tubing connected to their valve outlets. Each page has a **Bottle Details** button (and the bottle itself is clickable) that opens the bottle in a 2D technical view or an interactive 3D model, exterior or cutaway, with part explanations and the operating principle. Opening it pauses the running stage; **Back to Procedure** returns to the same stage and values, and the procedure resumes when you press Resume.
 
 ### 05 · PVT Calculator
-A full-page engineering calculator with an Oil / Gas selector and five views — **Inputs · Charts · Results Table · Measured Data · Methods & References** — plus the right-side *Explain This Stage* drawer.
+A full-page engineering calculator with an Oil / Gas selector. **Oil:** enter the inputs once (each with its own unit), calculate Rs, Bo, μo and co together, then open *Explain this property* for a full page with the equation, substituted values, a pressure graph with the operating point and bubble point, a results table and a method comparison. **Gas:** choose a property, enter the inputs and calculate. Measured Data and Methods & References are under *More tools*; the *Explain This Stage* drawer explains each screen.
 
 | | Properties and methods |
 |---|---|

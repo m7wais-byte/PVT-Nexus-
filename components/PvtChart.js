@@ -7,7 +7,8 @@
 
    spec = { title, xLabel, yLabel, yLog, series:[{ id, label, kind:'calc'|'meas',
             pts:[[x, y|null], ...], color, dash, primary }],
-            marker:{ x, label } (bubble point), selected, fmtX, fmtY }
+            marker:{ x, label } (bubble point), operating:{ x, label, index, color } (optional),
+            selected, fmtX, fmtY }
 
    * null y = invalid / unavailable: the line breaks there (never joined, never 0)
      and the gap is shaded so it is visible.
@@ -134,6 +135,13 @@
         el('line', { x1: bx, x2: bx, y1: M.t, y2: M.t + ph, stroke: col.txt, 'stroke-width': 1.2, 'stroke-dasharray': '6 4', 'stroke-opacity': 0.7 }, s);
         var mt = el('text', { x: bx + 6, y: M.t + ph - 8, 'font-size': fs, 'font-weight': 600, fill: col.txt }, s); mt.textContent = spec.marker.label;
       }
+      /* operating pressure (optional): a solid accent line, distinct from the dashed pb marker */
+      var op = spec.operating;
+      if (op && isFinite(op.x) && op.x >= tx.lo && op.x <= tx.hi) {
+        var ox = X(op.x), oc = op.color || col.txt;
+        el('line', { x1: ox, x2: ox, y1: M.t, y2: M.t + ph, stroke: oc, 'stroke-width': 1.6, 'stroke-opacity': 0.85 }, s);
+        var ot = el('text', { x: ox + (ox > M.l + pw * 0.7 ? -6 : 6), y: M.t + 14, 'text-anchor': ox > M.l + pw * 0.7 ? 'end' : 'start', 'font-size': fs, 'font-weight': 700, fill: oc }, s); ot.textContent = op.label;
+      }
       /* series */
       spec.series.forEach(function (se) {
         if (se.kind === 'meas') {
@@ -160,6 +168,11 @@
       /* selection + hover */
       if (pr && !forExport) {
         if (hover >= 0 && pr.pts[hover]) el('line', { x1: X(pr.pts[hover][0]), x2: X(pr.pts[hover][0]), y1: M.t, y2: M.t + ph, stroke: col.mut, 'stroke-width': 1, 'stroke-opacity': 0.6 }, s);
+      }
+      /* the operating point on the primary curve: a filled diamond */
+      if (pr && op && op.index >= 0 && pr.pts[op.index] && pr.pts[op.index][1] !== null) {
+        var dx = X(pr.pts[op.index][0]), dy = Y(pr.pts[op.index][1]);
+        el('path', { d: 'M' + dx + ' ' + (dy - 7) + 'L' + (dx + 7) + ' ' + dy + 'L' + dx + ' ' + (dy + 7) + 'L' + (dx - 7) + ' ' + dy + 'Z', fill: op.color || pr.color, stroke: col.bg, 'stroke-width': 1.5 }, s);
       }
       if (pr && sel >= 0 && pr.pts[sel] && pr.pts[sel][1] !== null) {
         var sx = X(pr.pts[sel][0]), sy = Y(pr.pts[sel][1]);

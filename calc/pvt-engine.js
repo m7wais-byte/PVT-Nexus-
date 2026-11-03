@@ -665,7 +665,7 @@
         if (sat) {
           out.method = M.bo[m.bo].label; out.eq = M.bo[m.bo].eq;
           if (m.bo === 'standing') { var t = rs * Math.sqrt(gBo / ctx.gammaO) + 1.25 * tF; L.push('Rs·(γg/γo)^0.5 + 1.25·T = ' + f(rs) + '·(' + f(gBo, 4) + '/' + f(ctx.gammaO) + ')^0.5 + 1.25·' + f(tF, 4) + ' = ' + f(t)); L.push('Bo = 0.9759 + 0.00012·' + f(t) + '^1.2 = ' + f(res.props.bo.values[i])); }
-          else L.push('Bo = ' + M.bo[m.bo].label + '(Rs = ' + f(rs) + ', T = ' + f(tF, 4) + ' °F, API = ' + f(api, 4) + ', γg = ' + f(gBo, 4) + ') = ' + f(res.props.bo.values[i]));
+          else boLines(L, m.bo, rs, tF, api, gBo, ctx.gammaO, res.props.bo.values[i], f);
         } else {
           var bob = scalar(res, 'bob'), gCo = m.co === 'vasquez_beggs' ? ctx.ggs : ctx.gg;
           out.method = M.co[m.co].label + ' (above pb)'; out.eq = M.co[m.co].eq;
@@ -677,13 +677,15 @@
         var muod = scalar(res, 'muod');
         out.method = M.muDead[m.muDead].label + ' → ' + (sat ? M.muSat[m.muSat].label : M.muUnder[m.muUnder].label);
         out.eq = M.muDead[m.muDead].eq + '\n' + (sat ? M.muSat[m.muSat].eq : M.muUnder[m.muUnder].eq);
-        L.push('μod = ' + f(muod) + ' cP');
+        muodLines(L, m.muDead, tF, api, muod, f);
         if (sat) { var rs2 = res.props.rs.values[i], a = 10.715 * Math.pow(rs2 + 100, -0.515), b = 5.44 * Math.pow(rs2 + 150, -0.338); L.push('a = 10.715·(' + f(rs2) + ' + 100)^−0.515 = ' + f(a) + ',  b = 5.44·(' + f(rs2) + ' + 150)^−0.338 = ' + f(b)); L.push('μo = ' + f(a) + '·' + f(muod) + '^' + f(b) + ' = ' + f(res.props.mu.values[i]) + ' cP'); }
         else { var muob = scalar(res, 'muob'), me = C.oil.vbMuExponent(p); L.push('μob = ' + f(muob) + ' cP (Beggs-Robinson at Rsb)'); L.push('m = 2.6·' + f(p) + '^1.187·10^(−3.9×10⁻⁵·' + f(p) + ' − 5) = ' + f(me)); L.push('μo = ' + f(muob) + '·(' + f(p) + '/' + f(pb) + ')^' + f(me) + ' = ' + f(res.props.mu.values[i]) + ' cP'); }
       } else if (key === 'co') {
         out.method = M.co[m.co].label; out.eq = M.co[m.co].eq;
+        var gC = m.co === 'vasquez_beggs' ? ctx.ggs : ctx.gg;
         if (sat) L.push(res.props.co.reasons[i]);
-        else L.push('co = ' + f(res.props.co.values[i]) + ' 1/psi');
+        else if (m.co === 'vasquez_beggs') { var Av = C.oil.vbCoA(rsb, tF, api, gC); L.push('A = (−1433 + 5·' + f(rsb) + ' + 17.2·' + f(tF, 4) + ' − 1180·' + f(gC, 4) + ' + 12.61·' + f(api, 4) + ')/10⁵ = ' + f(Av)); L.push('co = A/p = ' + f(Av) + '/' + f(p) + ' = ' + f(res.props.co.values[i]) + ' 1/psi'); }
+        else { var Kp = C.oil.pfCoK(rsb, tF, api, gC); L.push('K = Rsb^0.69357·γg^0.1885·API^0.3272·T^0.6729 = ' + f(rsb) + '^0.69357·' + f(gC, 4) + '^0.1885·' + f(api, 4) + '^0.3272·' + f(tF, 4) + '^0.6729 = ' + f(Kp)); L.push('co = 1.705×10⁻⁷·K·p^−0.5906 = 1.705×10⁻⁷·' + f(Kp) + '·' + f(p) + '^−0.5906 = ' + f(res.props.co.values[i]) + ' 1/psi'); }
       }
     } else {
       var pc = res.pc, tR = ctx.tR, ppr = p / pc.ppc, tpr = tR / pc.tpc, z = res.props.z.values[i];
@@ -718,6 +720,43 @@
     var r = res.props[key] && res.props[key].reasons[i];
     if (r) out.unavailable = r;
     return out;
+  }
+  /* substituted-value lines for the saturated Bo correlations other than Standing (same expressions as PVTCorr) */
+  function boLines(L, mk, rs, tF, api, g, gO, bo, f) {
+    if (mk === 'vasquez_beggs') {
+      var c = api <= 30 ? [4.677e-4, 1.751e-5, -1.811e-8] : [4.670e-4, 1.100e-5, 1.337e-9];
+      L.push('API ' + (api <= 30 ? '≤' : '>') + ' 30 → C1 = ' + c[0] + ', C2 = ' + c[1] + ', C3 = ' + c[2]);
+      L.push('Bo = 1 + ' + c[0] + '·' + f(rs) + ' + (' + f(tF, 4) + ' − 60)·(' + f(api, 4) + '/' + f(g, 4) + ')·(' + c[1] + ' + ' + c[2] + '·' + f(rs) + ') = ' + f(bo));
+    } else if (mk === 'glaso') {
+      var st = rs * Math.pow(g / gO, 0.526) + 0.968 * tF, Lg = Math.log10(st), A = -6.58511 + 2.91329 * Lg - 0.27683 * Lg * Lg;
+      L.push('Bo* = ' + f(rs) + '·(' + f(g, 4) + '/' + f(gO) + ')^0.526 + 0.968·' + f(tF, 4) + ' = ' + f(st));
+      L.push('A = −6.58511 + 2.91329·log ' + f(st) + ' − 0.27683·(log ' + f(st) + ')² = ' + f(A));
+      L.push('Bo = 1 + 10^' + f(A) + ' = ' + f(bo));
+    } else if (mk === 'marhoun') {
+      var F = Math.pow(rs, 0.74239) * Math.pow(g, 0.323294) * Math.pow(gO, -1.20204);
+      L.push('F = ' + f(rs) + '^0.74239·' + f(g, 4) + '^0.323294·' + f(gO) + '^−1.20204 = ' + f(F));
+      L.push('Bo = 0.497069 + 8.62963×10⁻⁴·' + f(tF + 460) + ' + 1.82594×10⁻³·' + f(F) + ' + 3.18099×10⁻⁶·' + f(F) + '² = ' + f(bo));
+    } else {
+      var t = Math.pow(rs, 0.3738) * (Math.pow(g, 0.2914) / Math.pow(gO, 0.6265)) + 0.24626 * Math.pow(tF, 0.5371);
+      L.push('X = ' + f(rs) + '^0.3738·(' + f(g, 4) + '^0.2914/' + f(gO) + '^0.6265) + 0.24626·' + f(tF, 4) + '^0.5371 = ' + f(t));
+      L.push('Bo = 1.0113 + 7.2046×10⁻⁵·' + f(t) + '^3.0936 = ' + f(bo));
+    }
+  }
+  /* substituted-value lines for the dead-oil viscosity correlations */
+  function muodLines(L, mk, tF, api, muod, f) {
+    if (mk === 'beal') {
+      var a = Math.pow(10, 0.43 + 8.33 / api);
+      L.push('a = 10^(0.43 + 8.33/' + f(api, 4) + ') = ' + f(a));
+      L.push('μod = (0.32 + 1.8×10⁷/' + f(api, 4) + '^4.53)·[360/(' + f(tF, 4) + ' + 200)]^' + f(a) + ' = ' + f(muod) + ' cP');
+    } else if (mk === 'beggs_robinson') {
+      var Z = 3.0324 - 0.02023 * api, x = Math.pow(10, Z) * Math.pow(tF, -1.163);
+      L.push('Z = 3.0324 − 0.02023·' + f(api, 4) + ' = ' + f(Z) + ',  x = 10^' + f(Z) + '·' + f(tF, 4) + '^−1.163 = ' + f(x));
+      L.push('μod = 10^' + f(x) + ' − 1 = ' + f(muod) + ' cP');
+    } else {
+      var ag = 10.313 * Math.log10(tF) - 36.447;
+      L.push('a = 10.313·log ' + f(tF, 4) + ' − 36.447 = ' + f(ag));
+      L.push('μod = 3.141×10¹⁰·' + f(tF, 4) + '^−3.444·(log ' + f(api, 4) + ')^' + f(ag) + ' = ' + f(muod) + ' cP');
+    }
   }
   function scalar(res, key) { var s = res.scalars.filter(function (x) { return x.key === key; })[0]; return s ? s.v : NaN; }
 

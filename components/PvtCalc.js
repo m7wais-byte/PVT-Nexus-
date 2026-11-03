@@ -41,6 +41,8 @@
      is only its rendering in the current units. A unit or gauge switch re-renders the text from
      f.canon and never re-parses a rounded display, so the physical inputs cannot drift. Typing in a
      field drops its canonical value: from then on exactly what was typed is used. */
+  /* Oil inputs carry their own unit per field (see "Oil workflow" below); these are the starting units. */
+  var OIL_UNIT_DEFAULT = { p: 'psia', pb: 'psia', psep: 'psia', T: 'F', tsep: 'F', rhoSto: 'lbft3', rsb: 'scfstb' };
   var KIND = { p: 'p', pMin: 'p', pMax: 'p', pb: 'p', psep: 'p', pStep: 'dp', T: 'T', tsep: 'T', rhoSto: 'density', rsb: 'Rs', pList: 'plist' };
   function toCanon(kind, text, units, gauge) {
     if (kind === 'plist') {
@@ -86,6 +88,7 @@
     f.canon = {};
     captureCanon(f, 'field', false);
     renderCanon(f, units || 'field', !!gauge);
+    if (fluid === 'oil') f.u = Object.assign({}, OIL_UNIT_DEFAULT);
     return f;
   }
   function freshFluid(fluid) {
@@ -93,6 +96,7 @@
     ['p', 'pMin', 'pMax', 'pList', 'T', 'api', 'rhoSto', 'gg', 'pb', 'rsb'].forEach(function (k) { f[k] = ''; });
     f.canon = { pStep: 200 }; f.calcMode = 'single';
     if (f.comp) f.comp = blankComp();
+    if (fluid === 'oil') { f.canon = {}; f.oilChar = 'pb'; }
     return f;
   }
   function newGuide() { return { stage: 'choose', attempted: false, ready: false }; }
@@ -107,8 +111,13 @@
     sel: { oil: -1, gas: -1 }, selP: { oil: null, gas: null },
     /* measured data: text as pasted, and the declared standard basis ('' = not declared) */
     measured: { oil: { text: '', basis: '' }, gas: { text: '', basis: '' } },
-    explain: false, help: null, zImg: null, example: { oil: false, gas: false }, advanced: { oil: false, gas: false }
+    explain: false, help: null, zImg: null, example: { oil: false, gas: false }, advanced: { oil: false, gas: false },
+    /* Oil workflow: one input form -> all four properties -> a full-page explanation of any one.
+       calc is the last successful calculation (frozen engine input + result); range and selP are the
+       detail-page graph range (canonical psia / psi) and the selected point per property. */
+    oilW: newOilW()
   };
+  function newOilW() { return { page: 'overview', prop: 'rs', calc: null, showErrors: false, range: null, rangeText: null, rangeErr: null, selP: {}, cmp: {}, open: {} }; }
 
   var host = null, opts = {}, res = null, cmpRes = [], meas = null, chart = null, timer = null, root = null;
 
@@ -175,6 +184,7 @@
 
   /* -------------------------------------------------------- engine input */
   function engineInput(extra) {
+    if (S.fluid === 'oil') return oilEngineInput(extra);
     var f = F();
     var inp = Object.assign({}, f, { fluid: S.fluid, units: S.units, gauge: S.gauge, stdBasis: S.stdBasis, m: Object.assign({}, f.m), canon: Object.assign({}, f.canon) });
     return Object.assign(inp, extra || {});
@@ -283,6 +293,7 @@
     else { if (next === 'light') document.documentElement.setAttribute('data-theme', 'light'); else document.documentElement.removeAttribute('data-theme'); try { localStorage.setItem('pvtTheme', next); } catch (e) {} }
     var b = q('#pv-theme'); if (b) { b.innerHTML = themeBtnInner(); b.setAttribute('aria-label', 'Switch to ' + (isLight() ? 'dark' : 'light') + ' theme'); }
     if ((S.view === 'inputs' || S.view === 'charts') && G().ready) renderChart();   // chart colours are read from the theme variables
+    if (S.fluid === 'oil' && S.view === 'inputs' && S.oilW.page === 'detail') renderOilChart();
   }
   function shell() {
     var oil = S.fluid === 'oil';
@@ -291,13 +302,13 @@
       + '<div class="pv-hero">'
       + '<div class="pv-hero-l"><div class="pv-eyebrow"><span class="pv-rule"></span><span>PVT Calculator</span></div>'
       + '<div class="pv-titlerow"><h2 class="pv-title">' + (oil ? 'Oil Properties' : 'Gas Properties') + '</h2>'
-      + '<p class="pv-sub">' + (oil ? 'Rs, Bo, μo and co versus pressure from published black-oil correlations.' : 'Z, Bg, ρg, μg and cg versus pressure from published natural-gas correlations.') + '</p></div></div>'
+      + '<p class="pv-sub">' + (oil ? 'Rs, Bo, μo and co from one set of inputs, using published black-oil correlations. Explain any result for its equation and pressure trend.' : 'Z, Bg, ρg, μg and cg versus pressure from published natural-gas correlations.') + '</p></div></div>'
       + '<div class="pv-hero-r"><span class="pv-mono" id="pv-fluid-lbl">Fluid</span><div class="pv-pills pv-fluid" role="group" aria-labelledby="pv-fluid-lbl">'
       + '<button type="button" data-fluid="oil" class="' + (oil ? 'is-on' : '') + '" aria-pressed="' + oil + '">' + ICON.oil + 'Oil</button>'
       + '<button type="button" data-fluid="gas" class="' + (!oil ? 'is-on' : '') + '" aria-pressed="' + !oil + '">' + ICON.gas + 'Gas</button>'
       + '</div></div></div>'
       + '<div class="pv-bar"><div class="pv-tabs" role="tablist" aria-label="Calculator views">'
-      + VIEWS.slice(0, 2).map(function (v) { return '<button type="button" role="tab" data-view="' + v[0] + '" class="pv-tab' + (S.view === v[0] ? ' is-on' : '') + '" aria-selected="' + (S.view === v[0]) + '">' + v[1] + '</button>'; }).join('')
+      + VIEWS.slice(0, oil ? 1 : 2).map(function (v) { return '<button type="button" role="tab" data-view="' + v[0] + '" class="pv-tab' + (S.view === v[0] ? ' is-on' : '') + '" aria-selected="' + (S.view === v[0]) + '">' + v[1] + '</button>'; }).join('')
       + '</div><details class="pv-more-tools"><summary>More tools</summary><div class="pv-more-menu">'
       + VIEWS.slice(2).map(function (v) { return '<button type="button" class="ui-btn ui-btn-ghost" data-goto="' + v[0] + '">' + v[1] + '</button>'; }).join('')
       + '</div></details><div class="pv-ctx" id="pv-ctx"></div><div class="pv-status" id="pv-status" role="status" aria-live="polite"></div>'
@@ -506,6 +517,7 @@
       + chartsView() + '</div>';
   }
   function inputsView() {
+    if (S.fluid === 'oil') return oilView();
     if (G().stage === 'choose') return propertyPicker();
     var copy = guideCopy();
     return '<div class="pv-view pv-guided">' + progressHtml()
@@ -515,7 +527,6 @@
       + '<div class="pv-example-row"><span id="pv-example-label"' + (S.example[S.fluid] ? ' class="pv-chip is-example"' : '') + '>' + (S.example[S.fluid] ? 'Example data · replace with your values' : 'Use your fluid data, or try an example.') + '</span>'
       + '<button type="button" class="pv-text-btn" id="pv-example">Try example</button><button type="button" class="pv-text-btn" id="pv-clear">Clear</button></div>'
       + '<div class="pv-errsum" id="pv-errsum" role="alert" hidden></div>' + workspaceConditions() + workspaceFluid()
-      + (S.fluid === 'oil' && S.chartProp.oil === 'co' ? '<p class="pv-note">This correlation calculates oil compressibility at and above bubble point. Below it, the result is unavailable.</p>' : '')
       + '<button type="button" class="ui-btn ui-btn-primary pv-calculate" id="pv-calculate">Calculate ' + esc(copy[2]) + '</button>'
       + '<div class="pv-guide-method">Using ' + esc(methodLabelFor(S.chartProp[S.fluid])) + '. <span>Change this in Advanced.</span></div>'
       + workspaceOptions() + '<p class="pv-input-basis">Pressure: ' + esc(unitOf('p')) + '. Standard volumes: ' + esc(basis().short) + '.</p></section>'
@@ -942,6 +953,13 @@
       html = sec(esc(pp.label), esc(PROP_HELP[S.fluid === 'gas' && prop === 'mu' ? 'mu_gas' : prop] || ''))
         + sec('How to use it', 'Pressure is on the horizontal axis. Select a point for its values, then choose Show equation for the calculation. A solid line is the active method; dashed lines are optional comparisons. Missing values are gaps, never zero.')
         + sec('Methods', 'Default methods are already selected. Open Advanced only if you need to change them. Their verification status is in More tools → Methods & References.');
+    } else if (v === 'inputs' && S.fluid === 'oil') {
+      ti.textContent = S.oilW.page === 'detail' ? 'Reading a property page' : 'Using the oil calculator';
+      html = sec('Start here', 'Enter the pressure, temperature, oil gravity, gas gravity and either the bubble-point pressure or Rsb once, then choose Calculate oil properties. Rs, Bo, μo and co appear together. Each value has its own unit selector; switching units never changes the physical value.')
+        + sec('Explain this property', 'Opens a full page with the equation, the input values substituted into it, intermediate values, a pressure graph with the operating point and the bubble point, a results table and a method comparison. Back to oil results returns with everything kept.')
+        + sec('Changing inputs', 'Results are marked as outdated as soon as a physical input or method changes, and cannot be explained until you calculate again. Changing a unit or the result units does not change the physical inputs.')
+        + sec('Oil and gas', esc(HELP.api[1]) + ' ' + esc(HELP.pb[1]))
+        + sec('Standard conditions', esc(HELP.basis[1]));
     } else if (v === 'inputs') {
       ti.textContent = 'Using the calculator';
       html = sec('Start here', 'Choose a property, enter your conditions and fluid description, then choose Calculate. The answer appears on the same page. Start with one pressure; choose Show how it changes with pressure to make a curve.')
@@ -986,6 +1004,617 @@
     else if (was && exOpener && exOpener.isConnected) { try { exOpener.focus({ preventScroll: true }); } catch (e) {} }
   }
 
+  /* ================================================================ OIL WORKFLOW
+     Enter inputs once -> calculate Rs, Bo, μo and co together -> explain any one on a full page.
+     One calculation path: the overview cards and every detail page read the same frozen engine input
+     (S.oilW.calc.inp) and call the same PVTEngine.run; the detail graph only adds pressures to it.
+
+     Per-field units: every dimensional oil input has its own unit. Its value reaches the engine as a
+     canonical number (psia, °F, lbm/ft³, scf/STB) in inp.canon, so the engine never re-reads a display
+     string in the wrong unit, and a unit switch only re-renders the text (f.canon keeps full precision
+     until the user types). Result units (Field / Metric) are display only. */
+  var PSI = U.PSI_PER_BAR, KGM3 = U.KGM3_PER_LBFT3, SM3 = U.SM3SM3_PER_SCFSTB;
+  function ident(v) { return v; }
+  /* [label, to canonical, from canonical, increment factor (canonical per display unit)] */
+  var OU = {
+    p: {
+      psia: ['psia', ident, ident, 1],
+      psig: ['psig', function (v) { return v + U.P_ATM_PSIA; }, function (x) { return x - U.P_ATM_PSIA; }, 1],
+      bara: ['bar(a)', function (v) { return v * PSI; }, function (x) { return x / PSI; }, PSI],
+      barg: ['bar(g)', function (v) { return (v + U.P_ATM_BAR) * PSI; }, function (x) { return x / PSI - U.P_ATM_BAR; }, PSI],
+      kpaa: ['kPa(a)', function (v) { return v / 100 * PSI; }, function (x) { return x / PSI * 100; }, PSI / 100],
+      mpaa: ['MPa(a)', function (v) { return v * 10 * PSI; }, function (x) { return x / PSI / 10; }, PSI * 10]
+    },
+    T: {
+      F: ['°F', ident, ident], C: ['°C', function (v) { return v * 9 / 5 + 32; }, function (x) { return (x - 32) * 5 / 9; }],
+      K: ['K', function (v) { return v * 9 / 5 - 459.67; }, function (x) { return (x + 459.67) * 5 / 9; }],
+      R: ['°R', function (v) { return v - 459.67; }, function (x) { return x + 459.67; }]
+    },
+    rho: {
+      lbft3: ['lbm/ft³', ident, ident], kgm3: ['kg/m³', function (v) { return v / KGM3; }, function (x) { return x * KGM3; }],
+      gcc: ['g/cm³', function (v) { return v * 1000 / KGM3; }, function (x) { return x * KGM3 / 1000; }]
+    },
+    rs: { scfstb: ['scf/STB', ident, ident], sm3: ['sm³/sm³', function (v) { return v / SM3; }, function (x) { return x * SM3; }] }
+  };
+  var OIL_DIM = { p: 'p', pb: 'p', psep: 'p', T: 'T', tsep: 'T', rhoSto: 'rho', rsb: 'rs' };
+  var P_DIGITS = { psia: 1, psig: 1, bara: 2, barg: 2, kpaa: 0, mpaa: 3 };
+  var OIL_KEYS = ['rs', 'bo', 'mu', 'co'];
+  var OIL_INFO = {
+    rs: { name: 'Solution gas–oil ratio', sym: 'Rs', group: 'rs', meta: 'rsFamily',
+      short: 'Gas dissolved in the oil at this pressure, per stock-tank barrel of oil.',
+      what: 'Rs is the volume of gas, measured at standard conditions, dissolved in one stock-tank barrel of oil at the given pressure and temperature. Below the bubble point gas comes out of solution as the pressure falls, so Rs decreases. At and above the bubble point all of the gas is in solution and Rs stays equal to Rsb.',
+      why: 'Rs sets how much gas the oil releases when it is produced, the producing gas–oil ratio below the bubble point and the oil shrinkage. In this calculator it also feeds Bo and the live-oil viscosity.' },
+    bo: { name: 'Oil formation volume factor', sym: 'Bo', group: 'bo', meta: 'bo',
+      short: 'Reservoir volume of one stock-tank barrel of oil together with its dissolved gas.',
+      what: 'Bo is the oil volume at reservoir pressure and temperature, with its dissolved gas, divided by the volume of the same oil at stock-tank conditions. It is above 1 because the reservoir oil is hotter and holds dissolved gas. Below pb, Bo rises with pressure as more gas dissolves; above pb the oil is only compressed, so Bo falls slowly. Bo is largest at pb.',
+      why: 'Bo converts between reservoir and surface oil volumes. Oil in place, material balance, well rates and reserves all use it.' },
+    mu: { name: 'Oil viscosity', sym: 'μo', group: 'muDead', meta: 'muDead',
+      short: 'Resistance of the live oil to flow at this pressure and temperature.',
+      what: 'μo is the dynamic viscosity of the live oil. Below pb, dissolved gas thins the oil, so viscosity falls as the pressure rises towards pb. Above pb the composition is fixed and compression makes the oil slightly more viscous. μo is lowest at pb.',
+      why: 'Viscosity controls oil mobility: well productivity, mobility ratios, displacement efficiency and the pressure drop in tubing and pipelines.' },
+    co: { name: 'Oil compressibility', sym: 'co', group: 'co', meta: 'co',
+      short: 'Fractional change in oil volume per unit pressure change, for undersaturated oil.',
+      what: 'co = −(1/V)(∂V/∂p) at constant temperature. Above pb the oil is a single liquid of fixed composition and co is small. The correlations offered here apply to undersaturated oil only. Below pb the apparent compressibility also includes gas coming out of solution; it is not calculated.',
+      why: 'co governs undersaturated reservoir behaviour: pressure decline above pb, material balance, well-test analysis, and Bo above pb (Bo = Bob·exp(−∫co dp)).' }
+  };
+  var OIL_GROUP_TITLE = { rs: 'Rs / pb correlation', bo: 'Bo correlation (p ≤ pb; also sets Bob)', muDead: 'Dead-oil viscosity correlation', co: 'co correlation (p > pb)' };
+
+  function W() { return S.oilW; }
+  function oDef(k) { var d = OU[OIL_DIM[k]]; return d[S.oil.u[k]] || d[Object.keys(d)[0]]; }
+  function oUnitLbl(k) { return oDef(k)[0]; }
+  /* canonical value of an oil field: the kept full-precision value, else the typed text in the field's unit */
+  function oCanon(k) {
+    var f = S.oil;
+    if (f.canon && isNum(f.canon[k])) return f.canon[k];
+    var r = E.parse(f[k]);
+    return r.state === 'ok' ? oDef(k)[1](r.v) : undefined;
+  }
+  function oText(k, c) { return String(+oDef(k)[2](c).toPrecision(7)); }
+  function setOilUnit(k, u) {
+    var c = oCanon(k);
+    S.oil.u[k] = u; S.oil.canon = S.oil.canon || {};
+    if (c !== undefined) { S.oil.canon[k] = c; S.oil[k] = oText(k, c); }
+  }
+  function oilEngineInput(extra) {
+    var f = S.oil, canon = {};
+    var inp = { fluid: 'oil', units: S.units, gauge: false, stdBasis: 'corr', calcMode: 'single',
+      oilGravityBasis: f.oilGravityBasis, oilChar: f.oilChar, sepUse: !!f.sepUse, api: f.api, gg: f.gg, m: Object.assign({}, f.m) };
+    Object.keys(OIL_DIM).forEach(function (k) {
+      var c = oCanon(k);
+      if (c !== undefined) { canon[k] = c; inp[k] = 'canonical'; }
+      else inp[k] = f[k] === undefined || f[k] === null ? '' : f[k];   // empty -> "Input required"; bad text -> "Enter a number"
+    });
+    inp.canon = canon;
+    return Object.assign(inp, extra || {});
+  }
+  /* identity of the physical inputs and methods (result units and field units excluded) */
+  function oilKey(inp) {
+    var f = inp, used = { p: 1, T: 1, gg: 1, api: f.oilGravityBasis !== 'density', rhoSto: f.oilGravityBasis === 'density', pb: f.oilChar === 'pb', rsb: f.oilChar === 'rsb', psep: f.sepUse, tsep: f.sepUse };
+    var o = { b: f.oilGravityBasis, c: f.oilChar, s: !!f.sepUse, m: f.m };
+    Object.keys(used).forEach(function (k) { if (used[k]) o[k] = isNum(f.canon[k]) ? f.canon[k] : String(f[k]); });
+    return JSON.stringify(o);
+  }
+  function oilStale() { var c = W().calc; return !!c && oilKey(oilEngineInput()) !== c.key; }
+
+  /* ---- display helpers (pressures in the operating-pressure unit; properties in the result units) */
+  function pOil(psia) { return oDef('p')[2](psia); }
+  function fmtPo(psia) { if (!isNum(psia)) return '—'; return pOil(psia).toFixed(P_DIGITS[S.oil.u.p] || 1); }
+  function pOilTxt(psia) { return fmtPo(psia) + ' ' + oUnitLbl('p'); }
+  function tOilTxt(f) { return fmt(oDef('T')[2](f), 4) + ' ' + oUnitLbl('T'); }
+  function oilVal(k, v) { return fmtProp(k, v); }
+
+  /* ---- inputs ---- */
+  function oUnitSelect(k, name) {
+    var d = OU[OIL_DIM[k]];
+    return '<select class="ow-unit" data-ou="' + k + '" aria-label="Unit for ' + esc(name) + '">' + Object.keys(d).map(function (u) {
+      return '<option value="' + u + '"' + (u === S.oil.u[k] ? ' selected' : '') + '>' + esc(d[u][0]) + '</option>';
+    }).join('') + '</select>';
+  }
+  function oField(k, name, o) {
+    o = o || {};
+    var head = o.head || '<label class="pv-l" for="ow-in-' + k + '">' + (o.label || esc(name)) + '</label>' + (o.help ? helpBtn(o.help, name) : '');
+    return '<div class="pv-f ow-f" data-f="' + k + '"><div class="ow-fh">' + head + '</div>'
+      + '<span class="pv-in"><input id="ow-in-' + k + '" data-ok="' + k + '" type="text" inputmode="decimal" autocomplete="off" spellcheck="false" value="' + esc(S.oil[k] === undefined ? '' : S.oil[k]) + '"'
+      + (o.head ? ' aria-label="' + esc(name) + '"' : '') + ' aria-describedby="ow-err-' + k + (o.hint ? ' ow-hint-' + k : '') + '">'
+      + (OIL_DIM[k] ? oUnitSelect(k, name) : '<span class="pv-u">' + (o.unit || '') + '</span>') + '</span>'
+      + '<span class="pv-err" id="ow-err-' + k + '" data-oerr="' + k + '"></span>'
+      + (o.hint ? '<span class="pv-hint" id="ow-hint-' + k + '">' + o.hint + '</span>' : '') + '</div>';
+  }
+  function oSwitch(key, cur, items, label) {
+    return '<div class="ow-switch" role="group" aria-label="' + esc(label) + '">' + items.map(function (it) {
+      var on = String(cur) === String(it[0]);
+      return '<button type="button" data-oseg="' + key + '" data-v="' + it[0] + '" class="' + (on ? 'is-on' : '') + '" aria-pressed="' + on + '">' + it[1] + '</button>';
+    }).join('') + '</div>';
+  }
+  function oSelect(mkey, group, label, help) {
+    var cur = S.oil.m[mkey];
+    return '<div class="pv-f is-wide"><label class="pv-l" for="ow-m-' + mkey + '">' + label + '</label>' + (help ? helpBtn(help, label) : '')
+      + '<span class="pv-in"><select id="ow-m-' + mkey + '" data-om="' + mkey + '">' + Object.keys(group).map(function (k) {
+        return '<option value="' + k + '"' + (k === cur ? ' selected' : '') + '>' + esc(group[k].label) + '</option>'; }).join('') + '</select></span></div>';
+  }
+  function oilInputsHtml() {
+    var f = S.oil, w = W();
+    var grav = f.oilGravityBasis === 'density'
+      ? oField('rhoSto', 'Stock-tank oil density at 60 °F', { head: '<span class="pv-l">Oil gravity</span>' + oSwitch('oilGravityBasis', 'density', [['api', 'API'], ['density', 'Density']], 'Oil gravity entered as'), hint: 'Stock-tank density at 60 °F.' })
+      : oField('api', 'Oil gravity, API', { head: '<span class="pv-l">Oil gravity</span>' + oSwitch('oilGravityBasis', 'api', [['api', 'API'], ['density', 'Density']], 'Oil gravity entered as'), unit: '°API', hint: 'Stock-tank oil, 60 °F.' });
+    var bub = f.oilChar === 'rsb'
+      ? oField('rsb', 'Solution GOR at bubble point, Rsb', { head: '<span class="pv-l">Bubble point</span>' + oSwitch('oilChar', 'rsb', [['pb', 'pb'], ['rsb', 'Rsb']], 'Known at the bubble point'), hint: 'Measured Rsb; pb is derived. 60 °F basis.' })
+      : oField('pb', 'Bubble-point pressure, pb', { head: '<span class="pv-l">Bubble point</span>' + oSwitch('oilChar', 'pb', [['pb', 'pb'], ['rsb', 'Rsb']], 'Known at the bubble point'), hint: 'Measured pb; Rsb is derived.' });
+    var adv = '<details class="ow-adv" id="ow-adv"' + (w.open.adv ? ' open' : '') + '><summary>Advanced <span>Correlations and separator conditions</span></summary><div class="ow-adv-body">'
+      + '<div class="ow-adv-grid">' + oSelect('rs', M.rsFamily, 'Rs and pb correlation', 'rsFamily') + oSelect('bo', M.bo, 'Bo below pb')
+      + oSelect('co', M.co, 'co and Bo above pb', 'co') + oSelect('muDead', M.muDead, 'Dead-oil viscosity')
+      + '<div class="pv-f is-wide"><span class="pv-l">Live-oil viscosity</span><span class="pv-fixed">Beggs-Robinson below pb · Vasquez-Beggs above pb</span></div></div>'
+      + '<label class="pv-check"><input type="checkbox" data-osep="1"' + (f.sepUse ? ' checked' : '') + '> Separator conditions known (corrects γg to the 100 psig separator basis used by Vasquez-Beggs)</label>'
+      + (f.sepUse ? '<div class="ow-adv-grid">' + oField('psep', 'Separator pressure') + oField('tsep', 'Separator temperature') + '</div>' : '')
+      + '<div class="ow-adv-foot"><button type="button" class="ui-btn ui-btn-ghost" id="ow-default-m">Restore default methods</button>'
+      + '<span class="pv-note">Standard volumes: 60 °F, 14.696 psia (correlation basis). Results are correlation estimates, not measured PVT data.</span></div>'
+      + '</div></details>';
+    return '<section class="pv-card ow-inputs" aria-labelledby="ow-in-title"><div class="ow-in-head"><h3 id="ow-in-title">Oil inputs</h3>'
+      + '<span class="ow-ex' + (S.example.oil ? ' is-example' : '') + '" id="ow-ex-label">' + (S.example.oil ? 'Example data — replace with your values' : 'Enter your fluid data once') + '</span>'
+      + '<span class="ow-in-links"><button type="button" class="pv-text-btn" id="ow-example">Try example</button><button type="button" class="pv-text-btn" id="ow-clear">Clear</button></span></div>'
+      + '<div class="ow-fields">'
+      + oField('p', 'Pressure, p', { label: 'Pressure, p', hint: 'Gauge units add 1 atm.' })
+      + oField('T', 'Temperature, T', { label: 'Temperature, T', hint: 'Reservoir temperature.' })
+      + grav
+      + oField('gg', 'Gas specific gravity, relative to air', { label: 'Gas specific gravity, γ<sub>g</sub>', unit: 'air = 1', help: 'gg', hint: 'Relative to air (air = 1).' })
+      + bub + '</div>'
+      + '<div class="pv-errsum" id="ow-errsum" role="alert" hidden></div>'
+      + '<div class="ow-in-foot">' + adv + '<button type="button" class="ui-btn ui-btn-primary ow-calc" id="ow-calc">Calculate oil properties</button></div></section>';
+  }
+
+  /* ---- results overview ---- */
+  function oilWarnings(r, k) {
+    var aff = { rs: ['Rs', 'pb'], bo: ['Bo', 'Bo above pb', 'Rs', 'pb'], mu: ['μo', 'μo above pb', 'μo below pb'], co: ['co'] }[k];
+    return (r.warnings || []).filter(function (w) { return w.affects.some(function (a) { return aff.indexOf(a) !== -1; }); });
+  }
+  /* γgs = γg is an assumption only where a Vasquez-Beggs equation uses it at this point */
+  function oilAssumptions(r, k, i) {
+    var m = r.ctx.m, sat = r.phase[i] === 'saturated', out = [];
+    var vb = { rs: m.rs === 'vasquez_beggs', bo: sat ? m.bo === 'vasquez_beggs' : (m.bo === 'vasquez_beggs' || m.co === 'vasquez_beggs'), mu: false, co: !sat && m.co === 'vasquez_beggs' }[k];
+    var ggs = r.scalars.filter(function (x) { return x.key === 'ggs'; })[0];
+    if (vb && ggs && ggs.kind === 'assumed') out.push('Separator gas gravity γgs taken equal to γg (no separator conditions entered) — used by Vasquez-Beggs.');
+    return out;
+  }
+  /* range warnings and assumptions are counted separately, so an assumption is never called a warning */
+  function warnBox(ws, asm) {
+    asm = asm || [];
+    if (!ws.length && !asm.length) return '';
+    var lbl = [ws.length ? ws.length + ' range warning' + (ws.length > 1 ? 's' : '') : '', asm.length ? asm.length + ' assumption' + (asm.length > 1 ? 's' : '') : ''].filter(Boolean).join(' · ');
+    return '<details class="ow-warn' + (ws.length ? '' : ' is-info') + '"><summary>' + (ws.length ? ICON.warn : ICON.info) + '<span>' + lbl + '</span></summary><ul>'
+      + ws.map(function (w) { return '<li>' + esc(w) + '</li>'; }).join('') + asm.map(function (w) { return '<li class="is-asm">' + esc(w) + '</li>'; }).join('') + '</ul></details>';
+  }
+  function phaseTxt(r, i) {
+    var ph = r.phase[i];
+    if (ph === 'saturated') return 'Saturated (p < pb)';
+    if (ph === 'bubble point') return 'At the bubble point';
+    return 'Undersaturated (p > pb)';
+  }
+  function oilCard(k) {
+    var info = OIL_INFO[k], c = W().calc, stale = c && oilStale();
+    var head = '<div class="ow-card-h"><span class="ow-sym">' + info.sym + '</span><h4>' + esc(info.name) + '</h4></div>';
+    if (!c) {
+      return '<article class="ow-card is-empty" data-oprop="' + k + '">' + head + '<div class="ow-val"><strong>—</strong></div><p class="ow-desc">' + esc(info.short) + '</p>'
+        + '<button type="button" class="ui-btn ui-btn-ghost ow-explain" disabled>Explain this property</button></article>';
+    }
+    var r = c.res, v = r.props[k].values[0], why = r.props[k].reasons[0];
+    var ws = oilWarnings(r, k).map(function (w) { return w.msg; }), asm = oilAssumptions(r, k, 0);
+    var val = isNum(v)
+      ? '<div class="ow-val"><strong>' + esc(oilVal(k, v)) + '</strong><span>' + esc(propUnitB(k)) + '</span></div>'
+      : '<div class="ow-val is-na"><strong>Not available</strong></div><p class="ow-na">' + ICON.info + '<span>' + esc(why) + '</span></p>';
+    return '<article class="ow-card' + (isNum(v) ? '' : ' is-na') + (stale ? ' is-stale' : '') + '" data-oprop="' + k + '">' + head + val
+      + '<p class="ow-desc">' + esc(info.short) + '</p>' + warnBox(ws, asm)
+      + '<button type="button" class="ui-btn ui-btn-ghost ow-explain" data-explain="' + k + '"' + (stale ? ' disabled title="Recalculate to explain the current inputs"' : '') + '>Explain this property ' + ICON.arrow + '</button></article>';
+  }
+  function oilCondHtml(r) {
+    var pbS = r.scalars.filter(function (x) { return x.key === 'pb'; })[0], rsS = r.scalars.filter(function (x) { return x.key === 'rsb'; })[0];
+    var derived = r.ctx.char === 'pb' ? 'R<sub>sb</sub> = ' + esc(fmtQ('Rs', rsS.v)) + ' ' + esc(unitOf('Rs')) + ' (' + esc(M.rsFamily[r.ctx.m.rs].label) + ')'
+      : 'p<sub>b</sub> = ' + esc(pOilTxt(pbS.v)) + ' (' + esc(M.rsFamily[r.ctx.m.rs].label) + ')';
+    return '<div class="ow-cond"><span>p = <b>' + esc(pOilTxt(r.pressures[0])) + '</b></span><span>T = <b>' + esc(tOilTxt(r.ctx.tF)) + '</b></span>'
+      + '<span class="pv-phase is-' + r.phase[0].replace(' ', '-') + '">' + esc(phaseTxt(r, 0)) + '</span>'
+      + '<span>p<sub>b</sub> = ' + esc(pOilTxt(r.pb)) + '</span><span>Derived: ' + derived + '</span></div>';
+  }
+  function oilResultsHtml() {
+    var c = W().calc, stale = c && oilStale();
+    var head = '<div class="ow-res-head"><div><h3 id="ow-res-title" tabindex="-1">' + (c ? 'Oil properties at your conditions' : 'Results') + '</h3>'
+      + (c ? oilCondHtml(c.res) : '<p class="ow-res-sub">Rs, Bo, μo and co will appear here together after you calculate.</p>') + '</div>'
+      + '<div class="ow-res-units"><span class="pv-mono" id="ow-ru-l">Result units</span><div class="pv-pills" role="group" aria-labelledby="ow-ru-l">'
+      + [['field', 'Field'], ['metric', 'Metric']].map(function (it) { var on = S.units === it[0]; return '<button type="button" data-ounits="' + it[0] + '" class="' + (on ? 'is-on' : '') + '" aria-pressed="' + on + '">' + it[1] + '</button>'; }).join('') + '</div></div></div>';
+    var banner = stale ? '<div class="ow-stale" role="status">' + ICON.warn + '<span><b>Inputs changed.</b> These results are for the previous inputs. Choose <b>Calculate oil properties</b> to update them.</span></div>' : '';
+    return head + banner + '<div class="ow-cards">' + OIL_KEYS.map(oilCard).join('') + '</div>'
+      + (c ? '<p class="ow-foot-note">Correlation estimates on the 60 °F, 14.696 psia basis — ' + esc(c.res.methods.slice(0, 3).map(function (m) { return m[1]; }).filter(function (x, i, a) { return a.indexOf(x) === i; }).join(' · ')) + '. Change methods under Advanced.</p>' : '');
+  }
+  function oilView() {
+    if (W().page === 'detail' && W().calc && !oilStale()) return oilDetailHtml();
+    W().page = 'overview';
+    return '<div class="pv-view ow" data-page="overview">' + oilInputsHtml() + '<section class="ow-results" id="ow-results" aria-labelledby="ow-res-title">' + oilResultsHtml() + '</section></div>';
+  }
+
+  /* ---- detail page ---- */
+  function oilSymbols(k, r, i) {
+    var ctx = r.ctx, m = ctx.m, sat = r.phase[i] === 'saturated', vbAny = m.rs === 'vasquez_beggs' || m.bo === 'vasquez_beggs' || m.co === 'vasquez_beggs';
+    var sc = function (key) { var x = r.scalars.filter(function (s) { return s.key === key; })[0]; return x ? x.v : NaN; };
+    var rows = [['p', 'Pressure (absolute)', 'psia', fmt(r.pressures[i], 6)],
+      ['T', 'Temperature; equations written with T + 460 use °R', '°F (°R)', fmt(ctx.tF, 5) + ' °F (' + fmt(ctx.tF + 460, 5) + ' °R)'], ['API', 'Stock-tank oil gravity', '°API', fmt(ctx.api, 5)],
+      ['γo', 'Oil specific gravity, 141.5/(API + 131.5)', 'water = 1', fmt(ctx.gammaO, 5)], ['γg', 'Gas specific gravity', 'air = 1', fmt(ctx.gg, 5)]];
+    if (vbAny) rows.push(['γgs', 'Separator gas gravity at 100 psig (Vasquez-Beggs)', 'air = 1', fmt(ctx.ggs, 5)]);
+    rows.push(['pb', 'Bubble-point pressure', 'psia', fmt(r.pb, 6)], ['Rsb', 'Solution GOR at pb', 'scf/STB', fmt(r.rsb, 6)]);
+    if (k === 'rs') rows.push(['Rs', 'Solution gas–oil ratio', 'scf/STB', fmt(r.props.rs.values[i], 6)]);
+    if (k === 'bo') { if (sat) rows.push(['Rs', 'Solution GOR at p', 'scf/STB', fmt(r.props.rs.values[i], 6)]); else rows.push(['Bob', 'Oil FVF at pb', 'rb/STB', fmt(sc('bob'), 6)]); rows.push(['Bo', 'Oil formation volume factor', 'rb/STB', fmt(r.props.bo.values[i], 6)]); }
+    if (k === 'mu') { rows.push(['μod', 'Dead-oil viscosity at T', 'cP', fmt(sc('muod'), 5)]); if (sat) rows.push(['Rs', 'Solution GOR at p', 'scf/STB', fmt(r.props.rs.values[i], 6)]); else rows.push(['μob', 'Oil viscosity at pb', 'cP', fmt(sc('muob'), 5)]); rows.push(['μo', 'Live-oil viscosity', 'cP', fmt(r.props.mu.values[i], 5)]); }
+    if (k === 'co') rows.push(['co', 'Isothermal oil compressibility', '1/psi', isNum(r.props.co.values[i]) ? sci(r.props.co.values[i], 4) : 'not available']);
+    return rows;
+  }
+  function oilDeps(k, r, i) {
+    var m = r.ctx.m, sat = r.phase[i] === 'saturated', rsL = M.rsFamily[m.rs].label, boL = M.bo[m.bo].label, coL = M.co[m.co].label;
+    var ch = r.ctx.char === 'pb' ? 'Rsb from the entered pb with ' + rsL + '.' : 'pb from the entered Rsb with ' + rsL + '.';
+    var d = {
+      rs: [ch, sat ? 'p < pb: Rs(p) from ' + rsL + ', multiplied by Rsb/Rs_corr(pb) so that the curve passes exactly through Rsb at pb.' : 'p ≥ pb: no free gas, Rs = Rsb.'],
+      bo: [ch, sat ? 'p ≤ pb: Bo from ' + boL + ' using Rs at this pressure.' : 'Bob from ' + boL + ' at Rsb, then Bo = Bob·exp(−∫co dp) from pb to p with ' + coL + ' (the exact integral of the same co).'],
+      mu: [ch, 'μod (dead oil at T) from ' + M.muDead[m.muDead].label + '.', sat ? 'p < pb: Beggs-Robinson live-oil viscosity with Rs at this pressure.' : 'μob from Beggs-Robinson at Rsb, then Vasquez-Beggs undersaturated viscosity from pb to p.'],
+      co: [ch, sat ? 'p < pb: the selected co correlation is for undersaturated oil only — no value.' : 'p > pb: co from ' + coL + ' with Rsb, T, API, γg' + (m.co === 'vasquez_beggs' ? 's' : '') + ' and p.']
+    }[k];
+    return d;
+  }
+  function oilMetas(k, r, i) {
+    var m = r.ctx.m, sat = r.phase[i] === 'saturated';
+    if (k === 'rs') return [['Rs / pb', M.rsFamily[m.rs]]];
+    if (k === 'bo') return sat ? [['Bo (p ≤ pb)', M.bo[m.bo]]] : [['Bob at pb', M.bo[m.bo]], ['co and Bo above pb', M.co[m.co]]];
+    if (k === 'mu') return [['Dead-oil viscosity', M.muDead[m.muDead]], ['Saturated viscosity', M.muSat.beggs_robinson]].concat(sat ? [] : [['Undersaturated viscosity', M.muUnder.vasquez_beggs]]);
+    return [['co (p > pb)', M.co[m.co]]];
+  }
+  var RVAR = { p: 'p', pb: 'pb', T: 'T', api: 'API', gg: 'γg', rs: 'Rsb' };
+  function applicabilityHtml(k, r, i) {
+    var ctx = r.ctx, m = ctx.m;
+    return oilMetas(k, r, i).map(function (pair) {
+      var g = pair[1], v = g.verify || {}, rg = g.range || {};
+      var gUsed = (pair[1] === M.co[m.co] && m.co === 'vasquez_beggs') || (pair[1] === M.rsFamily[m.rs] && m.rs === 'vasquez_beggs') || (pair[1] === M.bo[m.bo] && m.bo === 'vasquez_beggs') ? ctx.ggs : ctx.gg;
+      var vals = { p: r.pressures[i], pb: r.pb, T: ctx.tF, api: ctx.api, gg: gUsed, rs: r.rsb };
+      var rows = Object.keys(rg).map(function (key) {
+        var lo = rg[key][0], hi = rg[key][1], x = vals[key], ok = !isNum(x) || (x >= lo && x <= hi), st = (v.ranges && v.ranges[key]) || 'unverified';
+        var show = function (y) { if (key === 'p' || key === 'pb') return fmtPo(y) + ' ' + oUnitLbl('p'); if (key === 'T') return tOilTxt(y); if (key === 'rs') return fmtQ('Rs', y) + ' ' + unitOf('Rs'); return fmt(y, 4); };
+        return '<tr class="' + (ok ? '' : 'is-out') + '"><td>' + RVAR[key] + '</td><td class="pv-num">' + esc(show(x)) + '</td><td class="pv-num">' + esc(show(lo)) + ' – ' + esc(show(hi)) + '</td><td class="pv-txt">' + (ok ? ICON.ok + 'inside' : ICON.warn + 'outside') + ' <i>' + RANGE_WORD[st] + '</i></td></tr>';
+      }).join('');
+      return '<div class="ow-meth"><div class="ow-meth-h"><span class="pv-mono">' + esc(pair[0]) + '</span><b>' + esc(g.label) + '</b>'
+        + (v.eq ? '<span class="pv-vstat is-' + v.eq + '">' + (v.eq === 'cross-checked' ? ICON.ok : ICON.warn) + EQ_WORD[v.eq] + '</span>' : '') + '</div>'
+        + (rows ? '<div class="pv-tbl-wrap"><table class="pv-tbl ow-rng"><thead><tr><th class="pv-txt">Variable</th><th>This case</th><th>Published data range</th><th class="pv-txt">Status</th></tr></thead><tbody>' + rows + '</tbody></table></div>' : '<p class="pv-note">No published data range is available for this method in the sources used.</p>')
+        + (v.limit && v.limit !== '—' ? '<p class="pv-note">' + esc(v.limit) + '</p>' : '') + '</div>';
+    }).join('');
+  }
+  function oilFailSteps(k, r, i) {
+    var why = r.props[k].reasons[i];
+    return '<ol class="ow-steps"><li class="is-ok">' + ICON.ok + '<span>Inputs valid.</span></li>'
+      + '<li class="is-ok">' + ICON.ok + '<span>Fluid characterised: p<sub>b</sub> = ' + esc(pOilTxt(r.pb)) + ', R<sub>sb</sub> = ' + esc(fmtQ('Rs', r.rsb)) + ' ' + esc(unitOf('Rs')) + '.</span></li>'
+      + '<li class="is-ok">' + ICON.ok + '<span>State at p = ' + esc(pOilTxt(r.pressures[i])) + ': ' + esc(phaseTxt(r, i).toLowerCase()) + '.</span></li>'
+      + '<li class="is-fail">' + ICON.err + '<span><b>' + esc(OIL_INFO[k].sym) + ' stops here.</b> ' + esc(why) + '</span></li></ol>'
+      + (k === 'co' && r.phase[i] === 'saturated' ? '<p class="pv-note">The graph below shows co where it is defined (above p<sub>b</sub>). No value is drawn below p<sub>b</sub>.</p>' : '');
+  }
+  function propSwitcher(cur) {
+    return '<div class="ow-dprops" role="group" aria-label="Explain another property">' + OIL_KEYS.map(function (k) {
+      return '<button type="button" data-explain="' + k + '" class="' + (k === cur ? 'is-on' : '') + '" aria-pressed="' + (k === cur) + '">' + OIL_INFO[k].sym + '</button>';
+    }).join('') + '</div>';
+  }
+  function oilDetailHtml() {
+    var w = W(), k = w.prop, info = OIL_INFO[k], r = w.calc.res, i = 0, v = r.props[k].values[i], d = E.detail(r, i, k);
+    var ws = oilWarnings(r, k), asm = oilAssumptions(r, k, i);
+    var grp = OIL_INFO[k].group;
+    var refs = []; oilMetas(k, r, i).forEach(function (pair) { (pair[1].ref || []).forEach(function (x) { if (refs.indexOf(x) === -1) refs.push(x); }); });
+    var head = '<div class="ow-dnav"><button type="button" class="ui-btn ui-btn-ghost ow-back" id="ow-back">' + '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M19 12H5M11 6l-6 6 6 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>' + 'Back to oil results</button>' + propSwitcher(k) + '</div>'
+      + '<header class="pv-card ow-dhead"><div class="ow-dhead-l"><span class="pv-mono">Oil property</span><h2 id="ow-d-title" tabindex="-1">' + esc(info.name) + ' <span>' + info.sym + '</span></h2>'
+      + oilCondHtml(r) + '</div><div class="ow-dval' + (isNum(v) ? '' : ' is-na') + '">' + (isNum(v) ? '<strong>' + esc(oilVal(k, v)) + '</strong><span>' + esc(propUnitB(k)) + '</span>' : '<strong>Not available</strong><span>at this pressure</span>') + '</div></header>';
+    var mean = '<section class="pv-card ow-sec"><h3>What it means</h3><p>' + esc(info.what) + '</p><h4>Why it matters</h4><p>' + esc(info.why) + '</p></section>';
+    var meth = '<section class="pv-card ow-sec"><h3>Correlation and applicability</h3>' + applicabilityHtml(k, r, i) + '</section>';
+    var eq = '<section class="pv-card ow-sec ow-eq-sec"><h3>' + (isNum(v) ? 'Equation and calculation' : 'Where the calculation stops') + '</h3>'
+      + (isNum(v) ? '' : oilFailSteps(k, r, i))
+      + '<div class="ow-eq-grid"><div><h4>Equation · ' + esc(d.method) + '</h4><pre class="pv-eq">' + esc(d.eq) + '</pre>'
+      + '<h4>Symbols and values used</h4><div class="pv-tbl-wrap"><table class="pv-tbl ow-sym-t"><thead><tr><th class="pv-txt">Symbol</th><th class="pv-txt">Meaning</th><th class="pv-txt">Unit in the equation</th><th>Value</th></tr></thead><tbody>'
+      + oilSymbols(k, r, i).map(function (x) { return '<tr><td class="pv-txt"><b>' + esc(x[0]) + '</b></td><td class="pv-txt pv-wrap">' + esc(x[1]) + '</td><td class="pv-txt">' + esc(x[2]) + '</td><td class="pv-num">' + esc(x[3]) + '</td></tr>'; }).join('')
+      + '</tbody></table></div></div>'
+      + '<div><h4>Substituted values</h4><p class="pv-note">Evaluated in the field units the correlation was published in, then converted for display.</p><ol class="pv-subs">' + d.lines.map(function (l) { return '<li>' + esc(l) + '</li>'; }).join('') + '</ol>'
+      + '<h4>Intermediate values and dependencies</h4><ul class="ow-deps">' + oilDeps(k, r, i).map(function (t) { return '<li>' + esc(t) + '</li>'; }).join('') + '</ul></div></div></section>';
+    var graph = '<section class="pv-card ow-sec ow-graph"><div class="ow-graph-h"><h3>' + esc(info.sym) + ' versus pressure</h3><span class="ow-graph-tools"><button type="button" class="ui-btn ui-btn-ghost" id="ow-png">Export PNG</button><button type="button" class="ui-btn ui-btn-ghost" id="ow-csv">Export CSV</button></span></div>'
+      + '<p class="pv-note">Your result is for one pressure. This graph re-runs the same calculation over a pressure range so you can see the trend; the range does not change the result.</p>'
+      + '<form class="ow-range" id="ow-range" novalidate><span class="ow-range-l">Graph pressure range</span>'
+      + rangeField('from', 'From') + rangeField('to', 'To') + rangeField('step', 'Step', true)
+      + '<button type="submit" class="ui-btn ui-btn-sub">Update graph</button><button type="button" class="pv-text-btn" id="ow-range-reset">Default range</button>'
+      + '<span class="pv-err ow-range-err" id="ow-range-err">' + esc(w.rangeErr || '') + '</span></form>'
+      + '<div class="pv-legend" id="ow-legend"></div><div class="ow-chart-host" id="ow-chart-host"></div><div class="ow-point" id="ow-point" aria-live="polite"></div><div id="ow-graph-notes"></div></section>';
+    var cmpOpen = w.open['cmp' + k], tblOpen = w.open['tbl' + k];
+    var cmp = '<details class="pv-card ow-sec ow-fold" data-fold="cmp' + k + '"' + (cmpOpen ? ' open' : '') + '><summary><h3>Method comparison</h3><span>' + esc(OIL_GROUP_TITLE[grp]) + ' at the operating pressure</span></summary><div id="ow-cmp"></div></details>';
+    var tbl = '<details class="pv-card ow-sec ow-fold" data-fold="tbl' + k + '"' + (tblOpen ? ' open' : '') + '><summary><h3>Results table</h3><span>All four properties over the graph range</span></summary><div class="pv-tbl-wrap ow-tbl" id="ow-tbl"></div></details>';
+    var notes = '<section class="pv-card ow-sec"><h3>Warnings, assumptions and references</h3>'
+      + (ws.length ? '<div class="pv-msg is-warn"><div class="pv-msg-h">' + ICON.warn + 'Warnings</div><ul>' + ws.map(function (x) { return '<li>' + esc(x.msg) + '</li>'; }).join('') + '</ul></div>' : '<div class="pv-msg is-ok"><div class="pv-msg-h">' + ICON.ok + 'No range warnings for these inputs</div></div>')
+      + '<div class="pv-msg is-info"><div class="pv-msg-h">' + ICON.info + 'Assumptions</div><ul>' + asm.concat([
+        'Correlation estimate — not measured PVT data.',
+        'Standard volumes on the correlation basis: 60 °F, 14.696 psia (101.325 kPa).',
+        r.ctx.apiKind === 'derived' ? 'API from stock-tank density with water at 62.4 lbm/ft³.' : null,
+        'Gauge pressures are converted with 1 atm = 14.696 psi.'
+      ]).concat(r.info).filter(Boolean).map(function (x) { return '<li>' + esc(x) + '</li>'; }).join('') + '</ul></div>'
+      + '<h4>References</h4><ol class="pv-refs">' + refs.map(function (x) { return '<li>' + esc(C.REF[x]) + '</li>'; }).join('') + '</ol></section>';
+    return '<div class="pv-view ow ow-detail" data-page="detail" data-oprop="' + k + '">' + head + '<div class="ow-dgrid">' + mean + meth + '</div>' + eq + graph + cmp + tbl + notes + '</div>';
+  }
+  function rangeField(key, label, inc) {
+    var t = W().rangeText ? W().rangeText[key] : '';
+    var u = inc ? { psia: 'psi', psig: 'psi', bara: 'bar', barg: 'bar', kpaa: 'kPa', mpaa: 'MPa' }[S.oil.u.p] : oUnitLbl('p');
+    return '<label class="ow-rf"><span>' + label + '</span><span class="pv-in"><input data-or="' + key + '" inputmode="decimal" autocomplete="off" value="' + esc(t) + '" aria-label="Graph range ' + label.toLowerCase() + ' (' + esc(u) + ')"><span class="pv-u">' + esc(u) + '</span></span></label>';
+  }
+
+  /* ---- graph range: canonical psia / psi; default 1 atm to 1.5 × max(p, pb) with about 50 steps ---- */
+  function niceNum(x, up) { var mag = Math.pow(10, Math.floor(Math.log10(x))), r = x / mag, c = [1, 2, 2.5, 5, 10]; for (var j = 0; j < c.length; j++) if (up ? c[j] >= r - 1e-9 : c[j] >= r) return c[j] * mag; return 10 * mag; }
+  function defaultRange(r) {
+    var d = oDef('p'), from = U.P_ATM_PSIA, hi = Math.max(r.pressures[0], r.pb) * 1.5;
+    var toD = d[2](hi), halfMag = Math.pow(10, Math.floor(Math.log10(toD))) / 2; toD = Math.ceil(toD / halfMag - 1e-9) * halfMag;
+    var stepD = niceNum((toD - d[2](from)) / 50, true);
+    return { from: from, to: d[1](toD), step: stepD * d[3], auto: true };
+  }
+  function renderRangeText() {
+    var w = W(), d = oDef('p'), rg = w.range; if (!rg) return;
+    var r7 = function (x) { return String(+x.toPrecision(7)); };
+    w.rangeText = { from: r7(d[2](rg.from)), to: r7(d[2](rg.to)), step: r7(rg.step / d[3]) };
+  }
+  function readRange() {
+    var w = W(), d = oDef('p'), t = {}, out = {};
+    qa('[data-or]').forEach(function (inp) { t[inp.getAttribute('data-or')] = inp.value; });
+    var pr = function (k) { var x = E.parse(t[k]); return x.state === 'ok' ? x.v : NaN; };
+    var a = pr('from'), b = pr('to'), st = pr('step');
+    if (!isNum(a) || !isNum(b) || !isNum(st)) return 'Enter numbers for From, To and Step.';
+    out.from = d[1](a); out.to = d[1](b); out.step = st * d[3];
+    if (!(out.from > 0)) return 'From must be an absolute pressure above 0.';
+    if (!(out.to - out.from > E.P_TOL)) return 'To must be greater than From.';
+    if (!(out.step > 0)) return 'Step must be greater than 0.';
+    var n = Math.floor((b - a) / st) + 2;
+    if (n > E.MAX_POINTS - 2) return 'Too many points (' + n + '); use a larger step (limit ' + (E.MAX_POINTS - 2) + ').';
+    out.auto = false; w.range = out; w.rangeText = t; return null;
+  }
+  /* curve: the frozen calculation input over the graph grid, plus the operating pressure (pb is added by the engine) */
+  function oilCurveFor(m) {
+    var c = W().calc, rg = W().range, pOp = c.res.pressures[0], d = oDef('p');
+    /* grid on round multiples of the step in the displayed unit, between the exact end points */
+    var fD = d[2](rg.from), tD = d[2](rg.to), sD = rg.step / d[3], ps = [rg.from];
+    for (var j = Math.ceil(fD / sD - 1e-9); j * sD < tD - 1e-9; j++) { var x = d[1](j * sD); if (x - ps[ps.length - 1] > E.P_TOL) ps.push(x); }
+    if (rg.to - ps[ps.length - 1] > E.P_TOL) ps.push(rg.to);
+    if (pOp >= rg.from - E.P_TOL && pOp <= rg.to + E.P_TOL && !ps.some(function (x) { return Math.abs(x - pOp) <= E.P_TOL; })) ps.push(pOp);
+    ps.sort(function (x, y) { return x - y; });
+    return E.run(Object.assign({}, c.inp, { units: S.units, pressuresPsia: ps, calcMode: 'list', m: Object.assign({}, c.inp.m, m || {}) }));
+  }
+  function idxOfP(r, p) { if (!isNum(p)) return -1; for (var i = 0; i < r.pressures.length; i++) if (Math.abs(r.pressures[i] - p) <= E.P_TOL) return i; return -1; }
+  var oilCurve = null, oilCmpCurves = [];
+  function renderOilChart() {
+    var hostEl = q('#ow-chart-host'); if (!hostEl || !W().calc) return;
+    var w = W(), k = w.prop, c = w.calc, P = E.PROPS.oil[k], pOp = c.res.pressures[0];
+    oilCurve = oilCurveFor(); oilCmpCurves = [];
+    if (chart) { chart.destroy(); chart = null; }
+    chart = PvtChart.create(hostEl, { onSelect: function (i) { w.selP[k] = oilCurve.pressures[i]; renderOilPoint(); } });
+    var grp = OIL_INFO[k].group, gm = M[OIL_INFO[k].meta], cur = c.inp.m[grp];
+    var series = [{ id: 'calc', label: gm[cur].label, role: 'Selected', kind: 'calc', primary: true, color: primaryColor(),
+      pts: oilCurve.pressures.map(function (p, i) { var v = oilCurve.props[k].values[i]; return [pOil(p), v === null ? null : disp(P.q, v)]; }) }];
+    Object.keys(w.cmp[k] || {}).filter(function (mk) { return w.cmp[k][mk] && mk !== cur; }).forEach(function (mk, j) {
+      var mm = {}; mm[grp] = mk; var rr = oilCurveFor(mm); if (!rr.ok) return;
+      oilCmpCurves.push({ method: mk, res: rr });
+      series.push({ id: mk, label: gm[mk].label, role: 'Compare', kind: 'calc', color: cssVar(PALETTE_OIL[j % 5], '#1d8a5a'), dash: DASHES[j % DASHES.length],
+        pts: rr.pressures.map(function (p, i) { var v = rr.props[k].values[i]; return [pOil(p), v === null ? null : disp(P.q, v)]; }) });
+    });
+    if (meas && !meas.parsed.errors.length && meas.basis && meas.basis.cols[k] && meas.basis.cols[k].status !== 'blocked')
+      series.push({ id: 'meas', label: 'Measured (PVT data)', role: 'Measured', kind: 'meas', color: cssVar('--txt', '#16202f'), pts: meas.parsed.rows.map(function (rw) { var mv = measValue(rw, k); return [pOil(rw.p), mv === null ? null : disp(P.q, mv)]; }) });
+    var opI = idxOfP(oilCurve, pOp), sel = idxOfP(oilCurve, w.selP[k]);
+    if (sel < 0) { sel = opI; w.selP[k] = opI >= 0 ? oilCurve.pressures[opI] : null; }
+    var leg = q('#ow-legend');
+    if (leg) leg.innerHTML = series.map(function (s) {
+      return '<span class="pv-lg' + (s.primary ? ' is-primary' : '') + '">' + (s.kind === 'meas' ? '<i class="pv-lg-sq" style="border-color:' + s.color + '"></i>' : '<svg width="28" height="8" aria-hidden="true"><line x1="1" x2="27" y1="4" y2="4" stroke="' + s.color + '" stroke-width="' + (s.primary ? 3.2 : 2) + '"' + (s.dash ? ' stroke-dasharray="' + s.dash + '"' : '') + '/></svg>') + '<em>' + s.role + '</em>' + esc(s.label) + '</span>';
+    }).join('') + '<span class="pv-lg"><svg width="14" height="12" aria-hidden="true"><path d="M7 1l5 5-5 5-5-5z" fill="' + primaryColor() + '"/></svg><em>Marker</em>Operating pressure</span>'
+      + '<span class="pv-lg"><svg width="14" height="12" aria-hidden="true"><line x1="7" x2="7" y1="0" y2="12" stroke="currentColor" stroke-dasharray="3 2" stroke-width="1.5"/></svg><em>Marker</em>Bubble point</span>'
+      + (opI < 0 ? '<span class="pv-lg ow-off">' + ICON.warn + 'Operating pressure is outside this range</span>' : '');
+    chart.render({
+      title: P.label + ', ' + P.sym + ' (' + propUnit(k) + ') vs pressure', xLabel: 'Pressure, ' + oUnitLbl('p'), xUnit: oUnitLbl('p'),
+      yLabel: P.sym + ', ' + propUnit(k), series: series, selected: sel, reasons: oilCurve.props[k].reasons,
+      marker: { x: pOil(c.res.pb), label: 'pb = ' + pOilTxt(c.res.pb) },
+      operating: { x: pOil(pOp), index: opI, label: 'p = ' + pOilTxt(pOp), color: primaryColor() },
+      fmtX: function (x) { return +x.toPrecision(6) + ''; }, fmtY: chartFmtY(k)
+    });
+    /* range warnings that apply only to graph points (not to the operating point): values kept, stated here */
+    var own = oilWarnings(c.res, k).map(function (x) { return x.msg; });
+    var extra = oilWarnings(oilCurve, k).filter(function (x) { return own.indexOf(x.msg) === -1; });
+    var gn = q('#ow-graph-notes');
+    if (gn) gn.innerHTML = extra.length ? '<details class="ow-warn"><summary>' + ICON.warn + '<span>' + extra.length + ' range warning' + (extra.length > 1 ? 's' : '') + ' for points on this graph (values kept)</span></summary><ul>' + extra.map(function (x) { return '<li>' + esc(x.msg) + '</li>'; }).join('') + '</ul></details>' : '';
+    renderOilPoint(); renderOilTable(); renderOilCmp();
+  }
+  function renderOilPoint() {
+    var el = q('#ow-point'); if (!el || !oilCurve) return;
+    var w = W(), k = w.prop, i = idxOfP(oilCurve, w.selP[k]), opI = idxOfP(oilCurve, W().calc.res.pressures[0]);
+    if (chart && i >= 0) chart.select(i);
+    if (i < 0) { el.innerHTML = '<span>' + ICON.info + 'Click a point on the curve, or focus the graph and use ← →.</span>'; return; }
+    var v = oilCurve.props[k].values[i];
+    el.innerHTML = '<span class="ow-pt-tag">' + (i === opI ? 'Operating point' : 'Selected point') + '</span><b>p = ' + esc(pOilTxt(oilCurve.pressures[i])) + '</b>'
+      + '<span class="pv-phase is-' + oilCurve.phase[i].replace(' ', '-') + '">' + esc(oilCurve.phase[i]) + '</span>'
+      + '<span><b>' + E.PROPS.oil[k].sym + ' = ' + (v === null ? 'no value' : esc(oilVal(k, v)) + '</b> ' + esc(propUnitB(k))) + (v === null ? '</b> <i>' + esc(oilCurve.props[k].reasons[i]) + '</i>' : '') + '</span>'
+      + (i !== opI && opI >= 0 ? '<button type="button" class="pv-text-btn" id="ow-to-op">Back to operating point</button>' : '');
+    var b = q('#ow-to-op'); if (b) b.addEventListener('click', function () { w.selP[k] = W().calc.res.pressures[0]; renderOilPoint(); syncOilTable(); });
+    syncOilTable();
+  }
+  function renderOilTable() {
+    var el = q('#ow-tbl'); if (!el || !oilCurve) return;
+    var k = W().prop, P = E.PROPS.oil, opI = idxOfP(oilCurve, W().calc.res.pressures[0]);
+    var notes = [], idx = {};
+    el.innerHTML = '<table class="pv-tbl pv-res"><caption class="pv-sr">Oil properties over the graph pressure range</caption><thead><tr><th>p<em>' + esc(oUnitLbl('p')) + '</em></th><th class="pv-txt">State</th>'
+      + OIL_KEYS.map(function (x) { return '<th class="' + (x === k ? 'is-cur' : '') + '">' + P[x].sym + '<em>' + esc(propUnitB(x)) + '</em></th>'; }).join('') + '</tr></thead><tbody>'
+      + oilCurve.pressures.map(function (p, i) {
+        var isPb = oilCurve.phase[i] === 'bubble point';
+        return '<tr data-row="' + i + '" class="' + (i === opI ? 'is-op' : '') + (isPb ? ' is-pb' : '') + '"><td class="pv-num">' + fmtPo(p) + '</td><td class="pv-txt">' + (i === opI ? '<b>operating</b> · ' : '') + (isPb ? '<b>bubble point</b>' : oilCurve.phase[i]) + '</td>'
+          + OIL_KEYS.map(function (x) {
+            var v = oilCurve.props[x].values[i];
+            if (v !== null) return '<td class="pv-num' + (x === k ? ' is-cur' : '') + '">' + oilVal(x, v) + '</td>';
+            var rr = oilCurve.props[x].reasons[i]; if (idx[rr] === undefined) { idx[rr] = notes.length + 1; notes.push(rr); }
+            return '<td class="pv-num pv-na' + (x === k ? ' is-cur' : '') + '" title="' + esc(rr) + '">—<sup>' + idx[rr] + '</sup></td>';
+          }).join('') + '</tr>';
+      }).join('') + '</tbody></table>' + (notes.length ? '<ol class="pv-notes">' + notes.map(function (n) { return '<li>' + esc(n) + '</li>'; }).join('') + '</ol>' : '');
+    syncOilTable();
+  }
+  function syncOilTable() {
+    var i = oilCurve ? idxOfP(oilCurve, W().selP[W().prop]) : -1;
+    qa('#ow-tbl tr[data-row]').forEach(function (tr) { tr.classList.toggle('is-sel', +tr.getAttribute('data-row') === i); });
+  }
+  function renderOilCmp() {
+    var el = q('#ow-cmp'); if (!el) return;
+    var w = W(), k = w.prop, c = w.calc, grp = OIL_INFO[k].group, gm = M[OIL_INFO[k].meta], cur = c.inp.m[grp];
+    var rows = Object.keys(gm).map(function (mk) {
+      var mm = {}; mm[grp] = mk;
+      var r = mk === cur ? c.res : E.run(Object.assign({}, c.inp, { units: S.units, m: Object.assign({}, c.inp.m, mm) }));
+      var v = r.ok ? r.props[k].values[0] : null, why = r.ok ? r.props[k].reasons[0] : (r.errors[0] && r.errors[0].msg);
+      var base = c.res.props[k].values[0], dev = isNum(v) && isNum(base) && mk !== cur ? 100 * (v - base) / base : null;
+      var nw = r.ok ? oilWarnings(r, k).length : 0;
+      return '<tr class="' + (mk === cur ? 'is-cur' : '') + '"><td class="pv-txt">' + esc(gm[mk].label) + (mk === cur ? ' <i class="pv-tag">selected</i>' : '') + '</td>'
+        + '<td class="pv-num">' + (isNum(v) ? esc(oilVal(k, v)) : '<span title="' + esc(why || '') + '">n/a</span>') + '</td><td class="pv-num">' + (dev === null ? '—' : (dev > 0 ? '+' : '') + dev.toFixed(2) + ' %') + '</td>'
+        + '<td class="pv-txt">' + (nw ? ICON.warn + nw + ' range warning' + (nw > 1 ? 's' : '') : (isNum(v) ? ICON.ok + 'none' : esc(why || ''))) + '</td>'
+        + '<td class="pv-txt">' + (mk === cur ? '' : '<label class="pv-check"><input type="checkbox" data-ocmp="' + mk + '"' + ((w.cmp[k] || {})[mk] ? ' checked' : '') + '> Show on graph</label>') + '</td></tr>';
+    }).join('');
+    el.innerHTML = '<p class="pv-note">Same inputs, same pressure; only this correlation changes. Other properties keep their selected methods. To use a different method for the results, change it under Advanced and calculate again.</p>'
+      + '<div class="pv-tbl-wrap"><table class="pv-tbl ow-cmp-t"><thead><tr><th class="pv-txt">Method</th><th>' + E.PROPS.oil[k].sym + '<em>' + esc(propUnitB(k)) + '</em></th><th>vs selected</th><th class="pv-txt">Range check</th><th class="pv-txt">Graph</th></tr></thead><tbody>' + rows + '</tbody></table></div>';
+    qa('[data-ocmp]').forEach(function (cb) { cb.addEventListener('change', function () { w.cmp[k] = w.cmp[k] || {}; w.cmp[k][cb.getAttribute('data-ocmp')] = cb.checked; renderOilChart(); }); });
+  }
+
+  /* ---- errors, status ---- */
+  function renderOilErrors(r) {
+    qa('.ow-f').forEach(function (f) { f.classList.remove('is-err'); var i = f.querySelector('input'); if (i) i.removeAttribute('aria-invalid'); });
+    qa('[data-oerr]').forEach(function (e) { e.textContent = ''; });
+    var sum = q('#ow-errsum'); if (!sum) return;
+    if (!W().showErrors || !r || r.ok) { sum.hidden = true; sum.innerHTML = ''; return; }
+    r.errors.forEach(function (er) {
+      var box = q('[data-oerr="' + er.field + '"]');
+      if (box) { box.textContent = er.msg; var f = box.closest('.ow-f'); if (f) { f.classList.add('is-err'); var i = f.querySelector('input'); if (i) i.setAttribute('aria-invalid', 'true'); } var d = box.closest('details'); if (d) d.open = true; }
+    });
+    var g = { missing: [], invalid: [], failure: [] }; r.errors.forEach(function (e) { (g[e.kind] || g.invalid).push(e); });
+    var link = function (e) { return '<button type="button" class="pv-errlink" data-ofocus="' + e.field + '">' + esc(e.label) + '</button>'; };
+    var html = (g.missing.length ? '<div><b>Missing:</b> ' + g.missing.map(link).join(', ') + '</div>' : '')
+      + (g.invalid.length ? '<div><b>Check:</b> ' + g.invalid.map(function (e) { return link(e) + ' — ' + esc(e.msg); }).join('; ') + '</div>' : '')
+      + (g.failure.length ? '<div><b>Calculation failed:</b> ' + g.failure.map(function (e) { return esc(e.msg); }).join(' ') + '</div>' : '');
+    sum.hidden = !html; sum.innerHTML = html ? ICON.err + '<div>' + html + '</div>' : '';
+  }
+  function oilStatus(st) {
+    var c = W().calc;
+    if (!c) { st.className = 'pv-status'; st.innerHTML = W().showErrors && res && !res.ok ? ICON.err + '<b>Check inputs</b>' : '<b>Not calculated</b>'; st.title = ''; return; }
+    if (oilStale()) { st.className = 'pv-status is-stale'; st.innerHTML = ICON.warn + '<b>Inputs changed</b><span>recalculate</span>'; return; }
+    var r = c.res, nw = r.warnings.length;
+    st.className = 'pv-status ' + (nw ? 'is-warn' : 'is-ok');
+    st.innerHTML = (nw ? ICON.warn : ICON.ok) + '<b>Calculated</b><span>' + (nw ? nw + ' range note' + (nw > 1 ? 's' : '') : 'no range warnings') + '</span>';
+  }
+  /* after an input edit: re-check without re-rendering the fields (focus stays where it is) */
+  function oilInputChanged() {
+    S.example.oil = false;
+    var lab = q('#ow-ex-label'); if (lab) { lab.classList.remove('is-example'); lab.textContent = 'Your inputs'; }
+    recompute();
+    renderOilErrors(res);
+    var rs = q('#ow-results'); if (rs) { rs.innerHTML = oilResultsHtml(); bindOilResults(); }
+    renderStatus();
+  }
+  function oilCalculate() {
+    var inp = oilEngineInput(), r = E.run(inp), w = W();
+    w.showErrors = true; recompute();
+    if (!r.ok) { w.calc = null; renderView(); var s = q('#ow-errsum'); if (s) { s.setAttribute('tabindex', '-1'); s.focus(); } return; }
+    var prevKey = w.calc && w.calc.key;
+    w.calc = { inp: JSON.parse(JSON.stringify(inp)), key: oilKey(inp), res: r };
+    if (prevKey !== w.calc.key) w.selP = {};
+    if (!w.range || w.range.auto) { w.range = defaultRange(r); renderRangeText(); w.rangeErr = null; }
+    w.showErrors = false;
+    renderView();
+    var t = q('#ow-res-title'); if (t) t.focus();
+  }
+  function openOilDetail(k) {
+    var w = W(); if (!w.calc || oilStale() || !OIL_INFO[k]) return;
+    w.prop = k; w.page = 'detail';
+    if (!w.range) { w.range = defaultRange(w.calc.res); renderRangeText(); }
+    renderView();
+    var main = q('#pv-main'); if (main) main.scrollTop = 0;
+    var h = q('#ow-d-title'); if (h) h.focus({ preventScroll: true });
+  }
+  function closeOilDetail() {
+    var k = W().prop; W().page = 'overview'; renderView();
+    var b = q('.ow-card[data-oprop="' + k + '"] .ow-explain'); if (b) { b.focus({ preventScroll: false }); }
+  }
+  function oilExample() {
+    var ex = E.example('oil', 'field'), f = S.oil;
+    f.canon = {};
+    /* the engine example is in field units; it is entered as canonical values and shown in each field's own unit */
+    var canon = { p: +ex.p, T: +ex.T, pb: +ex.pb, rsb: +ex.rsb, rhoSto: +ex.rhoSto };
+    Object.keys(canon).forEach(function (k) { f.canon[k] = canon[k]; f[k] = oText(k, canon[k]); });
+    f.api = String(ex.api); f.gg = String(ex.gg);
+    S.example.oil = true; W().showErrors = false;
+    recompute(); renderView();
+  }
+  function oilClear() {
+    var f = S.oil;
+    ['p', 'T', 'api', 'rhoSto', 'gg', 'pb', 'rsb', 'psep', 'tsep'].forEach(function (k) { f[k] = ''; });
+    f.canon = {}; S.example.oil = false; W().showErrors = false;
+    recompute(); renderView();
+  }
+
+  /* ---- events ---- */
+  function bindOilResults() {
+    qa('#ow-results [data-explain]').forEach(function (b) { b.addEventListener('click', function () { openOilDetail(b.getAttribute('data-explain')); }); });
+    qa('#ow-results [data-ounits]').forEach(function (b) { b.addEventListener('click', function () { setOilResultUnits(b.getAttribute('data-ounits')); }); });
+  }
+  function setOilResultUnits(u) {
+    if (u === S.units) return;
+    convertUnits(u, S.gauge);
+    var c = W().calc; if (c) { c.inp.units = u; c.res = E.run(c.inp); }   // same physical inputs: only warning texts change units
+    recompute(); renderView();
+  }
+  function bindOil() {
+    var on = function (id, ev, fn) { var el = q(id); if (el) el.addEventListener(ev, fn); };
+    if (W().page === 'detail' && q('.ow-detail')) {
+      on('#ow-back', 'click', closeOilDetail);
+      qa('.ow-dprops [data-explain]').forEach(function (b) { b.addEventListener('click', function () { openOilDetail(b.getAttribute('data-explain')); }); });
+      on('#ow-range', 'submit', function (e) { e.preventDefault(); var err = readRange(); W().rangeErr = err; var el = q('#ow-range-err'); if (el) el.textContent = err || ''; if (!err) renderOilChart(); });
+      on('#ow-range-reset', 'click', function () { W().range = defaultRange(W().calc.res); renderRangeText(); W().rangeErr = null; qa('[data-or]').forEach(function (i) { i.value = W().rangeText[i.getAttribute('data-or')]; }); q('#ow-range-err').textContent = ''; renderOilChart(); });
+      qa('.ow-fold').forEach(function (d) { d.addEventListener('toggle', function () { W().open[d.getAttribute('data-fold')] = d.open; }); });
+      on('#ow-png', 'click', function () {
+        var c = W().calc, r = c.res;
+        if (chart) chart.exportPng('pvt-oil-' + W().prop + '.png', ['Inputs: p = ' + pOilTxt(r.pressures[0]) + '; T = ' + tOilTxt(r.ctx.tF) + '; API = ' + fmt(r.ctx.api, 4) + '; γg = ' + fmt(r.ctx.gg, 4) + '; pb = ' + pOilTxt(r.pb) + '; Rsb = ' + fmtQ('Rs', r.rsb) + ' ' + unitOf('Rs') + ' (60 °F)',
+          'Methods: ' + r.methods.map(function (m) { return m[0] + ' = ' + m[1]; }).join('; '), 'Correlation estimates; standard basis 60 °F, 14.696 psia.']);
+      });
+      on('#ow-csv', 'click', exportOilCsv);
+      return;
+    }
+    qa('[data-ok]').forEach(function (inp) {
+      var k = inp.getAttribute('data-ok');
+      inp.addEventListener('input', function () { S.oil[k] = inp.value; if (S.oil.canon) delete S.oil.canon[k]; oilInputChanged(); });
+    });
+    qa('[data-ou]').forEach(function (sel) {
+      sel.addEventListener('change', function () {
+        var k = sel.getAttribute('data-ou'); setOilUnit(k, sel.value);
+        var inp = q('#ow-in-' + k); if (inp) inp.value = S.oil[k] === undefined ? '' : S.oil[k];
+        if (k === 'p' && W().range) renderRangeText();
+        oilInputChanged();   // physical value unchanged: results stay current; the conditions line follows the new unit
+      });
+    });
+    qa('[data-oseg]').forEach(function (b) { b.addEventListener('click', function () { S.oil[b.getAttribute('data-oseg')] = b.getAttribute('data-v'); S.example.oil = false; recompute(); renderView(); var x = q('[data-oseg="' + b.getAttribute('data-oseg') + '"].is-on'); if (x) x.focus(); }); });
+    qa('[data-om]').forEach(function (sel) { sel.addEventListener('change', function () { S.oil.m[sel.getAttribute('data-om')] = sel.value; W().open.adv = true; recompute(); renderView(); var x = q('#' + sel.id); if (x) x.focus(); }); });
+    on('[data-osep]', 'change', function (e) { S.oil.sepUse = e.target.checked; W().open.adv = true; recompute(); renderView(); });
+    on('#ow-adv', 'toggle', function () { W().open.adv = q('#ow-adv').open; });
+    on('#ow-default-m', 'click', function () { S.oil.m = Object.assign({}, E.OIL_DEFAULT_M); recompute(); renderView(); });
+    on('#ow-example', 'click', oilExample);
+    on('#ow-clear', 'click', oilClear);
+    on('#ow-calc', 'click', oilCalculate);
+    var es = q('#ow-errsum'); if (es) es.addEventListener('click', function (e) { var t = e.target.closest('[data-ofocus]'); if (!t) return; var el = q('#ow-in-' + t.getAttribute('data-ofocus')); if (el) { var d = el.closest('details'); if (d) d.open = true; el.focus(); } });
+    bindOilResults();
+  }
+  function afterOilRender() {
+    if (W().page === 'detail' && q('.ow-detail')) renderOilChart();
+    else renderOilErrors(res);
+  }
+  function exportOilCsv() {
+    if (!oilCurve) return;
+    var c = W().calc, r = c.res, P = E.PROPS.oil;
+    var L = ['PVT Nexus — oil properties (correlation estimates, 60 °F / 14.696 psia basis)', 'Operating point: p = ' + pOilTxt(r.pressures[0]) + ', T = ' + tOilTxt(r.ctx.tF) + ', pb = ' + pOilTxt(r.pb) + ', Rsb = ' + fmtQ('Rs', r.rsb) + ' ' + unitOf('Rs'),
+      'Inputs: API = ' + fmt(r.ctx.api, 5) + ', γg = ' + fmt(r.ctx.gg, 5) + ' (air = 1)', 'Methods: ' + r.methods.map(function (m) { return m[0] + ' = ' + m[1]; }).join('; ')]
+      .concat(oilCurve.warnings.map(function (w) { return 'Warning: ' + w.msg; })).map(function (l) { return '# ' + l; });
+    L.push(['p (' + oUnitLbl('p') + ')', 'state'].concat(OIL_KEYS.map(function (k) { return P[k].sym + ' (' + propUnit(k) + ')'; })).concat(['notes']).map(csvCell).join(','));
+    oilCurve.pressures.forEach(function (p, i) {
+      var notes = [];
+      L.push([fmtPo(p), oilCurve.phase[i]].concat(OIL_KEYS.map(function (k) { var v = oilCurve.props[k].values[i]; if (v === null) { notes.push(P[k].sym + ': ' + oilCurve.props[k].reasons[i]); return ''; } return fmt(disp(P[k].q, v), 7); }))
+        .concat([notes.filter(function (n, j) { return notes.indexOf(n) === j; }).join(' | ')]).map(csvCell).join(','));
+    });
+    download(new Blob(['﻿' + L.join('\r\n')], { type: 'text/csv;charset=utf-8' }), 'pvt-oil-curve.csv');
+  }
+
   /* ================================================================ render */
   function renderShell() {
     host.innerHTML = shell();
@@ -1001,12 +1630,14 @@
     if (global.OilBatch && S.view !== 'measured') global.OilBatch.unmount();
     var html = { inputs: inputsView, charts: inputsView, table: tableView, measured: measuredView, methods: methodsView }[S.view]();
     main.innerHTML = html;
-    root.setAttribute('data-guide', S.view === 'inputs' ? (G().stage === 'choose' ? 'choose' : (G().ready ? 'result' : 'input')) : 'tools');
+    root.setAttribute('data-guide', S.view === 'inputs' ? (S.fluid === 'oil' ? 'oil' : G().stage === 'choose' ? 'choose' : (G().ready ? 'result' : 'input')) : 'tools');
     main.scrollTop = 0;
     qa('.pv-tab').forEach(function (b) { var on = b.getAttribute('data-view') === S.view; b.classList.toggle('is-on', on); b.setAttribute('aria-selected', on); });
     bindView();
+    if (S.fluid === 'oil' && S.view === 'inputs') bindOil();
     if (S.help && S.help !== 'point') S.help = null;
     refresh();
+    if (S.fluid === 'oil' && S.view === 'inputs') afterOilRender();
     if (S.view === 'measured' && S.fluid === 'oil' && global.OilBatch) global.OilBatch.mount(q('#pv-batch-host'));
   }
   /* repaint everything that depends on the result (never the input fields themselves) */
@@ -1036,6 +1667,10 @@
     var st = q('#pv-status'), cx = q('#pv-ctx');
     if (cx) cx.innerHTML = '<span>' + (S.units === 'metric' ? 'Metric' : 'Field') + ' · ' + esc(U.unit('p', S.units, S.gauge)) + '</span><span title="Standard-condition basis of standard volumes">Std ' + esc(basis().short.replace(', 101.325 kPa', '')) + '</span>';
     if (!st || !res) return;
+    if (S.fluid === 'oil' && S.view === 'inputs') {
+      if (cx) cx.innerHTML = '<span title="Display units of the results; each input has its own unit">Results · ' + (S.units === 'metric' ? 'Metric' : 'Field') + '</span><span title="Standard-condition basis of standard volumes">Std 60 °F</span>';
+      oilStatus(st); return;
+    }
     if (!res.ok) {
       var g = errorGroups();
       var kind = g.failure.length ? 'failure' : g.invalid.length ? 'invalid' : 'missing';
@@ -1259,7 +1894,7 @@
 
   /* switching unit system or pressure convention: same physical inputs, new rendering */
   function convertUnits(units, gauge) {
-    ['oil', 'gas'].forEach(function (fl) {
+    ['gas'].forEach(function (fl) {   // oil fields keep their own per-field units
       captureCanon(S[fl], S.units, S.gauge);
       renderCanon(S[fl], units, gauge);
     });
@@ -1273,6 +1908,7 @@
     recompute(); renderShell();
   }
   function loadExample() {
+    if (S.fluid === 'oil') { oilExample(); return; }
     invalidateAnswer();
     var keep = { calcMode: F().calcMode };
     S[S.fluid] = Object.assign(fluidDefaults(S.fluid, S.units, S.gauge), keep);
@@ -1280,6 +1916,7 @@
     recompute(); renderView();
   }
   function clearInputs() {
+    if (S.fluid === 'oil') { oilClear(); return; }
     invalidateAnswer();
     var f = F();
     ['p', 'pMin', 'pMax', 'pList', 'T', 'api', 'rhoSto', 'gg', 'pb', 'rsb', 'psep', 'tsep', 'yCO2', 'yH2S', 'yN2', 'zManual'].forEach(function (k) { if (k in f) f[k] = ''; });
@@ -1291,7 +1928,9 @@
     recompute(); renderView();
   }
   function resetAll() {
+    var keepU = S.fluid === 'oil' ? Object.assign({}, S.oil.u) : null;
     S[S.fluid] = freshFluid(S.fluid); renderCanon(F(), S.units, S.gauge);
+    if (keepU) { S.oil.u = keepU; S.oilW = newOilW(); if (chart) { chart.destroy(); chart = null; } }
     S.guide[S.fluid] = newGuide(); S.view = 'inputs'; S.optionsOpen = false;
     S.example[S.fluid] = false;
     S.measured[S.fluid] = { text: '', basis: '' };

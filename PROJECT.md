@@ -1021,3 +1021,32 @@ Validation in this session: 18 in-memory checks of the existing engine and initi
 guided state passed, plus compilation of the UI script. This does not replace the
 full Node/browser regression suites; the earlier UI suite targets the previous
 workspace navigation and needs migration to this guided interaction.
+
+
+## Oil calculator workflow (2026-11-03, branch claude/eloquent-fermi-1qi0u0)
+
+The Oil calculator no longer opens with property cards. Flow: **enter inputs once → Calculate oil
+properties → Rs, Bo, μo and co together → Explain this property** (full-page detail inside PVT Nexus).
+The Gas calculator keeps its property-first flow unchanged.
+
+* Inputs: p, T, oil gravity (API or stock-tank density), γg (air = 1), pb or Rsb. Every dimensional input
+  has its own unit selector (p, pb, psep: psia, psig, bar(a), bar(g), kPa(a), MPa(a); T: °F, °C, K, °R;
+  density: lbm/ft³, kg/m³, g/cm³; Rsb: scf/STB, sm³/sm³). Values reach the engine as canonical numbers
+  (`inp.canon`), so a unit switch never moves the physical input. Correlations and separator conditions are
+  under Advanced. Result units (Field / Metric) are display only.
+* One calculation path: `S.oilW.calc` keeps the frozen engine input and result. The cards, the detail page,
+  its graph (same input plus a pressure list), table and method comparison all call `PVTEngine.run` with it.
+* Stale results: any physical-input or method change marks the cards "Inputs changed" and disables
+  Explain until recalculation; restoring the exact inputs clears the mark. A failed recalculation clears them.
+* Unavailable values (e.g. co below pb) show the engine's reason on the card; the detail page shows where
+  the calculation stops, and the graph shades the invalid region instead of plotting it.
+* Detail page: value and conditions, meaning, correlation applicability (published ranges vs this case),
+  equation, symbols with units and values, substituted values, dependencies, pressure graph (operating
+  pressure line + diamond, pb marker, labelled exploration range, point selection), results table, method
+  comparison (optional graph overlay), warnings, assumptions, references. "Back to oil results" keeps
+  inputs, units, methods, results, graph range and selected point.
+* `PvtChart` gained an optional `operating` marker; `PVTEngine.detail` gained substituted-value lines for
+  the Bo (Vasquez-Beggs, Glasø, Al-Marhoun, Petrosky-Farshad), dead-oil μ and co correlations (text only).
+* Tests: `node tests/oil-workflow.e2e.js` (browser, 54 checks incl. phone overflow and a Gas smoke check);
+  `tests/pvt-consistency.test.js` (physical trends and continuity at pb for every oil method combination,
+  gas derived-property consistency). `tests/ui.e2e.js` targets an older layout and already failed on main.
