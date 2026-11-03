@@ -301,7 +301,7 @@
       + '</div><details class="pv-more-tools"><summary>More tools</summary><div class="pv-more-menu">'
       + VIEWS.slice(2).map(function (v) { return '<button type="button" class="ui-btn ui-btn-ghost" data-goto="' + v[0] + '">' + v[1] + '</button>'; }).join('')
       + '</div></details><div class="pv-ctx" id="pv-ctx"></div><div class="pv-status" id="pv-status" role="status" aria-live="polite"></div>'
-      + '<div class="pv-bar-end"><button type="button" class="ui-btn ui-btn-ghost pv-theme" id="pv-theme">' + themeBtnInner() + '</button>'
+      + '<div class="pv-bar-end">'
       + '<button type="button" class="ui-btn ui-btn-sub" id="pv-reset" title="Start a new calculation for this fluid and clear its measured data">Start over</button>'
       + '<button type="button" class="ui-btn ui-btn-ghost pv-explain-btn" id="pv-explain-btn" aria-expanded="' + S.explain + '" aria-controls="pv-explain">' + ICON.info + '<span>Explain This Stage</span></button></div></div>'
       + '</div>'
@@ -1123,7 +1123,7 @@
     q('#pv-explain-btn').addEventListener('click', function () { setExplain(!S.explain); });
     q('#pv-ex-close').addEventListener('click', function () { setExplain(false); });
     q('#pv-reset').addEventListener('click', resetAll);
-    q('#pv-theme').addEventListener('click', toggleTheme);
+
     root.addEventListener('click', function (e) {
       var g = e.target.closest('[data-goto]'); if (g) { var menu = q('.pv-more-tools'); if (menu) menu.open = false; S.view = g.getAttribute('data-goto'); renderView(); return; }
       var h = e.target.closest('[data-help]'); if (h) { e.preventDefault(); setExplain(true, h.getAttribute('data-help')); return; }
