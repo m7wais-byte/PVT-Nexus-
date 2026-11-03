@@ -1021,3 +1021,55 @@ Validation in this session: 18 in-memory checks of the existing engine and initi
 guided state passed, plus compilation of the UI script. This does not replace the
 full Node/browser regression suites; the earlier UI suite targets the previous
 workspace navigation and needs migration to this guided interaction.
+
+
+## Oil calculator workflow (2026-11-03, branch claude/eloquent-fermi-1qi0u0)
+
+The Oil calculator no longer opens with property cards. Flow: **enter inputs once → Calculate oil
+properties → Rs, Bo, μo and co together → Explain this property** (full-page detail inside PVT Nexus).
+The Gas calculator keeps its property-first flow unchanged.
+
+* Inputs: p, T, oil gravity (API or stock-tank density), γg (air = 1), pb or Rsb. Every dimensional input
+  has its own unit selector (p, pb, psep: psia, psig, bar(a), bar(g), kPa(a), MPa(a); T: °F, °C, K, °R;
+  density: lbm/ft³, kg/m³, g/cm³; Rsb: scf/STB, sm³/sm³). Values reach the engine as canonical numbers
+  (`inp.canon`), so a unit switch never moves the physical input. Correlations and separator conditions are
+  under Advanced. Result units (Field / Metric) are display only.
+* One calculation path: `S.oilW.calc` keeps the frozen engine input and result. The cards, the detail page,
+  its graph (same input plus a pressure list), table and method comparison all call `PVTEngine.run` with it.
+* Stale results: any physical-input or method change marks the cards "Inputs changed" and disables
+  Explain until recalculation; restoring the exact inputs clears the mark. A failed recalculation clears them.
+* Unavailable values (e.g. co below pb) show the engine's reason on the card; the detail page shows where
+  the calculation stops, and the graph shades the invalid region instead of plotting it.
+* Detail page: value and conditions, meaning, correlation applicability (published ranges vs this case),
+  equation, symbols with units and values, substituted values, dependencies, pressure graph (operating
+  pressure line + diamond, pb marker, labelled exploration range, point selection), results table, method
+  comparison (optional graph overlay), warnings, assumptions, references. "Back to oil results" keeps
+  inputs, units, methods, results, graph range and selected point.
+* `PvtChart` gained an optional `operating` marker; `PVTEngine.detail` gained substituted-value lines for
+  the Bo (Vasquez-Beggs, Glasø, Al-Marhoun, Petrosky-Farshad), dead-oil μ and co correlations (text only).
+* Tests: `node tests/oil-workflow.e2e.js` (browser, 54 checks incl. phone overflow and a Gas smoke check);
+  `tests/pvt-consistency.test.js` (physical trends and continuity at pb for every oil method combination,
+  gas derived-property consistency). `tests/ui.e2e.js` targets an older layout and already failed on main.
+
+
+## Shared calculator workflow, audit fixes (2026-11-04, same branch)
+
+* **Gas uses the same workflow as Oil**: inputs once (p, T, γg) → Z, Bg, ρg, μg, cg together → full-page
+  "Explain this property" with graph, table and Z-method comparison. Composition, sour-gas corrections,
+  pseudo-critical / Z / viscosity methods, ideal-gas model, manual chart Z and the Bg standard basis are under
+  Advanced. The property picker is gone for both fluids; the old guided-UI functions in `PvtCalc.js` are no
+  longer reached (`inputsView` returns `wfView`) and can be deleted in a clean-up.
+* **PR #13 integrated** (merged into this branch, not into main): `PVTUnits.INPUT_UNITS / inputToCanon /
+  inputFromCanon` drive every per-input unit selector of both calculators (p: psia, psig, kPa(a/g), MPa(a/g),
+  bar(a/g); T: °F, °C, K, °R; density; Rsb). Result units (Field / Metric) are display only and keep the
+  per-input units.
+* **Status is truthful**: "All n calculated" only when every property has a value; otherwise "k of n calculated
+  — X unavailable", a banner naming the properties, and the reason on each card. Errors: "Input needed",
+  "Invalid input" or "Calculation failed".
+* **Engine**: a correlation co ≤ 0 is reported with its raw value and A (Vasquez-Beggs) and stays unavailable;
+  Bo above pb gives the same explicit reason; `props.co.raw / props.bo.raw` keep the rejected outputs.
+  Density → API uses water at 60 °F = 999.016 kg/m³ (was 62.4 lbm/ft³); a 15 °C density needs the oil's thermal
+  expansion α and is moved to 60 °F before γo (no generic petroleum-table constants assumed).
+* **Verification**: `calc/VERIFICATION.md` (method-by-method matrix, Vasquez-Beggs C3 investigation, the reported
+  case worked step by step). Tests: `tests/pvt-regression-cases.test.js`, `tests/pvt-consistency.test.js`,
+  `tests/pvt-input-units.test.js` (PR #13), and the rewritten `tests/ui.e2e.js` (both calculators).

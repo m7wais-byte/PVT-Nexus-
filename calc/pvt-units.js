@@ -102,7 +102,35 @@
     return s[q] || '';
   }
 
+
+  /* Independently selectable input units; all values convert to the existing field basis. */
+  var INPUT_UNITS = {
+    p: ['psia','psig','kPa(a)','kPa(g)','MPa(a)','MPa(g)','bar(a)','bar(g)'],
+    dp: ['psi','kPa','MPa','bar'], T: ['°F','°C','K','°R'],
+    density: ['lbm/ft³','kg/m³','g/cm³'], Rs: ['scf/STB','sm³/sm³']
+  };
+  function inputDefault(kind, system, gauge) {
+    if (kind === 'plist') kind = 'p';
+    return unit(kind, system, gauge);
+  }
+  function inputToCanon(kind, value, selected) {
+    if (kind === 'plist') kind = 'p';
+    if (!isNum(value) || !(INPUT_UNITS[kind] || []).includes(selected)) return NaN;
+    if (kind === 'p' || kind === 'dp') {
+      var scale = /^kPa/.test(selected) ? PSI_PER_BAR / 100 : /^MPa/.test(selected) ? PSI_PER_BAR * 10 : /^bar/.test(selected) ? PSI_PER_BAR : 1;
+      return value * scale + (kind === 'p' && (selected === 'psig' || /\(g\)$/.test(selected)) ? P_ATM_PSIA : 0);
+    }
+    if (kind === 'T') return selected === '°C' ? value * 9 / 5 + 32 : selected === 'K' ? value * 9 / 5 - 459.67 : selected === '°R' ? value - 459.67 : value;
+    if (kind === 'density') return selected === 'kg/m³' ? value / KGM3_PER_LBFT3 : selected === 'g/cm³' ? value * 1000 / KGM3_PER_LBFT3 : value;
+    return selected === 'sm³/sm³' ? value / SM3SM3_PER_SCFSTB : value;
+  }
+  function inputFromCanon(kind, value, selected) {
+    var zero = inputToCanon(kind, 0, selected), one = inputToCanon(kind, 1, selected);
+    return (value - zero) / (one - zero);
+  }
+
   var PVTUnits = {
+    INPUT_UNITS: INPUT_UNITS, inputDefault: inputDefault, inputToCanon: inputToCanon, inputFromCanon: inputFromCanon,
     STD: STD, STD_BASES: STD_BASES, stdBasis: stdBasis, gasVolumeFactor: gasVolumeFactor, P_ATM_PSIA: P_ATM_PSIA, P_ATM_BAR: P_ATM_BAR, PSI_PER_BAR: PSI_PER_BAR,
     KGM3_PER_LBFT3: KGM3_PER_LBFT3, FT3_PER_BBL: FT3_PER_BBL, SM3SM3_PER_SCFSTB: SM3SM3_PER_SCFSTB,
     SYSTEMS: SYSTEMS,

@@ -48,11 +48,11 @@ Tests: `node --test tests/*.test.js` (engine) and `node tests/ui.e2e.js` (browse
   it lies inside the range. Increments are pressure differences, so no gauge offset is ever applied to them.
 * **Canonical inputs:** the UI passes full-precision values in internal units (`inp.canon`). Unit and gauge
   switches only re-render the displayed text; a rounded display is never parsed back into an input.
-* **Gas constants:** Ma(air) = 28.96 lb/lbmol, R = 10.7316 psia·ft³/(lbmol·°R); oil γo = ρo/62.4 lbm/ft³.
+* **Gas constants:** Ma(air) = 28.96 lb/lbmol, R = 10.7316 psia·ft³/(lbmol·°R); oil γo = ρo(60 °F)/ρw(60 °F), ρw = 999.016 kg/m³ = 62.366 lbm/ft³ (ASTM D1250-08; was 62.4 before 2026-11-04).
 
 ## Oil workflow
 
-1. API is entered, or derived from stock-tank density: γo = ρo/62.4, API = 141.5/γo − 131.5.
+1. API is entered, or derived from stock-tank density at 60 °F: γo = ρo/ρw(60 °F), API = 141.5/γo − 131.5. A density measured at 15 °C is first brought to 60 °F with the oil's own expansion coefficient α: ρ(60 °F) = ρ(15 °C)/(1 + α·0.5556 °C).
 2. One independent characterisation input: measured **pb** → Rsb = Rs_corr(pb), or measured
    **Rsb** → pb = pb_corr(Rsb), using the selected Rs/pb family (the pb form is the algebraic inverse
    of the Rs form). It is never derived from the current pressure.
