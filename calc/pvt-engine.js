@@ -568,7 +568,7 @@
     }
     res.scalars.push({ key: 'tpr', label: 'Pseudo-reduced temperature, Tpr', q: 'none', v: ctx.tR / pc.tpc, kind: 'derived', method: 'Tpr = T/Tpc' + (m.sour !== 'none' ? "'" : ''), unitText: '–' });
     if (ctx.comp && ctx.comp.normalized) res.info.push('Composition normalised: entered total ' + fmt(ctx.comp.sum / (inp.compBasis === 'percent' ? 0.01 : 1), 5) + (inp.compBasis === 'percent' ? ' %' : '') + ' scaled to 1.');
-    if (!ctx.ideal && m.z === 'manual') res.info.push('Manual Z = ' + fmt(ctx.zManual, 4) + ' applies only at the entered pressure. cg needs dZ/dp and is not available from one chart reading.');
+    if (!ctx.ideal && m.z === 'manual') res.info.push('Manual Z = ' + fmt(ctx.zManual, 4) + ' applies only at the entered pressure.');
 
     ['z', 'bg', 'bgrb', 'eg', 'rho', 'v', 'mu', 'cg', 'ppr'].forEach(function (k) { res.props[k].values = []; res.props[k].reasons = []; });
     ps.forEach(function (p) {
@@ -576,6 +576,9 @@
       /* reasons are per cause (not per point) so the UI can group them; Ppr / Tpr are in the point detail */
       if (!isNum(z)) why = zLabel + ' returns no value here (outside its mathematical domain or no convergence).';
       else if (!(z > 0)) { why = zLabel + ' gives Z ≤ 0 here — not physical; the correlation is outside its usable domain.'; z = NaN; }
+      push(res, 'ppr', ppr, null);
+      push(res, 'z', z, why);
+      if (inp.zOnly) return;
       var bg = std.pPsia * z * ctx.tR / (std.tR * p);
       var rho = p * ctx.ma / (z * R_GAS * ctx.tR);
       var mu = C.gas.muLGE(ctx.tR, ctx.ma, rho * LBFT3_TO_GCC);
@@ -587,8 +590,7 @@
         cg = (isNum(z1) && isNum(z2) && z1 > 0 && z2 > 0) ? 1 / p - (z2 - z1) / (2 * h) / z : NaN;
         if (!isNum(cg)) cgWhy = 'dZ/dp cannot be evaluated around this point (neighbouring Z values unavailable).';
       } else cg = NaN;
-      push(res, 'ppr', ppr, null);
-      push(res, 'z', z, why); push(res, 'bg', bg, why); push(res, 'bgrb', bg / U.FT3_PER_BBL, why);
+      push(res, 'bg', bg, why); push(res, 'bgrb', bg / U.FT3_PER_BBL, why);
       push(res, 'eg', 1 / bg, why); push(res, 'rho', rho, why); push(res, 'v', 1 / rho, why);
       push(res, 'mu', mu, why || (isNum(mu) ? null : 'Lee-Gonzalez-Eakin cannot be evaluated here.'));
       push(res, 'cg', cg, cgWhy);
@@ -603,11 +605,12 @@
     if (!ctx.ideal && m.z === 'dak') {
       checkRange(warns, { range: { tpr: M.z.dak.range.tpr }, verify: M.z.dak.verify }, 'Dranchuk-Abou-Kassem', { tpr: tpr }, ZA, inp);
       checkPoints(warns, M.z.dak, 'Dranchuk-Abou-Kassem', 'ppr', res.props.ppr.values, ZA, inp);
-      if (tpr < 1.2) warns.push({ kind: 'accuracy', method: 'Dranchuk-Abou-Kassem', msg: 'Near-critical conditions (Tpr = ' + fmt(tpr, 3) + ' < 1.2): DAK differs from the Standing-Katz chart by 3.2 % on average and up to 18 % here (Ppr 1.3–3). Treat Z and cg as approximate.', affects: ZA });
+      if (tpr < 1.2) warns.push({ kind: 'accuracy', method: 'Dranchuk-Abou-Kassem', msg: 'Near-critical conditions (Tpr = ' + fmt(tpr, 3) + ' < 1.2): DAK differs from the Standing-Katz chart by 3.2 % on average and up to 18 % here (Ppr 1.3–3). Treat Z as approximate.', affects: ZA });
     }
-    if (!ctx.ideal && m.z === 'papay' && (tpr < 1.2 || pprMax > 3)) warns.push({ kind: 'accuracy', method: 'Papay', msg: 'Papay against the Standing-Katz chart: average error 3.8–4.7 % for Ppr 3–10 and 54 % above Ppr 10 (40 % for Tpr < 1.2); its cg can be far off. Here Tpr = ' + fmt(tpr, 3) + ', max Ppr = ' + fmt(pprMax, 3) + '. Prefer Dranchuk-Abou-Kassem.', affects: ZA });
+    if (!ctx.ideal && m.z === 'papay' && (tpr < 1.2 || pprMax > 3)) warns.push({ kind: 'accuracy', method: 'Papay', msg: 'Papay against the Standing-Katz chart: average error 3.8–4.7 % for Ppr 3–10 and 54 % above Ppr 10 (40 % for Tpr < 1.2). Here Tpr = ' + fmt(tpr, 3) + ', max Ppr = ' + fmt(pprMax, 3) + '. Prefer Dranchuk-Abou-Kassem.', affects: ZA });
     if (!ctx.ideal && m.z === 'beggs_brill' && (tpr < 1.2 || pprMax > 3)) warns.push({ kind: 'accuracy', method: 'Beggs-Brill', msg: 'Beggs-Brill against the Standing-Katz chart: deviations up to 87–97 % and Z ≤ 0 at some points for Ppr 3–10. Here Tpr = ' + fmt(tpr, 3) + ', max Ppr = ' + fmt(pprMax, 3) + '. Prefer Dranchuk-Abou-Kassem.', affects: ZA });
     if (m.pc !== 'kay' && m.sour !== 'none' && ((ctx.yCO2 || 0) + (ctx.yH2S || 0)) > 0.05) warns.push({ kind: 'accuracy', method: 'Sour gas', msg: 'Gas-gravity pseudo-criticals with a sour correction were 3.7–5.3 % off in Z against GERG-2008 for a gas with 23 % CO2 + H2S; composition + Kay + Wichert-Aziz was within 1.5 %. Enter the composition for strongly sour gas.', affects: ['all gas properties'] });
+    if (inp.zOnly) return;
     checkRange(warns, { range: { T: M.muGas.lee_gonzalez_eakin.range.T } }, 'Lee-Gonzalez-Eakin (μg)', { T: ctx.tF }, ['μg'], inp);
     checkPoints(warns, M.muGas.lee_gonzalez_eakin, 'Lee-Gonzalez-Eakin (μg)', 'p', ps, ['μg'], inp);
     if ((ctx.yH2S || 0) > 0) warns.push({ kind: 'accuracy', method: 'Lee-Gonzalez-Eakin (μg)', msg: 'μg for a gas containing H2S: Lee-Gonzalez-Eakin was checked here only against methane; its accuracy for sour gas is not established.', affects: ['μg'] });
@@ -651,6 +654,7 @@
     if (bag.merged) res.info.push(bag.merged + ' pasted pressure' + (bag.merged > 1 ? 's' : '') + ' within ' + P_TOL + ' psi of another were merged (one calculated point per pressure).');
     if (fluid === 'oil') oilEvaluate(inp, ctx, ps, res); else gasEvaluate(inp, ctx, ps, res);
     res.methods = methodSummary(fluid, ctx);
+    if (fluid === 'gas' && inp.zOnly) res.methods = res.methods.filter(function (method) { return method[0] !== 'Viscosity'; });
     return res;
   }
 
