@@ -169,7 +169,7 @@
     switch (S.fluid + '.' + k) {
       case 'oil.rs': return d.toFixed(met ? 2 : 1);
       case 'oil.bo': return d.toFixed(4);
-      case 'oil.co': case 'gas.cg': return sci(d, 4);
+      case 'oil.co': return sci(d, 4);
       case 'gas.z': case 'gas.ppr': return d.toFixed(4);
       case 'gas.eg': return d.toFixed(met ? 2 : 2);
       default: return fmt(d, 4);
@@ -188,7 +188,7 @@
     return wfEngineInput(extra);
     var f = F();
     captureCanon(f, S.units, S.gauge);
-    var inp = Object.assign({}, f, { fluid: S.fluid, zOnly: S.fluid === 'gas', units: S.units, gauge: S.gauge, stdBasis: S.stdBasis, m: Object.assign({}, f.m), canon: Object.assign({}, f.canon) });
+    var inp = Object.assign({}, f, { fluid: S.fluid, units: S.units, gauge: S.gauge, stdBasis: S.stdBasis, m: Object.assign({}, f.m), canon: Object.assign({}, f.canon) });
     return Object.assign(inp, extra || {});
   }
 
@@ -224,7 +224,7 @@
     var md = S.measured[S.fluid];
     if (!md.text || !md.text.trim()) return;
     var parsed = MD.parse(md.text, S.fluid, S.units, S.gauge);
-    if (S.fluid === 'gas') parsed.columns = parsed.columns.filter(function (c) { return c.key === 'z' || c.key === 'p'; });
+    if (S.fluid === 'gas') parsed.columns = parsed.columns.filter(function (column) { return column.key !== 'cg'; });
     meas = { parsed: parsed, calc: null, cmp: [], basis: null };
     if (parsed.errors.length) return;
     meas.basis = MD.checkBasis(S.fluid, parsed.columns, md.basis, basis().key);
@@ -305,7 +305,7 @@
       + '<div class="pv-hero">'
       + '<div class="pv-hero-l"><div class="pv-eyebrow"><span class="pv-rule"></span><span>PVT Calculator</span></div>'
       + '<div class="pv-titlerow"><h2 class="pv-title">' + (oil ? 'Oil Properties' : 'Gas Properties') + '</h2>'
-      + '<p class="pv-sub">' + (oil ? 'Rs, Bo, μo and co from one set of inputs, using published black-oil correlations. Explain any result for its equation and pressure trend.' : 'Calculate gas Z-factor using published natural-gas correlations. Explore its equation and pressure trend.') + '</p></div></div>'
+      + '<p class="pv-sub">' + (oil ? 'Rs, Bo, μo and co from one set of inputs, using published black-oil correlations. Explain any result for its equation and pressure trend.' : 'Z, Bg, ρg and μg from one set of inputs, using published natural-gas correlations. Explain any result for its equation and pressure trend.') + '</p></div></div>'
       + '<div class="pv-hero-r"><span class="pv-mono" id="pv-fluid-lbl">Fluid</span><div class="pv-pills pv-fluid" role="group" aria-labelledby="pv-fluid-lbl">'
       + '<button type="button" data-fluid="oil" class="' + (oil ? 'is-on' : '') + '" aria-pressed="' + oil + '">' + ICON.oil + 'Oil</button>'
       + '<button type="button" data-fluid="gas" class="' + (!oil ? 'is-on' : '') + '" aria-pressed="' + !oil + '">' + ICON.gas + 'Gas</button>'
@@ -437,7 +437,7 @@
   }
   function manualZBlock() {
     return '<div class="pv-manual"><div class="pv-manual-read" id="pv-zread">Ppr and Tpr appear here once pressure, temperature and gas are valid.</div>'
-      + '<div class="pv-grid2">' + field('zManual', 'Z read from the chart', '–', { hint: 'One pressure only.' })
+      + '<div class="pv-grid2">' + field('zManual', 'Z read from the chart', '–', { hint: 'One pressure only — no curve.' })
       + '<div class="pv-f"><label class="pv-l" for="pv-zimg">Chart image (optional)</label><input type="file" accept="image/*" id="pv-zimg"></div></div>'
       + (S.zImg ? '<img class="pv-zimg" src="' + S.zImg + '" alt="Standing-Katz chart supplied by the user">' : '') + '</div>';
   }
@@ -490,7 +490,6 @@
       bg: ['Gas formation volume factor', 'Compare gas volume in the reservoir with its standard volume.', 'Bg'],
       rho: ['Gas density', 'Find the mass of gas per unit volume.', 'ρg'],
       mu: ['Gas viscosity', 'How easily does the gas flow?', 'μg'],
-      cg: ['Gas compressibility', 'How does gas volume respond to a pressure change?', 'cg']
     }
   };
   function guideCopy() { return GUIDE_COPY[S.fluid][S.chartProp[S.fluid]]; }
@@ -567,7 +566,7 @@
   function seriesFor(r, k) {
     return r.pressures.map(function (p, i) { var v = r.props[k].values[i]; return [disp('p', p), v === null ? null : disp(E.PROPS[S.fluid][k].q, v)]; });
   }
-  function chartFmtY(k) { return function (v) { var a = Math.abs(v); if ((S.fluid + '.' + k) === 'oil.co' || (S.fluid + '.' + k) === 'gas.cg' || (a !== 0 && a < 1e-3)) return sci(v, 2); return +v.toPrecision(5) + ''; }; }
+  function chartFmtY(k) { return function (v) { var a = Math.abs(v); if ((S.fluid + '.' + k) === 'oil.co' || (a !== 0 && a < 1e-3)) return sci(v, 2); return +v.toPrecision(5) + ''; }; }
 
   function renderChart() {
     var hostEl = q('#pv-chart-host'), msg = q('#pv-chart-msg'), single = q('#pv-single');
@@ -673,7 +672,7 @@
       + '<p class="pv-note">Correlation estimate · ' + esc(methodLabelFor(k)) + '.</p>'
       + '<button type="button" class="ui-btn ui-btn-ghost" data-help="point">Explain this result</button>';
   }
-  var PROP_AFFECT = { rs: ['Rs', 'pb'], bo: ['Bo', 'Bo above pb'], mu: ['μo', 'μo above pb', 'μo below pb'], co: ['co'], z: ['Z and dependent properties', 'all gas properties'], bg: ['Z and dependent properties', 'all gas properties'], rho: ['Z and dependent properties', 'all gas properties'], cg: ['Z and dependent properties', 'all gas properties'] };
+  var PROP_AFFECT = { rs: ['Rs', 'pb'], bo: ['Bo', 'Bo above pb'], mu: ['μo', 'μo above pb', 'μo below pb'], co: ['co'], z: ['Z and dependent properties', 'all gas properties'], bg: ['Z and dependent properties', 'all gas properties'], rho: ['Z and dependent properties', 'all gas properties'] };
   function warningsFor(k) {
     if (!res || !res.warnings) return [];
     var aff = (PROP_AFFECT[k] || []).concat(S.fluid === 'gas' && k === 'mu' ? ['μg', 'all gas properties', 'Z and dependent properties'] : []);
@@ -702,7 +701,7 @@
   /* ---------------------------------------------------------- results table */
   function tableCols() {
     if (S.fluid === 'oil') return ['rs', 'bo', 'mu', 'co'];
-    return ['z'];
+    return ['ppr', 'z', 'bg', 'bgrb', 'eg', 'rho', 'v', 'mu'];
   }
   function tableView() {
     return '<div class="pv-view pv-table">'
@@ -768,15 +767,15 @@
 
   /* ---------------------------------------------------------- measured view */
   function templateText() {
-    var cols = (S.fluid === 'gas' ? ['p', 'z'] : MD.headerText(S.fluid, S.units, S.gauge));
+    var cols = MD.headerText(S.fluid, S.units, S.gauge).filter(function (label) { return !/^cg\b/i.test(label); });
     return '# PVT Nexus measured-data template (' + S.fluid + '). Units: ' + cols.join(', ') + '.\n'
       + '# Lines starting with # are ignored. Leave a cell empty or write - for a missing value.\n'
       + (S.fluid === 'oil' ? '# Rs and Bo refer to standard volumes: declare their basis (60 °F or 15 °C, 101.325 kPa) in the calculator.\n'
-        : '')
+        : '# Bg refers to standard volumes: declare its basis (60 °F or 15 °C, 101.325 kPa) in the calculator.\n')
       + cols.join(',') + '\n';
   }
   function measuredView() {
-    var cols = (S.fluid === 'gas' ? ['p', 'z'] : MD.headerText(S.fluid, S.units, S.gauge)), md = S.measured[S.fluid];
+    var cols = MD.headerText(S.fluid, S.units, S.gauge).filter(function (label) { return !/^cg\b/i.test(label); }), md = S.measured[S.fluid];
     var stdCols = S.fluid === 'oil' ? 'Rs and Bo' : 'Bg';
     return '<div class="pv-view pv-measured">'
       + '<div class="pv-icols"><div class="pv-icol">' + card('Measured PVT data',
@@ -784,7 +783,7 @@
         + '<span class="pv-template-b"><button type="button" class="ui-btn ui-btn-sub" id="pv-tpl-copy">Copy template</button><button type="button" class="ui-btn ui-btn-sub" id="pv-tpl-dl">Download template</button></span></div>'
         + '<p class="pv-note">First line = header; only <b>p</b> is required. Units follow the current settings (' + esc(U.unit('p', S.units, S.gauge)) + ', ' + (S.units === 'metric' ? 'Metric' : 'Field') + '). Empty or “-” = missing. Repeated pressures are kept as separate observations.</p>'
         + '<label class="pv-l" for="pv-meas-text">Paste data</label><textarea id="pv-meas-text" rows="7" spellcheck="false" class="pv-meas-text" aria-describedby="pv-meas-errs">' + esc(md.text) + '</textarea>'
-        + (S.fluid === 'oil' ? optRow('Standard basis of measured ' + stdCols, pills('measBasis', md.basis, [['corr', '60 °F, 101.325 kPa'], ['lab', '15 °C, 101.325 kPa']], 'Standard basis of the measured values')) : '')
+        + optRow('Standard basis of measured ' + stdCols, pills('measBasis', md.basis, [['corr', '60 °F, 101.325 kPa'], ['lab', '15 °C, 101.325 kPa']], 'Standard basis of the measured values'))
         + '<div class="pv-actions"><label class="ui-btn ui-btn-ghost pv-file">Import CSV / TXT<input type="file" id="pv-meas-file" accept=".csv,.txt,.tsv,text/csv,text/plain"></label>'
         + '<button type="button" class="ui-btn ui-btn-sub" id="pv-meas-clear">Clear</button><button type="button" class="ui-btn ui-btn-primary pv-go" id="pv-meas-apply">Compare with calculation</button></div>'
         + '<div id="pv-meas-errs" aria-live="polite"></div>', { n: 1 }) + '</div>'
@@ -884,7 +883,7 @@
       + '<dt>Gauge pressure</dt><dd>p(abs) = p(gauge) + 14.696 psi (1.01325 bar).</dd>'
       + (S.fluid === 'oil' ? '<dt>Oil workflow</dt><dd>One measured input — pb or Rsb — and the other from the selected Rs/pb correlation. p < pb: saturated, Rs(p) scaled so Rs(pb) = Rsb (factor reported). p ≥ pb: Rs = Rsb, Bo = Bob·exp(−∫co dp), μo from Vasquez-Beggs with μob at pb. co below pb is not calculated.</dd>'
         + '<dt>Assumptions</dt><dd>γg is used for every correlation except Vasquez-Beggs, which needs γgs at 100 psig (γgs = γg assumed without separator conditions, and shown as an assumption). Water density for γo: 62.4 lbm/ft³.</dd>'
-        : '<dt>Gas workflow</dt><dd>γg or composition → pseudo-criticals → sour correction → Ppr, Tpr → Z. Ideal gas sets Z = 1 throughout.</dd>')
+        : '<dt>Gas workflow</dt><dd>γg or composition → pseudo-criticals → sour correction → Ppr, Tpr → Z → Bg, ρg = p·Ma/(Z·R·T), v, Eg, μg. Ideal gas sets Z = 1 throughout.</dd>')
       + '</dl>', { cls: 'pv-mcard' });
     if (S.fluid === 'oil') {
       out += methodBlock('Rs and pb (saturated oil)', M.rsFamily, m.rs);
@@ -896,6 +895,7 @@
       out += methodBlock('Pseudo-critical properties', M.pc, m.pc);
       out += methodBlock('Sour-gas corrections', M.sour, m.sour);
       out += methodBlock('Z factor', M.z, F().behavior === 'ideal' ? '' : m.z);
+      out += methodBlock('Gas viscosity', M.muGas, m.mu);
     }
     out += '</div>' + card('References', '<ol class="pv-refs">' + Object.keys(C.REF).map(function (k) { return '<li>' + esc(C.REF[k]) + '</li>'; }).join('') + '</ol>', { cls: 'pv-mcard' }) + '</div>';
     return out;
@@ -923,7 +923,6 @@
     bg: 'Reservoir volume of one standard volume of gas; falls roughly as 1/p.',
     rho: 'ρg = p·Ma/(Z·R·T); rises with pressure.',
     mu_gas: 'Rises with pressure because the gas becomes denser.',
-    cg: 'Isothermal gas compressibility: 1/p for an ideal gas, 1/p − (1/Z)(dZ/dp) for a real gas.'
   };
   function sec(lbl, txt) { return '<div class="sgSec pv-ex-sec"><div class="sgLbl">' + lbl + '</div><div class="sgTxt">' + txt + '</div></div>'; }
   function pointDetailHtml(i) {
@@ -964,8 +963,8 @@
         + sec('Standard conditions', esc(HELP.basis[1]));
     } else if (v === 'inputs') {
       ti.textContent = W().page === 'detail' ? 'Reading a property page' : 'Using the gas calculator';
-      html = sec('Start here', 'Enter pressure, temperature and gas gravity once, then choose Calculate Z-factor. The Z-factor appears in the results. Each dimensional value has its own unit selector.')
-        + sec('Advanced', 'Composition instead of gas gravity, sour-gas corrections, pseudo-critical and Z methods, and the ideal-gas model.')
+      html = sec('Start here', 'Enter pressure, temperature and gas gravity once, then choose Calculate gas properties. Z, Bg, ρg and μg appear together. Each dimensional value has its own unit selector.')
+        + sec('Advanced', 'Composition instead of gas gravity, sour-gas corrections, pseudo-critical and Z methods, the ideal-gas model and the standard basis of Bg.')
         + sec('Explain this property', 'Opens a full page with the equation, substituted values, a pressure graph with the operating point, a results table and a method comparison.')
         + sec('Standard conditions', esc(HELP.basis[1]));
     } else if (false) {
@@ -989,7 +988,7 @@
     } else if (v === 'measured') {
       ti.textContent = 'Comparing with measured data';
       html = sec('Template', 'Copy or download the template. First line: column names; units follow the current settings. Errors name the line and column.')
-        + (S.fluid === 'oil' ? sec('Standard basis', 'Declare whether measured Rs and Bo are on 60 °F or 15 °C. Oil Rs and Bo on 15 °C are not compared, because converting them needs data the calculator does not have.') : '')
+        + sec('Standard basis', 'Declare whether measured Rs, Bo or Bg are on 60 °F or 15 °C. Bg is converted if needed; oil Rs and Bo on 15 °C are not compared, because converting them needs data the calculator does not have.')
         + sec('Errors', 'e = 100·(calc − meas)/meas at each measured pressure; AARE = mean |e|. Missing, unavailable and zero measured values are excluded and counted.');
     } else {
       ti.textContent = 'Methods, verification and limits';
@@ -1014,7 +1013,7 @@
 
   /* ================================================================ SHARED WORKFLOW (oil and gas)
      Enter inputs once -> calculate every main property together -> explain any one on a full page.
-       Oil: Rs, Bo, μo, co.      Gas: Z, Bg, ρg, μg, cg.
+       Oil: Rs, Bo, μo, co.      Gas: Z, Bg, ρg, μg.
      One calculation path: the cards and every detail page read the same frozen engine input
      (S.wf[fluid].calc.inp) and call the same PVTEngine.run; the detail graph only adds pressures to it.
 
@@ -1024,8 +1023,8 @@
      re-renders the text (f.canon keeps full precision until the user types). Result units (Field /
      Metric) are display only. */
   var WF_DIM = { oil: { p: 'p', pb: 'p', psep: 'p', T: 'T', tsep: 'T', rhoSto: 'density', rsb: 'Rs' }, gas: { p: 'p', T: 'T' } };
-  var WF_KEYS = { oil: ['rs', 'bo', 'mu', 'co'], gas: ['z'] };
-  var WF_TABLE = { oil: ['rs', 'bo', 'mu', 'co'], gas: ['z'] };
+  var WF_KEYS = { oil: ['rs', 'bo', 'mu', 'co'], gas: ['z', 'bg', 'rho', 'mu'] };
+  var WF_TABLE = { oil: ['rs', 'bo', 'mu', 'co'], gas: ['ppr', 'z', 'bg', 'rho', 'mu'] };
   var DP_OF = { 'psia': 'psi', 'psig': 'psi', 'kPa(a)': 'kPa', 'kPa(g)': 'kPa', 'MPa(a)': 'MPa', 'MPa(g)': 'MPa', 'bar(a)': 'bar', 'bar(g)': 'bar' };
   var P_DIGITS = { psi: 1, kPa: 0, MPa: 3, bar: 2 };
   var ZM = { dak: M.z.dak, papay: M.z.papay, beggs_brill: M.z.beggs_brill };
@@ -1065,10 +1064,6 @@
         short: 'Resistance of the gas to flow at these conditions.',
         what: 'μg from Lee-Gonzalez-Eakin as a function of temperature, molar mass and gas density. It rises with pressure because the gas becomes denser.',
         why: 'Gas viscosity controls gas mobility, well deliverability and pseudo-pressure in well-test analysis.' },
-      cg: { name: 'Gas compressibility', sym: 'cg', group: 'z', meta: ZM,
-        short: 'Fractional change in gas volume per unit pressure change.',
-        what: 'cg = −(1/V)(∂V/∂p) at constant temperature = 1/p − (1/Z)(dZ/dp). For an ideal gas it is 1/p. dZ/dp needs Z as a function of pressure, so a single chart reading cannot give cg.',
-        why: 'cg dominates total compressibility in gas reservoirs and enters material balance and well-test analysis.' }
     }
   };
   var GROUP_TITLE = { rs: 'Rs / pb correlation', bo: 'Bo correlation (p ≤ pb; also sets Bob)', muDead: 'Dead-oil viscosity correlation', co: 'co correlation (p > pb)', z: 'Z-factor correlation' };
@@ -1099,7 +1094,7 @@
     var inp = fl === 'oil'
       ? { fluid: 'oil', units: S.units, gauge: false, stdBasis: 'corr', calcMode: 'single', oilGravityBasis: f.oilGravityBasis, rhoBasis: f.rhoBasis || '60F', alpha: f.alpha,
           oilChar: f.oilChar, sepUse: !!f.sepUse, api: f.api, gg: f.gg, m: Object.assign({}, f.m) }
-      : { fluid: 'gas', zOnly: true, units: S.units, gauge: false, stdBasis: S.stdBasis, calcMode: 'single', gasBasis: f.gasBasis, gg: f.gg, comp: f.comp.map(function (r) { return Object.assign({}, r); }),
+      : { fluid: 'gas', skipCg: true, units: S.units, gauge: false, stdBasis: S.stdBasis, calcMode: 'single', gasBasis: f.gasBasis, gg: f.gg, comp: f.comp.map(function (r) { return Object.assign({}, r); }),
           compBasis: f.compBasis, normalize: !!f.normalize, behavior: f.behavior, sourBasis: f.sourBasis, yCO2: f.yCO2, yH2S: f.yH2S, yN2: f.yN2, zManual: f.zManual, m: Object.assign({}, f.m) };
     Object.keys(dims()).forEach(function (k) {
       var c = wCanon(k);
@@ -1228,14 +1223,16 @@
       : (f.m.sour !== 'none' ? '<p class="pv-note">CO₂, H₂S and N₂ fractions are taken from the composition.</p>' : '');
     var manual = f.behavior !== 'ideal' && f.m.z === 'manual'
       ? '<div class="pv-manual"><div class="pv-manual-read" id="ow-zread">Ppr and Tpr appear here once pressure, temperature and gas are valid.</div>'
-        + wField('zManual', 'Z read from the chart', { unit: '–', hint: 'One pressure only.' }) + '</div>' : '';
-    return advShell('Composition, sour gas, pseudo-criticals and Z method',
+        + wField('zManual', 'Z read from the chart', { unit: '–', hint: 'One pressure only — no curve.' }) + '</div>' : '';
+    return advShell('Composition, sour gas, pseudo-criticals, Z method and standard conditions',
       '<div class="ow-adv-sub"><span class="pv-l">Describe the gas by</span>' + wSwitch('gasBasis', f.gasBasis, [['gravity', 'Gas gravity'], ['composition', 'Composition']], 'Gas description') + '</div>'
       + (comp ? gasCompTable() : '')
       + '<div class="ow-adv-grid">' + wSelect('pc', M.pc, 'Pseudo-critical properties', 'pc', function (k) { return comp || k !== 'kay'; })
       + wSelect('sour', M.sour, 'Sour-gas correction', 'sour', function (k) { return !(k === 'carr_kobayashi_burrows' && f.m.pc === 'kay'); }) + '</div>' + sour
       + '<div class="ow-adv-sub"><span class="pv-l">Gas model</span>' + wSwitch('behavior', f.behavior, [['real', 'Real gas'], ['ideal', 'Ideal gas, Z = 1']], 'Gas model') + '</div>'
-      + '<div class="ow-adv-grid">' + (f.behavior === 'real' ? wSelect('z', M.z, 'Z factor', 'z') : '') + '</div>' + manual);
+      + '<div class="ow-adv-grid">' + (f.behavior === 'real' ? wSelect('z', M.z, 'Z factor', 'z') : '') + wSelect('mu', M.muGas, 'Gas viscosity') + '</div>' + manual
+      + '<div class="ow-adv-sub"><span class="pv-l">Standard volumes (Bg)</span>' + helpBtn('basis', 'standard conditions') + wSwitch('stdBasis', S.stdBasis, [['corr', '60 °F, 101.325 kPa'], ['lab', '15 °C, 101.325 kPa']], 'Standard-condition basis') + '</div>'
+      + '<p class="pv-note">Bg on 15 °C uses the Tsc ratio with gas ideal at standard conditions (519.67/518.67).</p>');
   }
   function inputsHtml() {
     var oil = FL() === 'oil';
@@ -1244,14 +1241,14 @@
       + '<span class="ow-in-links"><button type="button" class="pv-text-btn" id="ow-example">Try example</button><button type="button" class="pv-text-btn" id="ow-clear">Clear</button></span></div>'
       + '<div class="ow-fields" data-n="' + (oil ? 5 : 3) + '">' + (oil ? oilFields() : gasFields()) + '</div>'
       + '<div class="pv-errsum" id="ow-errsum" role="alert" hidden></div>'
-      + '<div class="ow-in-foot">' + (oil ? oilAdvanced() : gasAdvanced()) + '<button type="button" class="ui-btn ui-btn-primary ow-calc" id="ow-calc">' + (oil ? 'Calculate oil properties' : 'Calculate Z-factor') + '</button></div></section>';
+      + '<div class="ow-in-foot">' + (oil ? oilAdvanced() : gasAdvanced()) + '<button type="button" class="ui-btn ui-btn-primary ow-calc" id="ow-calc">Calculate ' + (oil ? 'oil' : 'gas') + ' properties</button></div></section>';
   }
 
   /* ---- results overview ---- */
   var AFFECTS = {
     oil: { rs: ['Rs', 'pb'], bo: ['Bo', 'Bo above pb', 'Rs', 'pb'], mu: ['μo', 'μo above pb', 'μo below pb'], co: ['co'] },
     gas: { z: ['Z and dependent properties', 'all gas properties'], bg: ['Z and dependent properties', 'all gas properties'], rho: ['Z and dependent properties', 'all gas properties'],
-      mu: ['μg', 'Z and dependent properties', 'all gas properties'], cg: ['Z and dependent properties', 'all gas properties'] }
+      mu: ['μg', 'Z and dependent properties', 'all gas properties'] }
   };
   function propWarnings(r, k) {
     var aff = AFFECTS[r.fluid][k] || [];
@@ -1320,11 +1317,11 @@
   function resultsHtml() {
     var c = W().calc, stale = c && wfStale(), oil = FL() === 'oil';
     var unav = c ? unavailableKeys(c.res) : [];
-    var head = '<div class="ow-res-head"><div><h3 id="ow-res-title" tabindex="-1">' + (c ? (oil ? 'Oil properties at your conditions' : 'Z-factor at your conditions') : 'Results') + '</h3>'
-      + (c ? condHtml(c.res) : '<p class="ow-res-sub">' + (oil ? 'Rs, Bo, μo and co will appear here together' : 'Z-factor will appear here') + ' after you calculate.</p>') + '</div>'
+    var head = '<div class="ow-res-head"><div><h3 id="ow-res-title" tabindex="-1">' + (c ? (oil ? 'Oil' : 'Gas') + ' properties at your conditions' : 'Results') + '</h3>'
+      + (c ? condHtml(c.res) : '<p class="ow-res-sub">' + (oil ? 'Rs, Bo, μo and co' : 'Z, Bg, ρg and μg') + ' will appear here together after you calculate.</p>') + '</div>'
       + '<div class="ow-res-units"><span class="pv-mono" id="ow-ru-l">Result units</span><div class="pv-pills" role="group" aria-labelledby="ow-ru-l">'
       + [['field', 'Field'], ['metric', 'Metric']].map(function (it) { var on = S.units === it[0]; return '<button type="button" data-wunits="' + it[0] + '" class="' + (on ? 'is-on' : '') + '" aria-pressed="' + on + '">' + it[1] + '</button>'; }).join('') + '</div></div></div>';
-    var banner = stale ? '<div class="ow-stale" role="status">' + ICON.warn + '<span><b>Inputs changed.</b> These results are for the previous inputs. Choose <b>' + (oil ? 'Calculate oil properties' : 'Calculate Z-factor') + '</b> to update them.</span></div>'
+    var banner = stale ? '<div class="ow-stale" role="status">' + ICON.warn + '<span><b>Inputs changed.</b> These results are for the previous inputs. Choose <b>Calculate ' + (oil ? 'oil' : 'gas') + ' properties</b> to update them.</span></div>'
       : (unav.length ? '<div class="ow-partial" role="status">' + ICON.err + '<span><b>' + (keys().length - unav.length) + ' of ' + keys().length + ' properties calculated.</b> Not available: '
         + unav.map(function (k) { return esc(info(k).sym); }).join(', ') + ' — the reason is on ' + (unav.length > 1 ? 'each card' : 'its card') + '.</span></div>' : '');
     return head + banner + '<div class="ow-cards" data-n="' + keys().length + '">' + keys().map(resultCard).join('') + '</div>'
@@ -1363,7 +1360,6 @@
     if (k === 'bg') rows.push(['psc', 'Standard pressure', 'psia', fmt(std.pPsia, 6)], ['Tsc', 'Standard temperature', '°R', String(std.tR)], ['Bg', 'Gas formation volume factor', 'ft³/scf', fmt(r.props.bg.values[i], 5)]);
     if (k === 'rho') rows.push(['R', 'Gas constant', 'psia·ft³/(lbmol·°R)', '10.7316'], ['ρg', 'Gas density', 'lbm/ft³', fmt(r.props.rho.values[i], 5)]);
     if (k === 'mu') rows.push(['ρg', 'Gas density', 'g/cm³', fmt(r.props.rho.values[i] * 0.01601846337, 5)], ['μg', 'Gas viscosity', 'cP', fmt(r.props.mu.values[i], 5)]);
-    if (k === 'cg') rows.push(['cg', 'Isothermal gas compressibility', '1/psi', isNum(r.props.cg.values[i]) ? sci(r.props.cg.values[i], 4) : 'not available']);
     return rows;
   }
   function vOrRaw(r, k, i, s) {
@@ -1390,7 +1386,7 @@
     var base = [pcT].concat(sourT, [zT]);
     return base.concat({
       z: [], bg: ['Bg = (psc/Tsc)·Z·T/p on the ' + r.std.label + ' (gas ideal at standard conditions).'], rho: ['ρg = p·Ma/(Z·R·T).'],
-      mu: ['ρg = p·Ma/(Z·R·T) → Lee-Gonzalez-Eakin with T, Ma and ρg in g/cm³.'], cg: [r.ctx.ideal ? 'cg = 1/p.' : 'cg = 1/p − (1/Z)(dZ/dp); dZ/dp by central difference (±0.1 % of p) with the same pseudo-criticals.']
+      mu: ['ρg = p·Ma/(Z·R·T) → Lee-Gonzalez-Eakin with T, Ma and ρg in g/cm³.']
     }[k]);
   }
   function metas(k, r, i) {
@@ -1835,7 +1831,7 @@
   }
   function contextLinesW(r) {
     var c = W().calc;
-    return [(FL() === 'oil' ? 'PVT Nexus — oil properties (correlation estimates; 60 °F / 14.696 psia basis)' : 'PVT Nexus — gas Z-factor (correlation estimate)') + '; result units ' + (S.units === 'metric' ? 'Metric' : 'Field')]
+    return ['PVT Nexus — ' + FL() + ' properties (correlation estimates; ' + (FL() === 'oil' ? '60 °F / 14.696 psia basis' : 'Bg on ' + r.std.short) + '); result units ' + (S.units === 'metric' ? 'Metric' : 'Field')]
       .concat(inputLinesW(c.inp).map(function (l) { return 'Input: ' + l; }))
       .concat(['Methods: ' + r.methods.map(function (m) { return m[0] + ' = ' + m[1]; }).join('; ')]);
   }
@@ -1899,10 +1895,10 @@
   }
   function renderStatus() {
     var st = q('#pv-status'), cx = q('#pv-ctx');
-    if (cx) cx.innerHTML = '<span>' + (S.units === 'metric' ? 'Metric' : 'Field') + ' · ' + esc(U.unit('p', S.units, S.gauge)) + '</span>' + (S.fluid === 'oil' ? '<span title="Standard-condition basis of standard volumes">Std ' + esc(basis().short.replace(', 101.325 kPa', '')) + '</span>' : '');
+    if (cx) cx.innerHTML = '<span>' + (S.units === 'metric' ? 'Metric' : 'Field') + ' · ' + esc(U.unit('p', S.units, S.gauge)) + '</span><span title="Standard-condition basis of standard volumes">Std ' + esc(basis().short.replace(', 101.325 kPa', '')) + '</span>';
     if (!st || !res) return;
     if (S.view === 'inputs') {
-      if (cx) cx.innerHTML = '<span title="Display units of the results; each input has its own unit">Results · ' + (S.units === 'metric' ? 'Metric' : 'Field') + '</span>' + (S.fluid === 'oil' ? '<span title="Standard-condition basis of standard volumes">Std ' + esc(basis().short.replace(', 101.325 kPa', '')) + '</span>' : '');
+      if (cx) cx.innerHTML = '<span title="Display units of the results; each input has its own unit">Results · ' + (S.units === 'metric' ? 'Metric' : 'Field') + '</span><span title="Standard-condition basis of standard volumes">Std ' + esc(basis().short.replace(', 101.325 kPa', '')) + '</span>';
       wfStatus(st); return;
     }
     if (!res.ok) {
