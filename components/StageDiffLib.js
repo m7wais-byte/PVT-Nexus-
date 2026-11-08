@@ -159,7 +159,7 @@ const DL_BUBS = Array.from({ length: 16 }, (_, k) => ({ fx: (k * 0.618034 + 0.07
   sp: 0.75 + ((k * 0.7549) % 1) * 0.5, r: 1.0 + ((k * 0.5698) % 1) * 1.1, th: k / 16 }));
 // approved flash equipment on this page's drawing (page units; approved cell on the legacy frame shifted -506,-20):
 // gas lane Pump A -> header -> Port R, outlet line from the Port R fitting, Flash Unit, Gasometer
-const DL_FX = { cellPort: [641.6, 170], cellLane: [[524, 192], [524, 170], [641.6, 170]], lineX: 30, connLine: true, labelSize: 15,
+const DL_FX = { cellPort: [641.6, 170], cellLane: [[524, 192], [524, 170], [641.6, 170]], lineX: 30, connLine: true, gasThroughFlask: true, labelSize: 15,
   fu: { x: 700, y: 200, s: 0.46 }, ga: { x: 1075, y: 173, s: 0.46 } };
 // final flash: room for the temporary vacuum pump between the Flash Unit and the Gasometer; Stage 7 swaps the
 // Gasometer for the density meter on its bench (floor = Flash Unit wheels)
@@ -285,7 +285,7 @@ class Component extends DCLogic {
         : u < 0.38 ? 'Liberated gas leaving the gas cap — travelling to the Flash Unit.'
         : u < 0.44 ? 'Gas held at the closed balloon valve.'
         : u < 0.50 ? 'Opening the balloon valve.'
-        : u < pl.balEnd ? 'Gas flowing into the balloon at 0.5 mL/min — cell held at ' + fmtP(c.target) + '.'
+        : u < pl.balEnd ? 'Gas flowing through the glass flask into the balloon at 0.5 mL/min — cell held at ' + fmtP(c.target) + '.'
         : pl.gaso && u < 0.76 ? 'Balloon at ' + c.balloon.toFixed(2) + ' psig — balloon valve closing, gasometer valve opening.'
         : pl.gaso && u < 0.90 ? 'Excess gas flowing into the gasometer — ' + Math.round(c.gasometer * gF) + ' cc.'
         : u < 0.95 ? 'FLOW RATE DROP DETECTED — liquid reaching the outlet.' : 'Closing the PVT-cell outlet, balloon and gasometer valves.';
@@ -569,15 +569,15 @@ class Component extends DCLogic {
       if (pl.gaso && u >= 0.72) flow.capGas = { p: u, a: fade };
       else flow.capBal = { p: u, a: fade };
     }
-    // no Flash Unit pressure in this procedure's data: the display shows the unit status; the flask is not used here
+    // no Flash Unit pressure in this procedure's data: the display shows the unit status; gas passes through the glass flask before collection
     const fuPTxt = st.xStep === 'conn' ? 'CONNECTING' : st.xStep === 'disc' ? 'DISCONNECTING'
       : !gasStep || u < 0.13 || u >= 0.95 ? 'STANDBY' : flow.capGas ? 'GAS → GASOMETER' : u >= 0.44 ? 'GAS → BALLOON' : 'GAS IN LINE';
     const V = { busy: !!st.busy, stage: 0, p: u, step: 0, path: 'cap', fuP: null, fuPTxt: fuPTxt, balTxt: 'NOT USED', balNote: 'NOT USED IN THIS STAGE',
       flowTxt: (st.flow || 0).toFixed(2), flowOn: (st.flow || 0) > 0.05, pumpA: null,
-      flashed: 0, oil: 0, oilRec: 0, bal: 200, heTint: 0, gasTint: 0, vacTint: 0, heIn: 0, airOut: 0, drip: null, bubbles: 0,
+      flashed: 0, oil: 0, oilRec: 0, bal: 200, heTint: 0, gasTint: gasStep ? E(R(0.22, 0.32, u)) * fade : 0, vacTint: 0, heIn: 0, airOut: 0, drip: null, bubbles: 0,
       balloon: 250 * Math.min(1, bal / 14.5), balloonTxt: bal.toFixed(2), balloonUnit: 'psig',
       gasoVol: gaso, gasoMode: 'gas', gaso: gaso, heGas: 0, gaso2k: sp.k2, gaso1k: sp.k1, gasoT: FlashSim.GASO_T, gasoSec: '2k',
-      valve: { pumpA: vCell, inlet: vCell, flask: 0, vac: 0, vessel: vBal, in2k: vGas, iso2k: vGas, in1k: 0, iso1k: 0, gaso: vGas },
+      valve: { pumpA: vCell, inlet: vCell, flask: vCell, vac: 0, vessel: vBal, in2k: vGas, iso2k: vGas, in1k: 0, iso1k: 0, gaso: vGas },
       vacPump: 0, vacHose: 0, conn: st.conn || 0, flow: flow, cock: 0, aliq: 0, dmQ: 0,
       dm: { phase: 'await', inj: 0, flush: 0, air: 0, T: 0, Tset: 0, prog: 0, start: 0, osc: 0, res: {} } };
     return { mode: 'system', key: 'dl', opt: { inline: true, layout: DL_FX, labels: true }, V: V };
@@ -715,7 +715,7 @@ class Component extends DCLogic {
     else if (gasStep) {
       const ph = u < 0.07 ? 0 : u < 0.13 ? 1 : u < 0.53 ? 2 : u < 0.90 ? 3 : 4;
       const det = u < 0.07 ? 'PVT-cell outlet valve closed' : u < 0.13 ? 'PVT-cell outlet valve opening'
-        : u < 0.38 ? 'Gas cap → outlet line → Flash Unit' : u < 0.44 ? 'Gas held at the closed balloon valve'
+        : u < 0.38 ? 'Gas cap → outlet line → glass flask → balloon' : u < 0.44 ? 'Gas held at the closed balloon valve'
         : u < 0.53 ? 'Balloon valve opening' : u < pl.balEnd ? 'Gas entering the balloon · ' + (st.balloon || 0).toFixed(2) + ' psig'
         : pl.gaso && u < 0.76 ? 'Balloon full · routing excess gas to the gasometer'
         : pl.gaso && u < 0.90 ? 'Gas entering the gasometer · ' + Math.round(st.gaso || 0) + ' cc'
@@ -900,7 +900,7 @@ class Component extends DCLogic {
       dlnSideW: 'flex:0 0 ' + (flashOn ? 286 : 300) + 'px;',
       dlnTitleSub: isFinal ? 'Stage 7 Final Flash — Starting Pressure: 2,500 psig (Stage 6 Psat 203 psig) · PVT Cell → Port R → flask → Gasometer · Density Meter'
         : isInit ? 'Computer → Control Box → Dual-Cylinder PVT Cell'
-        : flashOn ? 'PVT Cell → outlet line → Flash Unit → Balloon' + (gasoUsed ? ' → Gasometer (excess gas)' : ' · Gasometer isolated')
+        : flashOn ? 'PVT Cell → outlet line → Glass flask → Balloon' + (gasoUsed ? ' → Gasometer (excess gas)' : ' · Gasometer isolated')
         : 'Computer → Control Box → Dual-Cylinder PVT Cell · Flash Unit disconnected',
       dlnTag: tag, dlnTagCol: tagCol,
       dlnTagBg: tagTone === 'good' ? 'rgba(29,138,90,.10)' : 'rgba(47,111,208,.10)',
@@ -1081,9 +1081,9 @@ DC.define('StageDiffLib', {
             <text text-anchor="middle" font-family="IBM Plex Mono" font-size="8.5" letter-spacing=".3" fill="var(--amb)"><tspan x="672" y="251">NOT</tspan><tspan x="672" y="262">CONNECTED</tspan></text>
             <line x1="652" y1="170" x2="686" y2="215" stroke="var(--mut2)" stroke-width="1" stroke-dasharray="3 5" opacity=".6"></line>
           </sc-if>
-          <!-- approved Flash Unit (flask isolated, balloon on the manifold) + two-section Gasometer (equipment/flash), drawn
+          <!-- approved Flash Unit (gas through the glass flask before the balloon) + two-section Gasometer (equipment/flash), drawn
                from this page's own values by FlashHost: outlet line made up / broken out with conn, gas-cap gas along the
-               manifold past the closed Flask Valve into the balloon, excess on to the 2,000 cc section -->
+               open Flask Valve into the glass flask, back up its connection and into the balloon, excess on to the 2,000 cc section -->
           <g class="fx-host" data-fx="StageDiffLib:dl"></g>
           <!-- (PVT-cell outlet valve = the cell's Port R isolation valve; its OPEN/CLOSED tag is on the cell) -->
           <!-- phase panel (Validation Flash status panel) -->
