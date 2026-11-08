@@ -1476,3 +1476,41 @@ html[data-theme="light"] { --about-lead:#1f2a3a; --about-body:#2f3c4e; --about-n
 .ow-unit { min-width:78px; max-width:none; }
 .ow-chart-msg p { margin:8px auto; max-width:80ch; line-height:1.55; }
 .ow-chart-msg span { font-size:12px; color:var(--mut); }
+
+/* About: compact single-screen composition and connected learning flow. */
+.about.about-fit { height:var(--page-h) !important; min-height:0 !important; overflow:auto !important; padding:clamp(14px,2.2vh,24px) 24px !important; }
+.about-fit > article { max-width:960px !important; }
+.about-fit .about-intro { flex-wrap:nowrap !important; gap:24px 48px !important; }
+.about-fit .about-intro > div { flex:1 1 auto !important; max-width:660px !important; }
+.about-fit .about-intro > div > p:first-child { margin-bottom:10px !important; }
+.about-fit h1 { font-size:clamp(28px,3vw,36px) !important; margin-bottom:16px !important; }
+.about-fit .about-intro p { line-height:1.65 !important; }
+.about-fit .about-bottle { flex:0 0 150px; }
+.about-fit .about-bottle svg { height:clamp(230px,38vh,340px); overflow:hidden; }
+.about-fit .about-flow { margin-top:22px; padding-top:18px; border-top:1px solid var(--line); }
+.about-fit .about-flow ol { position:relative; display:flex; list-style:none; margin:0; padding:0; }
+.about-flow ol::before { content:""; position:absolute; height:1px; background:var(--line2); top:22px; left:16.667%; right:16.667%; }
+.about-flow li { position:relative; flex:1; min-width:0; display:flex; flex-direction:column; align-items:center; gap:8px; text-align:center; font-size:14px; font-weight:500; line-height:1.4; color:var(--txt); }
+.about-flow-icon { position:relative; display:grid; place-items:center; width:44px; height:44px; background:var(--bg); border:1px solid var(--line2); border-radius:50%; color:var(--amb); }
+.about-flow li:nth-child(2) .about-flow-icon { color:var(--teal); }
+.about-flow li:nth-child(3) .about-flow-icon { color:var(--blue); }
+.about-fit .about-flow + p { margin-top:18px !important; max-width:none !important; }
+.about-fit footer { margin-top:16px !important; padding-top:12px !important; display:flex; flex-wrap:wrap; align-items:baseline; gap:4px 16px; }
+.about-fit footer p { margin:0 !important; }
+@media (max-height:760px) and (min-width:761px) {
+  .about-fit .about-bottle svg { height:240px; }
+  .about-fit .about-flow { margin-top:14px; padding-top:12px; }
+  .about-fit .about-flow + p { margin-top:12px !important; }
+  .about-fit footer { margin-top:10px !important; padding-top:8px !important; }
+}
+@media (max-width:760px) {
+  .about.about-fit { padding:16px !important; }
+  .about-fit .about-intro { gap:12px !important; align-items:flex-start !important; }
+  .about-fit .about-bottle { flex-basis:64px; }
+  .about-fit .about-bottle svg { height:220px; width:64px; }
+  .about-fit h1 { font-size:26px !important; letter-spacing:-.6px !important; }
+  .about-fit .about-intro p { font-size:14px !important; line-height:1.55 !important; }
+  .about-fit .about-intro > div > p:first-child { font-size:11px !important; letter-spacing:.7px !important; }
+  .about-flow li { font-size:12px; padding:0 4px; }
+  .about-fit .about-flow + p { font-size:13px !important; line-height:1.5 !important; }
+}
