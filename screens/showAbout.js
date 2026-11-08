@@ -1,6 +1,6 @@
 /* screen: showAbout — reservoir-to-understanding introduction */
 DC.slot('showAbout', `<sc-if value="{{ showAbout }}" hint-placeholder-val="{{ false }}">
-<main class="about" style="height:var(--page-h); overflow:auto; box-sizing:border-box; width:100%; padding:clamp(28px,5vw,64px) 20px; color:var(--about-body);">
+<main class="about about-fit" style="height:var(--page-h); overflow:auto; box-sizing:border-box; width:100%; padding:clamp(28px,5vw,64px) 20px; color:var(--about-body);">
   <article aria-labelledby="about-title" style="width:100%; max-width:860px; margin:0 auto;">
     <div class="about-intro" style="display:flex; align-items:center; flex-wrap:wrap; gap:28px 56px;">
       <div style="flex:1 1 400px; min-width:0; max-width:560px;">
@@ -20,11 +20,7 @@ DC.slot('showAbout', `<sc-if value="{{ showAbout }}" hint-placeholder-val="{{ fa
         </svg>
       </figure>
     </div>
-    <section aria-label="Learning approach" style="display:flex; flex-wrap:wrap; gap:20px 30px; margin-top:40px; padding-top:24px; border-top:1px solid var(--line);">
-      <div style="flex:1 1 180px; display:flex; align-items:center; gap:10px; font-size:15px; font-weight:500; line-height:1.4; color:var(--txt);"><span aria-hidden="true" style="flex:0 0 auto; width:8px; height:8px; border-radius:50%; background:var(--amb);"></span>Collect with care</div>
-      <div style="flex:1 1 180px; display:flex; align-items:center; gap:10px; font-size:15px; font-weight:500; line-height:1.4; color:var(--txt);"><span aria-hidden="true" style="flex:0 0 auto; width:8px; height:8px; border-radius:50%; background:var(--teal);"></span>Understand the process</div>
-      <div style="flex:1 1 180px; display:flex; align-items:center; gap:10px; font-size:15px; font-weight:500; line-height:1.4; color:var(--txt);"><span aria-hidden="true" style="flex:0 0 auto; width:8px; height:8px; border-radius:50%; background:var(--blue);"></span>Explore the results</div>
-    </section>
+    <section class="about-flow" aria-label="Learning approach"><ol><li><span class="about-flow-icon"><svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3s-6 7-6 11a6 6 0 0 0 12 0c0-4-6-11-6-11Z"/></svg></span><span>Collect with care</span></li><li><span class="about-flow-icon"><svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3 8 3v6c0 5-8 9-8 9s-8-4-8-9V6l8-3Z"/><path d="m8 12 3 3 5-6"/></svg></span><span>Understand the process</span></li><li><span class="about-flow-icon"><svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 3v18h17M8 16l4-5 4 2 5-7"/></svg></span><span>Explore the results</span></li></ol></section>
     <p style="margin:32px 0 0; max-width:620px; font-size:14px; line-height:1.7; color:var(--about-note);">Built for learning and demonstration. Engineering applications require independently verified data.</p>
     <footer style="margin-top:30px; padding-top:22px; border-top:1px solid var(--line);">
       <p style="margin:0 0 6px; font-size:15px; line-height:1.6; color:var(--about-body);">Have an idea or noticed something?</p>
