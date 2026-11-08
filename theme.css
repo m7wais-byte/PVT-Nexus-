@@ -1071,6 +1071,19 @@ html.vp-stack .bhs-steps { overflow:visible; }
   .menu-grid .vc-desc { -webkit-line-clamp:unset !important; display:block !important; overflow:visible !important; }
 }
 
+/* ---- About: readable text tokens + static Oil Sample Bottle ---- */
+html { --about-lead:#e1e9f4; --about-body:#d3deec; --about-note:#a9b8cc; --about-link:#8cc6ff; }
+html[data-theme="light"] { --about-lead:#1f2a3a; --about-body:#2f3c4e; --about-note:#46546a; --about-link:#1259a8; }
+.about-bottle { flex:1 1 140px; display:flex; justify-content:center; margin:0; padding:0; }
+.about-bottle svg { display:block; height:clamp(320px,54vh,460px); width:auto; max-width:100%; overflow:visible; }
+.about-mail { font-size:16px; font-weight:500; line-height:1.7; color:var(--about-link); text-decoration:underline;
+              text-decoration-thickness:1px; text-underline-offset:4px; overflow-wrap:anywhere; }
+.about-mail:hover, .about-mail:focus-visible { text-decoration-thickness:2px; }
+@media (max-width:760px) {
+  .about-intro { justify-content:center; }
+  .about-bottle svg { height:300px; }
+}
+
 /* ---- About: inline grids reflow ---- */
 @media (max-width:1100px) {
   .about { height:auto !important; min-height:var(--page-h); overflow:visible !important; }
