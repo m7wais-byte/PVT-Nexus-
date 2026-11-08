@@ -1,25 +1,42 @@
-/* screen: showAbout — compact project overview */
+/* screen: showAbout — reservoir-to-understanding introduction */
 DC.slot('showAbout', `<sc-if value="{{ showAbout }}" hint-placeholder-val="{{ false }}">
-<main class="about" style="height:var(--page-h); overflow:auto; box-sizing:border-box; width:100%; padding:clamp(20px,3vw,36px) 20px; color:var(--txt2);">
-  <article aria-labelledby="about-title" style="width:100%; max-width:680px; margin:0 auto; padding:clamp(22px,3vw,30px); background:var(--panel); border:1px solid var(--line2); border-radius:14px; font-size:14px; line-height:1.75;">
-    <h1 id="about-title" style="margin:0 0 18px; font-size:21px; line-height:1.3; color:var(--txt);">About PVT Nexus</h1>
-    <p style="margin:0 0 16px;">PVT Nexus was developed by Mohammed Hilal Al Awaisi during training at Vision Advanced Petroleum Solutions (VAPS). It is an interactive educational tool that makes petroleum-fluid sampling and laboratory procedures easier to understand.</p>
-    <p style="margin:0 0 16px;">The simulator follows the sample from bottom-hole, wellhead or separator sampling through validation and detailed PVT analysis. Step-by-step animations explain the equipment, fluid behaviour and purpose of each stage. Oil and gas calculators help users explore fluid properties using published correlations.</p>
-    <p style="margin:0 0 16px;">The simulations and examples are intended for training and demonstration. Calculator results should be independently verified before engineering use.</p>
-    <p style="margin:0;">Suggestions and feedback are welcome. Contact <a href="mailto:mohdhilalawaisi@gmail.com" style="color:var(--accb3); text-underline-offset:3px; overflow-wrap:anywhere;">mohdhilalawaisi@gmail.com</a>.</p>
-  </article>
-  <section aria-labelledby="sample-journey-title" style="width:100%; max-width:680px; margin:32px auto 0; padding:8px 0 20px; text-align:center;">
-    <h2 id="sample-journey-title" style="margin:0 0 24px; font-size:15px; font-weight:600; color:var(--txt2);">The sample journey</h2>
-    <div style="position:relative;">
-      <div aria-hidden="true" style="position:absolute; top:22px; left:12.5%; right:12.5%; height:1px; background:var(--line2);"></div>
-      <ol style="position:relative; display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); list-style:none; margin:0; padding:0; gap:4px;">
-<li style="position:relative; min-width:0; display:flex; flex-direction:column; align-items:center; gap:10px;"><span style="position:relative; z-index:1; width:44px; height:44px; display:grid; place-items:center; background:var(--bg); border:1px solid var(--line2); border-radius:50%; color:var(--accb3);"><svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3s-6 7-6 11a6 6 0 0 0 12 0c0-4-6-11-6-11Z"/></svg></span><span style="font-size:clamp(10px,2.5vw,13px); line-height:1.4; color:var(--txt2);">Sampling</span></li>
-<li style="position:relative; min-width:0; display:flex; flex-direction:column; align-items:center; gap:10px;"><span style="position:relative; z-index:1; width:44px; height:44px; display:grid; place-items:center; background:var(--bg); border:1px solid var(--line2); border-radius:50%; color:var(--accb3);"><svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3 8 3v6c0 5-8 9-8 9s-8-4-8-9V6l8-3Z"/><path d="m8 12 3 3 5-6"/></svg></span><span style="font-size:clamp(10px,2.5vw,13px); line-height:1.4; color:var(--txt2);">Validation</span></li>
-<li style="position:relative; min-width:0; display:flex; flex-direction:column; align-items:center; gap:10px;"><span style="position:relative; z-index:1; width:44px; height:44px; display:grid; place-items:center; background:var(--bg); border:1px solid var(--line2); border-radius:50%; color:var(--accb3);"><svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3h6m-5 0v6l-5 9a2 2 0 0 0 2 3h10a2 2 0 0 0 2-3l-5-9V3M8 14h8"/></svg></span><span style="font-size:clamp(10px,2.5vw,13px); line-height:1.4; color:var(--txt2);">PVT Analysis</span></li>
-<li style="position:relative; min-width:0; display:flex; flex-direction:column; align-items:center; gap:10px;"><span style="position:relative; z-index:1; width:44px; height:44px; display:grid; place-items:center; background:var(--bg); border:1px solid var(--line2); border-radius:50%; color:var(--accb3);"><svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 3v18h17M8 16l4-5 4 2 5-7"/></svg></span><span style="font-size:clamp(10px,2.5vw,13px); line-height:1.4; color:var(--txt2);">Results</span></li>
-      </ol>
+<main class="about" style="height:var(--page-h); overflow:auto; box-sizing:border-box; width:100%; padding:clamp(28px,5vw,64px) 20px; color:var(--txt2);">
+  <article aria-labelledby="about-title" style="width:100%; max-width:820px; margin:0 auto;">
+    <div style="display:flex; align-items:center; flex-wrap:wrap; gap:28px 44px;">
+      <div style="flex:1 1 390px; min-width:0;">
+        <p style="margin:0 0 14px; font-size:11px; font-weight:600; letter-spacing:1.8px; color:var(--accb3); text-transform:uppercase;">PVT Nexus · Interactive learning</p>
+        <h1 id="about-title" style="margin:0 0 24px; max-width:520px; font-size:clamp(28px,4vw,40px); font-weight:600; letter-spacing:-1px; line-height:1.2; color:var(--txt);">From reservoir<br>to understanding.</h1>
+        <p style="margin:0 0 16px; font-size:15px; line-height:1.85;">Developed by Mohammed Hilal Al Awaisi during his training at VAPS, PVT Nexus turns laboratory workflows into an interactive learning experience.</p>
+        <p style="margin:0; font-size:14px; line-height:1.85;">Follow the fluid, explore the equipment and see how pressure and temperature shape each stage—from collecting a sample to interpreting its behaviour.</p>
+      </div>
+      <figure style="flex:0 1 190px; margin:0 auto; color:var(--accb3);">
+        <svg role="img" aria-labelledby="about-bottle-title" viewBox="0 0 190 250" width="190" style="display:block; max-width:100%; height:auto;">
+          <title id="about-bottle-title">Illustration of a fluid sample bottle</title>
+          <circle cx="95" cy="125" r="82" fill="var(--panel)" stroke="var(--line)" />
+          <path d="M10 125h35m100 0h35M95 36v18m0 142v18" fill="none" stroke="var(--line2)" stroke-dasharray="3 5"/>
+          <rect x="72" y="61" width="46" height="135" rx="15" fill="var(--panel2)" stroke="currentColor" stroke-width="1.8"/>
+          <rect x="80" y="82" width="30" height="92" rx="4" fill="var(--bg)" stroke="var(--line2)"/>
+          <path d="M81 119q14-7 28 0v50q0 4-4 4H85q-4 0-4-4Z" fill="var(--amb)" opacity=".5"/>
+          <path d="M81 119q14-7 28 0" fill="none" stroke="var(--amb)" stroke-width="1.5"/>
+          <path d="M81 110h28" stroke="currentColor" stroke-width="3"/>
+          <path d="M95 110V75m-12-14v-8h24v8M95 53V40m-10 0h20M84 196v8h22v-8" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"/>
+          <circle cx="90" cy="96" r="2" fill="currentColor" opacity=".5"/>
+          <circle cx="100" cy="91" r="1.5" fill="currentColor" opacity=".4"/>
+          <path d="M118 88h13m-13 83h13" stroke="var(--line2)"/>
+          <text x="95" y="237" text-anchor="middle" fill="var(--mut)" font-size="9" font-family="inherit" letter-spacing="1.5">A SAMPLE. A STORY.</text>
+        </svg>
+      </figure>
     </div>
-    <p style="max-width:540px; margin:22px auto 0; font-size:12px; line-height:1.7; color:var(--mut);">From collecting a representative sample to understanding reservoir-fluid behaviour.</p>
-  </section>
+    <section aria-label="Learning approach" style="display:flex; flex-wrap:wrap; gap:20px 30px; margin-top:40px; padding-top:24px; border-top:1px solid var(--line);">
+      <div style="flex:1 1 180px; display:flex; align-items:center; gap:10px; font-size:13px; color:var(--txt);"><span aria-hidden="true" style="width:6px; height:6px; border-radius:50%; background:var(--amb);"></span>Collect with care</div>
+      <div style="flex:1 1 180px; display:flex; align-items:center; gap:10px; font-size:13px; color:var(--txt);"><span aria-hidden="true" style="width:6px; height:6px; border-radius:50%; background:var(--teal);"></span>Understand the process</div>
+      <div style="flex:1 1 180px; display:flex; align-items:center; gap:10px; font-size:13px; color:var(--txt);"><span aria-hidden="true" style="width:6px; height:6px; border-radius:50%; background:var(--blue);"></span>Explore the results</div>
+    </section>
+    <p style="margin:32px 0 0; max-width:620px; font-size:12px; line-height:1.8; color:var(--mut);">Built for learning and demonstration. Engineering applications require independently verified data.</p>
+    <footer style="margin-top:30px; padding-top:22px; border-top:1px solid var(--line);">
+      <p style="margin:0 0 6px; font-size:13px; color:var(--txt2);">Have an idea or noticed something?</p>
+      <a href="mailto:mohdhilalawaisi@gmail.com" style="font-size:14px; line-height:1.8; color:var(--accb3); text-underline-offset:4px; overflow-wrap:anywhere;">mohdhilalawaisi@gmail.com</a>
+    </footer>
+  </article>
 </main>
 </sc-if>`);
