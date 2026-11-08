@@ -51,7 +51,7 @@
           e: 'Vacuum line open to the cell; the cell gauge sweeps below zero.',
           o: 'Cell vacuum falling 0 → −15 psi, then the status locking to "Cell Vacuumed".' },
     2:  { t: 'Stage 2 · Connect the sample bottle',
-          d: 'The SPS/PDS bottle is being connected to the charge line at the cell manifold.',
+          d: 'The oil sample bottle is being connected to the charge line at the cell manifold.',
           w: 'The bottle holds the restored, homogenised sample at reservoir pressure. It has to be coupled before any valve is opened so the sample never sees a pressure drop.',
           e: 'Bottle appears on the charge line; the connection grows into place.',
           o: 'The connection completing and the status reading "Bottle Connected".' },
@@ -66,9 +66,9 @@
           e: 'Transfer pump volume settles and is logged as the initial reading.',
           o: 'Transfer pump 100 → 98 mL, and "Initial Reading 98 mL" on the status line.' },
     5:  { t: 'Stage 5 · Fill the dead space',
-          d: 'Filling dead space and equalizing with the 5,000 psig sample bottle. The SPS/PDS bottle is already held at 5,000 psig; with the valves open, pressurised sample flows into the evacuated line, the dead volume of the fittings (about 2 cc) and the Pump A inlet, so the receiving section rises naturally to bottle pressure. No pressure target is being pumped to.',
+          d: 'Filling dead space and equalizing with the 5,000 psig sample bottle. The oil sample bottle is already held at 5,000 psig; with the valves open, pressurised sample flows into the evacuated line, the dead volume of the fittings (about 2 cc) and the Pump A inlet, so the receiving section rises naturally to bottle pressure. No pressure target is being pumped to.',
           w: 'The dead space must be liquid-filled and its volume known, otherwise it is wrongly counted as charged sample and the cell pressure never equalises.',
-          e: 'Pressurised sample moving from the SPS/PDS bottle along the charge line toward Pump A, stopping at the closed Pump A valve; the cell pressure climbs from vacuum and levels off at the bottle pressure.',
+          e: 'Pressurised sample moving from the oil sample bottle along the charge line toward Pump A, stopping at the closed Pump A valve; the cell pressure climbs from vacuum and levels off at the bottle pressure.',
           o: 'Cell pressure equalizing at exactly 5,000 psig (bottle pressure) and dead volume settling at 2 cc.' },
     6:  { t: 'Stage 6 · Charge Pump A with 80 cc',
           d: 'The Pump A valve opens and live sample is displaced from the bottle through the charge line into Pump A until 80 cc is in the pump; the Pump A valve then closes.',
@@ -163,7 +163,7 @@
     seal:    { t: 'Sealing the chambers', d: 'The chambers are closed and sealed at downhole pressure and temperature.', w: 'Sealing at reservoir conditions is what keeps the sample single phase on the way up. If it drops below bubble point, gas breaks out and the sample is no longer representative.', e: 'Chamber valves close and lock.', o: 'The confirmation that both chambers are sealed at downhole conditions.' },
     retract: { t: 'Retracting the probe', d: 'The probe is retracted and the flow path is closed.', w: 'The tool must be freed before it can be pulled out of hole.', e: 'Probe pulls back into the tool body.', o: 'Flow path closed before the tool starts up.' },
     asc:     { t: 'Pulling out of hole', d: 'The tool is being pulled back to surface with the sealed samples.', w: 'The sample cools and its pressure falls on the way up — this is exactly why it must be restored to reservoir conditions in the lab before analysis.', e: 'Tool ascending; depth falling to zero.', o: 'Depth returning to surface; the samples stay sealed throughout.' },
-    done:    { t: 'Samples at surface', d: 'Sealed samples are at surface, ready for transfer into lab bottles.', w: 'The next step is a pressure-maintained transfer into SPS/PDS bottles for the laboratory.', e: 'Tool at surface.', o: 'Both chambers reported sealed — then move to the transfer module.' },
+    done:    { t: 'Samples at surface', d: 'Sealed samples are at surface, ready for transfer into lab bottles.', w: 'The next step is a pressure-maintained transfer into oil sample bottles for the laboratory.', e: 'Tool at surface.', o: 'Both chambers reported sealed — then move to the transfer module.' },
     connect: { t: 'Connecting the sampling bottle', d: 'The sample bottle is being connected to the sampling line.', w: 'A leak-free, purged connection prevents air ingress and loss of light ends.', e: 'Bottle couples to the line; line pressure builds.', o: 'The line pressure stabilising before flow is allowed in.' },
     xfer:    { t: 'Filling the bottle', d: 'Fluid is flowing from the sampling point into the bottle.', w: 'The bottle is filled slowly and under pressure so the fluid stays single phase during filling.', e: 'Flow stream into the bottle; line pressure held.', o: 'Steady flow and no pressure drop that could flash the sample.' }
   };
@@ -324,17 +324,17 @@
        idle → 1 · heat, jacket seating (xfrH = 0) → 2 · heat ramp / soak → 3
        run: pressure ramp → 4 · valves opening → 5 · transfer → 6 · done → 7   */
   var XFER = {
-    1: { t: 'Prepare and connect the sampler',
-         d: 'The bottom-hole sampler has arrived at the laboratory containing fluid captured at reservoir conditions. It is connected to the laboratory transfer system and the receiving bottle.',
-         w: 'A prepared, leak-free connection lets the sample move into the receiving bottle under controlled conditions.',
-         e: 'Sampler docked; transfer line connected to the receiving bottle. Valves closed, pump off.',
-         o: 'Start the transfer — the sampler is heated before any fluid moves.' },
+    1: { t: 'Prepare and connect the sample chamber',
+         d: 'The sample chamber, removed from the sample chamber assembly, has arrived at the laboratory containing fluid captured at reservoir conditions. It is connected to the laboratory transfer system and the oil sample bottle.',
+         w: 'A prepared, leak-free connection lets the sample move into the oil sample bottle under controlled conditions.',
+         e: 'Sample chamber docked; transfer line connected to the oil sample bottle; pump connected at the chamber\u2019s drive-fluid end. Valves closed, pump off.',
+         o: 'Start the transfer — the sample chamber is heated before any fluid moves.' },
     2: { t: 'Apply the heating jacket',
-         d: 'The heating jacket is placed around the sampler before heating begins.',
-         w: 'The jacket must remain around the sampler throughout the transfer to prevent cooling and fluid separation.',
-         e: 'Heating jacket closing over the sampler body.',
-         o: 'The jacket seated on the sampler before the temperature starts to rise.' },
-    3: { t: 'Heat the sampler to 114 °C',
+         d: 'The heating jacket is placed around the sample chamber before heating begins.',
+         w: 'The jacket must remain around the sample chamber throughout the transfer to prevent cooling and fluid separation.',
+         e: 'Heating jacket closing over the sample chamber body.',
+         o: 'The jacket seated on the sample chamber before the temperature starts to rise.' },
+    3: { t: 'Heat the sample chamber to 114 °C',
          d: 'The sample is heated gradually to the reservoir temperature of 114 °C.',
          dh: 'The sample has reached 114 °C and is held there until stable. The jacket keeps this temperature for the rest of the transfer.',
          w: 'The sample must be back at reservoir temperature before it is moved. Heating gradually, with the jacket kept in place, prevents cooling and fluid separation.',
@@ -346,20 +346,20 @@
          e: 'Transfer pump running; transfer pressure rising.',
          o: 'Transfer pressure rising and levelling off.' },
     5: { t: 'Open the valves gradually',
-         d: 'With pressure and temperature stable, the sampler and transfer valves are opened gradually.',
+         d: 'With pressure and temperature stable, the sample chamber and transfer valves are opened gradually.',
          w: 'A slow opening avoids a sudden pressure drop across the valves that could cause gas breakout.',
-         e: 'Sampler and transfer valves opening; flow path to the receiving bottle established.',
+         e: 'Sample chamber and transfer valves opening; flow path to the oil sample bottle established.',
          o: 'Pressure holding steady as the valves open.' },
     6: { t: 'Transfer the sample',
-         d: 'The sample moves into the receiving bottle while the pump maintains pressure and the jacket holds 114 °C.',
+         d: 'The sample moves into the oil sample bottle while the pump maintains pressure and the jacket holds 114 °C.',
          w: 'Maintaining sufficient pressure prevents gas breakout and preserves the original fluid composition.',
-         e: 'Sample leaving the sampler through the transfer line; receiving bottle filling.',
+         e: 'Sample leaving the sample chamber through the transfer line; oil sample bottle filling.',
          o: 'Transferred volume increasing while pressure and temperature stay constant.' },
-    7: { t: 'Close and seal the receiving bottle',
-         d: 'The transfer is complete. The receiving bottle is closed and sealed with the sample held under pressure.',
+    7: { t: 'Close and seal the oil sample bottle',
+         d: 'The transfer is complete. The oil sample bottle is closed and sealed with the sample held under pressure.',
          w: 'Sealing under pressure preserves the original fluid composition for the validation steps that follow.',
          e: 'Transfer pump stopped; valves closed.',
-         o: 'Sample held in the receiving bottle — continue to the opening-pressure check.' }
+         o: 'Sample held in the oil sample bottle — continue to the opening-pressure check.' }
   };
   function xferStage(xp, xfH, xfP) {
     if (xp === 'done') return 7;
@@ -441,7 +441,7 @@
     module05: { t: 'PVT calculator', d: 'Correlation calculator for oil and gas properties.', w: 'Gives quick property estimates (correlations) to sanity-check measured laboratory data.', e: 'None.', o: 'Correlations are estimates — compare them with the measured values, do not replace them.' },
     about: { t: 'About', d: 'Information screen.', w: 'Describes the modules and the workflow the simulator follows.', e: 'None.', o: '—' },
     settings: { t: 'Settings', d: 'Application settings.', w: 'Theme and display options.', e: 'None.', o: '—' },
-    mdtXfer: { t: 'Sample transfer to lab bottle', d: 'Transfer of the downhole sample from the sampling tool into an SPS/PDS bottle.', w: 'The transfer is made under pressure so the sample never drops below its saturation pressure and stays single phase for the laboratory.', e: 'Tool coupled to the bottle; fluid displaced across under pressure.', o: 'Transfer progress and the pressure being maintained throughout.' }
+    mdtXfer: { t: 'Sample transfer to lab bottle', d: 'Transfer of the downhole sample from the sample chamber into an oil sample bottle.', w: 'The transfer is made under pressure so the sample never drops below its saturation pressure and stays single phase for the laboratory.', e: 'Sample chamber coupled to the bottle; fluid displaced across under pressure.', o: 'Transfer progress and the pressure being maintained throughout.' }
   };
 
   /* ---- dashboard: project overview (own layout, not the lab-step grid) ---- */
@@ -605,7 +605,7 @@
         if (bd) return pack(bd);
       }
       var b = BH[ph] || BH.idle;
-      var ptName = pt === 'bottomhole' ? ('Bottom-hole sampling · ' + ((m.bhMode === 'cased') ? 'cased hole (SRS)' : 'open hole (MDT/MPSR)'))
+      var ptName = pt === 'bottomhole' ? ('Bottom-hole sampling · ' + ((m.bhMode === 'cased') ? 'cased hole' : 'open hole'))
                  : pt === 'wellhead' ? 'Wellhead sampling' : 'Separator sampling';
       var vals = (pt === 'bottomhole')
         ? [ V('Depth', num(m.bhDepth, 0), 'ft'), V('Pressure', num(m.bhP, 0), 'psi'),
@@ -641,7 +641,7 @@
             V('Reservoir temperature', num(114, 0), '°C'),
             V('Reservoir pressure', num(3000, 0), 'psig'),
             V('Transfer pump', 'Off', ''),
-            V('Sample', 'In SPMC', '')
+            V('Sample', 'In sample chamber', '')
           ] : [
           V('Transfer', num(m.xfrP, 0), '%'),
           V('Heating', num(xHot ? 100 : 0, 0), '%'),
@@ -651,7 +651,7 @@
           V('Reservoir pressure', num(3000, 0), 'psi'),
           V('Reservoir temperature', num(114, 0), '°C'),
           V('Transfer pump', xp === 'run' ? 'Running' : xp === 'done' ? 'Stopped' : 'Off', ''),
-          V('Sample', xp === 'done' ? 'In SPS/PDS bottle' : xp === 'run' ? 'Transferring' : 'In SPMC', '')
+          V('Sample', xp === 'done' ? 'In oil sample bottle' : xp === 'run' ? 'Transferring' : 'In sample chamber', '')
         ];
       return pack({
         title: 'Bottom-Hole Sample Transfer · Stage ' + xs + ' of 7 — ' + xk.t,
@@ -1103,7 +1103,7 @@
     btn.addEventListener('click', function () { toggle(); });
     wrap.querySelector('#sgClose').addEventListener('click', function () { toggle(false); });
     document.addEventListener('keydown', function (e) {
-      /* Escape closes the drawer, unless an equipment viewer (Bottle / Cell / SPMC Details) is open on top of it */
+      /* Escape closes the drawer, unless an equipment viewer (Bottle / Cell / Sample Chamber Details) is open on top of it */
       if (e.key !== 'Escape' || !open || wrap.classList.contains('pc-none')) return;
       if (document.querySelector('.bd-ov, .cd-ov, .sd-ov, .bd-menu')) return;
       toggle(false);

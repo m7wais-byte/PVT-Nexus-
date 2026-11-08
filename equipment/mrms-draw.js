@@ -352,7 +352,7 @@
       { p: 'valves', x: 14, y: chTop(2) - 8, s: 1, cut: 1, n: 'Chamber valve', d: 'one per chamber · function' },
       { p: 'flowline', x: 0, y: -131 - 20, s: -1, cut: 1, n: 'Common flowline', d: 'tool flowline · simplified' }
     ] : [
-      { p: 'inlet', x: 6, y: -317, s: 1, n: 'Sample inlet', d: 'to the MRMS chamber valve' },
+      { p: 'inlet', x: 6, y: -317, s: 1, n: 'Sample inlet', d: 'to the assembly chamber valve' },
       { p: 'headU', x: 28, y: -246, s: 1, n: 'Upper head', d: 'sample side' },
       { p: 'body', x: -26, y: 150, s: -1, n: 'Pressure body', d: 'nickel alloy' },
       { p: 'outlet', x: -G.R - 10, y: G.outY, s: -1, n: 'Displacement outlet', d: 'schematic' },
@@ -369,7 +369,7 @@
       { p: 'activation', x: -12, y: 264, s: -1, cut: 1, n: 'Charge activation', d: 'function' }
     ];
     if (item === 'module') {
-      for (var n = 1; n <= 6; n++) { var q = chamberPos(n); A.push({ p: 'ch' + n, x: q.x + (q.left ? -10 : 10), y: q.y + 60, s: q.left ? -1 : 1, cut: 1, n: 'Chamber ' + n, d: 'SPMC · separate sample' }); }
+      for (var n = 1; n <= 6; n++) { var q = chamberPos(n); A.push({ p: 'ch' + n, x: q.x + (q.left ? -10 : 10), y: q.y + 60, s: q.left ? -1 : 1, cut: 1, n: 'Chamber ' + n, d: 'separate sample' }); }
       A.push({ p: 'headL', x: 34, y: 463, s: 1, n: 'Lower module connector', d: 'to the module below' });
     }
     return A.filter(function (a) { return view === 'cutaway' ? !a.ext : !a.cut; });

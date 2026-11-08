@@ -116,14 +116,14 @@
     { k: 'rih',   t: 'Lower tool to sampling depth', q: 'Tool runs down on wireline to 8,450 ft.', s: 'Wireline pays out from the truck reel; the toolstring runs through the casing into the open-hole interval.', b: 5.2, h: .7 },
     { k: 'set',   t: 'Set probe and backup pistons', q: 'Backup pistons and probe packer seal on the wall.', s: 'Tool stopped at 8,450 ft. Backup pistons push the tool across; the probe packer seals on the borehole wall.', b: 3.4, h: .7 },
     { k: 'comm',  t: 'Establish formation communication', q: 'Pretest: pressure drops, then builds to formation pressure.', s: 'Pretest: a small volume is drawn. Pressure falls from mud hydrostatic, then builds up to formation pressure.', b: 3.8, h: .7 },
-    { k: 'clean', t: 'Pump out contaminated fluid', q: 'Mud filtrate pumped to the wellbore. Bottles stay closed.', s: 'Pumpout module draws formation fluid through the probe and discharges it to the wellbore. Sample bottles stay closed.', b: 7.2, h: .6 },
-    { k: 'div',   t: 'Quality met · divert to bottle 1', q: 'Contamination at the limit. Flow switched to bottle 1.', s: 'Contamination is at or below the sampling limit. Exhaust valve closes and bottle 1 valve opens.', b: 2.8, h: .7 },
-    { k: 'fill',  t: 'Fill and seal sample bottles', q: 'Bottle 1, then bottle 2, filled and sealed.', s: 'Pumped fluid fills bottle 1 against its piston, the valve is sealed, then bottle 2 is filled and sealed.', b: 10.5, h: .7 },
+    { k: 'clean', t: 'Pump out contaminated fluid', q: 'Mud filtrate pumped to the wellbore. Chambers stay closed.', s: 'Pumpout module draws formation fluid through the probe and discharges it to the wellbore. Sample chambers stay closed.', b: 7.2, h: .6 },
+    { k: 'div',   t: 'Quality met · divert to chamber 1', q: 'Contamination at the limit. Flow switched to chamber 1.', s: 'Contamination is at or below the sampling limit. Exhaust valve closes and chamber 1 valve opens.', b: 2.8, h: .7 },
+    { k: 'fill',  t: 'Fill and seal sample chambers', q: 'Chamber 1, then chamber 2, filled and sealed.', s: 'Pumped fluid fills chamber 1 against its piston, the valve is sealed, then chamber 2 is filled and sealed.', b: 10.5, h: .7 },
     { k: 'ret',   t: 'Retract probe and backup', q: 'Pump stopped. Probe and backup retract.', s: 'Flow stopped. Probe and backup pistons retract, freeing the tool from the borehole wall.', b: 2.8, h: .7 },
-    { k: 'pooh',  t: 'Retrieve tool to surface', q: 'Tool pulled to surface with both bottles sealed.', s: 'Tool pulled out of hole with both bottles sealed; ready for laboratory transfer.', b: 5.2, h: .9 }
+    { k: 'pooh',  t: 'Retrieve tool to surface', q: 'Tool pulled to surface with both chambers sealed.', s: 'Tool pulled out of hole with both chambers sealed; ready for laboratory transfer.', b: 5.2, h: .9 }
   ];
   var CH_STEPS = [
-    { k: 'rih',   t: 'Run sampler through pressure control', q: 'Sampler runs through the tree into the tubing.', s: 'Swab valve opened; the SRS runs from the lubricator, through the tree, down the production tubing.', b: 5.6, h: .7 },
+    { k: 'rih',   t: 'Run sampler through pressure control', q: 'Sampler runs through the tree into the tubing.', s: 'Swab valve opened; the sampling tool runs from the lubricator, through the tree, down the production tubing.', b: 5.6, h: .7 },
     { k: 'stab',  t: 'Confirm stable sampling conditions', q: 'Flow steady and above Psat at 8,450 ft.', s: 'Tool held at 8,450 ft. Flowing pressure and temperature must be steady and above saturation pressure.', b: 4.6, h: .7 },
     { k: 'open',  t: 'Trigger · open sampler inlet', q: 'Clock opens the sampler inlet.', s: 'The sampler clock reaches its set time and opens the inlet valve to the flowing stream.', b: 2.4, h: .7 },
     { k: 'fill',  t: 'Fill sample chamber', q: 'Well fluid fills the chamber; piston moves down.', s: 'Well fluid enters the inlet ports; the floating piston moves down as buffer oil is metered into the air chamber.', b: 6.4, h: .7 },
@@ -827,7 +827,7 @@
     var I = mode === 'open' ? OH.inset : CH.inset;
     var s = '<rect x="' + I.x + '" y="' + I.y + '" width="' + I.w + '" height="' + I.h + '" rx="10" fill="var(--panel)" stroke="var(--line2)" stroke-width="1"/>';
     s += '<text x="' + (I.x + 14) + '" y="' + (I.y + 18) + '" font-family="IBM Plex Mono, monospace" font-size="9" letter-spacing="1" fill="var(--accb)" font-weight="600">ENLARGED CUTAWAY · SAME TOOL ×' + (mode === 'open' ? '4.5' : '5') + '</text>';
-    s += '<text x="' + (I.x + I.w - 14) + '" y="' + (I.y + 18) + '" text-anchor="end" font-family="IBM Plex Mono, monospace" font-size="8.6" letter-spacing=".6" fill="var(--mut)">' + (mode === 'open' ? 'MDT toolstring · MRMS (2 MPSR)' : 'SRS · Single-phase Reservoir Sampler') + '</text>';
+    s += '<text x="' + (I.x + I.w - 14) + '" y="' + (I.y + 18) + '" text-anchor="end" font-family="IBM Plex Mono, monospace" font-size="8.6" letter-spacing=".6" fill="var(--mut)">' + (mode === 'open' ? 'Sampling Tool · 2 sample chambers' : 'Sampling Tool · single sample chamber') + '</text>';
     s += '<line x1="' + (I.x + 1) + '" y1="' + (I.y + 26) + '" x2="' + (I.x + I.w - 1) + '" y2="' + (I.y + 26) + '" stroke="var(--line2)"/>';
     return s;
   }
@@ -910,8 +910,8 @@
     o += ilabel(ox, oy, 24, 167, lx, 148, 'Fluid analyzer (optical)', s.cont == null ? 'no fluid yet' : 'contamination ' + Math.round(s.cont) + '%', s.qual === 'acceptable' ? 'var(--grn)' : s.cont == null ? null : C.clean);
     o += ilabel(ox, oy, 24, 222, lx, 196, 'Pumpout module', s.pumpOn ? 'pumping' : 'stopped', s.pumpOn ? 'var(--accb)' : null);
     o += ilabel(ox, oy, 25, 252, lx, 238, 'Exhaust valve → wellbore', s.ev === 'open' ? 'open · cleanup discharge' : 'closed', s.ev === 'open' ? C.clean : null);
-    o += ilabel(ox, oy, 15, 312, lx, 300, 'Sample bottle 1 · MPSR', b1[0], b1[1]);
-    o += ilabel(ox, oy, 15, 404, lx, 392, 'Sample bottle 2 · MPSR', b2[0], b2[1]);
+    o += ilabel(ox, oy, 15, 312, lx, 300, 'Sample Chamber 1', b1[0], b1[1]);
+    o += ilabel(ox, oy, 15, 404, lx, 392, 'Sample Chamber 2', b2[0], b2[1]);
     o += '<text x="' + (lx) + '" y="' + (oy + 452) + '" font-family="IBM Plex Mono, monospace" font-size="8" fill="var(--mut)">piston · buffer side vented to wellbore</text>';
     var where = !s.started ? 'At surface · in the derrick' : s.done ? 'At surface · samples sealed' : s.depthFrac <= 0 ? 'At surface' : s.top < OH.shoe - OH.toolL * K ? 'In casing · ' + n0(s.depth) + ' ft' : 'Open hole · ' + n0(s.depth) + ' ft';
     o += '<text x="' + (I.x + 14) + '" y="' + (I.y + I.h - 10) + '" font-family="IBM Plex Mono, monospace" font-size="8.6" fill="var(--accb)" font-weight="600">' + esc(where.toUpperCase()) + '</text>';
@@ -981,11 +981,11 @@
     { w: 'The sample must come from the reservoir interval of interest, so the tool is positioned on depth before anything is opened.', e: 'Truck reel pays out; cable runs over the lower and top sheaves, through the BOP and casing, into the open hole.', o: 'Depth, wellbore pressure and temperature rising together; cable stays attached from reel to tool.' },
     { w: 'The probe packer isolates a small area of the borehole wall from the mud column. The backup pistons provide the opposing force that keeps the seal tight.', e: 'Backup pistons extend on one side; the probe extends on the other until the packer seals on the formation.', o: 'Probe tight on the bare formation wall — this only works in open hole, not behind casing.' },
     { w: 'The pretest proves the seal holds and gives formation pressure. If pressure stayed at mud hydrostatic, the probe would still be seeing the wellbore.', e: 'Small pretest volume drawn through the probe; flowline fills up to the fluid analyzer.', o: 'Pressure falls from mud hydrostatic (drawdown), then builds up and stabilises at formation pressure (4,820 psia).' },
-    { w: 'The first fluid produced is mud filtrate that invaded the formation while drilling. It is pumped to the wellbore until the analyzer shows clean formation fluid.', e: 'Pumpout module running; exhaust valve open; both bottle valves closed so nothing enters the bottles.', o: 'Contamination falling toward the ' + CONT_LIMIT + '% limit; orange cleanup flow leaving through the exhaust port.' },
-    { w: 'Only fluid that meets the quality condition is allowed into a bottle. The route is switched without stopping the flow from the formation.', e: 'Exhaust valve closes, bottle 1 valve opens; the flowline downstream of the pump now leads to bottle 1.', o: 'Flow colour changes from cleanup (orange) to sample (blue) and the front moving toward bottle 1.' },
-    { w: 'Pumping into the bottle against its piston keeps the sample above saturation pressure (Psat 2,515 psia) while it fills — no gas breaks out.', e: 'Bottle 1 fills and its valve is sealed; then bottle 2 valve opens, fills and is sealed. The piston pushes buffer to the wellbore.', o: 'Oil entering from the top of each bottle, piston moving down, then the valve changing to sealed.' },
-    { w: 'The tool must be freed from the wall before it can move. Flow is stopped first so the sealed bottles are not disturbed.', e: 'Probe and backup pistons retract into the tool body; pump stopped; all valves closed.', o: 'Probe leaving the wall; pressure reading returns to wellbore (mud) pressure.' },
-    { w: 'The sealed bottles keep the reservoir fluid on the way up. The laboratory restores it to reservoir conditions before transfer and analysis.', e: 'Cable reeled in on the truck; tool pulled through the open hole, casing and BOP to the rig floor.', o: 'Depth returning to surface with both bottles full and sealed; then Move Samples to Lab.' }
+    { w: 'The first fluid produced is mud filtrate that invaded the formation while drilling. It is pumped to the wellbore until the analyzer shows clean formation fluid.', e: 'Pumpout module running; exhaust valve open; both chamber valves closed so nothing enters the chambers.', o: 'Contamination falling toward the ' + CONT_LIMIT + '% limit; orange cleanup flow leaving through the exhaust port.' },
+    { w: 'Only fluid that meets the quality condition is allowed into a sample chamber. The route is switched without stopping the flow from the formation.', e: 'Exhaust valve closes, chamber 1 valve opens; the flowline downstream of the pump now leads to chamber 1.', o: 'Flow colour changes from cleanup (orange) to sample (blue) and the front moving toward chamber 1.' },
+    { w: 'Pumping into the chamber against its piston keeps the sample above saturation pressure (Psat 2,515 psia) while it fills — no gas breaks out.', e: 'Chamber 1 fills and its valve is sealed; then chamber 2 valve opens, fills and is sealed. The piston pushes buffer to the wellbore.', o: 'Oil entering from the top of each chamber, piston moving down, then the valve changing to sealed.' },
+    { w: 'The tool must be freed from the wall before it can move. Flow is stopped first so the sealed chambers are not disturbed.', e: 'Probe and backup pistons retract into the tool body; pump stopped; all valves closed.', o: 'Probe leaving the wall; pressure reading returns to wellbore (mud) pressure.' },
+    { w: 'The sealed chambers keep the reservoir fluid on the way up. The laboratory restores it to reservoir conditions before transfer and analysis.', e: 'Cable reeled in on the truck; tool pulled through the open hole, casing and BOP to the rig floor.', o: 'Depth returning to surface with both chambers full and sealed; then Move Samples to Lab.' }
   ];
   var CH_EX = [
     { w: 'The well keeps producing while the sampler is run, so it must enter the well through pressure-control equipment.', e: 'Tool rigged up inside the lubricator; swab valve opened; cable runs from the reel over the gin-pole sheave into the grease head.', o: 'Swab valve opening, tool leaving the lubricator and running down the production tubing.' },
@@ -1077,7 +1077,7 @@
     var svg = '<svg viewBox="0 0 1000 600" preserveAspectRatio="xMidYMax meet">' + defs().replace('</defs>', clip + '</defs>') + S.bg + '<g class="bhs-dyn"></g>' + S.fg + insetFrame(M.mode) + '<g class="bhs-idyn"></g></svg>';
     var open = M.mode === 'open';
     var p = '<div class="bhs-panel">' +
-      '<div class="bhs-ph"><span class="bhs-ic">' + ICON.tool + '</span><span class="bhs-ttl">' + (open ? 'MDT toolstring · MRMS' : 'SRS sampler') + '</span><span class="bhs-tag">BHS-001</span></div>' +
+      '<div class="bhs-ph"><span class="bhs-ic">' + ICON.tool + '</span><span class="bhs-ttl">' + 'Sampling Tool' + '</span><span class="bhs-tag">BHS-001</span></div>' +
       '<div class="bhs-live"><div class="bhs-lk"><i data-r="ldot"></i>LIVE DATA</div>' +
       '<div class="bhs-rd">' + [0, 1, 2, 3].map(function (i) { return '<div class="bhs-c"><span class="l" data-r="l' + i + '"></span><span class="v" data-r="v' + i + '"></span></div>'; }).join('') + '</div></div>' +
       '<div class="pc-host bhs-pc" data-pc="BottomHoleSim" data-pc-layout="side" style="flex:0 0 auto; margin-top:auto;"></div>' +
@@ -1106,8 +1106,8 @@
       var qc = s.qual === 'acceptable' ? 'var(--grn)' : s.qual ? C.clean : null;
       R.push(['CONTAMINATION', s.cont == null ? ['—', ''] : [String(Math.round(s.cont)), '%'], s.cont == null ? 'limit ≤ ' + CONT_LIMIT + '%' : (s.qual === 'acceptable' ? 'acceptable ≤ ' + CONT_LIMIT + '%' : s.qual), qc]);
       var b1 = bottleTxt(s.fill1, s.v1, s.route, 'b1'), b2 = bottleTxt(s.fill2, s.v2, s.route, 'b2');
-      R.push(['BOTTLE 1 · MPSR', [b1[0], ''], s.v1 === 'sealed' ? 'valve sealed' : s.v1 === 'open' ? 'valve open' : 'valve closed · isolated', b1[1]]);
-      R.push(['BOTTLE 2 · MPSR', [b2[0], ''], s.v2 === 'sealed' ? 'valve sealed' : s.v2 === 'open' ? 'valve open' : 'valve closed · isolated', b2[1]]);
+      R.push(['SAMPLE CHAMBER 1', [b1[0], ''], s.v1 === 'sealed' ? 'valve sealed' : s.v1 === 'open' ? 'valve open' : 'valve closed · isolated', b1[1]]);
+      R.push(['SAMPLE CHAMBER 2', [b2[0], ''], s.v2 === 'sealed' ? 'valve sealed' : s.v2 === 'open' ? 'valve open' : 'valve closed · isolated', b2[1]]);
     } else {
       R.push(['PRESSURE AT SAMPLER', s.pVal == null ? ['—', ''] : [n0(s.pVal), 'psia'], s.pVal == null ? '' : 'Psat ' + n0(RES.psat) + ' psia', null]);
       R.push(['TEMPERATURE', s.T == null ? ['—', ''] : [n0(s.T), '°F'], '', null]);
@@ -1138,7 +1138,7 @@
   function panelFig(s) {
     if (s.mode === 'open') {
       var b1 = bottleTxt(s.fill1, s.v1, s.route, 'b1'), b2 = bottleTxt(s.fill2, s.v2, s.route, 'b2');
-      return figBottle(62, s.fill1, s.v1, C.buf, 'Bottle 1 · MPSR', b1[0], b1[1], 'BUF') + figBottle(178, s.fill2, s.v2, C.buf, 'Bottle 2 · MPSR', b2[0], b2[1], 'BUF');
+      return figBottle(62, s.fill1, s.v1, C.buf, 'Sample Chamber 1', b1[0], b1[1], 'BUF') + figBottle(178, s.fill2, s.v2, C.buf, 'Sample Chamber 2', b2[0], b2[1], 'BUF');
     }
     var chT = s.inlet === 'sealed' ? 'Sealed · full' : s.fill > 0 ? 'Filling ' + Math.round(s.fill * 100) + '%' : 'Empty';
     var o = figBottle(62, s.fill, s.inlet, C.hyd, 'Sample chamber', chT, s.inlet === 'sealed' ? 'var(--grn)' : s.fill > 0 ? C.samp : null, 'BUF');
@@ -1271,10 +1271,10 @@
     describe: function () {
       if (!M.root) return null;
       var s = stateNow(), st = steps(), ex = M.mode === 'open' ? OH_EX : CH_EX;
-      var name = M.mode === 'open' ? 'Open hole (MDT · MRMS)' : 'Cased hole (SRS)';
+      var name = M.mode === 'open' ? 'Open hole' : 'Cased hole';
       var vals = readings(s).map(function (r) { return { l: r[0].charAt(0) + r[0].slice(1).toLowerCase(), v: r[1][0], u: r[1][1] }; });
       if (!s.started) return { title: 'Bottom-hole sampling · ' + name + ' — ready', tag: 'READY', busy: false,
-        d: M.mode === 'open' ? 'The MDT toolstring hangs in the rig mast, rigged up on the wireline truck cable.' : 'The well is producing to the test separator; the SRS sits in the lubricator above the closed swab valve.',
+        d: M.mode === 'open' ? 'The sampling tool hangs in the rig mast, rigged up on the wireline truck cable.' : 'The well is producing to the test separator; the sampling tool sits in the lubricator above the closed swab valve.',
         w: M.mode === 'open' ? 'Open-hole sampling takes formation fluid directly from the borehole wall of an uncased interval, before the well is completed.' : 'Cased-hole sampling takes the fluid flowing in the production tubing of a completed, producing well.',
         e: 'Nothing is moving yet.', o: 'Press Take Sample, or use Next to step through the procedure.', vals: vals,
         proc: { items: st.map(function (x) { return x.t; }), cur: -1, q: M.mode === 'open' ? 'Toolstring hangs in the rig mast. Press Take Sample to start.' : 'Sampler waits in the lubricator. Press Take Sample to start.' } };
@@ -1283,7 +1283,7 @@
         tag: s.done ? 'COMPLETE' : 'STEP ' + (i + 1) + ' / ' + st.length, busy: M.playing,
         d: st[i].s, w: ex[i].w, e: ex[i].e, o: ex[i].o, vals: vals,
         proc: { items: st.map(function (x) { return x.t; }), cur: i, done: s.done,
-          q: s.done ? (M.mode === 'open' ? 'Both bottles full and sealed at surface.' : 'Sample chamber sealed and N₂-compensated.') : st[i].q } };
+          q: s.done ? (M.mode === 'open' ? 'Both sample chambers full and sealed at surface.' : 'Sample chamber sealed and N₂-compensated.') : st[i].q } };
     }
   };
 

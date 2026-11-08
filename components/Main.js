@@ -278,7 +278,7 @@ class Component extends DCLogic {
           this.cAt(4700, () => S({ vBottle: false }));
           this.cAt(5600, () => S({ vAct: '', isoPh: 6, cellStatus: 'Sample Path Isolated' }));
           this.cAt(7000, () => {
-            S({ isoPh: 7, cellStatus: 'Disconnecting SPS/PDS Bottle' });
+            S({ isoPh: 7, cellStatus: 'Disconnecting Oil Sample Bottle' });
             this.cTween(1.8, (p) => S({ discP: p }), () => {
               S({ bottleOn: false, discP: 1, isoPh: 8, cellStatus: 'Bottle Disconnected — PVT Cell Isolated' });
               this.cAt(900, () => fin({ bottleOn: false, chargeFront: 0, drainBack: false, discP: 1, isoPh: 8, vAct: '', cellStatus: 'Bottle Disconnected — PVT Cell Isolated' }));
@@ -427,7 +427,7 @@ class Component extends DCLogic {
     if (p === 'bottomhole' && this.state.bhMode === 'cased') {
       // Cased hole / SRS : sample the producing wellbore fluid at depth
       this.setState({ bhDepth: 0, bhP: 0, bhT: 78, bhCsFill: 0, bhLog: [] });
-      this.bhLog('SRS tool rigged up \u00b7 well producing');
+      this.bhLog('Sampling tool rigged up \u00b7 well producing');
       this.stepPh('desc', 300);
       this.stepPh('set', 6000);
       this.stepPh('comm', 8400);
@@ -445,7 +445,7 @@ class Component extends DCLogic {
       this.bhLogAt(11100, 'Sample chamber opened to the wellbore');
       this.bhLogAt(17900, 'Sample chamber sealed at downhole conditions');
       this.bhLogAt(20100, 'Pulling out of hole');
-      this.bhLogAt(25900, 'SRS tool at surface \u00b7 sample ready for lab transfer');
+      this.bhLogAt(25900, 'Sampling tool at surface \u00b7 sample ready for lab transfer');
     } else if (p === 'bottomhole') {
       // Open-hole cycle: run in → set probe → formation communication → cleanup →
       // fill chambers → seal → pull out of hole → ready for lab
@@ -536,8 +536,8 @@ class Component extends DCLogic {
       // resvP - reservoir pressure quoted for the sample (null when the source has none)
       // restP - working / restoration pressure the bottle is taken to in step 2
       // restT - restoration temperature held by the heating jacket
-      bottomhole: { key:'bottomhole', name:'Bottom Hole', sample:'Bottom Hole Sample', bottle:'SPS/PDS \u00b7 ~800 cc', open:4500, openT:22,
-        src:'transferred from the SPMC chamber (MDT MRMS)', resvP:3000, resvT:114, restP:5000, restT:114, atResv:true,
+      bottomhole: { key:'bottomhole', name:'Bottom Hole', sample:'Bottom Hole Sample', bottle:'Oil Sample Bottle \u00b7 ~800 cc', open:4500, openT:22,
+        src:'transferred from the sample chamber', resvP:3000, resvT:114, restP:5000, restT:114, atResv:true,
         pLabel:'BOTTOM-HOLE PRESSURE', pVal:(4200).toLocaleString('en-US'), pUnit:'psia',
         tLabel:'BOTTOM-HOLE TEMPERATURE', tVal:'114', btLabel:'BOTTLE TEMP.' },
       wellhead: { key:'wellhead', name:'Wellhead', sample:'Wellhead Sample', bottle:'Piston bottle \u00b7 ~600 cc', open:1450, openT:22,
@@ -695,7 +695,7 @@ class Component extends DCLogic {
     // Bottom-hole samples arrive in the MPSR tool and must be transferred to the SPS/PDS
     // bottle before validation starts. Wellhead / separator samples are already in their bottle.
     if (this.valSource() === 'bottomhole') {
-      list.unshift({ id:'transfer', name:'Sample Transfer', desc:'Transfer the bottom-hole sample from the SPMC chamber into the SPS/PDS bottle', icon:'M4 6h5v14H4zM15 10h5v10h-5zM10.2 12h3.6M13.8 12l-1.7-1.7M13.8 12l-1.7 1.7', tint:'#5f6fd8' });
+      list.unshift({ id:'transfer', name:'Sample Transfer', desc:'Transfer the bottom-hole sample from the sample chamber into the oil sample bottle', icon:'M4 6h5v14H4zM15 10h5v10h-5zM10.2 12h3.6M13.8 12l-1.7-1.7M13.8 12l-1.7 1.7', tint:'#5f6fd8' });
     }
     return list;
   }
@@ -1172,7 +1172,7 @@ class Component extends DCLogic {
     const bottleFillStyle_d = { transform: `scaleY(${filling_d ? 1 : 0})`, transformBox: 'fill-box', transformOrigin: 'center bottom', transition: 'transform calc(3.2s * var(--pm, 1)) ease', opacity: filling_d ? 0.92 : 0 };
     const labels_d = { bottomhole: 'BHS-001 · Bottom Hole', wellhead: 'WHS-002 · Wellhead', separator: 'SEP-003 · Separator', overview: 'FS-000 · Field Overview' };
     const statusMap_d = {
-      bottomhole: { idle:'Wireline tool staged at surface · click Bottom Hole to run', desc:'Running sampling tool in hole…', acq:'Acquiring sample at reservoir depth…', asc:'Pulling tool out of hole…', dock:'MPSR docked at surface transfer station', conn:'Receiving bottle connected · couplings made up', pump:'Transfer pump on — pressurizing water side', xfer:'Displacing sample from MPSR into receiving bottle…', stab:'Bottle pressure stabilizing…', done:'Sample secured in PVT bottle' },
+      bottomhole: { idle:'Wireline tool staged at surface · click Bottom Hole to run', desc:'Running sampling tool in hole…', acq:'Acquiring sample at reservoir depth…', asc:'Pulling tool out of hole…', dock:'Sample chamber docked at surface transfer station', conn:'Oil sample bottle connected · couplings made up', pump:'Transfer pump on — pressurizing water side', xfer:'Displacing sample from the sample chamber into the oil sample bottle…', stab:'Bottle pressure stabilizing…', done:'Sample secured in PVT bottle' },
       wellhead:   { idle:'Ready', connect:'Connecting PVT bottle to wellhead…', xfer:'Transferring fluid to PVT bottle…', done:'Sample secured in PVT bottle' },
       separator:  { idle:'Ready', connect:'Connecting PVT bottle to separator outlet…', xfer:'Transferring fluid to PVT bottle…', done:'Sample secured in PVT bottle' },
     };
@@ -1193,7 +1193,7 @@ class Component extends DCLogic {
     const needleStyle_d = { transform: `rotate(${angle_d}deg)`, transformOrigin: '86px 50px', transformBox: 'view-box', transition: 'transform calc(2.6s * var(--pm, 1)) cubic-bezier(.3,.7,.2,1)' };
     const mechPressureText_d = (this.state.mechPressure || 0).toLocaleString('en-US');
     const mechMap_d = {
-      bottomhole: { idle:'Ready to receive sample · 0 psig', desc:'Awaiting downhole sample…', acq:'Awaiting downhole sample…', asc:'Tool returning to surface…', dock:'MPSR docked · awaiting hook-up', conn:'Sample inlet connected', pump:'Pump on · water side pressurizing', xfer:'Sample entering · piston moving up', stab:'Pressure stabilizing…', done:'Bottom-hole sample secured in PVT bottle' },
+      bottomhole: { idle:'Ready to receive sample · 0 psig', desc:'Awaiting downhole sample…', acq:'Awaiting downhole sample…', asc:'Tool returning to surface…', dock:'Sample chamber docked · awaiting hook-up', conn:'Sample inlet connected', pump:'Pump on · water side pressurizing', xfer:'Sample entering · piston moving up', stab:'Pressure stabilizing…', done:'Bottom-hole sample secured in PVT bottle' },
       wellhead:   { idle:'Ready to receive sample', connect:'Transfer line connected', xfer:'Sample entering bottle · piston moving', done:'Wellhead sample secured in PVT bottle' },
       separator:  { idle:'Ready to receive sample', connect:'Transfer line connected', xfer:'Sample entering bottle · piston moving', done:'Separator sample secured in PVT bottle' },
     };
@@ -1387,11 +1387,11 @@ const hi_d = (on) => on ? 'opacity:1; transition:opacity .5s ease;' : 'opacity:.
     const bhCsIntake_d = 'opacity:' + (ph_d === 'fill' ? 1 : 0) + '; transition:opacity .4s ease;';
     const bhCsSampleText_d = ph_d === 'fill' ? (_csFill_d >= 100 ? 'Filled' : 'Filling') : (ph_d === 'seal' || ph_d === 'asc' || ph_d === 'done') ? 'Sealed' : 'Ready';
     const bhCsSampleColor_d = ph_d === 'fill' ? 'var(--amb)' : (ph_d === 'seal' || ph_d === 'asc' || ph_d === 'done') ? 'var(--grn)' : 'var(--mut)';
-    const bhCsStage_d = ({ idle:'Staged at surface', desc:'Running SRS tool to depth', set:'Sampling depth reached', comm:'Confirming stable producing conditions', fill:'Collecting wellbore sample', seal:'Sample sealed', asc:'Retrieving sampling tool', done:'Sampling complete \u2014 tool at surface' })[ph_d] || 'Staged at surface';
-    const bhCsNote_d = ({ idle:'Well producing \u00b7 tool ready to run', desc:'Tool descending through the producing well', set:'Tool positioned at 8,450 ft TVD in the flowing column', comm:'Wellbore flow steady \u00b7 representative sample possible', fill:'Producing oil entering the SRS sample chamber', seal:'Sample chamber isolated at downhole conditions', asc:'SRS tool returning to surface \u00b7 sample sealed', done:'Sealed sample at surface \u00b7 ready for lab transfer' })[ph_d] || 'Well producing \u00b7 tool ready to run';
+    const bhCsStage_d = ({ idle:'Staged at surface', desc:'Running sampling tool to depth', set:'Sampling depth reached', comm:'Confirming stable producing conditions', fill:'Collecting wellbore sample', seal:'Sample sealed', asc:'Retrieving sampling tool', done:'Sampling complete \u2014 tool at surface' })[ph_d] || 'Staged at surface';
+    const bhCsNote_d = ({ idle:'Well producing \u00b7 tool ready to run', desc:'Tool descending through the producing well', set:'Tool positioned at 8,450 ft TVD in the flowing column', comm:'Wellbore flow steady \u00b7 representative sample possible', fill:'Producing oil entering the sample chamber', seal:'Sample chamber isolated at downhole conditions', asc:'Sampling tool returning to surface \u00b7 sample sealed', done:'Sealed sample at surface \u00b7 ready for lab transfer' })[ph_d] || 'Well producing \u00b7 tool ready to run';
     const bhCsChip_d = ({ idle:'STAGED AT SURFACE \u00b7 WELL PRODUCING', desc:'RUNNING TO DEPTH \u00b7 ' + (this.state.bhDepth || 0).toLocaleString('en-US') + ' FT', set:'AT DEPTH \u00b7 8,450 FT', comm:'STABLE PRODUCING CONDITIONS', fill:'FILLING SAMPLE CHAMBER \u00b7 ' + _csFill_d + '%', seal:'SAMPLE ACQUIRED \u00b7 SEALED', asc:'PULLING OUT \u00b7 ' + (this.state.bhDepth || 0).toLocaleString('en-US') + ' FT', done:'SAMPLE SEALED \u00b7 AT SURFACE' })[ph_d] || 'STAGED AT SURFACE \u00b7 WELL PRODUCING';
     const _csStepIdx_d = ({ idle:-1, desc:0, set:1, comm:2, fill:(_csFill_d < 12 ? 3 : 4), seal:5, asc:6, done:7 })[ph_d] ?? -1;
-    const bhCsBtnText_d = ph_d === 'idle' ? 'Run SRS Sampling Programme' : ph_d === 'done' ? 'Restart Sampling Programme'
+    const bhCsBtnText_d = ph_d === 'idle' ? 'Run Sampling Programme' : ph_d === 'done' ? 'Restart Sampling Programme'
       : ({ desc:'Running in Hole\u2026', set:'At Sampling Depth\u2026', comm:'Confirming Flow\u2026', fill:'Filling Sample Chamber\u2026', seal:'Sealing Sample\u2026', asc:'Pulling Out of Hole\u2026' })[ph_d] || 'Sampling\u2026';
     const bhDepthText_d = (this.state.bhDepth || 0).toLocaleString('en-US');
     const bhPText_d = (this.state.bhP || 0).toLocaleString('en-US');
@@ -1489,7 +1489,7 @@ const hi_d = (on) => on ? 'opacity:1; transition:opacity .5s ease;' : 'opacity:.
       : ap_d === 'separator'
       ? [ { l:'SEPARATOR PRESSURE', v:(200).toLocaleString('en-US'), u:'psig' }, { l:'SEPARATOR TEMP.', v:sepTempFixed_d, u:'\u00B0C' } ]
       : [];
-    const subMap_d = { overview:'Full sampling system and locations', wellhead:'Dedicated sampling line into the oil bottle', separator:'Independent oil and gas sampling paths', bottomhole:'MDT formation tester \u00b7 MRMS multisample module \u00b7 open-hole interval' };
+    const subMap_d = { overview:'Full sampling system and locations', wellhead:'Dedicated sampling line into the oil bottle', separator:'Independent oil and gas sampling paths', bottomhole:'Wireline sampling in an open-hole interval.' };
     const m01Subtitle_dd = subMap_d[ap_d] || 'Select a sampling point to begin acquisition';
     const whFillFrac_d = pressurized_d ? 0.68 : mechFilled_d ? 0.5 : connected_d ? 0.14 : 0.05;
     const whFillEase_d = 'transform calc(3s * var(--pm, 1)) cubic-bezier(.4,.1,.3,1)';
@@ -1628,14 +1628,14 @@ const hi_d = (on) => on ? 'opacity:1; transition:opacity .5s ease;' : 'opacity:.
       : mxHeating ? (mxHeated ? 'Heated · 114 °C' : 'Heating') : 'Idle';
     const mxXferText = Math.round(450 * mxVb) + ' cc';
     const mxStatusText = mxDone
-      ? 'Transfer complete \u2014 sample secured in the SPS/PDS bottle at 5,000 psi \u00b7 114 \u00b0C. Ready for laboratory QC.'
+      ? 'Transfer complete \u2014 sample secured in the oil sample bottle at 5,000 psi \u00b7 114 \u00b0C. Ready for laboratory QC.'
       : mxRunning
-        ? 'Transferring \u2014 pump driving the SPMC end connection, piston train displacing the sample into the SPS/PDS bottle\u2026'
+        ? 'Transferring \u2014 pump driving the chamber\u2019s drive-fluid end, piston train displacing the sample into the oil sample bottle\u2026'
         : mxHeated
           ? 'Heated \u2014 sample stabilised at 114 \u00b0C (reservoir temperature). Starting the transfer\u2026'
           : mxHeating
-            ? 'Heating \u2014 jacket closed over the SPMC, sample warming from lab temperature to 114 \u00b0C\u2026'
-            : 'Ready \u2014 SPMC chamber docked, sample inlet connected to the bottle top valve, pump on the SPMC end connection.';
+            ? 'Heating \u2014 jacket closed over the sample chamber, sample warming from lab temperature to 114 \u00b0C\u2026'
+            : 'Ready \u2014 Sample chamber connected to the oil sample bottle, with the pump connected at the chamber\u2019s drive-fluid end.';
     const mxBarStyle = `width:100%; height:100%; border-radius:3px; background:linear-gradient(90deg,#3f8ae0,#46d39a); transform:scaleX(${(0.02 + 0.98 * xfP).toFixed(4)}); transform-origin:left center; transition:transform .2s linear;`;
     const mxSampleId = 'BHS-001';
     const mxXferP = Math.round(5000*((mxRunning||mxDone) ? Math.min(1, xfP*5) : 0));
@@ -1649,10 +1649,10 @@ const hi_d = (on) => on ? 'opacity:1; transition:opacity .5s ease;' : 'opacity:.
       { l:'RESERVOIR TEMPERATURE',v:'114',                                               u:'°C', c:'#e7752e' },
     ];
     const mxSteps = [
-      { label:'Heating jacket closed over the SPMC \u00b7 sample at 114 \u00b0C', th:-1 },
-      { label:'Transfer pump pressurises the SPMC drive side', th:0.12 },
-      { label:'Sample fluid displaced out of the SPMC', th:0.55 },
-      { label:'Sample enters the SPS/PDS bottle \u00b7 water displaced', th:0.99 },
+      { label:'Heating jacket closed over the sample chamber \u00b7 sample at 114 \u00b0C', th:-1 },
+      { label:'Transfer pump pressurises the sample chamber drive side', th:0.12 },
+      { label:'Sample fluid displaced out of the sample chamber', th:0.55 },
+      { label:'Sample enters the oil sample bottle \u00b7 water displaced', th:0.99 },
     ].map((s, i_) => {
       const isDone = s.th < 0 ? mxHeated : (mxDone || xfP >= s.th);
       const active = s.th < 0 ? (mxHeating && !mxHeated) : (mxRunning && !isDone);
@@ -2296,7 +2296,7 @@ const hi_d = (on) => on ? 'opacity:1; transition:opacity .5s ease;' : 'opacity:.
       _isoItem(3, '3  Pump B valve', 'closed', 'closing'),
       _isoItem(4, '4  Cell valve', 'closed', 'closing'),
       _isoItem(5, '5  Bottle valve', 'closed', 'closing'),
-      _isoItem(7, '6  SPS/PDS bottle', 'disconnected', 'disconnecting')
+      _isoItem(7, '6  Oil sample bottle', 'disconnected', 'disconnecting')
     ];
 
     // 12-step progress strip
@@ -2317,7 +2317,7 @@ const hi_d = (on) => on ? 'opacity:1; transition:opacity .5s ease;' : 'opacity:.
     });
 
     // actions
-    const _stageName = ['Vacuum PVT Cell', 'Connect SPS/PDS Bottle', 'Open Charging Path', 'Record Initial Volume', 'Fill Dead Space', 'Charge Pump A', 'Final Volume', 'Disconnect Bottle', 'Hold Cell Pressure', 'Agitate A \u2194 B', 'Check Pressure Stability', 'Move to Flash Process'];
+    const _stageName = ['Vacuum PVT Cell', 'Connect Oil Sample Bottle', 'Open Charging Path', 'Record Initial Volume', 'Fill Dead Space', 'Charge Pump A', 'Final Volume', 'Disconnect Bottle', 'Hold Cell Pressure', 'Agitate A \u2194 B', 'Check Pressure Stability', 'Move to Flash Process'];
     const cDone12 = cStep >= 12;
     const atFinal = !cBusy && cStep === 11;
     const chargeBtnText = cBusy ? 'Running\u2026' : cDone12 ? 'Reset Sequence' : atFinal ? 'Awaiting flash handoff' : (agResult === 'repeat' && cActiveStage === 10) ? 'Repeat Agitation Cycle' : _stageName[cActiveStage - 1];
@@ -2779,7 +2779,7 @@ const hi_d = (on) => on ? 'opacity:1; transition:opacity .5s ease;' : 'opacity:.
       m01BhScene: bhScene_v, m01ProdVis: !bhScene_v,
       showWhPanel: whScene_v,
       showSepPanel: sepScene_v,
-      m01Subtitle: (ap_d === 'bottomhole' && this.state.bhMode === 'cased') ? 'SRS single-phase reservoir sampler on wireline \u00b7 producing well' : m01Subtitle_dd,
+      m01Subtitle: (ap_d === 'bottomhole' && this.state.bhMode === 'cased') ? 'Wireline sampling in a producing cased-hole well.' : m01Subtitle_dd,
       mbBh: mbtn_d(ap_d === 'bottomhole'), mbWh: mbtn_d(ap_d === 'wellhead'), mbSep: mbtn_d(ap_d === 'separator'),
       selBh: () => this.pick('bottomhole'),
       selWh: () => this.pick('wellhead'),
@@ -2920,7 +2920,7 @@ DC.define('Main', {
 
 
 
-    <!-- ===== MODULE 01b SCREEN — BOTTOM HOLE SAMPLE TRANSFER (SPMC chamber -> SPS/PDS) ===== -->
+    <!-- ===== MODULE 01b SCREEN — BOTTOM HOLE SAMPLE TRANSFER (sample chamber -> oil sample bottle) ===== -->
     <sc-slot name="showXfer"></sc-slot>
 
     <!-- ===== MODULE 02 SCREEN — QUALITY CHECK (QC) ===== -->

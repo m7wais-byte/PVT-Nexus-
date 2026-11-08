@@ -146,7 +146,7 @@
     var c = cradle(QID), o = c.back;
     // heating jacket (holds the restoration temperature), between the end caps
     o += '<rect x="-44" y="-212" width="88" height="424" rx="14" fill="rgba(231,117,46,.10)" stroke="#e7752e" stroke-width="2.6"/>';
-    o += '<g class="bd-hit" data-bd-open="oil" data-bd-ctx="SPS/PDS sample bottle · inversion agitation">' +
+    o += '<g class="bd-hit" data-bd-open="oil" data-bd-ctx="Oil sample bottle · inversion agitation">' +
       BottleArt.raw(BottleArt.oil('q', { x: 0, y: 0, s: 1, inner: interior(st, wf), ringB: '#46d39a', needleB: BottleArt.needle(1) })) + '</g>';
     return o + c.front;
   }
@@ -204,7 +204,7 @@
     s += '<g transform="' + tr + '">' + bottle(st, o.waterFrac) + '</g>';
     s += hose;
     s += '<circle cx="' + r1(port[0]) + '" cy="' + r1(port[1]) + '" r="4.2" fill="url(#qMetal)" stroke="#0a0e16" stroke-width="0.8"/>';
-    s += T(PX - 112, 452, 'INVERSION STAND', { a: 'end', s: 8.5, ls: 1, c: 'var(--cap2)' }) + T(PX - 112, 464, 'SPS/PDS · ~800 cc', { a: 'end', s: 8, c: 'var(--cap)' });
+    s += T(PX - 112, 452, 'INVERSION STAND', { a: 'end', s: 8.5, ls: 1, c: 'var(--cap2)' }) + T(PX - 112, 464, 'OIL SAMPLE BOTTLE · ~800 cc', { a: 'end', s: 8, c: 'var(--cap)' });
 
     // ---- compact readout card: angle, cycle, pressure, temperature ----
     var cx0 = 18, cy0 = 34, cw = 188, chh = 150;

@@ -155,7 +155,7 @@ const STAGES = [
 ].concat(PTS.slice(1).map(p => ({ name: 'Reduce · ' + fmtP(p), btn: 'Reduce to ' + fmtP(p) + ' & Measure' })))
  .concat([{ name: 'Results', btn: 'Show Results' }]);
 const NS = STAGES.length;          // 9
-const MSG = i => i === 0 ? 'SPS/PDS bottle at 5,500 psig; viscometer on the bench — lines not connected. Chamber evacuated and EMPTY. All valves CLOSED.'
+const MSG = i => i === 0 ? 'Oil sample bottle at 5,500 psig; viscometer on the bench — lines not connected. Chamber evacuated and EMPTY. All valves CLOSED.'
   : i === 1 ? 'Chamber full (3 cc) at 5,500 psig — equalized with the bottle. Bleed valve CLOSED. Flush 15 cc through the top outlet.'
   : i === 2 ? 'Loaded: chamber full at 5,500 psig, bleed CLOSED, bottle valve CLOSED (viscometer isolated). Ready for point 1.'
   : i < NS - 1 ? 'Point ' + (i - 2) + ' recorded at ' + fmtP(PTS[i - 3]) + ' psig. Next: release pressure to ' + fmtP(PTS[i - 2]) + ' psig through the top bleed valve, then measure.'
@@ -279,7 +279,7 @@ class Component extends DCLogic {
 
   /* 1 — connect, open bottle valve, pump fills the line and the 3 cc chamber bottom -> top */
   sFill() {
-    const names = ['transfer pump → SPS/PDS water side', 'SPS/PDS sample outlet → viscometer BOTTOM inlet', 'viscometer TOP outlet → bleed valve → waste line'];
+    const names = ['transfer pump → oil sample bottle water side', 'oil sample bottle outlet → viscometer BOTTOM inlet', 'viscometer TOP outlet → bleed valve → waste line'];
     const step = k => {
       if (k > 2) {
         this.setState({ connHot: -1, bTxt: 'OPENING', msg: 'Lines connected. Opening the bottle valve — the bottle (5,500 psig) opens to the line; bleed valve stays CLOSED.' });
@@ -407,7 +407,7 @@ class Component extends DCLogic {
     let t, d, w, e, o;
     if (i === 0) {
       t = 'Step 1 · Connect & fill the 3 cc chamber';
-      d = 'The SPS/PDS bottle is already at 5,500 psig, held by the transfer pump on the water side. Opening the bottle valve lets oil flow through the line into the BOTTOM inlet of the evacuated viscometer, filling the 3 cc chamber from bottom to top. With the bleed valve closed, the viscometer equalizes with the bottle at 5,500 psig as soon as sample enters it.';
+      d = 'The oil sample bottle is already at 5,500 psig, held by the transfer pump on the water side. Opening the bottle valve lets oil flow through the line into the BOTTOM inlet of the evacuated viscometer, filling the 3 cc chamber from bottom to top. With the bleed valve closed, the viscometer equalizes with the bottle at 5,500 psig as soon as sample enters it.';
       w = 'Filling from the bottom lets the rising oil sweep the chamber, so the falling body ends up completely surrounded by liquid. No separate pressurization is needed — the sample stays at its single-phase pressure throughout.';
       e = 'Piston rising in the bottle, oil front travelling along the line, level rising in the chamber; PT reading 5,500 psig once sample enters.'; o = 'Oil stops at the CLOSED bleed valve on the top outlet; pressure stays at 5,500 psig.';
     } else if (i === 1) {
@@ -1096,7 +1096,7 @@ DC.define('StageViscSingle', {
             <rect x="${unK(500)}" y="556" width="${r1(170 / RIG_K)}" height="8" rx="2" fill="#1a2030" stroke="#0a0e16"></rect>
             <ellipse cx="585" cy="566" rx="${r1(90 / RIG_K)}" ry="6" fill="rgba(0,0,0,.3)"></ellipse>
             <!-- approved Oil Sample Bottle (components/BottleArt.js); fills / piston in bore units -->
-            ${BottleArt.oil('vs', { x: BOT_C[0], y: BOT_C[1], s: BOT_S, bd: 'oil', ctx: 'SPS/PDS sample bottle · feeding the viscometer',
+            ${BottleArt.oil('vs', { x: BOT_C[0], y: BOT_C[1], s: BOT_S, bd: 'oil', ctx: 'Oil sample bottle · feeding the viscometer',
               inner: `<rect x="-22" y="-226" width="44" height="{{ vsOilH }}" fill="url(#vsOil)"></rect>
               <rect x="-22" y="{{ vsWaterY }}" width="44" height="{{ vsWaterH }}" fill="url(#vsDrive)"></rect>
               <g transform="translate(0,{{ vsPistDY }})">${PBDraw.mixRing('vs', 0, -226 - 8.5)}${PBDraw.piston('vs', -226)}</g>`,
@@ -1109,10 +1109,10 @@ DC.define('StageViscSingle', {
             <rect x="604" y="${r1(OUT_T)}" width="62" height="15" rx="3" fill="{{ vsTB.fill }}" stroke="{{ vsTB.stroke }}"></rect>
             <text x="635" y="${r1(OUT_T + 11)}" text-anchor="middle" style="${MONO} font-size:9px; font-weight:600; letter-spacing:.6px; fill:{{ vsTB.color }};">{{ vsTB.text }}</text>
           </g>
-          <text x="${BTX(676) - RIG_DX + 30}" y="146" style="${ESS}">SPS/PDS</text>
-          <text x="${BTX(676) - RIG_DX + 30}" y="164" style="${SUB}">sample bottle</text>
+          <text x="${BTX(676) - RIG_DX + 30}" y="146" style="${ESS}">Oil Sample</text>
+          <text x="${BTX(676) - RIG_DX + 30}" y="164" style="${SUB}">bottle</text>
           <text x="${BTX(676) - RIG_DX + 30}" y="182" style="${MONO} font-size:12.5px; font-weight:700; fill:var(--grn);">${fmtP(BOTTLE_P)} psig</text>
-          ${BottleArt.pill(BTX(676) - RIG_DX + 30, 194, 'oil', { ctx: 'SPS/PDS sample bottle · feeding the viscometer' })}
+          ${BottleArt.pill(BTX(676) - RIG_DX + 30, 194, 'oil', { ctx: 'Oil sample bottle · feeding the viscometer' })}
 
           <!-- transfer pump (project drawing, mirrored to sit RIGHT of the bottle; its outlet faces the bottle) -->
           <g style="{{ vsDimPump }}"><g transform="translate(1170,0) scale(-1,1)">
