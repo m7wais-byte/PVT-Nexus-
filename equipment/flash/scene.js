@@ -139,10 +139,24 @@
       // past the closed Flask Valve, into the balloon; excess on to the 2,000 cc section
       if (Lo.cellPort) {
         var pre2 = Lo.cellLane ? F.geo('', Lo.cellLane) : null;
-        var cb = chain([pre2, ext.sample, tgeo(Lo.fu, FU.RT.capBal)]), cgs = chain([pre2, ext.sample, tgeo(Lo.fu, FU.RT.capGas), ext.gas, gaIn('2k')]);
-        var jL = (pre2 ? pre2.L : 0) + ext.sample.L + FU.G.balT * Lo.fu.s;
-        routes.capBal = { g: cb, kind: 'gas', gate: ['pumpA'], kf: [[0.13, 0], [0.38, jL], [0.50, jL], [0.56, cb.L]] };
-        routes.capGas = { g: cgs, kind: 'gas', gate: ['gaso'], kf: [[0.72, jL], [0.78, cgs.L]] };
+        var capBal = FU.RT.capBal, capGas = FU.RT.capGas;
+        if (Lo.gasThroughFlask) {
+          // Separator only: enter the glass through the left side of the shared bore,
+          // cross the flask headspace, then return up the right side before collection.
+          var tip = FU.G.tip, ix = FU.RT.sIn.end[0], ox = FU.RT.gOut.start[0];
+          var headspace = F.path(ix, tip).C(ix - 24, tip + 40, ox + 24, tip + 40, ox, tip).end();
+          var toBalloon = F.path(FU.G.W, FU.G.M).H(FU.G.balT + 8)
+            .turn(FU.G.balT, FU.G.M, FU.G.balT, FU.G.vesNeck, 8)
+            .V(FU.G.ves.y - Parts.VG.h + 4).end();
+          capGas = chain([FU.RT.sIn, headspace, FU.RT.gOut]);
+          capBal = chain([capGas, toBalloon]);
+        }
+        var cb = chain([pre2, ext.sample, tgeo(Lo.fu, capBal)]), cgs = chain([pre2, ext.sample, tgeo(Lo.fu, capGas), ext.gas, gaIn('2k')]);
+        var jL = Lo.gasThroughFlask ? cb.L - (FU.G.ves.y - Parts.VG.h + 4 - FU.G.M) * Lo.fu.s
+          : (pre2 ? pre2.L : 0) + ext.sample.L + FU.G.balT * Lo.fu.s;
+        var capGate = Lo.gasThroughFlask ? ['pumpA', 'flask'] : ['pumpA'];
+        routes.capBal = { g: cb, kind: 'gas', gate: capGate, kf: [[0.13, 0], [0.38, jL], [0.50, jL], [0.56, cb.L]] };
+        routes.capGas = { g: cgs, kind: 'gas', gate: Lo.gasThroughFlask ? ['gaso', 'flask'] : ['gaso'], kf: [[0.72, jL], [0.78, cgs.L]] };
       }
     } else if (Lo.ga) {
       var g2 = gaIn('2k'), g1 = gaIn('1k');
@@ -282,3 +296,4 @@
 
   window.Scene = { build: build, LAYOUT: LAYOUT, tf: tf };
 })();
+
