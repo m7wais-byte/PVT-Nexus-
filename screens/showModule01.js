@@ -12,8 +12,8 @@ DC.slot('showModule01', `<sc-if value="{{ showModule01 }}" hint-placeholder-val=
         <div class="m01-btns" style="{{ m01BtnColStyle }}">
           <sc-if value="{{ actBh }}" hint-placeholder-val="{{ false }}">
           <div style="display:flex; gap:6px; background:var(--track); border:1px solid var(--line2); border-radius:9px; padding:4px;">
-            <button onclick="{{ selOpenHole }}" style="{{ mbOpenHole }}" class="nav-btn" style-hover="border-color:var(--blue);">Open Hole · MRMS</button>
-            <button onclick="{{ selCasedHole }}" style="{{ mbCasedHole }}" class="nav-btn" style-hover="border-color:var(--blue);">Cased Hole · SRS</button>
+            <button onclick="{{ selOpenHole }}" style="{{ mbOpenHole }}" class="nav-btn" style-hover="border-color:var(--blue);">Open Hole</button>
+            <button onclick="{{ selCasedHole }}" style="{{ mbCasedHole }}" class="nav-btn" style-hover="border-color:var(--blue);">Cased Hole</button>
           </div>
           </sc-if>
           <div style="display:flex; justify-content:flex-end; gap:6px; flex-wrap:nowrap;">

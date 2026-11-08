@@ -40,12 +40,12 @@
   function frame() {
     root.innerHTML =
       '<header class="bd-head">' +
-        '<div class="bd-titles"><span class="bd-eyebrow">SPMC Details</span><h2 data-ref="name"></h2><span class="bd-variant">SPMC-T · educational</span></div>' +
+        '<div class="bd-titles"><span class="bd-eyebrow">Sample Chamber Details</span><h2 data-ref="name"></h2><span class="bd-variant">Educational Representation</span></div>' +
         '<p class="bd-ctx" data-ref="ctx"></p>' +
         '<button type="button" class="ui-btn ui-btn-primary bd-close" data-act="close">' + BACK + '<span>Back to Transfer</span></button>' +
       '</header>' +
       '<div class="eq-bar">' +
-        '<span class="sd-subs">' + seg('sub', [['module', 'MRMS module assembly'], ['spmc', 'SPMC chamber']]) + '</span>' +
+        '<span class="sd-subs">' + seg('sub', [['module', 'Sample Chamber Assembly'], ['spmc', 'Sample Chamber']]) + '</span>' +
         '<span class="mr-insp">' + seg('mode', [['2d', '2D technical view'], ['3d', '3D view']]) +
         seg('view', [['exterior', 'Exterior'], ['cutaway', 'Cutaway']]) +
         seg('orient', [['upright', 'Upright'], ['horizontal', 'Horizontal']]) + '</span>' +
@@ -54,7 +54,7 @@
       '</div>' +
       '<div class="eq-main">' +
         '<section class="eq-stage" data-ref="stage">' +
-          '<div class="eq-stage-head"><button type="button" class="ui-btn ui-btn-ghost mr-back" data-act="toModule" data-ref="back" hidden>' + BACK + '<span>Back to MRMS assembly</span></button>' +
+          '<div class="eq-stage-head"><button type="button" class="ui-btn ui-btn-ghost mr-back" data-act="toModule" data-ref="back" hidden>' + BACK + '<span>Back to Sample Chamber Assembly</span></button>' +
             '<h3 data-ref="title"></h3><span class="eq-tag" data-ref="tag"></span><span class="eq-basis" data-ref="basis"></span>' +
             '<span class="eq-3d-only mr-cam" hidden><label class="eq-sw"><input type="checkbox" data-sw="auto"><span></span>Auto-rotate</label>' +
             '<button type="button" class="ui-btn ui-btn-ghost" data-act="reset">Reset camera</button></span></div>' +
@@ -92,19 +92,19 @@
     root.querySelectorAll('.eq-3d-only').forEach(function (x) { x.hidden = !three; });
     var st = ref('stage'); st.classList.toggle('eq-bg-light', b === 'light'); st.classList.toggle('eq-bg-dark', b === 'dark');
     var item = mod ? E().mrms : E().spmc;
-    ref('name').textContent = mod ? 'MRMS — Multisample Module' : 'SPMC — Single-Phase Multisample Chamber';
-    ref('ctx').textContent = S.ctx ? 'On this page: ' + S.ctx : '';
+    ref('name').textContent = mod ? 'Sample Chamber Assembly' : 'Sample Chamber';
+    ref('ctx').textContent = 'Explore the sample chamber assembly and its individual chambers.';
     ref('back').hidden = S.sub !== 'spmc';
-    ref('title').textContent = mod ? 'MRMS module assembly' : 'SPMC chamber';
+    ref('title').textContent = mod ? 'Sample Chamber Assembly' : 'Sample Chamber';
     ref('tag').textContent = !mod ? 'CHAMBER ' + S.chamber + ' · ' + (cut ? (three ? 'QUARTER SECTION' : 'SECTION ON AXIS') : 'EXTERIOR')
       : cut ? (three ? 'CUTAWAY · HALF SECTION' : 'CUTAWAY · SECTION ON AXIS') : 'EXTERIOR';
     ref('tag').className = 'eq-tag' + (cut ? ' cut' : '');
-    ref('basis').textContent = mod ? 'Educational representation · six chambers' : 'SPMC-T · educational representation';
+    ref('basis').textContent = mod ? 'Educational representation · six chambers' : 'Educational representation';
     ref('help').textContent = three ? 'Drag to rotate · scroll or pinch to zoom · right-drag or two-finger drag to pan · click a part to inspect it' + (mod ? ' · double-click a chamber to open it' : '')
       : 'Click a label or a name in the parts list to read about that part' + (mod ? ' · double-click a chamber to open it' : '');
     ref('d2').hidden = three; ref('d3').hidden = !three;
     legend(cut);
-    ref('aboutH').textContent = mod ? 'About the MRMS' : 'About the SPMC';
+    ref('aboutH').textContent = mod ? 'About the sample chamber assembly' : 'About the sample chamber';
     ref('about').innerHTML = item.about.map(function (t) { return '<p>' + esc(t) + '</p>'; }).join('') + '<p class="eq-basis2">' + esc(item.basis) + '</p>';
     if (!three) draw2d();
     partsList(); info();
@@ -121,7 +121,7 @@
   function draw2d() {
     var mod = S.sub === 'module';
     ref('d2').innerHTML = window.MRDraw.svg(mod ? 'module' : 'spmc', S.view, S.orient, { ns: 'sdmr', labels: S.labels, selected: S.selected, num: S.chamber,
-      title: (mod ? 'MRMS module' : 'SPMC chamber') + ', ' + S.view + ' view' });
+      title: (mod ? 'Sample chamber assembly' : 'Sample chamber') + ', ' + S.view + ' view' });
   }
   function partsList() {
     var P = parts(), el = ref('parts');
@@ -138,7 +138,7 @@
     var p = S.selected && parts()[S.selected], el = ref('info');
     if (!p) {
       el.innerHTML = S.sub === 'module'
-        ? '<h4>Select a part or chamber</h4><p>Click a chamber, a label or a name in the parts list. Open any of the six chambers to inspect the SPMC in detail.</p>'
+        ? '<h4>Select a part or chamber</h4><p>Click a chamber, a label or an item in the parts list to explore its details. Open any of the six chambers to inspect it in detail.</p>'
         : '<h4>Select a part</h4><p>Click a label' + (S.mode === '3d' ? ', a part on the model,' : '') + ' or a name in the parts list.</p>';
       return;
     }
@@ -242,7 +242,7 @@
     S.sub = 'spmc'; S.chamber = 1; S.view = 'cutaway'; S.selected = null; S.ctx = ctx || '';
     ov = document.createElement('div'); ov.className = 'bd-ov';
     root = document.createElement('div'); root.className = 'bd-win eq';
-    root.setAttribute('role', 'dialog'); root.setAttribute('aria-modal', 'true'); root.setAttribute('aria-label', 'SPMC Details');
+    root.setAttribute('role', 'dialog'); root.setAttribute('aria-modal', 'true'); root.setAttribute('aria-label', 'Sample Chamber Details');
     ov.appendChild(root); document.body.appendChild(ov);
     document.documentElement.classList.add('bd-open');
     ov.addEventListener('click', onClick); ov.addEventListener('keydown', onKey); ov.addEventListener('change', onChange);

@@ -4,7 +4,7 @@ var MX_STAND = BottleArt.stand('mx', { x: 300, rodX: 204, ground: 512, top: 196,
 /* Source SPMC chamber: sample inlet tip at the transfer line (410, 92); end connection (nitrogen end) on the right */
 var MX_SPMC = { x: 605.6, y: 92, s: 0.6, rot: -90 };
 var MX_SPMC_END = MRDraw.toPage(MX_SPMC, 0, MRDraw.G.headO + 20);            // (792.8, 92) end-connection tip
-var MX_SPMC_CTX = 'SPMC chamber · source of the sample in this transfer';
+var MX_SPMC_CTX = 'Sample chamber · source of the sample in this transfer';
 var MX_DRIVE_D = 'M846 404 V' + MX_SPMC_END[1] + ' H' + MX_SPMC_END[0];        // pump outlet -> SPMC end connection (length 365.2)
 DC.slot('showXfer', `<sc-if value="{{ showXfer }}" hint-placeholder-val="{{ false }}">
     <div data-screen-label="Module 01b — Bottom Hole Sample Transfer" class="pg pg-stack">
@@ -15,9 +15,9 @@ DC.slot('showXfer', `<sc-if value="{{ showXfer }}" hint-placeholder-val="{{ fals
           <span class="pg-eyebrow">Validation</span>
           <h2 class="pg-title">Bottom Hole Sample Transfer</h2>
           <span style="align-self:center; flex:0 0 auto; display:inline-flex; align-items:center; gap:7px; font-family:'IBM Plex Mono'; font-size:11px; color:{{ mxLiveColor }};"><span style="width:7px; height:7px; border-radius:50%; background:{{ mxLiveColor }}; box-shadow:0 0 8px {{ mxLiveColor }};"></span>{{ mxLiveLabel }}</span>
-          <p class="pg-desc">SPMC chamber (from the MDT MRMS) → SPS/PDS bottle, before laboratory QC.</p>
+          <p class="pg-desc">Sample transfer from the sample chamber to the oil sample bottle before laboratory validation.</p>
         </div>
-        <div class="pg-end"><button type="button" class="bd-btn" data-spmc-open="" data-spmc-ctx="${MX_SPMC_CTX}">SPMC Details</button><button type="button" class="bd-btn bd-inline" data-bd-open="oil" data-bd-ctx="SPS/PDS receiving bottle">Bottle Details</button></div>
+        <div class="pg-end"><button type="button" class="bd-btn" data-spmc-open="" data-spmc-ctx="${MX_SPMC_CTX}">Sample Chamber Details</button><button type="button" class="bd-btn bd-inline" data-bd-open="oil" data-bd-ctx="Oil sample bottle · receiving the transferred sample">Bottle Details</button></div>
       </div>
 
       <div class="lab-body">
@@ -89,7 +89,7 @@ DC.slot('showXfer', `<sc-if value="{{ showXfer }}" hint-placeholder-val="{{ fals
                  Fluids stay separated by the pistons: sample | sample piston | compensating fluid (buffer) |
                  nitrogen piston | drive fluid. The pump connects at the end connection (MX_SPMC_END) and pushes the
                  piston train, so only the sample leaves through the inlet. Clicking the chamber opens SPMC Details. -->
-            ${MRDraw.xfer('mxs', Object.assign({ attrs: ' class="sd-hit" data-spmc-open="" data-spmc-ctx="' + MX_SPMC_CTX + '" role="button" tabindex="0" aria-label="SPMC Details"',
+            ${MRDraw.xfer('mxs', Object.assign({ attrs: ' class="sd-hit" data-spmc-open="" data-spmc-ctx="' + MX_SPMC_CTX + '" role="button" tabindex="0" aria-label="Sample Chamber Details"',
               live: { res: '{{ mxSpResStyle }}', piston: '{{ mxSpPistonStyle }}', drive: '{{ mxSpDriveStyle }}', inlet: '{{ mxSpInletStyle }}',
                       isoOpen: '{{ mxSpIsoStyle }}', port: '{{ mxSpPortStyle }}' } }, MX_SPMC))}
             <g font-family="IBM Plex Sans" font-size="8.5" font-weight="700" letter-spacing=".5" pointer-events="none">
@@ -97,12 +97,12 @@ DC.slot('showXfer', `<sc-if value="{{ showXfer }}" hint-placeholder-val="{{ fals
               <text x="637" y="94.6" text-anchor="middle" font-size="7.4" fill="#1d1640" style="{{ mxBufferLabelStyle }}">BUFFER</text>
               <text x="706" y="95" text-anchor="middle" fill="#07202e">DRIVE</text>
             </g>
-            <text x="520" y="148" text-anchor="middle" font-family="IBM Plex Sans" font-size="13" font-weight="600" letter-spacing=".4" fill="var(--lbl)">SPMC Chamber</text>
-            <text x="520" y="163" text-anchor="middle" font-family="IBM Plex Mono" font-size="10" fill="var(--mut)">from the MRMS · source</text>
-            <g class="sd-pill" data-spmc-open="" data-spmc-ctx="${MX_SPMC_CTX}" role="button" tabindex="0" aria-label="SPMC Details" transform="translate(652 137)">
-              <rect x="0" y="0" width="104" height="22" rx="11"></rect>
+            <text x="520" y="148" text-anchor="middle" font-family="IBM Plex Sans" font-size="13" font-weight="600" letter-spacing=".4" fill="var(--lbl)">Sample Chamber</text>
+            <text x="520" y="163" text-anchor="middle" font-family="IBM Plex Mono" font-size="10" fill="var(--mut)">from the sample chamber assembly</text>
+            <g class="sd-pill" data-spmc-open="" data-spmc-ctx="${MX_SPMC_CTX}" role="button" tabindex="0" aria-label="Sample Chamber Details" transform="translate(652 137)">
+              <rect x="0" y="0" width="166" height="22" rx="11"></rect>
               <circle cx="12" cy="11" r="5.2" fill="none" stroke-width="1.4"></circle><path d="M12 9.6 V14 M12 7.6 V7.7" stroke-width="1.5" stroke-linecap="round" fill="none"></path>
-              <text x="59" y="15" text-anchor="middle">SPMC Details</text>
+              <text x="91" y="15" text-anchor="middle">Sample Chamber Details</text>
             </g>
 
             <!-- ===== TRANSFER LINE: SPMC SAMPLE INLET -> SIDE PORT OF THE BOTTLE SAMPLE VALVE (approved right-angle valve) ===== -->
@@ -130,11 +130,11 @@ DC.slot('showXfer', `<sc-if value="{{ showXfer }}" hint-placeholder-val="{{ fals
                  centre (300, 300), scale 0.55, valves face right; Main.js fills / piston are in the bottle's bore units.
                  Support stand (BottleArt.stand): lower cap rests on a fork ledge, one clamp on the barrel. -->
             ${MX_STAND.back}
-            ${BottleArt.oil('mx', { x: 300, y: 300, s: 0.55, bd: 'oil', ctx: 'SPS/PDS sample bottle · receiving the transferred sample',
+            ${BottleArt.oil('mx', { x: 300, y: 300, s: 0.55, bd: 'oil', ctx: 'Oil sample bottle · receiving the transferred sample',
               sample: '{{ mxBotFluidStyle }}', drive: '{{ mxBotWaterStyle }}', piston: '{{ mxBotPistonStyle }}',
               ringT: '{{ mxValveRing }}', needleT: '{{ mxBotNeedleT }}', ringB: '{{ mxValveRing }}', needleB: '{{ mxBotNeedleT }}' })}
             ${MX_STAND.front}
-            <text x="186" y="300" text-anchor="end" font-family="IBM Plex Sans" font-size="13" font-weight="600" letter-spacing=".4" fill="var(--lbl)">SPS/PDS</text>
+            <text x="186" y="300" text-anchor="end" font-family="IBM Plex Sans" font-size="13" font-weight="600" letter-spacing=".4" fill="var(--lbl)">Oil Sample Bottle</text>
             <text x="186" y="316" text-anchor="end" font-family="IBM Plex Mono" font-size="10" fill="var(--mut)">~800 cc</text>
 
             <!-- displaced water out of the driving-side valve side port (326.4, 454.5) to the receiver -->

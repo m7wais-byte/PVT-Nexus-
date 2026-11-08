@@ -31,7 +31,7 @@ DC.slot('showTest', `<sc-if value="{{ showTest }}" hint-placeholder-val="{{ fals
                 <span class="vl-chip">{{ valSrcContext }}</span>
                 <p class="pg-desc">Vacuum the cell, charge 80 cc into Pump A, hold 5,000 psi and agitate A ↔ B until stable</p>
               </div>
-              <div class="pg-end"><button type="button" class="bd-btn" data-bd-open="oil" data-bd-ctx="SPS/PDS sample bottle · charging the PVT cell">Bottle Details</button><button type="button" class="bd-btn bd-inline" data-cd-open="" data-cd-ctx="Charge · sample from the SPS/PDS bottle enters at Port L">Cell Details</button></div>
+              <div class="pg-end"><button type="button" class="bd-btn" data-bd-open="oil" data-bd-ctx="Oil sample bottle · charging the PVT cell">Bottle Details</button><button type="button" class="bd-btn bd-inline" data-cd-open="" data-cd-ctx="Charge · sample from the SPS/PDS bottle enters at Port L">Cell Details</button></div>
             </div>
 
             <div class="lab-body">
@@ -64,14 +64,14 @@ DC.slot('showTest', `<sc-if value="{{ showTest }}" hint-placeholder-val="{{ fals
                   <!-- SPS/PDS bottle : technical cutaway, enlarged focal point -->
                   <!-- approved Oil Sample Bottle, centre (562.44, 330), scale 0.47, valves face right: the sample-valve side port at
                        (585, 197.9) feeds the charge line, the driving-side port at (585, 462.1) the pump line. Fills / piston in bore units from Main.js -->
-                  ${BottleArt.oil('c', { x: 562.44, y: 330, s: 0.47, bd: 'oil', ctx: 'SPS/PDS sample bottle · charging the PVT cell',
+                  ${BottleArt.oil('c', { x: 562.44, y: 330, s: 0.47, bd: 'oil', ctx: 'Oil sample bottle · charging the PVT cell',
                     inner: `<rect x="-22" y="-226" width="44" height="{{ chargeOilH }}" fill="url(#cOil)" style="transition:height .12s linear;"></rect>
                     <rect x="-22" y="{{ chargeWaterY }}" width="44" height="{{ chargeWaterH }}" fill="url(#cDrive)" style="transition:y .12s linear,height .12s linear;"></rect>
                     <g style="{{ chargePistonStyle }}">${PBDraw.mixRing('c', 0, -226 - 8.5)}${PBDraw.piston('c', -226)}</g>`,
                     ringT: '{{ chargeBtlRing }}', needleT: '{{ chargeBtlNeedle }}', ringB: '{{ chargePumpRing }}', needleB: '{{ chargePumpNeedle }}' })}
 
                   ${C_STAND.front}
-                  <text x="596" y="150" font-family="IBM Plex Sans" font-size="14" font-weight="600" fill="var(--txt)">SPS/PDS</text>
+                  <text x="596" y="150" font-family="IBM Plex Sans" font-size="14" font-weight="600" fill="var(--txt)">Oil Sample Bottle</text>
                   <!-- left-side callout labels -->
                   <line x1="545" y1="258" x2="509" y2="258" stroke="var(--line2)" stroke-width="1"></line>
                   <text x="505" y="255" text-anchor="end" font-family="IBM Plex Sans" font-size="12" fill="var(--txt2)">Sample side</text>
@@ -205,7 +205,7 @@ DC.slot('showTest', `<sc-if value="{{ showTest }}" hint-placeholder-val="{{ fals
                   <foreignObject x="866" y="145.5" width="164" height="14"><div style="margin:0; display:flex; align-items:center; height:100%; white-space:nowrap; line-height:1.1; font-family:'IBM Plex Mono',ui-monospace,monospace;justify-content:center;font-size:9px; letter-spacing:.3px; color:var(--btnt);">AGITATING&nbsp;{{ agDirText }}&nbsp;· 10 cc/min</div></foreignObject>
                   </sc-if>
                   <text x="948" y="100" text-anchor="middle" font-family="IBM Plex Sans" font-size="18" font-weight="600" fill="var(--txt)">PVT Cell</text>
-                  ${PVTCellArt.pill(996, 86, 'Charge · sample from the SPS/PDS bottle enters at Port L')}
+                  ${PVTCellArt.pill(996, 86, 'Charge · sample from the oil sample bottle enters at Port L')}
                   <foreignObject x="828" y="72" width="240" height="14"><div style="margin:0; display:flex; align-items:center; height:100%; white-space:nowrap; line-height:1.1; font-family:'IBM Plex Mono',ui-monospace,monospace;justify-content:center;font-size:10px; letter-spacing:.8px; overflow:hidden; color:{{ cellStatusColor }};">{{ cellStateShort }}</div></foreignObject>
                 </svg>
                 </div>

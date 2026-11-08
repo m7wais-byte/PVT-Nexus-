@@ -15,7 +15,7 @@ DC.slot('showRestore', `<sc-if value="{{ showRestore }}" hint-placeholder-val="{
             </sc-if>
         </div>
         <div class="pg-end">
-          <button type="button" class="bd-btn" data-bd-open="oil" data-bd-ctx="SPS/PDS sample bottle under validation · water driving side">Bottle Details</button>
+          <button type="button" class="bd-btn" data-bd-open="oil" data-bd-ctx="Oil sample bottle under validation · water driving side">Bottle Details</button>
           <span style="width:1px; height:18px; background:var(--line2); flex:0 0 auto;"></span>
           <span style="font-family:'IBM Plex Mono'; font-size:10px; letter-spacing:.8px; text-transform:uppercase; color:var(--mut);">Sample Source</span>
           <span style="display:flex; align-items:center; gap:6px;">
@@ -83,7 +83,7 @@ DC.slot('showRestore', `<sc-if value="{{ showRestore }}" hint-placeholder-val="{
             <!-- ===== SPS/PDS BOTTLE = approved Oil Sample Bottle, INVERTED for restoration (water side up, oil sample down) =====
                  centre (300, 238), scale 0.55, rotate 180 + flip (valves face right on Validation pages). Bore contents are drawn in the screen-aligned bottle frame
                  (x -22..22, y -226..226, y down); Main.js computes fills, piston and step-3 bands in that frame. -->
-            ${BottleArt.oil('q', { x: 300, y: 238, s: 0.55, rot: 180, flip: true, screen: true, bd: 'oil', ctx: 'SPS/PDS sample bottle · inverted for restoration (driving side up)',
+            ${BottleArt.oil('q', { x: 300, y: 238, s: 0.55, rot: 180, flip: true, screen: true, bd: 'oil', ctx: 'Oil sample bottle · inverted for restoration (driving side up)',
               ringB: '{{ rsValveRing }}', needleB: '{{ rsNeedleStyle }}', ringT: '{{ qc3SvRing }}', needleT: '{{ qc3SvNeedleStyle }}',
               inner: `<rect x="-22" y="-226" width="44" height="452" fill="url(#qDrive)" style="{{ qcWaterStyle }}"></rect>
               <rect x="-22" y="-226" width="44" height="452" fill="url(#qOil)" style="{{ qcOilStyle }}"></rect>
@@ -97,7 +97,7 @@ DC.slot('showRestore', `<sc-if value="{{ showRestore }}" hint-placeholder-val="{
               </sc-if>
               <g style="{{ qcPistonStyle }}">${PBDraw.piston('q', -226)}</g>` })}
             ${QC_STAND.front}
-            <text x="270" y="58" text-anchor="end" font-family="IBM Plex Mono" font-size="9" letter-spacing="1.2" fill="var(--cap2)">SPS/PDS · ~800 cc</text>
+            <text x="270" y="58" text-anchor="end" font-family="IBM Plex Mono" font-size="9" letter-spacing="1.2" fill="var(--cap2)">OIL SAMPLE BOTTLE · ~800 cc</text>
 
             <!-- ===== RESTORATION WATER FLOW: pump outlet -> up -> left along the injection line -> water-side valve side port ===== -->
             <path d="M765 288 V72 H346 V83.45 H326.4" fill="none" stroke="#5aa6d8" stroke-width="2.8" stroke-linejoin="round" stroke-dasharray="709 709" style="{{ rsFrontStyle }}"></path>

@@ -302,6 +302,7 @@
     var oil = S.fluid === 'oil';
     return '<div class="pv" data-fluid="' + S.fluid + '">'
       + '<div class="pv-top">'
+      + '<button type="button" class="pv-disc" id="pv-disc-btn" aria-haspopup="dialog" aria-controls="pv-disc-ov"><span aria-hidden="true">&#9432;</span> Disclaimer</button>'
       + '<div class="pv-hero">'
       + '<div class="pv-hero-l"><div class="pv-eyebrow"><span class="pv-rule"></span><span>PVT Calculator</span></div>'
       + '<div class="pv-titlerow"><h2 class="pv-title">' + (oil ? 'Oil Properties' : 'Gas Properties') + '</h2>'
@@ -324,6 +325,12 @@
       + '<div class="pv-ex-head"><div class="pv-ex-title" id="pv-ex-title"></div><div class="pv-ex-tag" id="pv-ex-tag"></div>'
       + '<button type="button" class="pv-ex-close" id="pv-ex-close" aria-label="Close explanation" title="Close (Esc)">&#10005;</button></div>'
       + '<div class="pv-ex-body" id="pv-ex-body"></div></div></aside></div>'
+      + '<div class="pv-disc-ov" id="pv-disc-ov" hidden><div class="pv-disc-win" role="dialog" aria-modal="true" aria-labelledby="pv-disc-title">'
+      + '<div class="pv-disc-head"><h3 id="pv-disc-title">Calculator disclaimer</h3>'
+      + '<button type="button" class="pv-ex-close" id="pv-disc-x" aria-label="Close disclaimer" title="Close (Esc)">&#10005;</button></div>'
+      + '<p>\u201cThis calculator uses published correlations and information from various sources for educational purposes. Results do not represent official VAPS advice or approved laboratory data and should be independently verified before engineering use.\u201d</p>'
+      + '<div class="pv-disc-foot"><button type="button" class="ui-btn ui-btn-primary" id="pv-disc-close">Close</button></div>'
+      + '</div></div>'
       + '</div>';
   }
 
@@ -1988,6 +1995,10 @@
     q('#pv-explain-btn').addEventListener('click', function () { setExplain(!S.explain); });
     q('#pv-ex-close').addEventListener('click', function () { setExplain(false); });
     q('#pv-reset').addEventListener('click', resetAll);
+    q('#pv-disc-btn').addEventListener('click', function () { setDisclaimer(true); });
+    q('#pv-disc-x').addEventListener('click', function () { setDisclaimer(false); });
+    q('#pv-disc-close').addEventListener('click', function () { setDisclaimer(false); });
+    q('#pv-disc-ov').addEventListener('click', function (e) { if (e.target === e.currentTarget) setDisclaimer(false); });
 
     root.addEventListener('click', function (e) {
       var g = e.target.closest('[data-goto]'); if (g) { var menu = q('.pv-more-tools'); if (menu) menu.open = false; S.view = g.getAttribute('data-goto'); renderView(); return; }
@@ -1995,7 +2006,17 @@
       var fo = e.target.closest('[data-focus]'); if (fo) { var el = q('#pv-in-' + fo.getAttribute('data-focus')) || q('#pv-m-' + fo.getAttribute('data-focus').replace(/Method$/, '')) || q('[data-err="' + fo.getAttribute('data-focus') + '"]'); if (el) { var d = el.parentElement; while (d && d !== root) { if (d.tagName === 'DETAILS') d.open = true; d = d.parentElement; } el.focus && el.focus(); } }
     });
   }
-  function onKey(e) { if (e.key === 'Escape' && S.explain && host && host.isConnected && !document.querySelector('.bd-ov, .cd-ov, .sd-ov')) setExplain(false); }
+  /* disclaimer modal: shown only on request; it only toggles visibility, so inputs, methods, units and results are untouched */
+  function discOpen() { var ov = q('#pv-disc-ov'); return !!ov && !ov.hidden; }
+  function setDisclaimer(on) {
+    var ov = q('#pv-disc-ov'), btn = q('#pv-disc-btn'); if (!ov) return;
+    ov.hidden = !on;
+    if (on) q('#pv-disc-close').focus(); else if (btn) btn.focus();
+  }
+  function onKey(e) {
+    if (e.key === 'Escape' && discOpen()) { e.preventDefault(); setDisclaimer(false); return; }
+    if (e.key === 'Escape' && S.explain && host && host.isConnected && !document.querySelector('.bd-ov, .cd-ov, .sd-ov')) setExplain(false);
+  }
 
   function bindView() {
     var f = F();
