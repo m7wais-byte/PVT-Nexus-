@@ -558,7 +558,7 @@ html[data-theme="light"] .fz-dim{opacity:.36;}
 .pv svg { flex:0 0 auto; }
 .pv-top { flex:0 0 auto; display:flex; flex-direction:column; gap:12px; }
 /* calculator disclaimer: subtle banner + centred modal (calculator only) */
-.pv-disc { align-self:stretch; display:flex; align-items:center; gap:6px; padding:5px 12px; border-radius:8px; cursor:pointer; text-align:left;
+.pv-disc { align-self:flex-end; flex:0 0 auto; width:fit-content; max-width:100%; display:inline-flex; align-items:center; white-space:nowrap; gap:6px; padding:5px 9px; border-radius:8px; cursor:pointer; text-align:left;
   font-family:inherit; font-size:11px; font-weight:500; letter-spacing:.2px; color:var(--mut); background:var(--chipbg); border:1px solid var(--line); }
 .pv-disc span { font-size:13px; line-height:1; }
 .pv-disc:hover, .pv-disc:focus-visible { color:var(--txt2); border-color:var(--line2); }
