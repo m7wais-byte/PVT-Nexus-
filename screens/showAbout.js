@@ -11,8 +11,13 @@ DC.slot('showAbout', `<sc-if value="{{ showAbout }}" hint-placeholder-val="{{ fa
       </div>
       <img src="assets/logo.png" alt="VAPS" style="width:100px; max-width:100%; height:auto;">
     </div>
-    <p style="max-width:780px; margin:24px 0 0; font-size:15px; color:var(--txt2); line-height:1.8;">An interactive PVT laboratory simulator developed during my training at Vision Advanced Petroleum Solutions. It brings sampling, sample validation and fluid testing together in a visual workflow that is easier to understand and practise.</p>
+    <p style="max-width:780px; margin:24px 0 0; font-size:15px; color:var(--txt2); line-height:1.8;">I developed PVT Nexus during my training at Vision Advanced Petroleum Solutions (VAPS), bringing my interest in petroleum engineering and digital learning into an interactive laboratory experience. The project connects field sampling, sample validation and detailed PVT analysis through visual, step-by-step simulations.</p>
   </header>
+  <section aria-label="About me" style="padding:clamp(20px,3vw,28px); border:1px solid var(--line); border-radius:14px; background:var(--panel);">
+    <h2 style="margin:0 0 12px; font-size:19px; color:var(--txt);">About me</h2>
+    <p style="max-width:780px; margin:0; font-size:14px; line-height:1.8; color:var(--txt2);">I am a Petroleum and Natural Gas Engineering graduate from Sultan Qaboos University, with an interest in reservoir engineering, fluid behaviour and practical digital tools. My aim is to make complex laboratory concepts clearer and more accessible through interactive learning.</p>
+    <div style="margin-top:18px; display:flex; align-items:baseline; flex-wrap:wrap; gap:6px 12px; font-size:14px; line-height:1.6;"><span style="color:var(--mut);">Feedback &amp; enquiries</span><a href="mailto:mohdhilalawaisi@gmail.com" style="color:var(--accb3); text-underline-offset:3px; overflow-wrap:anywhere;">mohdhilalawaisi@gmail.com</a></div>
+  </section>
   <section aria-label="What you can explore">
     <h2 style="margin:0 0 16px; font-size:19px; color:var(--txt);">What you can explore</h2>
     <ol style="list-style:none; padding:0; margin:0; display:flex; flex-wrap:wrap; gap:14px;"><li style="flex:1 1 170px; min-width:0; padding:20px; border:1px solid var(--line); border-radius:12px; background:var(--panel);"><span style="font-family:'IBM Plex Mono',monospace; font-size:12px; color:var(--accb3);">01</span><h3 style="font-size:16px; margin:16px 0 8px; color:var(--txt);">Sampling</h3><p style="font-size:13px; line-height:1.65; color:var(--txt2); margin:0;">Bottom-hole, wellhead and separator sampling.</p></li>
@@ -23,7 +28,6 @@ DC.slot('showAbout', `<sc-if value="{{ showAbout }}" hint-placeholder-val="{{ fa
   </section>
   <footer style="display:flex; flex-wrap:wrap; justify-content:space-between; gap:10px 28px; padding:18px 0 0; border-top:1px solid var(--line); font-size:12px; line-height:1.7; color:var(--txt2);">
     <span>Training simulator · Illustrative examples · 2026</span>
-    <span>Original calculator files contributed by Khalid.</span>
   </footer>
 </main>
 </sc-if>`);
