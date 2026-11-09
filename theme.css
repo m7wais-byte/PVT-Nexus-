@@ -1494,6 +1494,9 @@ html[data-theme="light"] { --about-lead:#1f2a3a; --about-body:#2f3c4e; --about-n
 .about-flow ol::before { content:""; position:absolute; height:1px; background:var(--line2); top:28px; left:16.667%; right:16.667%; }
 .about-flow li { position:relative; flex:1; min-width:0; display:flex; flex-direction:column; align-items:center; gap:12px; text-align:center; font-size:16px; font-weight:500; line-height:1.4; color:var(--txt); }
 .about-flow-icon { position:relative; display:grid; place-items:center; width:56px; height:56px; background:var(--panel); border:1px solid var(--line2); border-radius:50%; color:var(--amb); }
+.about-flow-txt { display:flex; flex-direction:column; gap:4px; }
+.about-flow-txt strong { font-weight:600; }
+.about-flow-txt small { font-size:13.5px; font-weight:400; line-height:1.45; color:var(--about-note); }
 .about-flow li:nth-child(2) .about-flow-icon { color:var(--teal); }
 .about-flow li:nth-child(3) .about-flow-icon { color:var(--blue); }
 .about-fit .about-flow + p { margin-top:18px !important; max-width:none !important; }
@@ -1516,5 +1519,6 @@ html[data-theme="light"] { --about-lead:#1f2a3a; --about-body:#2f3c4e; --about-n
   .about-fit .about-intro p { font-size:14px !important; line-height:1.55 !important; }
   .about-fit .about-intro > div > p:first-child { font-size:11px !important; letter-spacing:.7px !important; }
   .about-flow li { font-size:12px; padding:0 4px; }
+  .about-flow-txt small { font-size:11px; }
   .about-fit .about-flow + p { font-size:13px !important; line-height:1.5 !important; }
 }
