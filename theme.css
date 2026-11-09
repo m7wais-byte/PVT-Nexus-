@@ -1500,6 +1500,23 @@ html[data-theme="light"] { --about-lead:#1f2a3a; --about-body:#2f3c4e; --about-n
 .about-flow li:nth-child(2) .about-flow-icon { color:var(--teal); }
 .about-flow li:nth-child(3) .about-flow-icon { color:var(--blue); }
 .about-fit .about-flow + p { margin-top:18px !important; max-width:none !important; }
+/* About interactivity: bottle part callouts + clickable learning steps */
+.about-bottle { flex-direction:column; align-items:center; gap:8px; outline:none; cursor:help; }
+.about-bottle .ab-row { display:flex; align-items:center; }
+.about-bottle svg.ab-parts { overflow:hidden; }
+.ab-part { opacity:0; transform:translateX(-10px); transition:opacity .25s ease, transform .25s ease; }
+.ab-part circle { fill:var(--accb3); }
+.ab-part line { stroke:var(--accb3); stroke-width:2; }
+.ab-part text { font-family:inherit; font-size:24px; font-weight:600; fill:var(--txt); }
+.about-bottle:hover .ab-part, .about-bottle:focus-visible .ab-part, .about-bottle:focus .ab-part { opacity:1; transform:none; }
+.ab-hint { font-size:12px; color:var(--about-note); transition:opacity .2s ease; }
+.about-bottle:hover .ab-hint, .about-bottle:focus .ab-hint { opacity:0; }
+.about-flow-btn { all:unset; box-sizing:border-box; width:100%; display:flex; flex-direction:column; align-items:center; gap:12px; padding:0 8px 6px; border-radius:12px; cursor:pointer; text-align:center; }
+.about-flow-btn .about-flow-icon { transition:transform .18s ease, border-color .18s ease, box-shadow .18s ease; }
+.about-flow-btn:hover .about-flow-icon, .about-flow-btn:focus-visible .about-flow-icon { transform:translateY(-3px); border-color:currentColor; box-shadow:0 6px 16px rgba(10,20,40,.10); }
+.about-flow-btn:focus-visible { outline:2px solid var(--accb3); outline-offset:4px; }
+.about-flow-go { font-style:normal; font-size:12.5px; font-weight:600; color:var(--accb3); opacity:0; transform:translateY(-3px); transition:opacity .18s ease, transform .18s ease; }
+.about-flow-btn:hover .about-flow-go, .about-flow-btn:focus-visible .about-flow-go { opacity:1; transform:none; }
 .about-fit footer { margin-top:16px !important; padding-top:12px !important; display:flex; flex-wrap:wrap; align-items:baseline; gap:4px 16px; }
 .about-fit footer p { margin:0 !important; }
 @media (max-height:760px) and (min-width:761px) {
@@ -1515,6 +1532,8 @@ html[data-theme="light"] { --about-lead:#1f2a3a; --about-body:#2f3c4e; --about-n
   .about-fit .about-intro { gap:12px !important; align-items:flex-start !important; }
   .about-fit .about-bottle { flex-basis:64px; }
   .about-fit .about-bottle svg { height:220px; width:64px; }
+  .about-bottle svg.ab-parts, .ab-hint { display:none; }
+  .about-flow-go { opacity:1; transform:none; }
   .about-fit h1 { font-size:26px !important; letter-spacing:-.6px !important; }
   .about-fit .about-intro p { font-size:14px !important; line-height:1.55 !important; }
   .about-fit .about-intro > div > p:first-child { font-size:11px !important; letter-spacing:.7px !important; }
