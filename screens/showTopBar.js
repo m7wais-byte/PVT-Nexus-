@@ -1,9 +1,11 @@
 /* screen: showTopBar  (3.6 KB) */
 DC.slot('showTopBar', `<sc-if value="{{ showTopBar }}" hint-placeholder-val="{{ false }}">
   <header class="tb" style="height:52px; flex:0 0 52px; background:var(--sidebar); border-bottom:1px solid var(--line); display:flex; align-items:center; gap:10px; padding:0 20px; position:sticky; top:0; z-index:50;">
+    <sc-if value="{{ !showDash }}" hint-placeholder-val="{{ true }}">
     <div style="display:flex; align-items:center; flex:0 0 auto;">
       <img class="tb-logo" src="assets/logo.png" alt="VAPS" style="height:34px; width:auto; display:block;">
     </div>
+    </sc-if>
 
     <sc-if value="{{ showNav }}" hint-placeholder-val="{{ false }}">
     <nav class="tb-nav" style="display:flex; align-items:center; gap:4px; flex:0 0 auto; margin-left:8px;">
