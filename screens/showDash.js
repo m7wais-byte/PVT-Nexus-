@@ -2,8 +2,11 @@
 DC.slot('showDash', `<sc-if value="{{ showDash }}" hint-placeholder-val="{{ false }}">
 
     <div class="dash" style="position:relative; height:var(--page-h); min-height:0; padding:56px; max-width:1600px; width:100%; margin:0 auto; display:flex; flex-direction:column; justify-content:center; gap:28px; box-sizing:border-box; overflow:auto; background:var(--bg);">
-      <div style="position:absolute; top:-140px; left:-40px; width:640px; height:640px; border-radius:50%; border:1px solid var(--line); pointer-events:none;"></div>
-      <div style="position:absolute; top:-40px; left:120px; width:420px; height:420px; border-radius:50%; border:1px solid var(--line); pointer-events:none;"></div>
+      <svg aria-hidden="true" width="1000" height="1000" viewBox="0 0 1000 1000" style="position:absolute; top:-300px; left:-120px; width:1000px; height:1000px; pointer-events:none; color:var(--blue);">
+        <defs><radialGradient id="dashHalo"><stop offset="0%" stop-color="currentColor" stop-opacity=".055"/><stop offset="100%" stop-color="currentColor" stop-opacity="0"/></radialGradient></defs>
+        <circle cx="500" cy="500" r="490" fill="url(#dashHalo)"/>
+        <g fill="none" stroke="currentColor" stroke-width="1.25"><circle cx="500" cy="500" r="310" opacity=".23"/><circle cx="500" cy="500" r="395" opacity=".16"/><circle cx="500" cy="500" r="480" opacity=".10"/></g>
+      </svg>
 
       <!-- hero -->
       <div style="position:relative; display:flex; flex-direction:column; padding:0 2px; flex:0 0 auto;">
