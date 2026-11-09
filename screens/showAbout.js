@@ -13,15 +13,27 @@ DC.slot('showAbout', `<sc-if value="{{ showAbout }}" hint-placeholder-val="{{ fa
       <a class="about-mail" href="mailto:mohdhilalawaisi@gmail.com">mohdhilalawaisi@gmail.com</a>
     </footer>
       </div>
-      <figure class="about-bottle" tabindex="0" aria-describedby="about-bottle-hint">
+      <figure class="about-bottle" style="--ab-g:${PBDraw.OIL.split};" tabindex="0" aria-describedby="about-bottle-hint">
         <div class="ab-row">
         <!-- approved Oil Sample Bottle (BottleArt / PBDraw, same drawing as Validation & Restoration), static cutaway:
              no Bottle Details trigger, no valve-state colours, piston parked at the drawing's default split -->
         <svg role="img" aria-labelledby="about-bottle-title" sc-camel-view-box="-72 -370 144 740" sc-camel-preserve-aspect-ratio="xMidYMid meet">
           <title id="about-bottle-title">Oil sample bottle (piston-type), cutaway view</title>
           <defs>${BottleArt.defs('ab')}</defs>
-          ${(function () { var st = BottleArt.styles(PBDraw.OIL.split, '0s');
-            return BottleArt.oil('ab', { x: 0, y: 0, s: 1, sample: st.sample, drive: st.drive, piston: st.piston }); })()}
+          ${(function () {
+            /* fill level g (sample share of the piston stroke) comes from --ab-g on the figure, so the step
+               hover script can move it; same geometry as BottleArt.styles (stroke 406, bore 452) */
+            var T = BottleArt.TRAVEL, H = BottleArt.H, tr = 'transition:transform var(--ab-dur,1.2s) ease;';
+            var nd = function (v) { return 'transform:translateY(calc(-7px * var(' + v + ',0))); transition:transform .3s ease;'; };
+            return BottleArt.oil('ab', { x: 0, y: 0, s: 1,
+              sample: 'transform:scaleY(calc(' + T / H + ' * var(--ab-g))); transform-box:fill-box; transform-origin:top;' + tr,
+              drive: 'transform:scaleY(calc((' + T + ' * (1 - var(--ab-g)) + 23) / ' + H + ')); transform-box:fill-box; transform-origin:bottom;' + tr,
+              piston: 'transform:translateY(calc(' + T + 'px * var(--ab-g)));' + tr,
+              needleT: nd('--ab-nt'), needleB: nd('--ab-nb') }); })()}
+          ${(function () {   /* flow arrows at the valve side outlets (BottleArt.oilPort: x 48, y -281 / 281) */
+            var A = function (cls, y, dir, col) { var a = dir > 0 ? 52 : 70, b = dir > 0 ? 70 : 52, h = dir > 0 ? b : b;
+              return '<g class="ab-flow ' + cls + '" stroke="' + col + '" fill="' + col + '"><line x1="' + a + '" y1="' + y + '" x2="' + (b - dir * 6) + '" y2="' + y + '" stroke-width="4" stroke-linecap="round"/><path d="M' + h + ' ' + y + ' l' + (-dir * 9) + ' -6 v12 Z" stroke="none"/></g>'; };
+            return A('ab-f-oil-in', -281, -1, '#c98a3a') + A('ab-f-drive-out', 281, 1, '#4f8fc4') + A('ab-f-drive-in', 281, -1, '#4f8fc4') + A('ab-f-oil-out', -281, 1, '#c98a3a'); })()}
         </svg>
         <!-- part callouts: same viewBox height as the bottle so each label sits level with its part (hover / focus to show) -->
         <svg class="ab-parts" aria-hidden="true" sc-camel-view-box="72 -370 215 740" sc-camel-preserve-aspect-ratio="xMinYMid meet">
@@ -32,8 +44,45 @@ DC.slot('showAbout', `<sc-if value="{{ showAbout }}" hint-placeholder-val="{{ fa
         <figcaption id="about-bottle-hint" class="ab-hint">Hover the bottle to see its parts</figcaption>
       </figure>
     </div>
-    <section class="about-flow" aria-label="Learning approach"><ol><li><button type="button" class="about-flow-btn" onclick="{{ goModule }}"><span class="about-flow-icon"><svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3s-6 7-6 11a6 6 0 0 0 12 0c0-4-6-11-6-11Z"/></svg></span><span class="about-flow-txt"><strong>Collect with care</strong><small>Sampling, bottle validation and restoration</small></span><em class="about-flow-go">Open →</em></button></li><li><button type="button" class="about-flow-btn" onclick="{{ goAnalysis }}"><span class="about-flow-icon"><svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3 8 3v6c0 5-8 9-8 9s-8-4-8-9V6l8-3Z"/><path d="m8 12 3 3 5-6"/></svg></span><span class="about-flow-txt"><strong>Understand the process</strong><small>PV, differential liberation, separator and viscosity tests</small></span><em class="about-flow-go">Open →</em></button></li><li><button type="button" class="about-flow-btn" onclick="{{ goReport }}"><span class="about-flow-icon"><svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 3v18h17M8 16l4-5 4 2 5-7"/></svg></span><span class="about-flow-txt"><strong>Explore the results</strong><small>Plots, calculations and the final PVT report</small></span><em class="about-flow-go">Open →</em></button></li></ol></section>
+    <section class="about-flow" aria-label="Learning approach"><ol><li><button type="button" class="about-flow-btn" data-ab-step="collect" onclick="{{ goModule }}"><span class="about-flow-icon"><svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3s-6 7-6 11a6 6 0 0 0 12 0c0-4-6-11-6-11Z"/></svg></span><span class="about-flow-txt"><strong>Collect with care</strong><small>Sampling, bottle validation and restoration</small></span><em class="about-flow-go">Open →</em></button></li><li><button type="button" class="about-flow-btn" data-ab-step="process" onclick="{{ goAnalysis }}"><span class="about-flow-icon"><svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3 8 3v6c0 5-8 9-8 9s-8-4-8-9V6l8-3Z"/><path d="m8 12 3 3 5-6"/></svg></span><span class="about-flow-txt"><strong>Understand the process</strong><small>PV, differential liberation, separator and viscosity tests</small></span><em class="about-flow-go">Open →</em></button></li><li><button type="button" class="about-flow-btn" data-ab-step="results" onclick="{{ goReport }}"><span class="about-flow-icon"><svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 3v18h17M8 16l4-5 4 2 5-7"/></svg></span><span class="about-flow-txt"><strong>Explore the results</strong><small>Plots, calculations and the final PVT report</small></span><em class="about-flow-go">Open →</em></button></li></ol></section>
     <p style="margin:32px 0 0; max-width:620px; font-size:14px; line-height:1.7; color:var(--about-note);">For training and demonstration only. Use independently verified laboratory data for engineering decisions.</p>
   </article>
 </main>
 </sc-if>`);
+
+
+/* About: hovering / focusing a learning step plays that stage on the bottle (display only, no process values).
+   collect  - sampling: bottle starts full of drive fluid, oil enters the top valve and pushes the
+              piston down, drive fluid leaves through the bottom valve
+   process  - transfer: drive fluid pumped in below pushes the piston up and the sample out of the
+              top valve to the PVT cell
+   results  - both valves closed, the remaining sample stays in the bottle                          */
+(function () {
+  var REST = (window.PBDraw && PBDraw.OIL.split) || .55, timer = null, cur = null;
+  var CAP = {
+    collect: 'Sampling: oil enters the top valve and pushes the piston down; drive fluid leaves at the bottom.',
+    process: 'Transfer: drive fluid pumped in below pushes the sample out of the top valve to the PVT cell.',
+    results: 'Valves closed: the remaining sample is kept in the bottle.'
+  };
+  var HINT = 'Hover the bottle to see its parts';
+  function slow() { return window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches ? .15 : 1; }
+  function set(f, g, ms, nt, nb) {
+    f.style.setProperty('--ab-dur', Math.round(ms * slow()) + 'ms'); f.style.setProperty('--ab-g', g);
+    f.style.setProperty('--ab-nt', nt); f.style.setProperty('--ab-nb', nb);
+  }
+  function play(step) {
+    var f = document.querySelector('.about-bottle'); if (!f || step === cur) return;
+    cur = step; clearTimeout(timer);
+    f.dataset.ab = step || '';
+    var cap = f.querySelector('.ab-hint'); if (cap) cap.textContent = step ? CAP[step] : HINT;
+    if (step === 'collect') { set(f, 0, 450, 0, 0); timer = setTimeout(function () { set(f, .9, 2800, 1, 1); }, 500 * slow()); }
+    else if (step === 'process') { set(f, .9, 450, 0, 0); timer = setTimeout(function () { set(f, .3, 2800, 1, 1); }, 500 * slow()); }
+    else if (step === 'results') set(f, .3, 900, 0, 0);
+    else set(f, REST, 900, 0, 0);
+  }
+  function stepOf(t) { var b = t && t.closest && t.closest('.about-flow-btn'); return b ? b.getAttribute('data-ab-step') : null; }
+  document.addEventListener('mouseover', function (e) { var s = stepOf(e.target); if (s) play(s); });
+  document.addEventListener('mouseout', function (e) { if (stepOf(e.target) && stepOf(e.relatedTarget) !== stepOf(e.target)) play(null); });
+  document.addEventListener('focusin', function (e) { var s = stepOf(e.target); if (s) play(s); });
+  document.addEventListener('focusout', function (e) { if (stepOf(e.target)) play(null); });
+})();

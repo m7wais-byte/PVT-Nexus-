@@ -1511,6 +1511,14 @@ html[data-theme="light"] { --about-lead:#1f2a3a; --about-body:#2f3c4e; --about-n
 .about-bottle:hover .ab-part, .about-bottle:focus-visible .ab-part, .about-bottle:focus .ab-part { opacity:1; transform:none; }
 .ab-hint { font-size:12px; color:var(--about-note); transition:opacity .2s ease; }
 .about-bottle:hover .ab-hint, .about-bottle:focus .ab-hint { opacity:0; }
+.ab-flow { opacity:0; transition:opacity .3s ease; }
+.ab-flow line { stroke-dasharray:6 5; animation:ab-dash .6s linear infinite; }
+@keyframes ab-dash { to { stroke-dashoffset:-11; } }
+.about-bottle[data-ab="collect"] :is(.ab-f-oil-in, .ab-f-drive-out),
+.about-bottle[data-ab="process"] :is(.ab-f-drive-in, .ab-f-oil-out) { opacity:1; transition-delay:.5s; }
+.about-bottle[data-ab="collect"] .ab-hint, .about-bottle[data-ab="process"] .ab-hint, .about-bottle[data-ab="results"] .ab-hint { color:var(--txt); }
+.ab-hint { max-width:190px; text-align:center; line-height:1.4; min-height:4.2em; }
+@media (prefers-reduced-motion: reduce) { .ab-flow line { animation:none; } }
 .about-flow-btn { all:unset; box-sizing:border-box; width:100%; display:flex; flex-direction:column; align-items:center; gap:12px; padding:0 8px 6px; border-radius:12px; cursor:pointer; text-align:center; }
 .about-flow-btn .about-flow-icon { transition:transform .18s ease, border-color .18s ease, box-shadow .18s ease; }
 .about-flow-btn:hover .about-flow-icon, .about-flow-btn:focus-visible .about-flow-icon { transform:translateY(-3px); border-color:currentColor; box-shadow:0 6px 16px rgba(10,20,40,.10); }
